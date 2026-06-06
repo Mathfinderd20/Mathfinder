@@ -4,7 +4,8 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 
 ## Decisions Locked
 - [x] Tech stack: **TypeScript + React Native / RN-Web** (shared web + phone, shared rules engine)
-- [x] Content scope for v1: **All 1st-party** (Core, APG, ACG, ARG, UM, UC, etc.) — big lift, ingest incrementally
+- [x] Content scope for v1: **All 1st-party** (Core, APG, ACG, ARG, UM, UC, etc.) **+ Savage Company (SHM Publishing)** — big lift, ingest incrementally
+- [x] Savage Company: authored by project owner (no third-party licensing issue); some content on d20pfsrd.com
 
 ## Phase 0 — Project Scaffolding
 - [ ] Lock dependency versions for the chosen stack
@@ -15,6 +16,8 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 ## Phase 1 — Rules Data Foundation
 - [ ] Define canonical JSON schema for all game entities (races, classes, feats, spells, items, etc.)
 - [ ] Build/ingest 1st-party (Core, APG, ACG, ARG, UM, UC, etc.) dataset under proper licensing (OGL/PRD)
+- [ ] Ingest **Savage Company (SHM Publishing)** content (cross-check d20pfsrd.com against original manuscript as source of truth)
+- [ ] Add `source` tag + provenance fields to every entity (enables content-pack toggles)
 - [ ] Validate dataset against schema (CI gate)
 - [ ] Versioning strategy for rules data (so sheets don't break on update)
 
@@ -46,6 +49,6 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 - [ ] App store + web deploy
 
 ## Open Questions / Risks
-- [ ] Licensing: confirm OGL/PRD coverage for ALL 1st-party content (bigger now that scope = everything)
+- [ ] Licensing: confirm OGL/PRD coverage for ALL 1st-party content (Savage Company is owner-authored, no barrier)
 - [ ] Ingestion order: which books first so we have a usable slice before the full set lands?
 - [ ] Modifier stacking edge cases (the eternal Pathfinder boss fight)

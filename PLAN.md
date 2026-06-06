@@ -1,9 +1,9 @@
 # Path-Builder — Interactive Smart Character Sheet for Pathfinder 1e
 
 > A cross-platform (web + mobile) app that understands all 1st-party Pathfinder 1e
-> content, lets users build/level/track characters with minimal friction, and connects
-> players into groups so the DM can monitor the party and push auras/buffs directly
-> onto player sheets in real time.
+> content **plus Savage Company (SHM Publishing)**, lets users build/level/track
+> characters with minimal friction, and connects players into groups so the DM can
+> monitor the party and push auras/buffs directly onto player sheets in real time.
 
 ---
 
@@ -11,7 +11,10 @@
 
 ### Goals
 - **Understands the rules**: encodes 1st-party content (races, classes, archetypes,
-  feats, skills, spells, items, conditions) and the math that binds them.
+  feats, skills, spells, items, conditions) **and Savage Company (SHM Publishing)**
+  content, plus the math that binds them all.
+- **Multi-source by design**: every entity carries a `source` tag (e.g. `core`, `apg`,
+  `savage-company`) so content packs can be toggled, filtered, and attributed cleanly.
 - **Smart, minimal input**: the app does the bookkeeping. User makes *decisions*,
   not arithmetic. Pick a race → it applies the modifiers. Level up → it walks you
   through only the choices that matter.
@@ -173,25 +176,43 @@ Recompute is a topological pass: inputs first, derived later, effects layered in
 
 ## 7. Data Sourcing & Licensing 
 
+### Paizo 1st-party content
 - Pathfinder 1e core mechanics are released under the **OGL**; much of the content is
   on the **PRD/Archives of Nethys (PRD)**. We must:
   - Include OGL notice + Section 15 attribution.
   - Verify each book/entry's open-content status before bundling.
   - Avoid Product Identity (names, art, lore that isn't open).
 - Plan: ingest from openly-licensed structured sources; keep a provenance field per entity.
-- **Action item**: legal review of the v1 content list before shipping.
+- **Action item**: legal review of the v1 Paizo content list before shipping.
+
+### Savage Company (SHM Publishing) — first-party to US
+- **Authored by the project owner (SHM Publishing).** We hold the rights, so there is
+  **no third-party licensing barrier** to bundling it.
+- Some Savage Company content is published on **d20pfsrd.com** — usable as a structured
+  ingestion source (cross-check against the original manuscript as the source of truth).
+- Tag every Savage Company entity with `source: "savage-company"` for filtering,
+  attribution display, and content-pack toggling.
+- Because we own it, we can also encode the *richest* effect data here (full structured
+  modifiers) without worrying about open-content boundaries — a great proving ground
+  for the effects DSL.
+
+### Provenance model
+- Every entity: `{ source, sourcePage?, license }`. Drives attribution UI, content-pack
+  toggles, and "where did this rule come from" tooltips.
 
 ---
 
 ## 8. Phased Roadmap
 
-> **Scope decision: v1 targets ALL 1st-party content.** That's a large ingestion +
-> validation effort, so we still *build* against a Core slice first, then expand the
-> dataset incrementally toward full coverage without changing the engine.
+> **Scope decision: v1 targets ALL 1st-party content + Savage Company (SHM Publishing).**
+> That's a large ingestion + validation effort, so we still *build* against a Core slice
+> first, then expand the dataset incrementally toward full coverage without changing the
+> engine. Savage Company is owned by the project author, so it can be bundled freely and
+> is an ideal first content pack to exercise the effects DSL end-to-end.
 
 1. **Foundation** — schema + small data slice (Core first) + engine for abilities/AC/saves.
 2. **Build + Level** — full Core class/feat/skill build with validation; single-player.
-3. **Content expansion** — APG, UM, UC, ACG, ARG… ingest + validate incrementally.
+3. **Content expansion** — APG, UM, UC, ACG, ARG… + **Savage Company** ingest + validate incrementally.
 4. **Multiplayer** — parties, DM dashboard, realtime sheet sync.
 5. **Auras/Buffs** — effect broadcast + auto-apply + provenance.
 6. **Polish** — offline, PDF export, accessibility, beta with a real table.
