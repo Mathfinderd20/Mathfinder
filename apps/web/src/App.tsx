@@ -51,11 +51,11 @@ export function App() {
       <div className="layout">
         <aside className="controls">
           <section className="panel">
-            <h2>Buffs &amp; Auras</h2>
+            <h2>Abilities, Buffs &amp; Auras</h2>
             <p className="hint">
-              Toggle a party buff and watch the sheet update live. Each is just a
-              bundle of modifiers — the same mechanism the DM will use to push
-              auras onto player sheets.
+              Toggle Rage (a class ability), a spell buff, or an aura and watch the
+              sheet update live. Each is just a bundle of modifiers — the same
+              mechanism the DM will use to push auras onto player sheets.
             </p>
             {BUFFS.map((buff) => (
               <label className="buff" key={buff.id}>

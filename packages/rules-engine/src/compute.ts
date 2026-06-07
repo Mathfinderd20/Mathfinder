@@ -183,6 +183,7 @@ export function computeSheet(input: CharacterInput): DerivedSheet {
     hitPoints,
     speed,
     skills,
+    descriptor: input.descriptor ?? { classes: [], feats: [], features: [] },
   };
 }
 

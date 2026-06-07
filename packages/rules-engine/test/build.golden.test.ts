@@ -62,6 +62,12 @@ describe("buildCharacter + computeSheet (level 1)", () => {
   it("reports no validation issues for a legal build", () => {
     expect(validateBuild(grukkLevel1())).toEqual([]);
   });
+
+  it("surfaces race, class, and feats on the sheet descriptor", () => {
+    expect(sheet.descriptor.race).toBe("Half-Orc");
+    expect(sheet.descriptor.classes).toEqual([{ name: "Barbarian", level: 1 }]);
+    expect(sheet.descriptor.feats).toEqual([{ name: "Toughness", level: 1 }]);
+  });
 });
 
 describe("levelUp to level 2", () => {

@@ -140,6 +140,20 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 }
 .tag.warn { background: #4a2f2a; color: var(--err); }
 
+.acquisitions { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 13px;
+}
+.chip.feature { border-color: var(--accent); color: var(--accent-2); }
+.chip-lvl { font-size: 10px; color: var(--muted); }
+
 @media (max-width: 800px) {
   .layout { grid-template-columns: 1fr; }
   .columns { grid-template-columns: 1fr; }

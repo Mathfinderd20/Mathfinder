@@ -4,6 +4,8 @@ import type {
   AbilityScores,
   CharacterInput,
   Modifier,
+  NamedAcquisition,
+  SheetDescriptor,
   Size,
   SkillKey,
 } from "../types";
@@ -173,7 +175,28 @@ export function buildCharacter(
 
   const rolledHitPoints = build.levels.map((l) => l.hitPointRoll);
 
+  // Descriptor: race, class breakdown, and feats/features with the level gained.
+  const feats: NamedAcquisition[] = [];
+  const features: NamedAcquisition[] = [];
+  build.levels.forEach((lvl, index) => {
+    const levelNum = index + 1;
+    for (const feat of lvl.feats ?? []) feats.push({ name: feat, level: levelNum });
+    for (const feature of lvl.features ?? []) features.push({ name: feature, level: levelNum });
+  });
+  const classes: NamedAcquisition[] = [];
+  for (const [className, count] of counts) {
+    const def = getClassDefinition(registry, className);
+    classes.push({ name: def?.name ?? className, level: count });
+  }
+  const descriptor: SheetDescriptor = {
+    race: build.race.name,
+    classes,
+    feats,
+    features,
+  };
+
   return {
+    descriptor,
     name: build.name,
     level,
     size: build.race.size,

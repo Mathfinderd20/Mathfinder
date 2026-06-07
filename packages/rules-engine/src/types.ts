@@ -172,10 +172,26 @@ export interface DerivedSkill {
   breakdown: BreakdownEntry[];
 }
 
+/** Something gained at a particular character level (a feat or class feature). */
+export interface NamedAcquisition {
+  name: string;
+  level: number;
+}
+
+/** Non-mechanical identity carried through to the sheet (race/class/feats/etc.). */
+export interface SheetDescriptor {
+  race?: string;
+  classes: NamedAcquisition[];
+  feats: NamedAcquisition[];
+  features: NamedAcquisition[];
+}
+
 export interface CharacterInput {
   name: string;
   level: number;
   size: Size;
+  /** Descriptive identity (race/class/feats/features) for display. */
+  descriptor?: SheetDescriptor;
   /** Base ability scores BEFORE modifiers (racial/enhancement/etc. as modifiers). */
   abilityScores: AbilityScores;
   baseAttackBonus: number;
@@ -211,4 +227,6 @@ export interface DerivedSheet {
   hitPoints: DerivedStat;
   speed: DerivedStat;
   skills: Record<SkillKey, DerivedSkill>;
+  /** Race/class/feats/features for display (empty if not provided). */
+  descriptor: SheetDescriptor;
 }

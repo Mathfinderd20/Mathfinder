@@ -18,7 +18,11 @@ export const initialBuild: CharacterBuild = {
       hitPointRoll: 12,
       skillRanks: { climb: 1, perception: 1, intimidate: 1, survival: 1 },
       feats: ["Toughness"],
-      modifiers: [{ target: "hp", type: "untyped", value: 3, source: "Toughness" }],
+      features: ["Rage", "Fast Movement"],
+      modifiers: [
+        { target: "hp", type: "untyped", value: 3, source: "Toughness" },
+        { target: "speed", type: "untyped", value: 10, source: "Fast Movement" },
+      ],
     },
   ],
 };
@@ -42,6 +46,17 @@ export interface Buff {
  * to the sheet at runtime — exactly how the DM's aura broadcast will work.
  */
 export const BUFFS: Buff[] = [
+  {
+    id: "rage",
+    name: "Rage (class ability)",
+    description: "+2 morale Str & Con, +2 Will, -2 AC",
+    modifiers: [
+      { target: "str", type: "morale", value: 2, source: "Rage" },
+      { target: "con", type: "morale", value: 2, source: "Rage" },
+      { target: "save.will", type: "morale", value: 2, source: "Rage" },
+      { target: "ac", type: "untyped", value: -2, source: "Rage" },
+    ],
+  },
   {
     id: "bless",
     name: "Bless",

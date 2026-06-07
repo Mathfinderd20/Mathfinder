@@ -13,6 +13,11 @@ function sign(n: number): string {
 export function renderSheet(sheet: DerivedSheet): string {
   const lines: string[] = [];
   lines.push(`${sheet.name}  (level ${sheet.level}, ${sheet.size})`);
+  const classLine = sheet.descriptor.classes
+    .map((c) => `${c.name} ${c.level}`)
+    .join(" / ");
+  const identity = [sheet.descriptor.race, classLine].filter(Boolean).join(" ");
+  if (identity) lines.push(identity);
   lines.push("=".repeat(48));
 
   const abilityCols = ABILITY_ORDER.map((k) => {
@@ -45,6 +50,16 @@ export function renderSheet(sheet: DerivedSheet): string {
     ].filter(Boolean);
     const tagStr = tags.length ? `  [${tags.join(", ")}]` : "";
     lines.push(`  ${s.name.padEnd(24)} ${sign(s.total).padStart(4)}${tagStr}`);
+  }
+
+  const feats = sheet.descriptor.feats.map((f) => f.name);
+  const features = sheet.descriptor.features.map((f) => f.name);
+  if (feats.length) {
+    lines.push("");
+    lines.push(`Feats: ${feats.join(", ")}`);
+  }
+  if (features.length) {
+    lines.push(`Special Abilities: ${features.join(", ")}`);
   }
 
   return lines.join("\n");
