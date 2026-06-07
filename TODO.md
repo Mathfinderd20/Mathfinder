@@ -44,7 +44,9 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 - [x] Feat effects auto-apply via registry (no more hand-written feat modifiers)
 - [x] Prereq-aware feat picker in the level-up modal (locks feats you don't qualify for)
 - [x] Savage Company feat pack scaffold (empty, ready to populate from manuscript)
-- [ ] Feature/class-ability content model (Rage/Fast Movement still hand-written)
+- [x] Class-feature content model + progression grants (Barbarian/Fighter/Rogue L1 scaffold)
+- [x] Passive class-feature effects auto-apply from the registry (e.g. Fast Movement)
+- [ ] Activated class abilities/state model (Rage still represented as a UI toggle + modifiers)
 - [ ] Prerequisite validation for prestige classes, archetypes
 - [ ] Parameterized feats (Weapon Focus weapon choice, Skill Focus skill choice)
 

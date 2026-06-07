@@ -17,6 +17,18 @@ export {
 export { deriveHitPoints, deriveSpeed } from "./vitals";
 export { renderSheet, explainStat } from "./format";
 
+// ---- Content: class features ----
+export {
+  CORE_CLASS_FEATURES,
+  SAVAGE_COMPANY_CLASS_FEATURES,
+  CLASS_FEATURES,
+  buildClassFeatureRegistry,
+  classFeaturesGrantedAt,
+  classFeatureEffects,
+  type ClassFeatureDefinition,
+  type ClassFeatureRegistry,
+} from "./content/class-features";
+
 // ---- Content: feats ----
 export {
   CORE_FEATS,

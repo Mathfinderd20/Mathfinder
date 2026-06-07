@@ -18,6 +18,12 @@ import {
   type SaveKind,
 } from "./classes";
 import { featEffects, FEATS, type FeatRegistry } from "../content/feats";
+import {
+  classFeatureEffects,
+  classFeaturesGrantedAt,
+  CLASS_FEATURES,
+  type ClassFeatureRegistry,
+} from "../content/class-features";
 
 /** A character's race choice and the mechanical effects it grants. */
 export interface RaceChoice {
@@ -111,6 +117,7 @@ export function buildCharacter(
   build: CharacterBuild,
   registry: ClassRegistry = SAMPLE_CLASSES,
   featRegistry: FeatRegistry = FEATS,
+  classFeatureRegistry: ClassFeatureRegistry = CLASS_FEATURES,
 ): CharacterInput {
   const counts = classLevelCounts(build);
   const level = build.levels.length;
@@ -135,9 +142,21 @@ export function buildCharacter(
     ...(build.race.abilityModifiers ?? []),
     ...(build.race.traits ?? []),
   ];
+  const classProgress = new Map<string, number>();
+  const autoGrantedFeatures: NamedAcquisition[] = [];
+  let characterLevelIndex = 0;
   for (const lvl of build.levels) {
+    characterLevelIndex += 1;
+    const classKey = lvl.className.toLowerCase();
+    const classLevel = (classProgress.get(classKey) ?? 0) + 1;
+    classProgress.set(classKey, classLevel);
+
+    const granted = classFeaturesGrantedAt(classFeatureRegistry, lvl.className, classLevel);
+    for (const g of granted) autoGrantedFeatures.push({ name: g.name, level: characterLevelIndex });
+
     if (lvl.modifiers) modifiers.push(...lvl.modifiers);
     if (lvl.feats) modifiers.push(...featEffects(lvl.feats, featRegistry));
+    modifiers.push(...classFeatureEffects(granted));
     if (lvl.favoredClass === "hp") {
       modifiers.push({ target: "hp", type: "untyped", value: 1, source: "Favored class" });
     }
@@ -180,7 +199,7 @@ export function buildCharacter(
 
   // Descriptor: race, class breakdown, and feats/features with the level gained.
   const feats: NamedAcquisition[] = [];
-  const features: NamedAcquisition[] = [];
+  const features: NamedAcquisition[] = [...autoGrantedFeatures];
   build.levels.forEach((lvl, index) => {
     const levelNum = index + 1;
     for (const feat of lvl.feats ?? []) feats.push({ name: feat, level: levelNum });
