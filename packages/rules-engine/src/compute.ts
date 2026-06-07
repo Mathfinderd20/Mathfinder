@@ -7,6 +7,8 @@ import {
   TOUCH_EXCLUDED_AC_TYPES,
 } from "./constants";
 import { modifiersFor, resolveModifiers } from "./modifiers";
+import { deriveSkills } from "./skills";
+import { deriveHitPoints, deriveSpeed } from "./vitals";
 import type {
   BonusType,
   BreakdownEntry,
@@ -161,6 +163,11 @@ export function computeSheet(input: CharacterInput): DerivedSheet {
     ranged: attackBreakdown(dexMod, "Dexterity", "attack.ranged"),
   };
 
+  // ---- Vitals & skills ---------------------------------------------------
+  const hitPoints = deriveHitPoints(input, conMod);
+  const speed = deriveSpeed(input);
+  const skills = deriveSkills(input, abilities);
+
   return {
     name: input.name,
     level: input.level,
@@ -173,6 +180,9 @@ export function computeSheet(input: CharacterInput): DerivedSheet {
     cmb,
     cmd,
     attack,
+    hitPoints,
+    speed,
+    skills,
   };
 }
 

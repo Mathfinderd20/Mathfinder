@@ -110,6 +110,68 @@ export interface DerivedAbility {
   breakdown: BreakdownEntry[];
 }
 
+/** Standard Pathfinder 1e skill keys (subtypes use dotted keys). */
+export type SkillKey =
+  | "acrobatics"
+  | "appraise"
+  | "bluff"
+  | "climb"
+  | "craft"
+  | "diplomacy"
+  | "disable-device"
+  | "disguise"
+  | "escape-artist"
+  | "fly"
+  | "handle-animal"
+  | "heal"
+  | "intimidate"
+  | "knowledge.arcana"
+  | "knowledge.dungeoneering"
+  | "knowledge.engineering"
+  | "knowledge.geography"
+  | "knowledge.history"
+  | "knowledge.local"
+  | "knowledge.nature"
+  | "knowledge.nobility"
+  | "knowledge.planes"
+  | "knowledge.religion"
+  | "linguistics"
+  | "perception"
+  | "perform"
+  | "profession"
+  | "ride"
+  | "sense-motive"
+  | "sleight-of-hand"
+  | "spellcraft"
+  | "stealth"
+  | "survival"
+  | "swim"
+  | "use-magic-device"
+  | (string & {});
+
+export interface SkillDefinition {
+  key: SkillKey;
+  name: string;
+  ability: AbilityKey;
+  /** Cannot be used without at least 1 rank. */
+  trainedOnly: boolean;
+  /** Armor check penalty applies (Str- and Dex-based physical skills). */
+  armorCheckPenalty: boolean;
+}
+
+export interface DerivedSkill {
+  key: SkillKey;
+  name: string;
+  ability: AbilityKey;
+  ranks: number;
+  isClassSkill: boolean;
+  trainedOnly: boolean;
+  /** False if trained-only and the character has no ranks. */
+  usable: boolean;
+  total: number;
+  breakdown: BreakdownEntry[];
+}
+
 export interface CharacterInput {
   name: string;
   level: number;
@@ -120,6 +182,16 @@ export interface CharacterInput {
   baseSaves: { fort: number; ref: number; will: number };
   /** Max Dex bonus to AC from worn armor. Omit for no cap. */
   maxDexBonus?: number;
+  /** Armor check penalty magnitude (positive number, subtracted from affected skills). */
+  armorCheckPenalty?: number;
+  /** Base land speed in feet. Defaults to 30. */
+  baseSpeed?: number;
+  /** Per-hit-die rolled/fixed HP, BEFORE Con. One entry per HD. */
+  rolledHitPoints?: number[];
+  /** Skill keys treated as class skills (grant +3 when 1+ ranks invested). */
+  classSkills?: SkillKey[];
+  /** Ranks invested per skill. */
+  skillRanks?: Partial<Record<SkillKey, number>>;
   /** Every active effect: feats, gear, class features, conditions, buffs, auras. */
   modifiers: Modifier[];
 }
@@ -136,4 +208,7 @@ export interface DerivedSheet {
   cmb: DerivedStat;
   cmd: DerivedStat;
   attack: { melee: DerivedStat; ranged: DerivedStat };
+  hitPoints: DerivedStat;
+  speed: DerivedStat;
+  skills: Record<SkillKey, DerivedSkill>;
 }

@@ -28,9 +28,13 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 - [x] Modifier stacking + typed bonus rules (the hard part!) — `resolveModifiers`
 - [x] Stat derivation pipeline (abilities → mods → AC/saves/init/CMB/CMD/attack)
 - [x] Deterministic `computeSheet(input)` with per-stat breakdowns (the 'why' UX)
-- [x] Golden tests pinned to hand-computed PF1e math (19/19 green)
-- [ ] Skills derivation (ranks + class skill + ability + mods)
-- [ ] HP, speed, spell DCs, CMB maneuver-specific mods
+- [x] Skills derivation (ranks + class skill + ability + misc - armor check penalty; trained-only)
+- [x] HP (per-die min-1 Con rule + flat bonuses) and Speed derivation
+- [x] Sheet formatter (`renderSheet` / `explainStat`) + runnable demo (`npm run demo`)
+- [x] Golden tests pinned to hand-computed PF1e math (28/28 green)
+- [ ] Spell save DCs + caster stats
+- [ ] Maneuver-specific CMB mods (trip/grapple/etc.)
+- [ ] Carrying capacity / encumbrance auto-from-Str
 - [ ] Prerequisite validation (feats, prestige classes, archetypes)
 - [ ] Character build/level-up state machine (replayable build steps)
 

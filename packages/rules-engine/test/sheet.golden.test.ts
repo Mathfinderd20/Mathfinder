@@ -58,6 +58,45 @@ describe("computeSheet — Savage Company Berserker (L1) golden sheet", () => {
     expect(sheet.cmd.total).toBe(18);
   });
 
+  it("computes hit points with the per-die minimum and a flat HP bonus", () => {
+    // max(1, 12 + Con 2) = 14, + Toughness 3 = 17
+    expect(sheet.hitPoints.total).toBe(17);
+  });
+
+  it("applies armor speed reduction", () => {
+    // 30 base - 10 (medium armor) = 20
+    expect(sheet.speed.total).toBe(20);
+  });
+
+  it("computes skills with ranks, class-skill bonus, ability, and armor check penalty", () => {
+    // Climb: ranks 1 + STR 4 + class skill 3 - ACP 6 = 2
+    expect(sheet.skills.climb.total).toBe(2);
+    // Perception: ranks 1 + WIS 1 + class skill 3 = 5 (no ACP)
+    expect(sheet.skills.perception.total).toBe(5);
+    // Stealth: ranks 1 + DEX 2 + class skill 3 - ACP 6 = 0
+    expect(sheet.skills.stealth.total).toBe(0);
+    // Intimidate: ranks 1 + CHA -1 + class skill 3 = 3
+    expect(sheet.skills.intimidate.total).toBe(3);
+  });
+
+  it("does not grant the class-skill bonus without ranks", () => {
+    // Swim is a class skill but has 0 ranks: STR 4 - ACP 6 = -2 (no +3)
+    expect(sheet.skills.swim.total).toBe(-2);
+    expect(sheet.skills.swim.isClassSkill).toBe(true);
+  });
+
+  it("applies armor check penalty only to Str/Dex physical skills", () => {
+    // Acrobatics: not a class skill, 0 ranks: DEX 2 - ACP 6 = -4
+    expect(sheet.skills.acrobatics.total).toBe(-4);
+  });
+
+  it("marks trained-only skills as unusable without ranks", () => {
+    expect(sheet.skills["disable-device"].usable).toBe(false);
+    expect(sheet.skills["knowledge.arcana"].usable).toBe(false);
+    // A trained skill the character has ranks in stays usable.
+    expect(sheet.skills.stealth.usable).toBe(true);
+  });
+
   it("keeps a human-readable breakdown for the 'why' UX", () => {
     const sources = sheet.ac.normal.breakdown.map((b) => b.source);
     expect(sources).toContain("Scale mail");

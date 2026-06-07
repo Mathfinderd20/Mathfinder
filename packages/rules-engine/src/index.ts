@@ -10,6 +10,13 @@ export * from "./types";
 export { computeSheet, abilityModifier } from "./compute";
 export { deriveAbilities } from "./abilities";
 export {
+  deriveSkills,
+  SKILL_DEFINITIONS,
+  CLASS_SKILL_BONUS,
+} from "./skills";
+export { deriveHitPoints, deriveSpeed } from "./vitals";
+export { renderSheet, explainStat } from "./format";
+export {
   resolveModifiers,
   modifiersFor,
   type ResolvedModifiers,
