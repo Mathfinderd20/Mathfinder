@@ -20,9 +20,13 @@ export { renderSheet, explainStat } from "./format";
 // ---- Content: activatables ----
 export {
   collectActivatableEffects,
+  resolveActivatableSelections,
+  groupActivatables,
   activatableFeaturesForDescriptor,
   activatableFeatsForDescriptor,
   type ActivatableEffect,
+  type ActivatableConflict,
+  type ResolvedActivatables,
 } from "./content/activatables";
 
 // ---- Content: class features ----

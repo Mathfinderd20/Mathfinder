@@ -6,7 +6,9 @@ import {
   collectActivatableEffects,
   computeSheet,
   FEATS,
+  groupActivatables,
   levelDown,
+  resolveActivatableSelections,
   validateBuild,
   type CharacterBuild,
   type LevelUpSelection,
@@ -28,7 +30,7 @@ export function App() {
 
   // The whole app is a pure render of (build + active buffs). Toggle anything
   // and every derived number recomputes instantly — the engine is fast & local.
-  const { sheet, issues, activatableFeatures } = useMemo(() => {
+  const { sheet, issues, activatableFeatures, activatableGroups, activatableConflicts } = useMemo(() => {
     const input = buildCharacter(build);
     const baseSheet = computeSheet(input);
     const activatableFeatures = collectActivatableEffects({
@@ -36,9 +38,11 @@ export function App() {
       classFeatureRegistry: CLASS_FEATURES,
       featRegistry: FEATS,
     });
-    const classAbilityMods: Modifier[] = activatableFeatures
-      .filter((f) => activeBuffs[f.id])
-      .flatMap((f) => f.effects);
+    const resolvedActivatables = resolveActivatableSelections({
+      available: activatableFeatures,
+      selected: activeBuffs,
+    });
+    const classAbilityMods: Modifier[] = resolvedActivatables.modifiers;
     const buffMods: Modifier[] = BUFFS.filter((b) => activeBuffs[b.id]).flatMap(
       (b) => b.modifiers,
     );
@@ -47,6 +51,8 @@ export function App() {
       sheet: computeSheet(withBuffs),
       issues: validateBuild(build),
       activatableFeatures,
+      activatableGroups: groupActivatables(activatableFeatures),
+      activatableConflicts: resolvedActivatables.conflicts,
     };
   }, [build, activeBuffs]);
 
@@ -78,7 +84,7 @@ export function App() {
               Toggle a granted class ability, a spell buff, or an aura and watch the
               sheet update live. Same modifier pipeline, less spaghetti.
             </p>
-            {activatableFeatures.map((feature) => (
+            {activatableGroups.ungrouped.map((feature) => (
               <label className="buff" key={feature.id}>
                 <input
                   type="checkbox"
@@ -88,11 +94,52 @@ export function App() {
                   }
                 />
                 <span>
-                  <strong>{feature.name} (class ability)</strong>
+                  <strong>{feature.name} (ability)</strong>
                   <span className="buff-desc">{feature.description}</span>
                 </span>
               </label>
             ))}
+            {Object.entries(activatableGroups.grouped).map(([group, items]) => (
+              <div className="mode-group" key={group}>
+                <div className="mode-title">{group.replace(/-/g, " ")}</div>
+                {items.map((feature) => (
+                  <label className="buff" key={feature.id}>
+                    <input
+                      type="radio"
+                      name={`mode-${group}`}
+                      checked={!!activeBuffs[feature.id]}
+                      onChange={() =>
+                        setActiveBuffs((prev) => {
+                          const next = { ...prev };
+                          for (const item of items) next[item.id] = false;
+                          next[feature.id] = true;
+                          return next;
+                        })
+                      }
+                    />
+                    <span>
+                      <strong>{feature.name} (ability)</strong>
+                      <span className="buff-desc">{feature.description}</span>
+                    </span>
+                  </label>
+                ))}
+                <button
+                  className="ghost small"
+                  onClick={() =>
+                    setActiveBuffs((prev) => {
+                      const next = { ...prev };
+                      for (const item of items) next[item.id] = false;
+                      return next;
+                    })
+                  }
+                >
+                  Clear mode
+                </button>
+              </div>
+            ))}
+            {activatableConflicts.length > 0 ? (
+              <p className="hint warn-text">Conflicting modes were selected; only one per group applies.</p>
+            ) : null}
             {BUFFS.map((buff) => (
               <label className="buff" key={buff.id}>
                 <input

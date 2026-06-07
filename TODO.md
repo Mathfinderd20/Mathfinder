@@ -49,7 +49,11 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 - [x] Activated class abilities scaffolded from class-feature content (Rage toggle derived from granted feature)
 - [x] Shared activatable-effect model spanning class features and feats
 - [x] Generic collector for toggleable abilities from granted features / taken feats
-- [ ] General activated ability runtime rules (rounds/day, mutually-exclusive stances, scaling values, conditional requirements)
+- [x] Runtime selection resolver for activatables
+- [x] Exclusivity groups for modes/stances (e.g. attack-mode) + UI radios
+- [ ] Activated ability runtime rules: rounds/day tracking
+- [ ] Activated ability runtime rules: scaling values by BAB/level
+- [ ] Activated ability runtime rules: conditional requirements / illegal-state suppression
 - [ ] Prerequisite validation for prestige classes, archetypes
 - [ ] Parameterized feats (Weapon Focus weapon choice, Skill Focus skill choice)
 
