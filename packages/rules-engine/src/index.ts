@@ -25,6 +25,9 @@ export {
   buildClassFeatureRegistry,
   classFeaturesGrantedAt,
   classFeatureEffects,
+  activatableClassFeatures,
+  activatableFeaturesForDescriptor,
+  type ActivatableFeature,
   type ClassFeatureDefinition,
   type ClassFeatureRegistry,
 } from "./content/class-features";

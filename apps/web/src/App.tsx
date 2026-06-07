@@ -1,7 +1,9 @@
 import { useMemo, useState } from "react";
 import {
+  activatableFeaturesForDescriptor,
   applyLevelUp,
   buildCharacter,
+  CLASS_FEATURES,
   computeSheet,
   levelDown,
   validateBuild,
@@ -25,13 +27,24 @@ export function App() {
 
   // The whole app is a pure render of (build + active buffs). Toggle anything
   // and every derived number recomputes instantly — the engine is fast & local.
-  const { sheet, issues } = useMemo(() => {
+  const { sheet, issues, activatableFeatures } = useMemo(() => {
     const input = buildCharacter(build);
+    const baseSheet = computeSheet(input);
+    const classAbilityMods: Modifier[] = activatableFeaturesForDescriptor(
+      CLASS_FEATURES,
+      baseSheet.descriptor,
+    )
+      .filter((f) => activeBuffs[f.id])
+      .flatMap((f) => f.effects);
     const buffMods: Modifier[] = BUFFS.filter((b) => activeBuffs[b.id]).flatMap(
       (b) => b.modifiers,
     );
-    const withBuffs = { ...input, modifiers: [...input.modifiers, ...buffMods] };
-    return { sheet: computeSheet(withBuffs), issues: validateBuild(build) };
+    const withBuffs = { ...input, modifiers: [...input.modifiers, ...classAbilityMods, ...buffMods] };
+    return {
+      sheet: computeSheet(withBuffs),
+      issues: validateBuild(build),
+      activatableFeatures: activatableFeaturesForDescriptor(CLASS_FEATURES, baseSheet.descriptor),
+    };
   }, [build, activeBuffs]);
 
   const errors = issues.filter((i) => i.severity === "error");
@@ -59,10 +72,24 @@ export function App() {
           <section className="panel">
             <h2>Abilities, Buffs &amp; Auras</h2>
             <p className="hint">
-              Toggle Rage (a class ability), a spell buff, or an aura and watch the
-              sheet update live. Each is just a bundle of modifiers — the same
-              mechanism the DM will use to push auras onto player sheets.
+              Toggle a granted class ability, a spell buff, or an aura and watch the
+              sheet update live. Same modifier pipeline, less spaghetti.
             </p>
+            {activatableFeatures.map((feature) => (
+              <label className="buff" key={feature.id}>
+                <input
+                  type="checkbox"
+                  checked={!!activeBuffs[feature.id]}
+                  onChange={(e) =>
+                    setActiveBuffs((prev) => ({ ...prev, [feature.id]: e.target.checked }))
+                  }
+                />
+                <span>
+                  <strong>{feature.name} (class ability)</strong>
+                  <span className="buff-desc">{feature.description}</span>
+                </span>
+              </label>
+            ))}
             {BUFFS.map((buff) => (
               <label className="buff" key={buff.id}>
                 <input

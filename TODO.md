@@ -46,7 +46,8 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 - [x] Savage Company feat pack scaffold (empty, ready to populate from manuscript)
 - [x] Class-feature content model + progression grants (Barbarian/Fighter/Rogue L1 scaffold)
 - [x] Passive class-feature effects auto-apply from the registry (e.g. Fast Movement)
-- [ ] Activated class abilities/state model (Rage still represented as a UI toggle + modifiers)
+- [x] Activated class abilities scaffolded from class-feature content (Rage toggle derived from granted feature)
+- [ ] General activated ability/state model (rounds/day, mutually-exclusive stances, conditional requirements)
 - [ ] Prerequisite validation for prestige classes, archetypes
 - [ ] Parameterized feats (Weapon Focus weapon choice, Skill Focus skill choice)
 

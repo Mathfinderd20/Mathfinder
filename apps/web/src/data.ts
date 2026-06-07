@@ -59,17 +59,6 @@ export interface Buff {
  */
 export const BUFFS: Buff[] = [
   {
-    id: "rage",
-    name: "Rage (class ability)",
-    description: "+2 morale Str & Con, +2 Will, -2 AC",
-    modifiers: [
-      { target: "str", type: "morale", value: 2, source: "Rage" },
-      { target: "con", type: "morale", value: 2, source: "Rage" },
-      { target: "save.will", type: "morale", value: 2, source: "Rage" },
-      { target: "ac", type: "untyped", value: -2, source: "Rage" },
-    ],
-  },
-  {
     id: "bless",
     name: "Bless",
     description: "+1 morale to attack rolls",

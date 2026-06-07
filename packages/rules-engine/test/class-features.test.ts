@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   CLASS_FEATURES,
+  activatableFeaturesForDescriptor,
   classFeaturesGrantedAt,
 } from "../src/content/class-features";
 import { buildCharacter, type CharacterBuild } from "../src/build/character";
@@ -33,6 +34,10 @@ describe("class feature effects auto-apply through buildCharacter", () => {
 
   it("applies passive feature effects like Fast Movement", () => {
     expect(sheet.speed.total).toBe(40); // 30 base + 10 Fast Movement
+  });
+
+  it("resolves Rage as an activatable class feature from the descriptor", () => {
+    expect(activatableFeaturesForDescriptor(CLASS_FEATURES, sheet.descriptor).map((f) => f.name)).toEqual(["Rage"]);
   });
 
   it("dedupes features if a build manually repeats an auto-granted one", () => {

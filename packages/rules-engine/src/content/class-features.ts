@@ -1,4 +1,11 @@
-import type { Modifier } from "../types";
+import type { Modifier, SheetDescriptor } from "../types";
+
+export interface ActivatableFeature {
+  id: string;
+  name: string;
+  description: string;
+  effects: Modifier[];
+}
 
 export interface ClassFeatureDefinition {
   id: string;
@@ -7,8 +14,10 @@ export interface ClassFeatureDefinition {
   level: number;
   pack: string;
   description: string;
-  /** Passive effects only. Activated abilities like Rage can still have zero passive effects. */
+  /** Passive effects only. */
   effects: Modifier[];
+  /** Optional activated state, e.g. Rage. */
+  activatable?: ActivatableFeature;
 }
 
 export type ClassFeatureRegistry = Record<string, ClassFeatureDefinition[]>;
@@ -24,8 +33,19 @@ export const CORE_CLASS_FEATURES: ClassFeatureDefinition[] = [
     className: "barbarian",
     level: 1,
     pack: "core",
-    description: "Enter a rage for rounds per day; activated ability, no passive modifier.",
+    description: "Enter a rage for rounds per day.",
     effects: [],
+    activatable: {
+      id: "rage",
+      name: "Rage",
+      description: "+2 morale Str & Con, +2 Will, -2 AC",
+      effects: [
+        { target: "str", type: "morale", value: 2, source: "Rage" },
+        { target: "con", type: "morale", value: 2, source: "Rage" },
+        { target: "save.will", type: "morale", value: 2, source: "Rage" },
+        { target: "ac", type: "untyped", value: -2, source: "Rage" },
+      ],
+    },
   },
   {
     id: "barbarian-fast-movement-l1",
@@ -91,4 +111,28 @@ export function classFeaturesGrantedAt(
 
 export function classFeatureEffects(features: ClassFeatureDefinition[]): Modifier[] {
   return features.flatMap((f) => f.effects);
+}
+
+export function activatableClassFeatures(features: ClassFeatureDefinition[]): ActivatableFeature[] {
+  return features.flatMap((f) => (f.activatable ? [f.activatable] : []));
+}
+
+/** Resolve activatable features visible on a sheet descriptor into toggle defs. */
+export function activatableFeaturesForDescriptor(
+  registry: ClassFeatureRegistry,
+  descriptor: SheetDescriptor,
+): ActivatableFeature[] {
+  const names = new Set(descriptor.features.map((f) => f.name.toLowerCase()));
+  const out: ActivatableFeature[] = [];
+  const seen = new Set<string>();
+  for (const defs of Object.values(registry)) {
+    for (const feature of defs) {
+      if (!feature.activatable) continue;
+      if (!names.has(feature.name.toLowerCase())) continue;
+      if (seen.has(feature.activatable.id)) continue;
+      seen.add(feature.activatable.id);
+      out.push(feature.activatable);
+    }
+  }
+  return out.sort((a, b) => a.name.localeCompare(b.name));
 }
