@@ -35,8 +35,12 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 - [ ] Spell save DCs + caster stats
 - [ ] Maneuver-specific CMB mods (trip/grapple/etc.)
 - [ ] Carrying capacity / encumbrance auto-from-Str
+- [x] Character build/level-up state machine (replayable build steps; `buildCharacter`/`levelUp`/`levelDown`)
+- [x] Class progressions: BAB (full/3-4/half) + good/poor saves, multiclass-aware
+- [x] Build validation: skill-rank caps, ability-increase placement, unknown class, skill-point budget
+- [x] Build -> computeSheet golden tests incl. level-up (40/40 green)
 - [ ] Prerequisite validation (feats, prestige classes, archetypes)
-- [ ] Character build/level-up state machine (replayable build steps)
+- [ ] Skill-point budget enforcement using per-level Int (currently soft warning)
 
 ## Phase 3 — Character Builder UX
 - [ ] Guided build wizard (race → class → abilities → skills → feats → gear)

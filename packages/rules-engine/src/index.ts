@@ -16,6 +16,32 @@ export {
 } from "./skills";
 export { deriveHitPoints, deriveSpeed } from "./vitals";
 export { renderSheet, explainStat } from "./format";
+
+// ---- Build / level-up layer ----
+export {
+  buildCharacter,
+  levelUp,
+  levelDown,
+  classLevelCounts,
+  validateBuild,
+  type CharacterBuild,
+  type RaceChoice,
+  type LevelEntry,
+  type EquipmentEntry,
+  type ValidationIssue,
+  type ValidationSeverity,
+} from "./build/character";
+export {
+  SAMPLE_CLASSES,
+  getClassDefinition,
+  babForLevels,
+  goodSaveBase,
+  poorSaveBase,
+  type ClassDefinition,
+  type ClassRegistry,
+  type BabProgression,
+  type SaveKind,
+} from "./build/classes";
 export {
   resolveModifiers,
   modifiersFor,
