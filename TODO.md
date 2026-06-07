@@ -43,10 +43,16 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 - [ ] Skill-point budget enforcement using per-level Int (currently soft warning)
 
 ## Phase 3 — Character Builder UX
+- [x] First UI: Vite + React web app (apps/web) wired to the live engine
+- [x] Real-time sheet view (live recompute on any change)
+- [x] Interactive buff/aura toggles -> auto-apply to sheet (proves the multiplayer mechanism)
+- [x] Click-to-expand stat breakdowns (the 'why' UX)
+- [x] Level up / undo buttons backed by levelUp/levelDown
+- [x] Inline validation surfacing
 - [ ] Guided build wizard (race → class → abilities → skills → feats → gear)
-- [ ] Level-up flow with minimal input
+- [ ] Editable abilities / skill-rank allocation in the UI (currently fixed sample build)
+- [ ] Port presentational components to React Native for the phone build
 - [ ] Smart defaults + recommendations
-- [ ] Real-time sheet view (web + mobile shared components)
 
 ## Phase 4 — Multiplayer / Group Layer
 - [ ] Group/party model + invites

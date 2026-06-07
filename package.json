@@ -4,7 +4,8 @@
   "version": "0.0.0",
   "description": "Interactive smart character sheet for Pathfinder 1e + Savage Company (SHM Publishing)",
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "apps/*"
   ],
   "scripts": {
     "test": "npm run test --workspaces --if-present",

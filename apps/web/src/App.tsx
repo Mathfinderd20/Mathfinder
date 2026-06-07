@@ -1,0 +1,100 @@
+import { useMemo, useState } from "react";
+import {
+  buildCharacter,
+  computeSheet,
+  levelDown,
+  levelUp,
+  validateBuild,
+  type CharacterBuild,
+  type Modifier,
+} from "@path-builder/rules-engine";
+import { BUFFS, initialBuild, nextBarbarianLevel } from "./data";
+import { Sheet } from "./components/Sheet";
+
+export function App() {
+  const [build, setBuild] = useState<CharacterBuild>(initialBuild);
+  const [activeBuffs, setActiveBuffs] = useState<Record<string, boolean>>({});
+
+  // The whole app is a pure render of (build + active buffs). Toggle anything
+  // and every derived number recomputes instantly — the engine is fast & local.
+  const { sheet, issues } = useMemo(() => {
+    const input = buildCharacter(build);
+    const buffMods: Modifier[] = BUFFS.filter((b) => activeBuffs[b.id]).flatMap(
+      (b) => b.modifiers,
+    );
+    const withBuffs = { ...input, modifiers: [...input.modifiers, ...buffMods] };
+    return { sheet: computeSheet(withBuffs), issues: validateBuild(build) };
+  }, [build, activeBuffs]);
+
+  const errors = issues.filter((i) => i.severity === "error");
+
+  return (
+    <div className="app">
+      <header className="app-bar">
+        <div className="brand">
+          Path-Builder <span className="brand-sub">Pathfinder 1e smart sheet</span>
+        </div>
+        <div className="actions">
+          <button onClick={() => setBuild((b) => levelUp(b, { ...nextBarbarianLevel }))}>
+            ⬆ Level Up
+          </button>
+          <button
+            className="ghost"
+            disabled={build.levels.length <= 1}
+            onClick={() => setBuild((b) => levelDown(b))}
+          >
+            ↩ Undo Level
+          </button>
+        </div>
+      </header>
+
+      <div className="layout">
+        <aside className="controls">
+          <section className="panel">
+            <h2>Buffs &amp; Auras</h2>
+            <p className="hint">
+              Toggle a party buff and watch the sheet update live. Each is just a
+              bundle of modifiers — the same mechanism the DM will use to push
+              auras onto player sheets.
+            </p>
+            {BUFFS.map((buff) => (
+              <label className="buff" key={buff.id}>
+                <input
+                  type="checkbox"
+                  checked={!!activeBuffs[buff.id]}
+                  onChange={(e) =>
+                    setActiveBuffs((prev) => ({ ...prev, [buff.id]: e.target.checked }))
+                  }
+                />
+                <span>
+                  <strong>{buff.name}</strong>
+                  <span className="buff-desc">{buff.description}</span>
+                </span>
+              </label>
+            ))}
+          </section>
+
+          {errors.length > 0 ? (
+            <section className="panel errors">
+              <h2>Validation</h2>
+              <ul>
+                {errors.map((e, i) => (
+                  <li key={i}>{e.message}</li>
+                ))}
+              </ul>
+            </section>
+          ) : (
+            <section className="panel ok">
+              <h2>Validation</h2>
+              <p>No issues — this build is legal. </p>
+            </section>
+          )}
+        </aside>
+
+        <main className="main">
+          <Sheet sheet={sheet} />
+        </main>
+      </div>
+    </div>
+  );
+}
