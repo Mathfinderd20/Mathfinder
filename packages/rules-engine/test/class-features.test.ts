@@ -34,4 +34,13 @@ describe("class feature effects auto-apply through buildCharacter", () => {
   it("applies passive feature effects like Fast Movement", () => {
     expect(sheet.speed.total).toBe(40); // 30 base + 10 Fast Movement
   });
+
+  it("dedupes features if a build manually repeats an auto-granted one", () => {
+    const dupBuild: CharacterBuild = {
+      ...build,
+      levels: [{ ...build.levels[0]!, features: ["Fast Movement"] }],
+    };
+    const dupSheet = computeSheet(buildCharacter(dupBuild));
+    expect(dupSheet.descriptor.features.map((f) => f.name)).toEqual(["Fast Movement", "Rage"]);
+  });
 });

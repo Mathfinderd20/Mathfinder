@@ -210,11 +210,22 @@ export function buildCharacter(
     const def = getClassDefinition(registry, className);
     classes.push({ name: def?.name ?? className, level: count });
   }
+  const dedupeAcquisitions = (items: NamedAcquisition[]): NamedAcquisition[] => {
+    const seen = new Set<string>();
+    const out: NamedAcquisition[] = [];
+    for (const item of items) {
+      const key = `${item.level}::${item.name.toLowerCase()}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(item);
+    }
+    return out;
+  };
   const descriptor: SheetDescriptor = {
     race: build.race.name,
     classes,
-    feats,
-    features,
+    feats: dedupeAcquisitions(feats),
+    features: dedupeAcquisitions(features),
   };
 
   return {
