@@ -1,11 +1,5 @@
-import type { Modifier, SheetDescriptor } from "../types";
-
-export interface ActivatableFeature {
-  id: string;
-  name: string;
-  description: string;
-  effects: Modifier[];
-}
+import type { Modifier } from "../types";
+import type { ActivatableEffect } from "./activatables";
 
 export interface ClassFeatureDefinition {
   id: string;
@@ -17,7 +11,7 @@ export interface ClassFeatureDefinition {
   /** Passive effects only. */
   effects: Modifier[];
   /** Optional activated state, e.g. Rage. */
-  activatable?: ActivatableFeature;
+  activatable?: ActivatableEffect;
 }
 
 export type ClassFeatureRegistry = Record<string, ClassFeatureDefinition[]>;
@@ -113,26 +107,3 @@ export function classFeatureEffects(features: ClassFeatureDefinition[]): Modifie
   return features.flatMap((f) => f.effects);
 }
 
-export function activatableClassFeatures(features: ClassFeatureDefinition[]): ActivatableFeature[] {
-  return features.flatMap((f) => (f.activatable ? [f.activatable] : []));
-}
-
-/** Resolve activatable features visible on a sheet descriptor into toggle defs. */
-export function activatableFeaturesForDescriptor(
-  registry: ClassFeatureRegistry,
-  descriptor: SheetDescriptor,
-): ActivatableFeature[] {
-  const names = new Set(descriptor.features.map((f) => f.name.toLowerCase()));
-  const out: ActivatableFeature[] = [];
-  const seen = new Set<string>();
-  for (const defs of Object.values(registry)) {
-    for (const feature of defs) {
-      if (!feature.activatable) continue;
-      if (!names.has(feature.name.toLowerCase())) continue;
-      if (seen.has(feature.activatable.id)) continue;
-      seen.add(feature.activatable.id);
-      out.push(feature.activatable);
-    }
-  }
-  return out.sort((a, b) => a.name.localeCompare(b.name));
-}

@@ -17,6 +17,14 @@ export {
 export { deriveHitPoints, deriveSpeed } from "./vitals";
 export { renderSheet, explainStat } from "./format";
 
+// ---- Content: activatables ----
+export {
+  collectActivatableEffects,
+  activatableFeaturesForDescriptor,
+  activatableFeatsForDescriptor,
+  type ActivatableEffect,
+} from "./content/activatables";
+
 // ---- Content: class features ----
 export {
   CORE_CLASS_FEATURES,
@@ -25,9 +33,6 @@ export {
   buildClassFeatureRegistry,
   classFeaturesGrantedAt,
   classFeatureEffects,
-  activatableClassFeatures,
-  activatableFeaturesForDescriptor,
-  type ActivatableFeature,
   type ClassFeatureDefinition,
   type ClassFeatureRegistry,
 } from "./content/class-features";

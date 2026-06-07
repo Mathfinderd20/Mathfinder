@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
-import {
-  CLASS_FEATURES,
-  activatableFeaturesForDescriptor,
-  classFeaturesGrantedAt,
-} from "../src/content/class-features";
+import { CLASS_FEATURES, classFeaturesGrantedAt } from "../src/content/class-features";
+import { activatableFeaturesForDescriptor } from "../src/content/activatables";
 import { buildCharacter, type CharacterBuild } from "../src/build/character";
 import { computeSheet } from "../src/compute";
 

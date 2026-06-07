@@ -7,6 +7,8 @@ import {
   listFeats,
   type FeatContext,
 } from "../src/content/feats";
+import { CLASS_FEATURES } from "../src/content/class-features";
+import { collectActivatableEffects } from "../src/content/activatables";
 import { buildCharacter, type CharacterBuild } from "../src/build/character";
 import { computeSheet } from "../src/compute";
 
@@ -73,5 +75,21 @@ describe("feat effects auto-apply through buildCharacter", () => {
     const ctx = featContextFromSheet(sheet);
     expect(ctx.baseAttackBonus).toBe(1);
     expect(ctx.featNames).toContain("Toughness");
+  });
+
+  it("can expose activatable feats through the general collector", () => {
+    const descriptor = {
+      race: "Human",
+      classes: [{ name: "Fighter", level: 1 }],
+      feats: [{ name: "Combat Expertise", level: 1 }],
+      features: [],
+    };
+    expect(
+      collectActivatableEffects({
+        descriptor,
+        classFeatureRegistry: CLASS_FEATURES,
+        featRegistry: FEATS,
+      }).map((a) => a.name),
+    ).toEqual(["Combat Expertise"]);
   });
 });

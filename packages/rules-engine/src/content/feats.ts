@@ -1,4 +1,5 @@
 import type { AbilityKey, DerivedSheet, Modifier } from "../types";
+import type { ActivatableEffect } from "./activatables";
 
 /** A single feat prerequisite, with a human-readable label for the UI. */
 export interface Prerequisite {
@@ -19,6 +20,8 @@ export interface FeatDefinition {
   prerequisites: Prerequisite[];
   /** Passive effects granted, as modifiers. Empty for purely-activated feats. */
   effects: Modifier[];
+  /** Optional activated state, e.g. Combat Expertise. */
+  activatable?: ActivatableEffect;
 }
 
 export type FeatRegistry = Record<string, FeatDefinition>;
@@ -100,9 +103,19 @@ export const CORE_FEATS: FeatDefinition[] = [
     id: "combat-expertise",
     name: "Combat Expertise",
     pack: "core",
-    description: "Trade attack bonus for AC (activated; no passive modifier).",
+    description: "Trade attack bonus for AC (simplified toggle at low BAB).",
     prerequisites: [{ type: "ability", ability: "int", min: 13, description: "Int 13" }],
     effects: [],
+    activatable: {
+      id: "combat-expertise",
+      name: "Combat Expertise",
+      description: "-1 attack, +1 dodge AC (simplified; scalable later)",
+      group: "attack-mode",
+      effects: [
+        { target: "attack", type: "untyped", value: -1, source: "Combat Expertise" },
+        { target: "ac", type: "dodge", value: 1, source: "Combat Expertise" },
+      ],
+    },
   },
 ];
 

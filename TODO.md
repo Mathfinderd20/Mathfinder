@@ -47,7 +47,9 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 - [x] Class-feature content model + progression grants (Barbarian/Fighter/Rogue L1 scaffold)
 - [x] Passive class-feature effects auto-apply from the registry (e.g. Fast Movement)
 - [x] Activated class abilities scaffolded from class-feature content (Rage toggle derived from granted feature)
-- [ ] General activated ability/state model (rounds/day, mutually-exclusive stances, conditional requirements)
+- [x] Shared activatable-effect model spanning class features and feats
+- [x] Generic collector for toggleable abilities from granted features / taken feats
+- [ ] General activated ability runtime rules (rounds/day, mutually-exclusive stances, scaling values, conditional requirements)
 - [ ] Prerequisite validation for prestige classes, archetypes
 - [ ] Parameterized feats (Weapon Focus weapon choice, Skill Focus skill choice)
 

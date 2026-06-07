@@ -1,10 +1,11 @@
 import { useMemo, useState } from "react";
 import {
-  activatableFeaturesForDescriptor,
   applyLevelUp,
   buildCharacter,
   CLASS_FEATURES,
+  collectActivatableEffects,
   computeSheet,
+  FEATS,
   levelDown,
   validateBuild,
   type CharacterBuild,
@@ -30,10 +31,12 @@ export function App() {
   const { sheet, issues, activatableFeatures } = useMemo(() => {
     const input = buildCharacter(build);
     const baseSheet = computeSheet(input);
-    const classAbilityMods: Modifier[] = activatableFeaturesForDescriptor(
-      CLASS_FEATURES,
-      baseSheet.descriptor,
-    )
+    const activatableFeatures = collectActivatableEffects({
+      descriptor: baseSheet.descriptor,
+      classFeatureRegistry: CLASS_FEATURES,
+      featRegistry: FEATS,
+    });
+    const classAbilityMods: Modifier[] = activatableFeatures
       .filter((f) => activeBuffs[f.id])
       .flatMap((f) => f.effects);
     const buffMods: Modifier[] = BUFFS.filter((b) => activeBuffs[b.id]).flatMap(
@@ -43,7 +46,7 @@ export function App() {
     return {
       sheet: computeSheet(withBuffs),
       issues: validateBuild(build),
-      activatableFeatures: activatableFeaturesForDescriptor(CLASS_FEATURES, baseSheet.descriptor),
+      activatableFeatures,
     };
   }, [build, activeBuffs]);
 
