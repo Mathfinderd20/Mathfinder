@@ -1,0 +1,14 @@
+{
+  "name": "path-builder",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Interactive smart character sheet for Pathfinder 1e + Savage Company (SHM Publishing)",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "test": "npm run test --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "license": "UNLICENSED"
+}

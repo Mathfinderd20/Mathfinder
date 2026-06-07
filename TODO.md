@@ -8,8 +8,11 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 - [x] Savage Company: authored by project owner (no third-party licensing issue); some content on d20pfsrd.com
 
 ## Phase 0 — Project Scaffolding
-- [ ] Lock dependency versions for the chosen stack
-- [ ] Init monorepo (apps/web, apps/mobile, packages/rules-engine, packages/shared, services/api)
+- [x] Install toolchain (Node LTS 24.16, npm 11.13, Git) via winget
+- [x] Init monorepo with npm workspaces (packages/rules-engine live)
+- [x] tsconfig.base + per-package TS config (strict, noUncheckedIndexedAccess)
+- [ ] Lock remaining dependency versions as packages are added
+- [ ] Add apps/web, apps/mobile, packages/shared, services/api
 - [ ] Set up linting, formatting, CI, and pre-commit hooks
 - [ ] Pick + provision backend (DB, realtime, auth)
 
@@ -22,11 +25,14 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 - [ ] Versioning strategy for rules data (so sheets don't break on update)
 
 ## Phase 2 — Rules Engine (the brain)
-- [ ] Stat derivation pipeline (abilities → mods → derived stats)
-- [ ] Modifier stacking + typed bonus rules (the hard part!)
+- [x] Modifier stacking + typed bonus rules (the hard part!) — `resolveModifiers`
+- [x] Stat derivation pipeline (abilities → mods → AC/saves/init/CMB/CMD/attack)
+- [x] Deterministic `computeSheet(input)` with per-stat breakdowns (the 'why' UX)
+- [x] Golden tests pinned to hand-computed PF1e math (19/19 green)
+- [ ] Skills derivation (ranks + class skill + ability + mods)
+- [ ] HP, speed, spell DCs, CMB maneuver-specific mods
 - [ ] Prerequisite validation (feats, prestige classes, archetypes)
-- [ ] Character build/level-up state machine
-- [ ] Deterministic recompute given (build choices + active effects)
+- [ ] Character build/level-up state machine (replayable build steps)
 
 ## Phase 3 — Character Builder UX
 - [ ] Guided build wizard (race → class → abilities → skills → feats → gear)

@@ -1,0 +1,139 @@
+/**
+ * Core domain types for the Pathfinder 1e rules engine.
+ *
+ * The engine is a PURE function: given a normalized character (base data + a
+ * flat list of modifiers) it derives a complete sheet. Feats, gear, class
+ * features, conditions, auras, and group buffs ALL funnel into one uniform
+ * `Modifier` stream. That is the whole trick.
+ */
+
+export type AbilityKey = "str" | "dex" | "con" | "int" | "wis" | "cha";
+
+export type AbilityScores = Record<AbilityKey, number>;
+
+export type Size =
+  | "fine"
+  | "diminutive"
+  | "tiny"
+  | "small"
+  | "medium"
+  | "large"
+  | "huge"
+  | "gargantuan"
+  | "colossal";
+
+/**
+ * Pathfinder's typed bonuses. Same-type bonuses generally do NOT stack
+ * (take the highest); a few types DO stack (see STACKING_BONUS_TYPES).
+ * Penalties of any type stack.
+ */
+export type BonusType =
+  | "untyped"
+  | "alchemical"
+  | "armor"
+  | "circumstance"
+  | "competence"
+  | "deflection"
+  | "dodge"
+  | "enhancement"
+  | "inherent"
+  | "insight"
+  | "luck"
+  | "morale"
+  | "natural-armor"
+  | "profane"
+  | "racial"
+  | "resistance"
+  | "sacred"
+  | "shield"
+  | "size"
+  | "trait";
+
+/**
+ * Where a modifier applies. Strings (not an enum) so content packs can target
+ * skills dynamically (e.g. "skill.perception") without engine changes.
+ *
+ * Recognized group aliases (see TARGET_ALIASES):
+ *   - "save.all"  -> fort, ref, will
+ *   - "attack"    -> attack.melee, attack.ranged
+ */
+export type ModifierTarget =
+  | AbilityKey
+  | "ac"
+  | "save.fort"
+  | "save.ref"
+  | "save.will"
+  | "save.all"
+  | "init"
+  | "cmb"
+  | "cmd"
+  | "attack"
+  | "attack.melee"
+  | "attack.ranged"
+  | "hp"
+  | "speed"
+  | (string & {});
+
+export interface Modifier {
+  /** What stat this affects. */
+  target: ModifierTarget;
+  /** Typed-bonus category that governs stacking. */
+  type: BonusType;
+  /** Magnitude. Positive = bonus, negative = penalty. */
+  value: number;
+  /** Human-readable provenance, e.g. "Bless", "Belt of Giant Strength +2". */
+  source: string;
+  /** Content provenance tag, e.g. "core", "savage-company". Optional. */
+  pack?: string;
+  /** Free-text note for conditional modifiers ("vs fear", "while raging"). */
+  condition?: string;
+  /** When false, the modifier is suppressed from all calculations. */
+  enabled?: boolean;
+}
+
+/** A single line in a "why is this stat this number?" explanation. */
+export interface BreakdownEntry {
+  source: string;
+  /** BonusType, or a structural label: "base" | "ability" | "dex" | "size". */
+  type: string;
+  value: number;
+}
+
+export interface DerivedStat {
+  total: number;
+  breakdown: BreakdownEntry[];
+}
+
+export interface DerivedAbility {
+  score: number;
+  mod: number;
+  breakdown: BreakdownEntry[];
+}
+
+export interface CharacterInput {
+  name: string;
+  level: number;
+  size: Size;
+  /** Base ability scores BEFORE modifiers (racial/enhancement/etc. as modifiers). */
+  abilityScores: AbilityScores;
+  baseAttackBonus: number;
+  baseSaves: { fort: number; ref: number; will: number };
+  /** Max Dex bonus to AC from worn armor. Omit for no cap. */
+  maxDexBonus?: number;
+  /** Every active effect: feats, gear, class features, conditions, buffs, auras. */
+  modifiers: Modifier[];
+}
+
+export interface DerivedSheet {
+  name: string;
+  level: number;
+  size: Size;
+  abilities: Record<AbilityKey, DerivedAbility>;
+  ac: { normal: DerivedStat; touch: DerivedStat; flatFooted: DerivedStat };
+  saves: { fort: DerivedStat; ref: DerivedStat; will: DerivedStat };
+  initiative: DerivedStat;
+  baseAttackBonus: number;
+  cmb: DerivedStat;
+  cmd: DerivedStat;
+  attack: { melee: DerivedStat; ranged: DerivedStat };
+}
