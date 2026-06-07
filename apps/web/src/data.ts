@@ -34,6 +34,22 @@ export const nextBarbarianLevel: Omit<LevelEntry, "hitPointRoll"> & { hitPointRo
   skillRanks: { climb: 1, perception: 1, intimidate: 1, survival: 1 },
 };
 
+/** Suggestions for the level-up feat picker (free-text is also allowed). */
+export const SAMPLE_FEATS: string[] = [
+  "Power Attack",
+  "Cleave",
+  "Weapon Focus",
+  "Toughness",
+  "Dodge",
+  "Improved Initiative",
+  "Iron Will",
+  "Great Fortitude",
+  "Lightning Reflexes",
+  "Combat Reflexes",
+  "Furious Focus",
+  "Intimidating Prowess",
+];
+
 export interface Buff {
   id: string;
   name: string;

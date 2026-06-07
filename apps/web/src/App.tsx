@@ -1,19 +1,27 @@
 import { useMemo, useState } from "react";
 import {
+  applyLevelUp,
   buildCharacter,
   computeSheet,
   levelDown,
-  levelUp,
   validateBuild,
   type CharacterBuild,
+  type LevelUpSelection,
   type Modifier,
 } from "@path-builder/rules-engine";
-import { BUFFS, initialBuild, nextBarbarianLevel } from "./data";
+import { BUFFS, initialBuild } from "./data";
 import { Sheet } from "./components/Sheet";
+import { LevelUpModal } from "./components/LevelUpModal";
 
 export function App() {
   const [build, setBuild] = useState<CharacterBuild>(initialBuild);
   const [activeBuffs, setActiveBuffs] = useState<Record<string, boolean>>({});
+  const [leveling, setLeveling] = useState(false);
+
+  function confirmLevelUp(selection: LevelUpSelection) {
+    setBuild((b) => applyLevelUp(b, selection));
+    setLeveling(false);
+  }
 
   // The whole app is a pure render of (build + active buffs). Toggle anything
   // and every derived number recomputes instantly — the engine is fast & local.
@@ -35,9 +43,7 @@ export function App() {
           Path-Builder <span className="brand-sub">Pathfinder 1e smart sheet</span>
         </div>
         <div className="actions">
-          <button onClick={() => setBuild((b) => levelUp(b, { ...nextBarbarianLevel }))}>
-            ⬆ Level Up
-          </button>
+          <button onClick={() => setLeveling(true)}>⬆ Level Up</button>
           <button
             className="ghost"
             disabled={build.levels.length <= 1}
@@ -95,6 +101,14 @@ export function App() {
           <Sheet sheet={sheet} />
         </main>
       </div>
+
+      {leveling ? (
+        <LevelUpModal
+          build={build}
+          onConfirm={confirmLevelUp}
+          onClose={() => setLeveling(false)}
+        />
+      ) : null}
     </div>
   );
 }

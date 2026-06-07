@@ -48,6 +48,7 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 - [x] Interactive buff/aura toggles -> auto-apply to sheet (proves the multiplayer mechanism)
 - [x] Click-to-expand stat breakdowns (the 'why' UX)
 - [x] Level up / undo buttons backed by levelUp/levelDown
+- [x] Interactive level-up modal: class, HP, skill ranks, feat, ability increase (planLevelUp + validation)
 - [x] Inline validation surfacing
 - [ ] Guided build wizard (race → class → abilities → skills → feats → gear)
 - [ ] Editable abilities / skill-rank allocation in the UI (currently fixed sample build)

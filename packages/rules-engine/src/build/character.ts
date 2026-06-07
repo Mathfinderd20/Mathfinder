@@ -309,6 +309,137 @@ export function validateBuild(
   return issues;
 }
 
+// ---------------------------------------------------------------------------
+// Level-up planning: what choices does the NEXT level grant the player?
+// ---------------------------------------------------------------------------
+
+export interface LevelUpPlan {
+  /** The character level this level-up produces. */
+  characterLevel: number;
+  className: string;
+  hitDie: number;
+  /** Suggested HP using the common (die/2)+1 average. */
+  averageHitPoints: number;
+  /** Skill ranks to allocate this level (class base + Int mod, min 1). */
+  skillPoints: number;
+  /** Max total ranks any single skill may have (= character level). */
+  maxRanksPerSkill: number;
+  /** Standard feat progression: a feat at levels 1, 3, 5, 7, ... */
+  grantsFeat: boolean;
+  /** A +1 ability score increase at levels 4, 8, 12, 16, 20. */
+  grantsAbilityIncrease: boolean;
+  /** Class skills (union of all classes taken + this one + race). */
+  classSkills: SkillKey[];
+}
+
+export interface LevelUpSelection {
+  className: string;
+  hitPointRoll: number;
+  skillRanks: Partial<Record<SkillKey, number>>;
+  feats?: string[];
+  abilityIncrease?: AbilityKey;
+}
+
+function effectiveAbilityMod(build: CharacterBuild, ability: AbilityKey): number {
+  const score = effectiveBaseScores(build)[ability] +
+    sumRacialAbility(build.race.abilityModifiers, ability);
+  return abilityModifier(score);
+}
+
+/** Compute the choices the next level in `className` offers. Pure. */
+export function planLevelUp(
+  build: CharacterBuild,
+  className: string,
+  registry: ClassRegistry = SAMPLE_CLASSES,
+): LevelUpPlan {
+  const def = getClassDefinition(registry, className);
+  if (!def) throw new Error(`Unknown class "${className}"`);
+
+  const characterLevel = build.levels.length + 1;
+  const skillPoints = Math.max(1, def.skillRanksPerLevel + effectiveAbilityMod(build, "int"));
+
+  const classSkillSet = new Set<SkillKey>(build.race.classSkills ?? []);
+  for (const existing of classLevelCounts(build).keys()) {
+    const d = getClassDefinition(registry, existing);
+    if (d) for (const s of d.classSkills) classSkillSet.add(s);
+  }
+  for (const s of def.classSkills) classSkillSet.add(s);
+
+  return {
+    characterLevel,
+    className: def.name,
+    hitDie: def.hitDie,
+    averageHitPoints: Math.floor(def.hitDie / 2) + 1,
+    skillPoints,
+    maxRanksPerSkill: characterLevel,
+    grantsFeat: characterLevel % 2 === 1,
+    grantsAbilityIncrease: characterLevel % 4 === 0,
+    classSkills: [...classSkillSet],
+  };
+}
+
+/** Validate a player's level-up choices against the plan. */
+export function validateLevelUpSelection(
+  plan: LevelUpPlan,
+  selection: LevelUpSelection,
+): ValidationIssue[] {
+  const issues: ValidationIssue[] = [];
+  const ranks = Object.values(selection.skillRanks).reduce<number>((s, n) => s + (n ?? 0), 0);
+
+  if (ranks > plan.skillPoints) {
+    issues.push({
+      severity: "error",
+      code: "skill-points-over-budget",
+      message: `Allocated ${ranks} skill ranks but only ${plan.skillPoints} available.`,
+    });
+  }
+  for (const [key, n] of Object.entries(selection.skillRanks) as [SkillKey, number][]) {
+    if ((n ?? 0) > 1) {
+      issues.push({
+        severity: "error",
+        code: "skill-ranks-per-level",
+        message: `Skill "${key}": at most 1 rank may be added per level.`,
+      });
+    }
+  }
+  if (selection.abilityIncrease && !plan.grantsAbilityIncrease) {
+    issues.push({
+      severity: "error",
+      code: "illegal-ability-increase",
+      message: `Level ${plan.characterLevel} does not grant an ability score increase.`,
+    });
+  }
+  if (plan.grantsAbilityIncrease && !selection.abilityIncrease) {
+    issues.push({
+      severity: "warning",
+      code: "ability-increase-unspent",
+      message: `Level ${plan.characterLevel} grants a +1 ability score increase you have not assigned.`,
+    });
+  }
+  if (plan.grantsFeat && (selection.feats ?? []).length === 0) {
+    issues.push({
+      severity: "warning",
+      code: "feat-unspent",
+      message: `Level ${plan.characterLevel} grants a feat you have not chosen.`,
+    });
+  }
+  return issues;
+}
+
+/** Apply a level-up selection, returning a NEW build. */
+export function applyLevelUp(
+  build: CharacterBuild,
+  selection: LevelUpSelection,
+): CharacterBuild {
+  return levelUp(build, {
+    className: selection.className,
+    hitPointRoll: selection.hitPointRoll,
+    skillRanks: selection.skillRanks,
+    feats: selection.feats,
+    abilityIncrease: selection.abilityIncrease,
+  });
+}
+
 function sumRacialAbility(mods: Modifier[] | undefined, ability: AbilityKey): number {
   if (!mods) return 0;
   return mods

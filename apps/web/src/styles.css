@@ -154,6 +154,58 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 .chip.feature { border-color: var(--accent); color: var(--accent-2); }
 .chip-lvl { font-size: 10px; color: var(--muted); }
 
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 40px 16px;
+  overflow-y: auto;
+  z-index: 100;
+}
+.modal {
+  background: var(--panel);
+  border: 1px solid var(--accent);
+  border-radius: 14px;
+  padding: 22px;
+  width: 100%;
+  max-width: 460px;
+}
+.modal h2 { margin: 0 0 16px; color: var(--accent-2); }
+.field { display: block; margin-bottom: 16px; }
+.field > span { display: block; font-size: 13px; margin-bottom: 6px; color: var(--ink); }
+.field .muted { color: var(--muted); font-weight: 400; }
+.field select, .field input[type="number"], .field input[list] {
+  width: 100%;
+  padding: 8px 10px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--ink);
+  font-size: 14px;
+}
+.skill-picker, .ability-picker { display: flex; flex-wrap: wrap; gap: 8px; }
+.pick {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.pick.on { border-color: var(--accent); color: var(--accent-2); }
+.pick input:disabled { cursor: not-allowed; }
+.modal-issues { list-style: none; margin: 0 0 14px; padding: 0; }
+.modal-issues li { font-size: 12px; padding: 3px 0; }
+.modal-issues li.error { color: var(--err); }
+.modal-issues li.warning { color: var(--accent-2); }
+.modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
+
 @media (max-width: 800px) {
   .layout { grid-template-columns: 1fr; }
   .columns { grid-template-columns: 1fr; }
