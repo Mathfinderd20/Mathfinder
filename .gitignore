@@ -3,10 +3,11 @@ node_modules/
 .pnp/
 .pnp.js
 
-# Builds / outputs
-dist/
-build/
-out/
+# Builds / outputs (anchored to repo root so they don't clobber src/build/)
+/dist/
+/build/
+/out/
+**/dist/
 .expo/
 .expo-shared/
 web-build/
