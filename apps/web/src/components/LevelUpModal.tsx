@@ -1,5 +1,12 @@
 import { useMemo, useState } from "react";
 import {
+  applyLevelUp,
+  buildCharacter,
+  checkPrerequisites,
+  computeSheet,
+  featContextFromSheet,
+  FEATS,
+  listFeats,
   planLevelUp,
   validateLevelUpSelection,
   SAMPLE_CLASSES,
@@ -9,7 +16,6 @@ import {
   type LevelUpSelection,
   type SkillKey,
 } from "@path-builder/rules-engine";
-import { SAMPLE_FEATS } from "../data";
 
 const ABILITIES: AbilityKey[] = ["str", "dex", "con", "int", "wis", "cha"];
 const SKILL_NAME = new Map<string, string>(SKILL_DEFINITIONS.map((d) => [d.key, d.name]));
@@ -34,6 +40,21 @@ export function LevelUpModal({ build, onConfirm, onClose }: Props) {
   const [abilityIncrease, setAbilityIncrease] = useState<AbilityKey | undefined>();
 
   const remaining = plan.skillPoints - skills.size;
+
+  // Project the character one level forward to evaluate feat prerequisites
+  // against the BAB/abilities they'll actually have when taking the feat.
+  const featChoices = useMemo(() => {
+    const projected = applyLevelUp(build, {
+      className,
+      hitPointRoll: hp || 1,
+      skillRanks: {},
+    });
+    const ctx = featContextFromSheet(computeSheet(buildCharacter(projected)));
+    const taken = new Set(ctx.featNames.map((n) => n.toLowerCase()));
+    return listFeats(FEATS)
+      .filter((f) => !taken.has(f.name.toLowerCase()))
+      .map((f) => ({ feat: f, ...checkPrerequisites(f, ctx) }));
+  }, [build, className, hp]);
 
   const selection: LevelUpSelection = {
     className,
@@ -108,20 +129,31 @@ export function LevelUpModal({ build, onConfirm, onClose }: Props) {
         </div>
 
         {plan.grantsFeat ? (
-          <label className="field">
+          <div className="field">
             <span>Feat (this level grants one)</span>
-            <input
-              list="feat-suggestions"
-              value={feat}
-              placeholder="e.g. Power Attack"
-              onChange={(e) => setFeat(e.target.value)}
-            />
-            <datalist id="feat-suggestions">
-              {SAMPLE_FEATS.map((f) => (
-                <option key={f} value={f} />
+            <div className="feat-picker">
+              {featChoices.map(({ feat: f, met, unmet }) => (
+                <label
+                  key={f.id}
+                  className={`pick feat ${feat === f.name ? "on" : ""} ${met ? "" : "locked"}`}
+                  title={f.description}
+                >
+                  <input
+                    type="radio"
+                    name="feat"
+                    disabled={!met}
+                    checked={feat === f.name}
+                    onChange={() => setFeat(f.name)}
+                  />
+                  <span className="feat-name">{f.name}</span>
+                  {f.pack !== "core" ? <span className="feat-pack">{f.pack}</span> : null}
+                  {!met ? (
+                    <span className="req">needs {unmet.map((u) => u.description).join(", ")}</span>
+                  ) : null}
+                </label>
               ))}
-            </datalist>
-          </label>
+            </div>
+          </div>
         ) : null}
 
         {plan.grantsAbilityIncrease ? (

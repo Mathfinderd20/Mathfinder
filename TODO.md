@@ -39,8 +39,14 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 - [x] Class progressions: BAB (full/3-4/half) + good/poor saves, multiclass-aware
 - [x] Build validation: skill-rank caps, ability-increase placement, unknown class, skill-point budget
 - [x] Build -> computeSheet golden tests incl. level-up (40/40 green)
-- [ ] Prerequisite validation (feats, prestige classes, archetypes)
-- [ ] Skill-point budget enforcement using per-level Int (currently soft warning)
+- [x] Feat content model (FeatDefinition: prereqs + effects + pack tag) with core feat set
+- [x] Feat prerequisite checking (BAB/ability/feat/level) with reasons
+- [x] Feat effects auto-apply via registry (no more hand-written feat modifiers)
+- [x] Prereq-aware feat picker in the level-up modal (locks feats you don't qualify for)
+- [x] Savage Company feat pack scaffold (empty, ready to populate from manuscript)
+- [ ] Feature/class-ability content model (Rage/Fast Movement still hand-written)
+- [ ] Prerequisite validation for prestige classes, archetypes
+- [ ] Parameterized feats (Weapon Focus weapon choice, Skill Focus skill choice)
 
 ## Phase 3 — Character Builder UX
 - [x] First UI: Vite + React web app (apps/web) wired to the live engine

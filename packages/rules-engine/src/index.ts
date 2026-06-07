@@ -17,6 +17,24 @@ export {
 export { deriveHitPoints, deriveSpeed } from "./vitals";
 export { renderSheet, explainStat } from "./format";
 
+// ---- Content: feats ----
+export {
+  CORE_FEATS,
+  SAVAGE_COMPANY_FEATS,
+  FEATS,
+  buildFeatRegistry,
+  getFeat,
+  listFeats,
+  featEffects,
+  checkPrerequisites,
+  featContextFromSheet,
+  type FeatDefinition,
+  type FeatRegistry,
+  type Prerequisite,
+  type FeatContext,
+  type PrereqResult,
+} from "./content/feats";
+
 // ---- Build / level-up layer ----
 export {
   buildCharacter,

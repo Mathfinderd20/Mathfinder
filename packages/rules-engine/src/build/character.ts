@@ -17,6 +17,7 @@ import {
   type ClassRegistry,
   type SaveKind,
 } from "./classes";
+import { featEffects, FEATS, type FeatRegistry } from "../content/feats";
 
 /** A character's race choice and the mechanical effects it grants. */
 export interface RaceChoice {
@@ -109,6 +110,7 @@ function effectiveBaseScores(build: CharacterBuild): AbilityScores {
 export function buildCharacter(
   build: CharacterBuild,
   registry: ClassRegistry = SAMPLE_CLASSES,
+  featRegistry: FeatRegistry = FEATS,
 ): CharacterInput {
   const counts = classLevelCounts(build);
   const level = build.levels.length;
@@ -135,6 +137,7 @@ export function buildCharacter(
   ];
   for (const lvl of build.levels) {
     if (lvl.modifiers) modifiers.push(...lvl.modifiers);
+    if (lvl.feats) modifiers.push(...featEffects(lvl.feats, featRegistry));
     if (lvl.favoredClass === "hp") {
       modifiers.push({ target: "hp", type: "untyped", value: 1, source: "Favored class" });
     }

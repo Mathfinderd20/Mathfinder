@@ -17,10 +17,9 @@ export const initialBuild: CharacterBuild = {
       className: "Barbarian",
       hitPointRoll: 12,
       skillRanks: { climb: 1, perception: 1, intimidate: 1, survival: 1 },
-      feats: ["Toughness"],
+      feats: ["Toughness"], // +3 HP auto-applied from the feat registry
       features: ["Rage", "Fast Movement"],
       modifiers: [
-        { target: "hp", type: "untyped", value: 3, source: "Toughness" },
         { target: "speed", type: "untyped", value: 10, source: "Fast Movement" },
       ],
     },

@@ -200,6 +200,19 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 }
 .pick.on { border-color: var(--accent); color: var(--accent-2); }
 .pick input:disabled { cursor: not-allowed; }
+.feat-picker { display: flex; flex-direction: column; gap: 6px; max-height: 220px; overflow-y: auto; }
+.feat-picker .pick { justify-content: flex-start; }
+.feat-picker .pick.locked { opacity: 0.55; cursor: not-allowed; }
+.feat-name { flex: 0 0 auto; }
+.feat-pack {
+  font-size: 10px;
+  text-transform: uppercase;
+  background: var(--accent);
+  color: #fff;
+  border-radius: 6px;
+  padding: 1px 6px;
+}
+.req { font-size: 11px; color: var(--err); margin-left: auto; }
 .modal-issues { list-style: none; margin: 0 0 14px; padding: 0; }
 .modal-issues li { font-size: 12px; padding: 3px 0; }
 .modal-issues li.error { color: var(--err); }

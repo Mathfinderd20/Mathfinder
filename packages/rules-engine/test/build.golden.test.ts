@@ -27,8 +27,7 @@ function grukkLevel1(): CharacterBuild {
         className: "Barbarian",
         hitPointRoll: 12,
         skillRanks: { climb: 1, perception: 1, intimidate: 1, survival: 1 },
-        feats: ["Toughness"],
-        modifiers: [{ target: "hp", type: "untyped", value: 3, source: "Toughness" }],
+        feats: ["Toughness"], // +3 HP auto-applied from the feat registry
       },
     ],
   };
