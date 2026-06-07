@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  activatableModifiers,
+  babStep,
   groupActivatables,
   resolveActivatableSelections,
   type ActivatableEffect,
@@ -47,6 +49,37 @@ describe("resolveActivatableSelections", () => {
     expect(resolved.conflicts).toEqual([
       { group: "attack-mode", ids: ["combat-expertise", "power-attack"] },
     ]);
+  });
+});
+
+describe("scaling activatables", () => {
+  const scaled: ActivatableEffect = {
+    id: "pa",
+    name: "Power Attack",
+    description: "",
+    effects: [{ target: "attack.melee", type: "untyped", value: -1, source: "Power Attack" }],
+    scale: (ctx) => [
+      { target: "attack.melee", type: "untyped", value: -babStep(ctx.baseAttackBonus), source: "Power Attack" },
+    ],
+  };
+
+  it("falls back to static effects without a context", () => {
+    expect(activatableModifiers(scaled)[0]!.value).toBe(-1);
+  });
+
+  it("scales the penalty by BAB step when a context is given", () => {
+    expect(activatableModifiers(scaled, { baseAttackBonus: 1, characterLevel: 1 })[0]!.value).toBe(-1);
+    expect(activatableModifiers(scaled, { baseAttackBonus: 4, characterLevel: 4 })[0]!.value).toBe(-2);
+    expect(activatableModifiers(scaled, { baseAttackBonus: 8, characterLevel: 8 })[0]!.value).toBe(-3);
+  });
+
+  it("resolveActivatableSelections applies scaling through the context", () => {
+    const resolved = resolveActivatableSelections({
+      available: [scaled],
+      selected: { pa: true },
+      context: { baseAttackBonus: 8, characterLevel: 8 },
+    });
+    expect(resolved.modifiers[0]!.value).toBe(-3);
   });
 });
 

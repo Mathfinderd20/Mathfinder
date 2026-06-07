@@ -6,13 +6,35 @@ import type { FeatRegistry } from "./feats";
  * A toggleable combat/runtime state sourced from content.
  * Examples: Rage, Combat Expertise, Power Attack, Bardic Performance.
  */
+/** Runtime context an activatable may scale against (BAB, level, ...). */
+export interface ActivationContext {
+  baseAttackBonus: number;
+  characterLevel: number;
+}
+
 export interface ActivatableEffect {
   id: string;
   name: string;
   description: string;
+  /** Static effects, used as the fallback when no scaling/context is supplied. */
   effects: Modifier[];
+  /** Optional BAB/level scaling. When present and a context is given, replaces `effects`. */
+  scale?: (ctx: ActivationContext) => Modifier[];
   /** Optional exclusivity bucket, e.g. "attack-mode". */
   group?: string;
+}
+
+/** Resolve an activatable's modifiers, applying scaling when a context is given. */
+export function activatableModifiers(
+  a: ActivatableEffect,
+  context?: ActivationContext,
+): Modifier[] {
+  return a.scale && context ? a.scale(context) : a.effects;
+}
+
+/** Per-4-BAB step count used by Power Attack / Combat Expertise / Deadly Aim. */
+export function babStep(baseAttackBonus: number): number {
+  return 1 + Math.floor(baseAttackBonus / 4);
 }
 
 export interface ActivatableConflict {
@@ -83,6 +105,7 @@ export function collectActivatableEffects(args: {
 export function resolveActivatableSelections(args: {
   available: ActivatableEffect[];
   selected: Record<string, boolean>;
+  context?: ActivationContext;
 }): ResolvedActivatables {
   const picked = args.available.filter((a) => args.selected[a.id]);
   const grouped = new Map<string, ActivatableEffect[]>();
@@ -114,7 +137,7 @@ export function resolveActivatableSelections(args: {
   return {
     active,
     suppressed,
-    modifiers: active.flatMap((a) => a.effects),
+    modifiers: active.flatMap((a) => activatableModifiers(a, args.context)),
     conflicts,
   };
 }

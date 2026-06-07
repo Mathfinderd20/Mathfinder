@@ -41,6 +41,10 @@ export function App() {
     const resolvedActivatables = resolveActivatableSelections({
       available: activatableFeatures,
       selected: activeBuffs,
+      context: {
+        baseAttackBonus: baseSheet.baseAttackBonus,
+        characterLevel: baseSheet.level,
+      },
     });
     const classAbilityMods: Modifier[] = resolvedActivatables.modifiers;
     const buffMods: Modifier[] = BUFFS.filter((b) => activeBuffs[b.id]).flatMap(

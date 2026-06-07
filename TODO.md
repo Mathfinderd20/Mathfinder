@@ -52,7 +52,7 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 - [x] Runtime selection resolver for activatables
 - [x] Exclusivity groups for modes/stances (e.g. attack-mode) + UI radios
 - [ ] Activated ability runtime rules: rounds/day tracking
-- [ ] Activated ability runtime rules: scaling values by BAB/level
+- [x] Activated ability runtime rules: scaling values by BAB (Power Attack, Combat Expertise, Deadly Aim)
 - [ ] Activated ability runtime rules: conditional requirements / illegal-state suppression
 - [ ] Prerequisite validation for prestige classes, archetypes
 - [ ] Parameterized feats (Weapon Focus weapon choice, Skill Focus skill choice)

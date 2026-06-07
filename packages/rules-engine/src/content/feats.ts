@@ -1,5 +1,5 @@
 import type { AbilityKey, DerivedSheet, Modifier } from "../types";
-import type { ActivatableEffect } from "./activatables";
+import { babStep, type ActivatableEffect } from "./activatables";
 
 /** A single feat prerequisite, with a human-readable label for the UI. */
 export interface Prerequisite {
@@ -92,28 +92,63 @@ export const CORE_FEATS: FeatDefinition[] = [
     id: "power-attack",
     name: "Power Attack",
     pack: "core",
-    description: "Trade attack bonus for damage (activated; no passive modifier).",
+    description: "Trade melee attack for damage; scales by BAB (damage not yet tracked).",
     prerequisites: [
       { type: "ability", ability: "str", min: 13, description: "Str 13" },
       { type: "bab", min: 1, description: "BAB +1" },
     ],
     effects: [],
+    activatable: {
+      id: "power-attack",
+      name: "Power Attack",
+      description: "-1 melee attack per 4 BAB (+2 damage; damage not yet tracked)",
+      effects: [{ target: "attack.melee", type: "untyped", value: -1, source: "Power Attack" }],
+      scale: (ctx) => [
+        { target: "attack.melee", type: "untyped", value: -babStep(ctx.baseAttackBonus), source: "Power Attack" },
+      ],
+    },
   },
   {
     id: "combat-expertise",
     name: "Combat Expertise",
     pack: "core",
-    description: "Trade attack bonus for AC (simplified toggle at low BAB).",
+    description: "Trade attack bonus for AC; scales by BAB.",
     prerequisites: [{ type: "ability", ability: "int", min: 13, description: "Int 13" }],
     effects: [],
     activatable: {
       id: "combat-expertise",
       name: "Combat Expertise",
-      description: "-1 attack, +1 dodge AC (simplified; scalable later)",
-      group: "attack-mode",
+      description: "-1 attack / +1 dodge AC per 4 BAB",
       effects: [
         { target: "attack", type: "untyped", value: -1, source: "Combat Expertise" },
         { target: "ac", type: "dodge", value: 1, source: "Combat Expertise" },
+      ],
+      scale: (ctx) => {
+        const steps = babStep(ctx.baseAttackBonus);
+        return [
+          { target: "attack", type: "untyped", value: -steps, source: "Combat Expertise" },
+          { target: "ac", type: "dodge", value: steps, source: "Combat Expertise" },
+        ];
+      },
+    },
+  },
+  {
+    id: "deadly-aim",
+    name: "Deadly Aim",
+    pack: "core",
+    description: "Trade ranged attack for damage; scales by BAB (damage not yet tracked).",
+    prerequisites: [
+      { type: "ability", ability: "dex", min: 13, description: "Dex 13" },
+      { type: "bab", min: 1, description: "BAB +1" },
+    ],
+    effects: [],
+    activatable: {
+      id: "deadly-aim",
+      name: "Deadly Aim",
+      description: "-1 ranged attack per 4 BAB (+2 damage; damage not yet tracked)",
+      effects: [{ target: "attack.ranged", type: "untyped", value: -1, source: "Deadly Aim" }],
+      scale: (ctx) => [
+        { target: "attack.ranged", type: "untyped", value: -babStep(ctx.baseAttackBonus), source: "Deadly Aim" },
       ],
     },
   },

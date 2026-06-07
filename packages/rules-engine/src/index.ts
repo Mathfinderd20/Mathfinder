@@ -22,11 +22,14 @@ export {
   collectActivatableEffects,
   resolveActivatableSelections,
   groupActivatables,
+  activatableModifiers,
+  babStep,
   activatableFeaturesForDescriptor,
   activatableFeatsForDescriptor,
   type ActivatableEffect,
   type ActivatableConflict,
   type ResolvedActivatables,
+  type ActivationContext,
 } from "./content/activatables";
 
 // ---- Content: class features ----

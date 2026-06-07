@@ -8,7 +8,7 @@ import {
   type FeatContext,
 } from "../src/content/feats";
 import { CLASS_FEATURES } from "../src/content/class-features";
-import { collectActivatableEffects } from "../src/content/activatables";
+import { activatableModifiers, collectActivatableEffects } from "../src/content/activatables";
 import { buildCharacter, type CharacterBuild } from "../src/build/character";
 import { computeSheet } from "../src/compute";
 
@@ -75,6 +75,12 @@ describe("feat effects auto-apply through buildCharacter", () => {
     const ctx = featContextFromSheet(sheet);
     expect(ctx.baseAttackBonus).toBe(1);
     expect(ctx.featNames).toContain("Toughness");
+  });
+
+  it("Power Attack activatable scales its melee penalty by BAB", () => {
+    const pa = getFeat(FEATS, "Power Attack")!.activatable!;
+    expect(activatableModifiers(pa, { baseAttackBonus: 1, characterLevel: 1 })[0]!.value).toBe(-1);
+    expect(activatableModifiers(pa, { baseAttackBonus: 8, characterLevel: 8 })[0]!.value).toBe(-3);
   });
 
   it("can expose activatable feats through the general collector", () => {
