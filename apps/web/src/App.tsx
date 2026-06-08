@@ -26,7 +26,7 @@ import {
 import { BUFFS, initialBuild, SAMPLE_RACES } from "./data";
 import { Sheet } from "./components/Sheet";
 import { LevelUpModal } from "./components/LevelUpModal";
-import { SpellcastingManager } from "./components/SpellcastingManager";
+import { BuildEditorTab } from "./components/BuildEditorTab";
 
 type SpellCastCounts = Record<string, Record<number, Record<string, number>>>;
 
@@ -126,7 +126,7 @@ export function App() {
   const [spellSlotUsage, setSpellSlotUsage] = useState<Record<string, SpellSlotUsageByLevel>>(runtimeState.spellSlotUsage);
   const [spellCastCounts, setSpellCastCounts] = useState<SpellCastCounts>(runtimeState.spellCastCounts);
   const [fatigued, setFatigued] = useState(runtimeState.fatigued);
-
+  const [activeTab, setActiveTab] = useState<"sheet" | "build">("sheet");
   function confirmLevelUp(selection: LevelUpSelection) {
     setBuild((b) => applyLevelUp(b, selection));
     setLeveling(false);
@@ -190,6 +190,13 @@ export function App() {
     const nextRace = SAMPLE_RACES[raceKey];
     if (!nextRace) return;
     setBuild((prev) => ({ ...prev, race: nextRace }));
+  }
+
+  function updateCarriedWeight(raw: string) {
+    setBuild((prev) => ({
+      ...prev,
+      carriedWeight: raw === "" ? undefined : Math.max(0, Number(raw) || 0),
+    }));
   }
 
   function updateLevelField<K extends keyof CharacterBuild["levels"][number]>(
@@ -618,359 +625,82 @@ export function App() {
         </div>
         <div className="actions">
           <button onClick={() => setLeveling(true)}>⬆ Level Up</button>
-          <button
-            className="ghost"
-            disabled={build.levels.length <= 1}
-            onClick={() => setBuild((b) => levelDown(b))}
-          >
+          <button className="ghost" disabled={build.levels.length <= 1} onClick={() => setBuild((b) => levelDown(b))}>
             ↩ Undo Level
           </button>
         </div>
       </header>
 
-      <div className="layout">
-        <aside className="controls">
-          <section className="panel">
-            <h2>Build Editor</h2>
-            <p className="hint">Edit the core build without diving into JSON like some kind of cave wizard.</p>
-            <label className="field compact">
-              <span>Name</span>
-              <input
-                type="text"
-                value={build.name}
-                onChange={(e) => setBuild((prev) => ({ ...prev, name: e.target.value || "Unnamed Hero" }))}
-              />
-            </label>
-            <div className="editor-grid">
-              {ABILITY_ORDER.map((ability) => (
-                <label className="field compact" key={ability}>
-                  <span>{ability.toUpperCase()}</span>
-                  <input
-                    type="number"
-                    min={1}
-                    value={build.baseAbilityScores[ability]}
-                    onChange={(e) => updateBaseAbilityScore(ability, Number(e.target.value) || 1)}
-                  />
-                </label>
-              ))}
-            </div>
-            <label className="field compact">
-              <span>Manual carried weight (lb) <span className="muted">optional override</span></span>
-              <input
-                type="number"
-                min={0}
-                value={build.carriedWeight ?? ""}
-                onChange={(e) => {
-                  const raw = e.target.value;
-                  setBuild((prev) => ({
-                    ...prev,
-                    carriedWeight: raw === "" ? undefined : Math.max(0, Number(raw) || 0),
-                  }));
-                }}
-              />
-            </label>
-            <div className="editor-section-head">
-              <h3>Race & Level Structure</h3>
-              <button className="ghost small" onClick={addStructureLevel}>Add Level</button>
-            </div>
-            <label className="field compact">
-              <span>Race</span>
-              <select
-                value={RACE_OPTIONS.find(([, race]) => race.name === build.race.name)?.[0] ?? "human"}
-                onChange={(e) => updateRace(e.target.value)}
-              >
-                {RACE_OPTIONS.map(([key, race]) => (
-                  <option key={key} value={key}>{race.name}</option>
-                ))}
-              </select>
-            </label>
-            <div className="editor-section-head">
-              <h3>Feats, Skills & Structure by Level</h3>
-            </div>
-            <datalist id="feat-options">
-              {featOptions.map((name) => <option key={name} value={name} />)}
-            </datalist>
-            <div className="item-list">
-              {build.levels.map((level, levelIndex) => (
-                <div className="item-card" key={`level-edit-${levelIndex}`}>
-                  <div className="editor-section-head tight">
-                    <h3>Level {levelIndex + 1} — {level.className}</h3>
-                    <button
-                      className="ghost small"
-                      disabled={build.levels.length <= 1}
-                      onClick={() => removeStructureLevel(levelIndex)}
-                    >
-                      Remove Level
-                    </button>
-                  </div>
-                  <div className="editor-grid">
-                    <label className="field compact">
-                      <span>Class</span>
-                      <select
-                        value={level.className}
-                        onChange={(e) => updateLevelField(levelIndex, "className", e.target.value)}
-                      >
-                        {CLASS_OPTIONS.map((option) => (
-                          <option key={option.name} value={option.name}>{option.name}</option>
-                        ))}
-                      </select>
-                    </label>
-                    <label className="field compact">
-                      <span>HP roll</span>
-                      <input
-                        type="number"
-                        min={1}
-                        max={CLASS_OPTIONS.find((option) => option.name === level.className)?.hitDie ?? 20}
-                        value={level.hitPointRoll}
-                        onChange={(e) => updateLevelField(levelIndex, "hitPointRoll", Math.max(1, Number(e.target.value) || 1))}
-                      />
-                    </label>
-                    <label className="field compact">
-                      <span>Favored class</span>
-                      <select
-                        value={level.favoredClass ?? ""}
-                        onChange={(e) => updateLevelField(levelIndex, "favoredClass", (e.target.value || undefined) as "hp" | "skill" | undefined)}
-                      >
-                        <option value="">None</option>
-                        <option value="hp">HP</option>
-                        <option value="skill">Skill</option>
-                      </select>
-                    </label>
-                    <label className="field compact">
-                      <span>Ability increase</span>
-                      <select
-                        value={level.abilityIncrease ?? ""}
-                        onChange={(e) => updateLevelField(levelIndex, "abilityIncrease", (e.target.value || undefined) as AbilityKey | undefined)}
-                      >
-                        <option value="">None</option>
-                        {ABILITY_ORDER.map((ability) => (
-                          <option key={ability} value={ability}>{ability.toUpperCase()}</option>
-                        ))}
-                      </select>
-                    </label>
-                  </div>
-                  <div className="subsection-title">Feats</div>
-                  <div className="item-list compact-list">
-                    {(level.feats ?? []).map((featName, featIndex) => (
-                      <div className="inline-row" key={`feat-${levelIndex}-${featIndex}`}>
-                        <input
-                          className="inline-input"
-                          type="text"
-                          list="feat-options"
-                          value={featName}
-                          onChange={(e) => updateLevelFeatName(levelIndex, featIndex, e.target.value)}
-                        />
-                        <button className="ghost small" onClick={() => removeLevelFeat(levelIndex, featIndex)}>Remove</button>
-                      </div>
-                    ))}
-                    <div className="item-actions left">
-                      <button className="ghost small" onClick={() => addLevelFeat(levelIndex)}>Add Feat</button>
-                    </div>
-                  </div>
-                  <div className="subsection-title">Skill Ranks</div>
-                  <div className="skill-rank-grid">
-                    {SKILL_DEFINITIONS.slice()
-                      .sort((a, b) => a.name.localeCompare(b.name))
-                      .map((skill) => (
-                        <label className="field compact skill-rank-field" key={`rank-${levelIndex}-${skill.key}`}>
-                          <span>{SKILL_NAME.get(skill.key) ?? skill.key}</span>
-                          <input
-                            type="number"
-                            min={0}
-                            step={1}
-                            value={level.skillRanks?.[skill.key] ?? 0}
-                            onChange={(e) => updateLevelSkillRank(levelIndex, skill.key, Math.max(0, Number(e.target.value) || 0))}
-                          />
-                        </label>
-                      ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-            <SpellcastingManager
-              casters={sheet.spellcasting}
-              spellOptions={SPELL_OPTIONS}
-              spellCastCounts={spellCastCounts}
-              onAddSelection={addSpellSelection}
-              onAppendSelection={appendSpellSelection}
-              onUpdateSelectionName={updateSpellSelectionName}
-              onRemoveSelection={removeSpellSelection}
-              onResetSelectionsForLevel={resetSpellSelectionsForLevel}
-              onResetSelectionsForClass={resetSpellSelectionsForClass}
-              onAddLibraryEntry={addSpellLibraryEntry}
-              onAppendLibraryEntry={appendSpellLibraryEntry}
-              onUpdateLibraryName={updateSpellLibraryName}
-              onRemoveLibraryEntry={removeSpellLibraryEntry}
-              onResetLibraryLevel={resetSpellLibraryLevel}
-              onResetLibraryForClass={resetSpellLibraryForClass}
-              onFillSelectionsFromLibrary={fillSelectionsFromLibrary}
-              onAdjustSpellSlot={adjustSpellSlot}
-              onCastSpell={castSpell}
-              onResetSpellSlotLevel={resetSpellSlotLevel}
-              onResetSpellRuntimeClass={resetSpellClassRuntime}
-            />            <div className="editor-section-head">
-              <h3>Weapons</h3>
-              <button className="ghost small" onClick={addWeapon}>Add Weapon</button>
-            </div>
-            <div className="item-list">
-              {(build.weapons ?? []).map((weapon, index) => (
-                <div className="item-card" key={`weapon-${index}`}>
-                  <div className="editor-grid">
-                    <label className="field compact">
-                      <span>Name</span>
-                      <input type="text" value={weapon.name} onChange={(e) => updateWeapon(index, { name: e.target.value })} />
-                    </label>
-                    <label className="field compact">
-                      <span>Category</span>
-                      <select value={weapon.category} onChange={(e) => updateWeapon(index, { category: e.target.value as "melee" | "ranged" })}>
-                        <option value="melee">Melee</option>
-                        <option value="ranged">Ranged</option>
-                      </select>
-                    </label>
-                    <label className="field compact">
-                      <span>Damage dice</span>
-                      <input type="text" value={weapon.damageDice} onChange={(e) => updateWeapon(index, { damageDice: e.target.value || "1d6" })} />
-                    </label>
-                    <label className="field compact">
-                      <span>Handedness</span>
-                      <select value={weapon.handedness ?? "one"} onChange={(e) => updateWeapon(index, { handedness: e.target.value as "one" | "two" | "off" | "light" })}>
-                        <option value="one">One-Handed</option>
-                        <option value="two">Two-Handed</option>
-                        <option value="off">Off-Hand</option>
-                        <option value="light">Light</option>
-                      </select>
-                    </label>
-                    <label className="field compact">
-                      <span>Crit range</span>
-                      <input type="number" min={18} max={20} value={weapon.critRange ?? 20} onChange={(e) => updateWeapon(index, { critRange: Math.max(18, Math.min(20, Number(e.target.value) || 20)) })} />
-                    </label>
-                    <label className="field compact">
-                      <span>Crit multiplier</span>
-                      <input type="number" min={2} max={5} value={weapon.critMultiplier ?? 2} onChange={(e) => updateWeapon(index, { critMultiplier: Math.max(2, Math.min(5, Number(e.target.value) || 2)) })} />
-                    </label>
-                  </div>
-                  <div className="item-actions">
-                    <button className="ghost small" onClick={() => removeWeapon(index)}>Remove</button>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="editor-section-head">
-              <h3>Equipment</h3>
-              <button className="ghost small" onClick={addEquipment}>Add Item</button>
-            </div>
-            <div className="item-list">
-              {(build.equipment ?? []).map((item, index) => {
-                const armor: EquipmentArmorEditorState = item.armor
-                  ? {
-                      category: item.armor.category ?? "light",
-                      maxDexBonus: item.armor.maxDexBonus,
-                      checkPenalty: item.armor.checkPenalty,
-                      speedPenalty: item.armor.speedPenalty,
-                    }
-                  : { category: "none", maxDexBonus: undefined, checkPenalty: undefined, speedPenalty: undefined };
-                return (
-                  <div className="item-card" key={`equipment-${index}`}>
-                    <div className="editor-grid">
-                      <label className="field compact">
-                        <span>Name</span>
-                        <input type="text" value={item.name} onChange={(e) => updateEquipment(index, { name: e.target.value })} />
-                      </label>
-                      <label className="field compact">
-                        <span>Quantity</span>
-                        <input type="number" min={0} value={item.quantity ?? 1} onChange={(e) => updateEquipment(index, { quantity: Math.max(0, Number(e.target.value) || 0) })} />
-                      </label>
-                      <label className="field compact">
-                        <span>Weight (lb)</span>
-                        <input type="number" min={0} value={item.weight ?? 0} onChange={(e) => updateEquipment(index, { weight: Math.max(0, Number(e.target.value) || 0) })} />
-                      </label>
-                      <label className="field compact">
-                        <span>Cost (gp)</span>
-                        <input type="number" min={0} value={item.costGp ?? 0} onChange={(e) => updateEquipment(index, { costGp: Math.max(0, Number(e.target.value) || 0) })} />
-                      </label>
-                      <label className="field compact">
-                        <span>Armor category</span>
-                        <select value={armor.category ?? "none"} onChange={(e) => updateEquipmentArmor(index, { ...armor, category: e.target.value as "none" | "light" | "medium" | "heavy" })}>
-                          <option value="none">None</option>
-                          <option value="light">Light</option>
-                          <option value="medium">Medium</option>
-                          <option value="heavy">Heavy</option>
-                        </select>
-                      </label>
-                      <label className="field compact checkbox-field">
-                        <span>Equipped</span>
-                        <input type="checkbox" checked={!!item.equipped} onChange={(e) => updateEquipment(index, { equipped: e.target.checked })} />
-                      </label>
-                      <label className="field compact">
-                        <span>Max Dex</span>
-                        <input type="number" value={armor.maxDexBonus ?? ""} onChange={(e) => updateEquipmentArmor(index, { ...armor, maxDexBonus: e.target.value === "" ? undefined : Number(e.target.value) })} />
-                      </label>
-                      <label className="field compact">
-                        <span>Armor check penalty</span>
-                        <input type="number" value={armor.checkPenalty ?? ""} onChange={(e) => updateEquipmentArmor(index, { ...armor, checkPenalty: e.target.value === "" ? undefined : Number(e.target.value) })} />
-                      </label>
-                      <label className="field compact">
-                        <span>Speed penalty</span>
-                        <input type="number" min={0} value={armor.speedPenalty ?? ""} onChange={(e) => updateEquipmentArmor(index, { ...armor, speedPenalty: e.target.value === "" ? undefined : Math.max(0, Number(e.target.value) || 0) })} />
-                      </label>
-                    </div>
-                    <div className="item-actions">
-                      <button className="ghost small" onClick={() => removeEquipment(index)}>Remove</button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
+      <div className="tab-bar">
+        <button className={activeTab === "sheet" ? "tab-button active" : "tab-button"} onClick={() => setActiveTab("sheet")}>Sheet</button>
+        <button className={activeTab === "build" ? "tab-button active" : "tab-button"} onClick={() => setActiveTab("build")}>Build</button>
+      </div>
 
-          <section className="panel">
-            <h2>Abilities, Buffs &amp; Auras</h2>
-            <p className="hint">
-              Toggle a granted class ability, a spell buff, or an aura and watch the
-              sheet update live. Same modifier pipeline, less spaghetti.
-            </p>
-            {activatableGroups.ungrouped.map((feature) => {
-              const max = resourceMaxes[feature.id];
-              const used = resourcesUsed[feature.id] ?? 0;
-              const activationBlocked = max !== undefined && used >= max && !activeBuffs[feature.id];
-              return (
-                <div className="buff-block" key={feature.id}>
-                  <label className="buff">
-                    <input
-                      type="checkbox"
-                      disabled={activationBlocked}
-                      checked={!!activeBuffs[feature.id]}
-                      onChange={(e) =>
-                        setActiveBuffs((prev) => ({ ...prev, [feature.id]: e.target.checked }))
-                      }
-                    />
-                    <span>
-                      <strong>{feature.name} (ability)</strong>
-                      <span className="buff-desc">{feature.description}</span>
-                    </span>
-                  </label>
-                  {resourceControls(feature.id)}
-                </div>
-              );
-            })}
-            {Object.entries(activatableGroups.grouped).map(([group, items]) => (
-              <div className="mode-group" key={group}>
-                <div className="mode-title">{group.replace(/-/g, " ")}</div>
-                {items.map((feature) => (
+      {activeTab === "build" ? (
+        <BuildEditorTab
+          build={build}
+          sheetSpellcasting={sheet.spellcasting}
+          abilityOrder={ABILITY_ORDER}
+          raceOptions={RACE_OPTIONS}
+          classOptions={CLASS_OPTIONS}
+          featOptions={featOptions}
+          skillName={SKILL_NAME}
+          spellOptions={SPELL_OPTIONS}
+          spellCastCounts={spellCastCounts}
+          onUpdateName={(name) => setBuild((prev) => ({ ...prev, name }))}
+          onUpdateBaseAbilityScore={updateBaseAbilityScore}
+          onUpdateCarriedWeight={updateCarriedWeight}
+          onUpdateRace={updateRace}
+          onAddStructureLevel={addStructureLevel}
+          onRemoveStructureLevel={removeStructureLevel}
+          onUpdateLevelField={updateLevelField}
+          onAddLevelFeat={addLevelFeat}
+          onRemoveLevelFeat={removeLevelFeat}
+          onUpdateLevelFeatName={updateLevelFeatName}
+          onUpdateLevelSkillRank={updateLevelSkillRank}
+          onAddSelection={addSpellSelection}
+          onAppendSelection={appendSpellSelection}
+          onUpdateSelectionName={updateSpellSelectionName}
+          onRemoveSelection={removeSpellSelection}
+          onResetSelectionsForLevel={resetSpellSelectionsForLevel}
+          onResetSelectionsForClass={resetSpellSelectionsForClass}
+          onAddLibraryEntry={addSpellLibraryEntry}
+          onAppendLibraryEntry={appendSpellLibraryEntry}
+          onUpdateLibraryName={updateSpellLibraryName}
+          onRemoveLibraryEntry={removeSpellLibraryEntry}
+          onResetLibraryLevel={resetSpellLibraryLevel}
+          onResetLibraryForClass={resetSpellLibraryForClass}
+          onFillSelectionsFromLibrary={fillSelectionsFromLibrary}
+          onAdjustSpellSlot={adjustSpellSlot}
+          onCastSpell={castSpell}
+          onResetSpellSlotLevel={resetSpellSlotLevel}
+          onResetSpellRuntimeClass={resetSpellClassRuntime}
+          onAddWeapon={addWeapon}
+          onUpdateWeapon={updateWeapon}
+          onRemoveWeapon={removeWeapon}
+          onAddEquipment={addEquipment}
+          onUpdateEquipment={updateEquipment}
+          onUpdateEquipmentArmor={updateEquipmentArmor}
+          onRemoveEquipment={removeEquipment}
+        />
+      ) : (
+        <div className="layout sheet-layout">
+          <aside className="controls sheet-sidebar">
+            <section className="panel">
+              <h2>Abilities, Buffs &amp; Auras</h2>
+              <p className="hint">Table-state toggles live here. Crunch on the left, pretty sheet on the right.</p>
+              {activatableGroups.ungrouped.map((feature) => {
+                const max = resourceMaxes[feature.id];
+                const used = resourcesUsed[feature.id] ?? 0;
+                const activationBlocked = max !== undefined && used >= max && !activeBuffs[feature.id];
+                return (
                   <div className="buff-block" key={feature.id}>
                     <label className="buff">
                       <input
-                        type="radio"
-                        name={`mode-${group}`}
+                        type="checkbox"
+                        disabled={activationBlocked}
                         checked={!!activeBuffs[feature.id]}
-                        onChange={() =>
-                          setActiveBuffs((prev) => {
-                            const next = { ...prev };
-                            for (const item of items) next[item.id] = false;
-                            next[feature.id] = true;
-                            return next;
-                          })
-                        }
+                        onChange={(e) => setActiveBuffs((prev) => ({ ...prev, [feature.id]: e.target.checked }))}
                       />
                       <span>
                         <strong>{feature.name} (ability)</strong>
@@ -979,110 +709,117 @@ export function App() {
                     </label>
                     {resourceControls(feature.id)}
                   </div>
-                ))}
-                <button
-                  className="ghost small"
-                  onClick={() =>
-                    setActiveBuffs((prev) => {
-                      const next = { ...prev };
-                      for (const item of items) next[item.id] = false;
-                      return next;
-                    })
-                  }
-                >
-                  Clear mode
-                </button>
-              </div>
-            ))}
-            {activatableConflicts.length > 0 ? (
-              <p className="hint warn-text">Conflicting modes were selected; only one per group applies.</p>
-            ) : null}
-            <div className="mode-group">
-              <div className="mode-title">conditions</div>
-              <label className="buff">
-                <input
-                  type="checkbox"
-                  checked={fatigued}
-                  onChange={(e) => setFatigued(e.target.checked)}
-                />
-                <span>
-                  <strong>Fatigued</strong>
-                  <span className="buff-desc">Blocks Rage and can suppress other abilities later.</span>
-                </span>
-              </label>
-            </div>
-            {BUFFS.map((buff) => (
-              <label className="buff" key={buff.id}>
-                <input
-                  type="checkbox"
-                  checked={!!activeBuffs[buff.id]}
-                  onChange={(e) =>
-                    setActiveBuffs((prev) => ({ ...prev, [buff.id]: e.target.checked }))
-                  }
-                />
-                <span>
-                  <strong>{buff.name}</strong>
-                  <span className="buff-desc">{buff.description}</span>
-                </span>
-              </label>
-            ))}
-          </section>
-
-          <section className="panel">
-            <h2>Character Saves</h2>
-            <p className="hint">Current build autosaves. Slots let you keep multiple characters/build states around.</p>
-            <div className="save-actions">
-              <button className="ghost small" onClick={saveNewBuildSlot}>Save New Slot</button>
-              <button className="ghost small" onClick={resetCurrentBuild}>Reset Current</button>
-            </div>
-            <div className="slot-list">
-              {savedBuildSlots.length === 0 ? (
-                <p className="hint">No saved slots yet. Shocking restraint.</p>
-              ) : savedBuildSlots.map((slot) => (
-                <div className="slot-row" key={slot.id}>
-                  <div className="slot-meta">
-                    <strong>{slot.label}</strong>
-                    <span className="buff-desc">{new Date(slot.savedAt).toLocaleString()}</span>
-                  </div>
-                  <div className="resource-buttons">
-                    <button className="ghost small" onClick={() => loadBuildSlot(slot)}>Load</button>
-                    <button className="ghost small" onClick={() => overwriteBuildSlot(slot.id)}>Overwrite</button>
-                    <button className="ghost small" onClick={() => deleteBuildSlot(slot.id)}>Delete</button>
-                  </div>
+                );
+              })}
+              {Object.entries(activatableGroups.grouped).map(([group, items]) => (
+                <div className="mode-group" key={group}>
+                  <div className="mode-title">{group.replace(/-/g, " ")}</div>
+                  {items.map((feature) => (
+                    <div className="buff-block" key={feature.id}>
+                      <label className="buff">
+                        <input
+                          type="radio"
+                          name={`mode-${group}`}
+                          checked={!!activeBuffs[feature.id]}
+                          onChange={() =>
+                            setActiveBuffs((prev) => {
+                              const next = { ...prev };
+                              for (const item of items) next[item.id] = false;
+                              next[feature.id] = true;
+                              return next;
+                            })
+                          }
+                        />
+                        <span>
+                          <strong>{feature.name} (ability)</strong>
+                          <span className="buff-desc">{feature.description}</span>
+                        </span>
+                      </label>
+                      {resourceControls(feature.id)}
+                    </div>
+                  ))}
+                  <button
+                    className="ghost small"
+                    onClick={() =>
+                      setActiveBuffs((prev) => {
+                        const next = { ...prev };
+                        for (const item of items) next[item.id] = false;
+                        return next;
+                      })
+                    }
+                  >
+                    Clear mode
+                  </button>
                 </div>
               ))}
-            </div>
-          </section>
+              {activatableConflicts.length > 0 ? <p className="hint warn-text">Conflicting modes were selected; only one per group applies.</p> : null}
+              <div className="mode-group">
+                <div className="mode-title">conditions</div>
+                <label className="buff">
+                  <input type="checkbox" checked={fatigued} onChange={(e) => setFatigued(e.target.checked)} />
+                  <span>
+                    <strong>Fatigued</strong>
+                    <span className="buff-desc">Blocks Rage and can suppress other abilities later.</span>
+                  </span>
+                </label>
+              </div>
+              {BUFFS.map((buff) => (
+                <label className="buff" key={buff.id}>
+                  <input type="checkbox" checked={!!activeBuffs[buff.id]} onChange={(e) => setActiveBuffs((prev) => ({ ...prev, [buff.id]: e.target.checked }))} />
+                  <span>
+                    <strong>{buff.name}</strong>
+                    <span className="buff-desc">{buff.description}</span>
+                  </span>
+                </label>
+              ))}
+            </section>
 
-          {errors.length > 0 ? (
-            <section className="panel errors">
-              <h2>Validation</h2>
-              <ul>
-                {errors.map((e, i) => (
-                  <li key={i}>{e.message}</li>
+            <section className="panel">
+              <h2>Character Saves</h2>
+              <p className="hint">Current build autosaves. Slots keep multiple characters handy.</p>
+              <div className="save-actions">
+                <button className="ghost small" onClick={saveNewBuildSlot}>Save New Slot</button>
+                <button className="ghost small" onClick={resetCurrentBuild}>Reset Current</button>
+              </div>
+              <div className="slot-list">
+                {savedBuildSlots.length === 0 ? (
+                  <p className="hint">No saved slots yet. Shocking restraint.</p>
+                ) : savedBuildSlots.map((slot) => (
+                  <div className="slot-row" key={slot.id}>
+                    <div className="slot-meta">
+                      <strong>{slot.label}</strong>
+                      <span className="buff-desc">{new Date(slot.savedAt).toLocaleString()}</span>
+                    </div>
+                    <div className="resource-buttons">
+                      <button className="ghost small" onClick={() => loadBuildSlot(slot)}>Load</button>
+                      <button className="ghost small" onClick={() => overwriteBuildSlot(slot.id)}>Overwrite</button>
+                      <button className="ghost small" onClick={() => deleteBuildSlot(slot.id)}>Delete</button>
+                    </div>
+                  </div>
                 ))}
-              </ul>
+              </div>
             </section>
-          ) : (
-            <section className="panel ok">
-              <h2>Validation</h2>
-              <p>No issues — this build is legal. </p>
-            </section>
-          )}
-        </aside>
 
-        <main className="main">
-          <Sheet sheet={sheet} />
-        </main>
-      </div>
+            {errors.length > 0 ? (
+              <section className="panel errors">
+                <h2>Validation</h2>
+                <ul>{errors.map((e, i) => <li key={i}>{e.message}</li>)}</ul>
+              </section>
+            ) : (
+              <section className="panel ok">
+                <h2>Validation</h2>
+                <p>No issues — this build is legal.</p>
+              </section>
+            )}
+          </aside>
 
-      {leveling ? (
-        <LevelUpModal
-          build={build}
-          onConfirm={confirmLevelUp}
-          onClose={() => setLeveling(false)}
-        />
-      ) : null}
+          <main className="main sheet-main">
+            <Sheet sheet={sheet} />
+          </main>
+        </div>
+      )}
+
+      {leveling ? <LevelUpModal build={build} onConfirm={confirmLevelUp} onClose={() => setLeveling(false)} /> : null}
     </div>
   );
 }
