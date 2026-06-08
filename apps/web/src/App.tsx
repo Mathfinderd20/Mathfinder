@@ -11,6 +11,7 @@ import {
   levelDown,
   listFeats,
   resolveActivatableSelections,
+  SAMPLE_CLASSES,
   SKILL_DEFINITIONS,
   validateBuild,
   type AbilityKey,
@@ -22,7 +23,7 @@ import {
   type SkillKey,
   type SpellSlotUsageByLevel,
 } from "@path-builder/rules-engine";
-import { BUFFS, initialBuild } from "./data";
+import { BUFFS, initialBuild, SAMPLE_RACES } from "./data";
 import { Sheet } from "./components/Sheet";
 import { LevelUpModal } from "./components/LevelUpModal";
 
@@ -30,6 +31,8 @@ type SpellCastCounts = Record<string, Record<number, Record<string, number>>>;
 
 const ABILITY_ORDER: readonly AbilityKey[] = ["str", "dex", "con", "int", "wis", "cha"];
 const SKILL_NAME = new Map<string, string>(SKILL_DEFINITIONS.map((d) => [d.key, d.name]));
+const CLASS_OPTIONS = Object.values(SAMPLE_CLASSES).sort((a, b) => a.name.localeCompare(b.name));
+const RACE_OPTIONS = Object.entries(SAMPLE_RACES).sort((a, b) => a[1].name.localeCompare(b[1].name));
 const RUNTIME_STORAGE_KEY = "path-builder:web-runtime:v1";
 const CURRENT_BUILD_STORAGE_KEY = "path-builder:web-build:v1";
 const BUILD_SLOTS_STORAGE_KEY = "path-builder:web-build-slots:v1";
@@ -178,6 +181,50 @@ export function App() {
         ...prev.baseAbilityScores,
         [ability]: Math.max(1, value),
       },
+    }));
+  }
+
+  function updateRace(raceKey: string) {
+    const nextRace = SAMPLE_RACES[raceKey];
+    if (!nextRace) return;
+    setBuild((prev) => ({ ...prev, race: nextRace }));
+  }
+
+  function updateLevelField<K extends keyof CharacterBuild["levels"][number]>(
+    levelIndex: number,
+    key: K,
+    value: CharacterBuild["levels"][number][K],
+  ) {
+    setBuild((prev) => ({
+      ...prev,
+      levels: prev.levels.map((level, i) => (i === levelIndex ? { ...level, [key]: value } : level)),
+    }));
+  }
+
+  function addStructureLevel() {
+    const lastClassName = build.levels[build.levels.length - 1]?.className ?? CLASS_OPTIONS[0]?.name ?? "Fighter";
+    const classKey = Object.keys(SAMPLE_CLASSES).find(
+      (key) => SAMPLE_CLASSES[key]?.name.toLowerCase() === lastClassName.toLowerCase(),
+    );
+    const hitDie = classKey ? SAMPLE_CLASSES[classKey]?.hitDie ?? 8 : 8;
+    setBuild((prev) => ({
+      ...prev,
+      levels: [
+        ...prev.levels,
+        {
+          className: lastClassName,
+          hitPointRoll: Math.max(1, Math.ceil(hitDie / 2)),
+          skillRanks: {},
+          modifiers: [],
+        },
+      ],
+    }));
+  }
+
+  function removeStructureLevel(levelIndex: number) {
+    setBuild((prev) => ({
+      ...prev,
+      levels: prev.levels.filter((_, i) => i !== levelIndex),
     }));
   }
 
@@ -572,7 +619,22 @@ export function App() {
               />
             </label>
             <div className="editor-section-head">
-              <h3>Feats & Skill Ranks by Level</h3>
+              <h3>Race & Level Structure</h3>
+              <button className="ghost small" onClick={addStructureLevel}>Add Level</button>
+            </div>
+            <label className="field compact">
+              <span>Race</span>
+              <select
+                value={RACE_OPTIONS.find(([, race]) => race.name === build.race.name)?.[0] ?? "human"}
+                onChange={(e) => updateRace(e.target.value)}
+              >
+                {RACE_OPTIONS.map(([key, race]) => (
+                  <option key={key} value={key}>{race.name}</option>
+                ))}
+              </select>
+            </label>
+            <div className="editor-section-head">
+              <h3>Feats, Skills & Structure by Level</h3>
             </div>
             <datalist id="feat-options">
               {featOptions.map((name) => <option key={name} value={name} />)}
@@ -582,6 +644,59 @@ export function App() {
                 <div className="item-card" key={`level-edit-${levelIndex}`}>
                   <div className="editor-section-head tight">
                     <h3>Level {levelIndex + 1} — {level.className}</h3>
+                    <button
+                      className="ghost small"
+                      disabled={build.levels.length <= 1}
+                      onClick={() => removeStructureLevel(levelIndex)}
+                    >
+                      Remove Level
+                    </button>
+                  </div>
+                  <div className="editor-grid">
+                    <label className="field compact">
+                      <span>Class</span>
+                      <select
+                        value={level.className}
+                        onChange={(e) => updateLevelField(levelIndex, "className", e.target.value)}
+                      >
+                        {CLASS_OPTIONS.map((option) => (
+                          <option key={option.name} value={option.name}>{option.name}</option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="field compact">
+                      <span>HP roll</span>
+                      <input
+                        type="number"
+                        min={1}
+                        max={CLASS_OPTIONS.find((option) => option.name === level.className)?.hitDie ?? 20}
+                        value={level.hitPointRoll}
+                        onChange={(e) => updateLevelField(levelIndex, "hitPointRoll", Math.max(1, Number(e.target.value) || 1))}
+                      />
+                    </label>
+                    <label className="field compact">
+                      <span>Favored class</span>
+                      <select
+                        value={level.favoredClass ?? ""}
+                        onChange={(e) => updateLevelField(levelIndex, "favoredClass", (e.target.value || undefined) as "hp" | "skill" | undefined)}
+                      >
+                        <option value="">None</option>
+                        <option value="hp">HP</option>
+                        <option value="skill">Skill</option>
+                      </select>
+                    </label>
+                    <label className="field compact">
+                      <span>Ability increase</span>
+                      <select
+                        value={level.abilityIncrease ?? ""}
+                        onChange={(e) => updateLevelField(levelIndex, "abilityIncrease", (e.target.value || undefined) as AbilityKey | undefined)}
+                      >
+                        <option value="">None</option>
+                        {ABILITY_ORDER.map((ability) => (
+                          <option key={ability} value={ability}>{ability.toUpperCase()}</option>
+                        ))}
+                      </select>
+                    </label>
                   </div>
                   <div className="subsection-title">Feats</div>
                   <div className="item-list compact-list">
