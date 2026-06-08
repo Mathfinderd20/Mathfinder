@@ -13,6 +13,7 @@ import {
   resolveActivatableSelections,
   SAMPLE_CLASSES,
   SKILL_DEFINITIONS,
+  SPELLS,
   validateBuild,
   type AbilityKey,
   type ActivationContext,
@@ -34,6 +35,7 @@ const SKILL_NAME = new Map<string, string>(SKILL_DEFINITIONS.map((d) => [d.key, 
 const CLASS_OPTIONS = Object.values(SAMPLE_CLASSES).sort((a, b) => a.name.localeCompare(b.name));
 const RACE_OPTIONS = Object.entries(SAMPLE_RACES).sort((a, b) => a[1].name.localeCompare(b[1].name));
 const RUNTIME_STORAGE_KEY = "path-builder:web-runtime:v1";
+const SPELL_OPTIONS = Object.values(SPELLS).sort((a, b) => a.name.localeCompare(b.name));
 const CURRENT_BUILD_STORAGE_KEY = "path-builder:web-build:v1";
 const BUILD_SLOTS_STORAGE_KEY = "path-builder:web-build-slots:v1";
 
@@ -333,6 +335,49 @@ export function App() {
     }));
   }
 
+  function updateSpellSelections(
+    classKey: string,
+    mode: "prepared" | "known",
+    level: number,
+    spells: string[],
+  ) {
+    setBuild((prev) => ({
+      ...prev,
+      spellSelections: {
+        ...(prev.spellSelections ?? {}),
+        [classKey]: {
+          ...((prev.spellSelections ?? {})[classKey] ?? {}),
+          [mode]: {
+            ...(((prev.spellSelections ?? {})[classKey]?.[mode] ?? {})),
+            [level]: spells,
+          },
+        },
+      },
+    }));
+  }
+
+  function addSpellSelection(classKey: string, mode: "prepared" | "known", level: number) {
+    const current = build.spellSelections?.[classKey]?.[mode]?.[level] ?? [];
+    updateSpellSelections(classKey, mode, level, [...current, ""]);
+  }
+
+  function updateSpellSelectionName(
+    classKey: string,
+    mode: "prepared" | "known",
+    level: number,
+    index: number,
+    value: string,
+  ) {
+    const current = [...(build.spellSelections?.[classKey]?.[mode]?.[level] ?? [])];
+    current[index] = value;
+    updateSpellSelections(classKey, mode, level, current);
+  }
+
+  function removeSpellSelection(classKey: string, mode: "prepared" | "known", level: number, index: number) {
+    const current = build.spellSelections?.[classKey]?.[mode]?.[level] ?? [];
+    updateSpellSelections(classKey, mode, level, current.filter((_, i) => i !== index));
+  }
+
   useEffect(() => {
     if (typeof window === "undefined") return;
     const snapshot: RuntimeStateSnapshot = {
@@ -407,6 +452,20 @@ export function App() {
 
   const errors = issues.filter((i) => i.severity === "error");
   const featOptions = listFeats(FEATS).map((feat) => feat.name).sort((a, b) => a.localeCompare(b));
+  const spellOptionsByClassLevel = Object.fromEntries(
+    sheet.spellcasting.map((caster) => {
+      const classKey = caster.className.toLowerCase();
+      const byLevel = Object.fromEntries(
+        Array.from({ length: caster.maxSpellLevel + 1 }, (_, level) => [
+          level,
+          SPELL_OPTIONS.filter((spell) =>
+            spell.classes.some((entry) => entry.className.toLowerCase() === classKey && entry.level === level),
+          ).map((spell) => spell.name),
+        ]),
+      );
+      return [classKey, byLevel];
+    }),
+  ) as Record<string, Record<number, string[]>>;
 
   function resourceControls(featureId: string) {
     const max = resourceMaxes[featureId];
@@ -736,6 +795,66 @@ export function App() {
                 </div>
               ))}
             </div>
+            {sheet.spellcasting.length > 0 ? (
+              <>
+                <div className="editor-section-head">
+                  <h3>Spellcasting Build Setup</h3>
+                </div>
+                <datalist id="spell-options">
+                  {SPELL_OPTIONS.map((spell) => <option key={spell.id} value={spell.name} />)}
+                </datalist>
+                <div className="item-list">
+                  {sheet.spellcasting.map((caster) => {
+                    const classKey = caster.className.toLowerCase();
+                    const mode = caster.castingType === "prepared" ? "prepared" : "known";
+                    const selections = mode === "prepared" ? caster.selectedPreparedSpells : caster.selectedKnownSpells;
+                    const counts = mode === "prepared" ? caster.preparedCapacity : caster.spellsKnown;
+                    const levels = Array.from({ length: caster.maxSpellLevel + 1 }, (_, level) => level)
+                      .filter((level) => (counts[level] ?? 0) > 0 || (spellOptionsByClassLevel[classKey]?.[level]?.length ?? 0) > 0);
+                    return (
+                      <div className="item-card" key={`spells-${classKey}`}>
+                        <div className="editor-section-head tight">
+                          <h3>{caster.className} {mode === "prepared" ? "Prepared Spells" : "Known Spells"}</h3>
+                        </div>
+                        {levels.map((level) => {
+                          const current = selections[level] ?? [];
+                          const capacity = counts[level] ?? 0;
+                          return (
+                            <div className="spell-level-block" key={`spell-edit-${classKey}-${level}`}>
+                              <div className="subsection-title">Level {level} <span className="muted">{current.length}/{capacity} selected</span></div>
+                              <div className="item-list compact-list">
+                                {current.map((spellName, index) => (
+                                  <div className="inline-row" key={`spell-${classKey}-${level}-${index}`}>
+                                    <input
+                                      className="inline-input"
+                                      type="text"
+                                      list="spell-options"
+                                      value={spellName}
+                                      onChange={(e) => updateSpellSelectionName(classKey, mode, level, index, e.target.value)}
+                                    />
+                                    <button className="ghost small" onClick={() => removeSpellSelection(classKey, mode, level, index)}>
+                                      Remove
+                                    </button>
+                                  </div>
+                                ))}
+                                <div className="item-actions left">
+                                  <button className="ghost small" onClick={() => addSpellSelection(classKey, mode, level)}>
+                                    Add Spell
+                                  </button>
+                                </div>
+                                {(spellOptionsByClassLevel[classKey]?.[level] ?? []).length > 0 ? (
+                                  <div className="hint">Known registry options: {(spellOptionsByClassLevel[classKey]?.[level] ?? []).join(", ")}</div>
+                                ) : null}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            ) : null}
             <div className="editor-section-head">
               <h3>Weapons</h3>
               <button className="ghost small" onClick={addWeapon}>Add Weapon</button>
