@@ -9,7 +9,9 @@ import {
   FEATS,
   groupActivatables,
   levelDown,
+  listFeats,
   resolveActivatableSelections,
+  SKILL_DEFINITIONS,
   validateBuild,
   type AbilityKey,
   type ActivationContext,
@@ -17,6 +19,7 @@ import {
   type DerivedSpellcasting,
   type LevelUpSelection,
   type Modifier,
+  type SkillKey,
   type SpellSlotUsageByLevel,
 } from "@path-builder/rules-engine";
 import { BUFFS, initialBuild } from "./data";
@@ -26,6 +29,7 @@ import { LevelUpModal } from "./components/LevelUpModal";
 type SpellCastCounts = Record<string, Record<number, Record<string, number>>>;
 
 const ABILITY_ORDER: readonly AbilityKey[] = ["str", "dex", "con", "int", "wis", "cha"];
+const SKILL_NAME = new Map<string, string>(SKILL_DEFINITIONS.map((d) => [d.key, d.name]));
 const RUNTIME_STORAGE_KEY = "path-builder:web-runtime:v1";
 const CURRENT_BUILD_STORAGE_KEY = "path-builder:web-build:v1";
 const BUILD_SLOTS_STORAGE_KEY = "path-builder:web-build-slots:v1";
@@ -246,6 +250,42 @@ export function App() {
     }));
   }
 
+  function updateLevelFeats(levelIndex: number, feats: string[]) {
+    setBuild((prev) => ({
+      ...prev,
+      levels: prev.levels.map((level, i) => (i === levelIndex ? { ...level, feats } : level)),
+    }));
+  }
+
+  function addLevelFeat(levelIndex: number) {
+    const current = build.levels[levelIndex]?.feats ?? [];
+    updateLevelFeats(levelIndex, [...current, ""]);
+  }
+
+  function removeLevelFeat(levelIndex: number, featIndex: number) {
+    const current = build.levels[levelIndex]?.feats ?? [];
+    updateLevelFeats(levelIndex, current.filter((_, i) => i !== featIndex));
+  }
+
+  function updateLevelFeatName(levelIndex: number, featIndex: number, value: string) {
+    const current = [...(build.levels[levelIndex]?.feats ?? [])];
+    current[featIndex] = value;
+    updateLevelFeats(levelIndex, current);
+  }
+
+  function updateLevelSkillRank(levelIndex: number, skillKey: SkillKey, value: number) {
+    setBuild((prev) => ({
+      ...prev,
+      levels: prev.levels.map((level, i) => {
+        if (i !== levelIndex) return level;
+        const current = { ...(level.skillRanks ?? {}) };
+        if (value <= 0) delete current[skillKey];
+        else current[skillKey] = value;
+        return { ...level, skillRanks: current };
+      }),
+    }));
+  }
+
   useEffect(() => {
     if (typeof window === "undefined") return;
     const snapshot: RuntimeStateSnapshot = {
@@ -319,6 +359,7 @@ export function App() {
   }, [build, activeBuffs, fatigued, spellSlotUsage]);
 
   const errors = issues.filter((i) => i.severity === "error");
+  const featOptions = listFeats(FEATS).map((feat) => feat.name).sort((a, b) => a.localeCompare(b));
 
   function resourceControls(featureId: string) {
     const max = resourceMaxes[featureId];
@@ -530,6 +571,56 @@ export function App() {
                 }}
               />
             </label>
+            <div className="editor-section-head">
+              <h3>Feats & Skill Ranks by Level</h3>
+            </div>
+            <datalist id="feat-options">
+              {featOptions.map((name) => <option key={name} value={name} />)}
+            </datalist>
+            <div className="item-list">
+              {build.levels.map((level, levelIndex) => (
+                <div className="item-card" key={`level-edit-${levelIndex}`}>
+                  <div className="editor-section-head tight">
+                    <h3>Level {levelIndex + 1} — {level.className}</h3>
+                  </div>
+                  <div className="subsection-title">Feats</div>
+                  <div className="item-list compact-list">
+                    {(level.feats ?? []).map((featName, featIndex) => (
+                      <div className="inline-row" key={`feat-${levelIndex}-${featIndex}`}>
+                        <input
+                          className="inline-input"
+                          type="text"
+                          list="feat-options"
+                          value={featName}
+                          onChange={(e) => updateLevelFeatName(levelIndex, featIndex, e.target.value)}
+                        />
+                        <button className="ghost small" onClick={() => removeLevelFeat(levelIndex, featIndex)}>Remove</button>
+                      </div>
+                    ))}
+                    <div className="item-actions left">
+                      <button className="ghost small" onClick={() => addLevelFeat(levelIndex)}>Add Feat</button>
+                    </div>
+                  </div>
+                  <div className="subsection-title">Skill Ranks</div>
+                  <div className="skill-rank-grid">
+                    {SKILL_DEFINITIONS.slice()
+                      .sort((a, b) => a.name.localeCompare(b.name))
+                      .map((skill) => (
+                        <label className="field compact skill-rank-field" key={`rank-${levelIndex}-${skill.key}`}>
+                          <span>{SKILL_NAME.get(skill.key) ?? skill.key}</span>
+                          <input
+                            type="number"
+                            min={0}
+                            step={1}
+                            value={level.skillRanks?.[skill.key] ?? 0}
+                            onChange={(e) => updateLevelSkillRank(levelIndex, skill.key, Math.max(0, Number(e.target.value) || 0))}
+                          />
+                        </label>
+                      ))}
+                  </div>
+                </div>
+              ))}
+            </div>
             <div className="editor-section-head">
               <h3>Weapons</h3>
               <button className="ghost small" onClick={addWeapon}>Add Weapon</button>
