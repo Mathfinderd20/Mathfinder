@@ -3,6 +3,7 @@ import type {
   AbilityKey,
   AbilityScores,
   CharacterInput,
+  Condition,
   Modifier,
   NamedAcquisition,
   SheetDescriptor,
@@ -79,6 +80,8 @@ export interface CharacterBuild {
   levels: LevelEntry[];
   equipment?: EquipmentEntry[];
   weapons?: Weapon[];
+  /** Current character conditions, e.g. fatigued. */
+  conditions?: Condition[];
   /** Total carried load in pounds for encumbrance. */
   carriedWeight?: number;
   /** Extra always-on modifiers (rarely needed; buffs are applied at runtime). */
@@ -176,7 +179,11 @@ export function buildCharacter(
     const granted = classFeaturesGrantedAt(classFeatureRegistry, lvl.className, classLevel);
     for (const g of granted) autoGrantedFeatures.push({ name: g.name, level: characterLevelIndex });
 
-    const featureCtx = { armorCategory, loadBand: encumbrance.band };
+    const featureCtx = {
+      armorCategory,
+      loadBand: encumbrance.band,
+      conditions: build.conditions ?? [],
+    };
     for (const s of suppressedClassFeatures(granted, featureCtx)) {
       autoSuppressedFeatures.push({ name: s.name, level: characterLevelIndex, reason: s.reason });
     }

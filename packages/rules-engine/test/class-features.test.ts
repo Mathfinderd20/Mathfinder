@@ -55,6 +55,20 @@ describe("class feature effects auto-apply through buildCharacter", () => {
     expect(max).toBe(6); // 4 + Con 2 + 0
   });
 
+  it("suppresses Rage while fatigued and removes its activatable toggle", () => {
+    const fatiguedBuild: CharacterBuild = {
+      ...build,
+      conditions: ["fatigued"],
+    };
+    const fatiguedSheet = computeSheet(buildCharacter(fatiguedBuild));
+    expect(fatiguedSheet.descriptor.suppressedFeatures).toContainEqual({
+      name: "Rage",
+      level: 1,
+      reason: "fatigued",
+    });
+    expect(activatableFeaturesForDescriptor(CLASS_FEATURES, fatiguedSheet.descriptor).map((f) => f.name)).toEqual([]);
+  });
+
   it("suppresses Fast Movement in medium armor or heavy load", () => {
     const mediumArmorBuild: CharacterBuild = {
       ...build,

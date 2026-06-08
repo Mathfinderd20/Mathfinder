@@ -1,9 +1,10 @@
-import type { ArmorCategory, LoadBand, Modifier } from "../types";
+import type { ArmorCategory, Condition, LoadBand, Modifier } from "../types";
 import type { ActivatableEffect } from "./activatables";
 
 export interface ClassFeatureContext {
   armorCategory: ArmorCategory;
   loadBand: LoadBand;
+  conditions: Condition[];
 }
 
 export interface SuppressedClassFeature {
@@ -44,6 +45,9 @@ export const CORE_CLASS_FEATURES: ClassFeatureDefinition[] = [
     pack: "core",
     description: "Enter a rage for rounds per day.",
     effects: [],
+    availableWhen: (ctx) => !ctx.conditions.includes("fatigued"),
+    unavailableReason: (ctx) =>
+      ctx.conditions.includes("fatigued") ? "fatigued" : "conditions not met",
     activatable: {
       id: "rage",
       name: "Rage",

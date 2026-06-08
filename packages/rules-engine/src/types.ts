@@ -200,6 +200,7 @@ export type WeaponCategory = "melee" | "ranged";
 export type WeaponHandedness = "one" | "two" | "off" | "light";
 export type ArmorCategory = "none" | "light" | "medium" | "heavy";
 export type LoadBand = "light" | "medium" | "heavy" | "overloaded";
+export type Condition = "fatigued" | (string & {});
 
 export interface Weapon {
   name: string;
@@ -243,6 +244,8 @@ export interface CharacterInput {
   descriptor?: SheetDescriptor;
   /** Equipped weapons to derive attack/damage lines for. */
   weapons?: Weapon[];
+  /** Active character conditions (fatigued, etc.). */
+  conditions?: Condition[];
   /** Armor category currently worn (for feature legality like Fast Movement). */
   armorCategory?: ArmorCategory;
   /** Total carried weight in pounds for encumbrance. */

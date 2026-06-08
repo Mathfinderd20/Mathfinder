@@ -56,7 +56,8 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 - [x] Activated ability runtime rules: scaling values by BAB (Power Attack, Combat Expertise, Deadly Aim)
 - [x] Conditional requirement / illegal-state suppression scaffold (Fast Movement blocked by armor/load)
 - [x] Suppression reasons surfaced in the sheet (e.g. Fast Movement suppressed: medium armor)
-- [ ] Broaden conditional legality (fatigue, armor restrictions on more abilities, etc.)
+- [x] Fatigue state + Rage legality suppression
+- [ ] Broaden conditional legality (more armor/load restrictions, class-feature gates, etc.)
 - [ ] Prerequisite validation for prestige classes, archetypes
 - [ ] Parameterized feats (Weapon Focus weapon choice, Skill Focus skill choice)
 

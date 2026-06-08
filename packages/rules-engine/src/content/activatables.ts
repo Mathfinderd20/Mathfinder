@@ -73,12 +73,14 @@ export function activatableFeaturesForDescriptor(
   descriptor: SheetDescriptor,
 ): ActivatableEffect[] {
   const names = new Set(descriptor.features.map((f) => f.name.toLowerCase()));
+  const suppressed = new Set(descriptor.suppressedFeatures.map((f) => f.name.toLowerCase()));
   const out: ActivatableEffect[] = [];
   const seen = new Set<string>();
   for (const defs of Object.values(registry)) {
     for (const feature of defs) {
       if (!feature.activatable) continue;
       if (!names.has(feature.name.toLowerCase())) continue;
+      if (suppressed.has(feature.name.toLowerCase())) continue;
       if (seen.has(feature.activatable.id)) continue;
       seen.add(feature.activatable.id);
       out.push(feature.activatable);

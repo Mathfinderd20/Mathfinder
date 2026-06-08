@@ -26,6 +26,7 @@ export function App() {
   const [activeBuffs, setActiveBuffs] = useState<Record<string, boolean>>({});
   const [leveling, setLeveling] = useState(false);
   const [resourcesUsed, setResourcesUsed] = useState<Record<string, number>>({});
+  const [fatigued, setFatigued] = useState(false);
 
   function confirmLevelUp(selection: LevelUpSelection) {
     setBuild((b) => applyLevelUp(b, selection));
@@ -35,7 +36,10 @@ export function App() {
   // The whole app is a pure render of (build + active buffs). Toggle anything
   // and every derived number recomputes instantly — the engine is fast & local.
   const { sheet, issues, activatableGroups, activatableConflicts, resourceMaxes } = useMemo(() => {
-    const input = buildCharacter(build);
+    const input = buildCharacter({
+      ...build,
+      conditions: fatigued ? ["fatigued"] : [],
+    });
     const baseSheet = computeSheet(input);
     const activatableFeatures = collectActivatableEffects({
       descriptor: baseSheet.descriptor,
@@ -76,7 +80,7 @@ export function App() {
       activatableConflicts: resolvedActivatables.conflicts,
       resourceMaxes,
     };
-  }, [build, activeBuffs]);
+  }, [build, activeBuffs, fatigued]);
 
   const errors = issues.filter((i) => i.severity === "error");
 
@@ -210,6 +214,20 @@ export function App() {
             {activatableConflicts.length > 0 ? (
               <p className="hint warn-text">Conflicting modes were selected; only one per group applies.</p>
             ) : null}
+            <div className="mode-group">
+              <div className="mode-title">conditions</div>
+              <label className="buff">
+                <input
+                  type="checkbox"
+                  checked={fatigued}
+                  onChange={(e) => setFatigued(e.target.checked)}
+                />
+                <span>
+                  <strong>Fatigued</strong>
+                  <span className="buff-desc">Blocks Rage and can suppress other abilities later.</span>
+                </span>
+              </label>
+            </div>
             {BUFFS.map((buff) => (
               <label className="buff" key={buff.id}>
                 <input
