@@ -155,13 +155,21 @@ describe("cleric and sorcerer spellcasting", () => {
         },
       },
     };
+    build.spellLibrary = {
+      wizard: {
+        1: ["Mage Armor"],
+      },
+    };
     const sheet = computeSheet(buildCharacter(build));
+    expect(sheet.spellcasting[0]!.librarySpells[1]).toEqual(["Mage Armor"]);
     expect(sheet.spellcasting[0]!.selectionDiagnostics[1]).toMatchObject({
       capacity: 2,
       selectedCount: 3,
       overCapacity: true,
       offListSpells: ["Bless"],
       unknownSpells: ["Fake Spell"],
+      missingFromLibrary: ["Bless", "Detect Magic"],
+      librarySpellNames: ["Mage Armor"],
     });
     expect(sheet.spellcasting[0]!.selectionDiagnostics[1]?.wrongLevelSpells).toEqual([
       { name: "Detect Magic", actualLevel: 0 },

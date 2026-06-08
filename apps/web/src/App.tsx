@@ -18,7 +18,6 @@ import {
   type AbilityKey,
   type ActivationContext,
   type CharacterBuild,
-  type DerivedSpellcasting,
   type LevelUpSelection,
   type Modifier,
   type SkillKey,
@@ -27,6 +26,7 @@ import {
 import { BUFFS, initialBuild, SAMPLE_RACES } from "./data";
 import { Sheet } from "./components/Sheet";
 import { LevelUpModal } from "./components/LevelUpModal";
+import { SpellcastingManager } from "./components/SpellcastingManager";
 
 type SpellCastCounts = Record<string, Record<number, Record<string, number>>>;
 
@@ -400,6 +400,59 @@ export function App() {
     }));
   }
 
+  function updateSpellLibrary(classKey: string, level: number, spells: string[]) {
+    setBuild((prev) => ({
+      ...prev,
+      spellLibrary: {
+        ...(prev.spellLibrary ?? {}),
+        [classKey]: {
+          ...((prev.spellLibrary ?? {})[classKey] ?? {}),
+          [level]: spells,
+        },
+      },
+    }));
+  }
+
+  function addSpellLibraryEntry(classKey: string, level: number) {
+    const current = build.spellLibrary?.[classKey]?.[level] ?? [];
+    updateSpellLibrary(classKey, level, [...current, ""]);
+  }
+
+  function appendSpellLibraryEntry(classKey: string, level: number, spellName: string) {
+    const current = build.spellLibrary?.[classKey]?.[level] ?? [];
+    updateSpellLibrary(classKey, level, [...current, spellName]);
+  }
+
+  function updateSpellLibraryName(classKey: string, level: number, index: number, value: string) {
+    const current = [...(build.spellLibrary?.[classKey]?.[level] ?? [])];
+    current[index] = value;
+    updateSpellLibrary(classKey, level, current);
+  }
+
+  function removeSpellLibraryEntry(classKey: string, level: number, index: number) {
+    const current = build.spellLibrary?.[classKey]?.[level] ?? [];
+    updateSpellLibrary(classKey, level, current.filter((_, i) => i !== index));
+  }
+
+  function resetSpellLibraryLevel(classKey: string, level: number) {
+    updateSpellLibrary(classKey, level, []);
+  }
+
+  function resetSpellLibraryForClass(classKey: string, levels: number[]) {
+    setBuild((prev) => ({
+      ...prev,
+      spellLibrary: {
+        ...(prev.spellLibrary ?? {}),
+        [classKey]: Object.fromEntries(levels.map((level) => [level, []])),
+      },
+    }));
+  }
+
+  function fillSelectionsFromLibrary(classKey: string, mode: "prepared" | "known", level: number, capacity: number) {
+    const source = build.spellLibrary?.[classKey]?.[level] ?? [];
+    updateSpellSelections(classKey, mode, level, source.slice(0, capacity));
+  }
+
   useEffect(() => {
     if (typeof window === "undefined") return;
     const snapshot: RuntimeStateSnapshot = {
@@ -547,83 +600,14 @@ export function App() {
     }));
   }
 
-  function spellSlotControls(caster: DerivedSpellcasting) {
-    const classKey = caster.className.toLowerCase();
-    const levels = Object.keys(caster.spellsPerDay)
-      .map(Number)
-      .sort((a, b) => a - b);
-    return (
-      <div className="mode-group" key={classKey}>
-        <div className="mode-title">{caster.className} spell slots</div>
-        {levels.map((level) => {
-          const max = caster.spellsPerDay[level] ?? 0;
-          const used = caster.slotsUsed[level] ?? 0;
-          const remaining = caster.slotsRemaining[level] ?? max;
-          const spells = caster.castingType === "prepared"
-            ? (caster.selectedPreparedSpells[level] ?? [])
-            : (caster.selectedKnownSpells[level] ?? []);
-          return (
-            <div className="spell-runtime-block" key={`${classKey}-${level}`}>
-              <div className="resource-row">
-                <span className="resource-label">L{level}: {remaining}/{max} left</span>
-                <div className="resource-buttons">
-                  <button
-                    className="ghost small"
-                    onClick={() => adjustSpellSlot(classKey, level, max, -1)}
-                  >
-                    -
-                  </button>
-                  <button
-                    className="ghost small"
-                    onClick={() => adjustSpellSlot(classKey, level, max, 1)}
-                  >
-                    +
-                  </button>
-                  <button
-                    className="ghost small"
-                    onClick={() =>
-                      setSpellSlotUsage((prev) => ({
-                        ...prev,
-                        [classKey]: {
-                          ...(prev[classKey] ?? {}),
-                          [level]: 0,
-                        },
-                      }))
-                    }
-                  >
-                    Rest
-                  </button>
-                </div>
-              </div>
-              {spells.length > 0 ? (
-                <div className="spell-cast-list">
-                  {spells.map((spellName) => {
-                    const castCount = spellCastCounts[classKey]?.[level]?.[spellName] ?? 0;
-                    return (
-                      <div className="spell-cast-row" key={`${classKey}-${level}-${spellName}`}>
-                        <span className="resource-label">{spellName} ×{castCount}</span>
-                        <div className="resource-buttons">
-                          <button
-                            className="ghost small"
-                            disabled={remaining <= 0}
-                            onClick={() => castSpell(classKey, level, max, spellName, remaining)}
-                          >
-                            Cast
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : null}
-            </div>
-          );
-        })}
-        <button className="ghost small" onClick={() => resetSpellClassRuntime(classKey, levels)}>
-          Rest All
-        </button>
-      </div>
-    );
+  function resetSpellSlotLevel(classKey: string, level: number) {
+    setSpellSlotUsage((prev) => ({
+      ...prev,
+      [classKey]: {
+        ...(prev[classKey] ?? {}),
+        [level]: 0,
+      },
+    }));
   }
 
   return (
@@ -803,129 +787,28 @@ export function App() {
                 </div>
               ))}
             </div>
-            {sheet.spellcasting.length > 0 ? (
-              <>
-                <div className="editor-section-head">
-                  <h3>Spellcasting Build Setup</h3>
-                </div>
-                <p className="hint">Manage prepared/known spells, capacity, and legality in one place instead of playing note-card necromancy.</p>
-                <datalist id="spell-options">
-                  {SPELL_OPTIONS.map((spell) => <option key={spell.id} value={spell.name} />)}
-                </datalist>
-                <div className="item-list">
-                  {sheet.spellcasting.map((caster) => {
-                    const classKey = caster.className.toLowerCase();
-                    const mode = caster.castingType === "prepared" ? "prepared" : "known";
-                    const selections = mode === "prepared" ? caster.selectedPreparedSpells : caster.selectedKnownSpells;
-                    const levels = Object.keys(caster.selectionDiagnostics)
-                      .map(Number)
-                      .sort((a, b) => a - b);
-                    const invalidLevels = levels.filter((level) => {
-                      const diag = caster.selectionDiagnostics[level];
-                      return !!diag && (
-                        diag.overCapacity ||
-                        diag.unknownSpells.length > 0 ||
-                        diag.offListSpells.length > 0 ||
-                        diag.wrongLevelSpells.length > 0
-                      );
-                    });
-                    return (
-                      <div className="item-card" key={`spells-${classKey}`}>
-                        <div className="editor-section-head tight">
-                          <h3>{caster.className} {mode === "prepared" ? "Prepared Spells" : "Known Spells"}</h3>
-                          <button className="ghost small" onClick={() => resetSpellSelectionsForClass(classKey, mode, levels)}>
-                            Clear All
-                          </button>
-                        </div>
-                        <div className="spell-class-summary">
-                          <span className="resource-label">Caster level {caster.casterLevel}</span>
-                          <span className="resource-label">Concentration +{caster.concentration.total}</span>
-                          {invalidLevels.length > 0 ? (
-                            <span className="warn-pill">Needs fixes on L{invalidLevels.join(", L")}</span>
-                          ) : (
-                            <span className="ok-pill">Selections look legal</span>
-                          )}
-                        </div>
-                        {levels.map((level) => {
-                          const current = selections[level] ?? [];
-                          const diag = caster.selectionDiagnostics[level];
-                          if (!diag) return null;
-                          const canAdd = current.length < diag.capacity;
-                          const quickPicks = diag.availableSpellNames.filter((name) => !current.includes(name)).slice(0, 6);
-                          return (
-                            <div className="spell-level-block" key={`spell-edit-${classKey}-${level}`}>
-                              <div className="editor-section-head tight">
-                                <div className="subsection-title level-title">
-                                  Level {level} <span className="muted">{current.length}/{diag.capacity} selected</span>
-                                </div>
-                                <div className="resource-buttons">
-                                  <button
-                                    className="ghost small"
-                                    disabled={!canAdd}
-                                    onClick={() => addSpellSelection(classKey, mode, level)}
-                                  >
-                                    Add Blank
-                                  </button>
-                                  <button
-                                    className="ghost small"
-                                    disabled={current.length === 0}
-                                    onClick={() => resetSpellSelectionsForLevel(classKey, mode, level)}
-                                  >
-                                    Clear Level
-                                  </button>
-                                </div>
-                              </div>
-                              {diag.overCapacity ? <p className="hint warn-text">Over capacity: {current.length}/{diag.capacity} selected.</p> : null}
-                              {diag.unknownSpells.length > 0 ? <p className="hint warn-text">Unknown: {diag.unknownSpells.join(", ")}</p> : null}
-                              {diag.offListSpells.length > 0 ? <p className="hint warn-text">Not on {caster.className} list: {diag.offListSpells.join(", ")}</p> : null}
-                              {diag.wrongLevelSpells.length > 0 ? (
-                                <p className="hint warn-text">
-                                  Wrong level: {diag.wrongLevelSpells.map((s) => `${s.name} (actual ${s.actualLevel})`).join(", ")}
-                                </p>
-                              ) : null}
-                              <div className="item-list compact-list">
-                                {current.map((spellName, index) => (
-                                  <div className="inline-row" key={`spell-${classKey}-${level}-${index}`}>
-                                    <input
-                                      className="inline-input"
-                                      type="text"
-                                      list="spell-options"
-                                      value={spellName}
-                                      onChange={(e) => updateSpellSelectionName(classKey, mode, level, index, e.target.value)}
-                                    />
-                                    <button className="ghost small" onClick={() => removeSpellSelection(classKey, mode, level, index)}>
-                                      Remove
-                                    </button>
-                                  </div>
-                                ))}
-                              </div>
-                              {quickPicks.length > 0 ? (
-                                <div className="quick-picks">
-                                  {quickPicks.map((spellName) => (
-                                    <button
-                                      key={`${classKey}-${level}-${spellName}`}
-                                      className="ghost small"
-                                      disabled={!canAdd}
-                                      onClick={() => appendSpellSelection(classKey, mode, level, spellName)}
-                                    >
-                                      + {spellName}
-                                    </button>
-                                  ))}
-                                </div>
-                              ) : null}
-                              {diag.availableSpellNames.length > 0 ? (
-                                <div className="hint">Registry options: {diag.availableSpellNames.join(", ")}</div>
-                              ) : null}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    );
-                  })}
-                </div>
-              </>
-            ) : null}
-            <div className="editor-section-head">
+            <SpellcastingManager
+              casters={sheet.spellcasting}
+              spellOptions={SPELL_OPTIONS}
+              spellCastCounts={spellCastCounts}
+              onAddSelection={addSpellSelection}
+              onAppendSelection={appendSpellSelection}
+              onUpdateSelectionName={updateSpellSelectionName}
+              onRemoveSelection={removeSpellSelection}
+              onResetSelectionsForLevel={resetSpellSelectionsForLevel}
+              onResetSelectionsForClass={resetSpellSelectionsForClass}
+              onAddLibraryEntry={addSpellLibraryEntry}
+              onAppendLibraryEntry={appendSpellLibraryEntry}
+              onUpdateLibraryName={updateSpellLibraryName}
+              onRemoveLibraryEntry={removeSpellLibraryEntry}
+              onResetLibraryLevel={resetSpellLibraryLevel}
+              onResetLibraryForClass={resetSpellLibraryForClass}
+              onFillSelectionsFromLibrary={fillSelectionsFromLibrary}
+              onAdjustSpellSlot={adjustSpellSlot}
+              onCastSpell={castSpell}
+              onResetSpellSlotLevel={resetSpellSlotLevel}
+              onResetSpellRuntimeClass={resetSpellClassRuntime}
+            />            <div className="editor-section-head">
               <h3>Weapons</h3>
               <button className="ghost small" onClick={addWeapon}>Add Weapon</button>
             </div>
@@ -1170,14 +1053,6 @@ export function App() {
               ))}
             </div>
           </section>
-
-          {sheet.spellcasting.length > 0 ? (
-            <section className="panel">
-              <h2>Spell Slots</h2>
-              <p className="hint">Burn slots by level during play. Same runtime brain, less paper goblinry.</p>
-              {sheet.spellcasting.map((caster) => spellSlotControls(caster))}
-            </section>
-          ) : null}
 
           {errors.length > 0 ? (
             <section className="panel errors">

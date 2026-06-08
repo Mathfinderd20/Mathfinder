@@ -252,6 +252,8 @@ export interface SpellSelectionState {
   known?: SpellSelectionByLevel;
 }
 
+export type SpellLibraryState = SpellSelectionByLevel;
+
 export type SpellSlotUsageByLevel = Partial<Record<number, number>>;
 
 export interface SpellcastingEntry {
@@ -262,6 +264,7 @@ export interface SpellcastingEntry {
   spellsPerDay: Partial<Record<number, number>>;
   spellsKnown?: Partial<Record<number, number>>;
   selections?: SpellSelectionState;
+  library?: SpellLibraryState;
   slotsUsed?: SpellSlotUsageByLevel;
 }
 
@@ -271,9 +274,11 @@ export interface SpellSelectionDiagnostic {
   capacity: number;
   selectedCount: number;
   availableSpellNames: string[];
+  librarySpellNames: string[];
   unknownSpells: string[];
   offListSpells: string[];
   wrongLevelSpells: { name: string; actualLevel: number }[];
+  missingFromLibrary: string[];
   overCapacity: boolean;
 }
 
@@ -288,6 +293,7 @@ export interface DerivedSpellcasting {
   spellsPerDay: Partial<Record<number, number>>;
   spellsKnown: Partial<Record<number, number>>;
   preparedCapacity: Partial<Record<number, number>>;
+  librarySpells: SpellLibraryState;
   selectedPreparedSpells: SpellSelectionByLevel;
   selectedKnownSpells: SpellSelectionByLevel;
   selectionDiagnostics: Partial<Record<number, SpellSelectionDiagnostic>>;

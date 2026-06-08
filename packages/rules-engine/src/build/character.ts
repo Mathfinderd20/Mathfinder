@@ -9,6 +9,7 @@ import type {
   SheetDescriptor,
   Size,
   SkillKey,
+  SpellLibraryState,
   SpellSelectionState,
   SpellSlotUsageByLevel,
   SuppressedAcquisition,
@@ -87,6 +88,8 @@ export interface CharacterBuild {
   levels: LevelEntry[];
   equipment?: EquipmentEntry[];
   weapons?: Weapon[];
+  /** Per-class learnable/library spells keyed by class name then spell level. */
+  spellLibrary?: Record<string, SpellLibraryState>;
   /** Per-class spell prep/known selections keyed by class name. */
   spellSelections?: Record<string, SpellSelectionState>;
   /** Per-class spell slot usage keyed by class name then spell level. */
@@ -305,6 +308,7 @@ export function buildCharacter(
       spellsPerDay: def.spellcasting.spellsPerDay[count] ?? {},
       spellsKnown: def.spellcasting.spellsKnown?.[count] ?? {},
       selections: build.spellSelections?.[className.toLowerCase()] ?? build.spellSelections?.[def.name.toLowerCase()],
+      library: build.spellLibrary?.[className.toLowerCase()] ?? build.spellLibrary?.[def.name.toLowerCase()],
       slotsUsed: build.spellSlotUsage?.[className.toLowerCase()] ?? build.spellSlotUsage?.[def.name.toLowerCase()],
     }];
   });
@@ -470,6 +474,7 @@ export function validateBuild(
   }
 
   for (const entry of effectiveSpellcastingSelections(build, registry)) {
+    const library = build.spellLibrary?.[entry.className.toLowerCase()] ?? {};
     const validateSelectedSpell = (spellName: string, className: string, spellLevel: number) => {
       const spell = getSpell(spellRegistry, spellName);
       if (!spell) {
@@ -496,7 +501,22 @@ export function validateBuild(
           message: `${className} selected "${spellName}" as level ${spellLevel}, but it is level ${actualLevel}.`,
         });
       }
+      const libraryNames = library[spellLevel] ?? [];
+      if (libraryNames.length > 0 && !libraryNames.some((name) => name.toLowerCase() === spellName.toLowerCase())) {
+        issues.push({
+          severity: "error",
+          code: "spell-not-in-library",
+          message: `${className} selected "${spellName}" at level ${spellLevel}, but it is not in that class library/pool.`,
+        });
+      }
     };
+
+    for (const [spellLevelStr, names] of Object.entries(library)) {
+      const spellLevel = Number(spellLevelStr);
+      for (const spellName of names ?? []) {
+        validateSelectedSpell(spellName, entry.className, spellLevel);
+      }
+    }
 
     const prepared = entry.selections?.prepared ?? {};
     for (const [spellLevelStr, names] of Object.entries(prepared)) {

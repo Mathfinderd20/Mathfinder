@@ -67,6 +67,7 @@ export function deriveSpellcasting(
       slotsUsed[level] = used;
       slotsRemaining[level] = Math.max(0, totalSpellsPerDay[level]! - used);
     }
+    const librarySpells = cloneSelections(entry.library);
     const selectedPreparedSpells = cloneSelections(entry.selections?.prepared);
     const selectedKnownSpells = cloneSelections(entry.selections?.known);
     const selectionSource = entry.castingType === "prepared" ? selectedPreparedSpells : selectedKnownSpells;
@@ -77,9 +78,11 @@ export function deriveSpellcasting(
         .filter((spell) => classSpellLevel(spell, entry.className) === level)
         .map((spell) => spell.name)
         .sort((a, b) => a.localeCompare(b));
+      const librarySpellNames = librarySpells[level] ?? [];
       const unknownSpells: string[] = [];
       const offListSpells: string[] = [];
       const wrongLevelSpells: { name: string; actualLevel: number }[] = [];
+      const missingFromLibrary: string[] = [];
       for (const name of selected) {
         const spell = getSpell(SPELLS, name);
         if (!spell) {
@@ -89,6 +92,9 @@ export function deriveSpellcasting(
         const actualLevel = classSpellLevel(spell, entry.className);
         if (actualLevel === undefined) offListSpells.push(name);
         else if (actualLevel !== level) wrongLevelSpells.push({ name, actualLevel });
+        if (librarySpellNames.length > 0 && !librarySpellNames.some((n) => n.toLowerCase() === name.toLowerCase())) {
+          missingFromLibrary.push(name);
+        }
       }
       const capacity = capacitySource[level] ?? 0;
       if (selected.length > 0 || capacity > 0 || availableSpellNames.length > 0) {
@@ -98,9 +104,11 @@ export function deriveSpellcasting(
           capacity,
           selectedCount: selected.length,
           availableSpellNames,
+          librarySpellNames,
           unknownSpells,
           offListSpells,
           wrongLevelSpells,
+          missingFromLibrary,
           overCapacity: selected.length > capacity,
         };
       }
@@ -116,6 +124,7 @@ export function deriveSpellcasting(
       spellsPerDay: totalSpellsPerDay,
       spellsKnown: entry.spellsKnown ?? {},
       preparedCapacity: entry.castingType === "prepared" ? totalSpellsPerDay : {},
+      librarySpells,
       selectedPreparedSpells,
       selectedKnownSpells,
       selectionDiagnostics,
