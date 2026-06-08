@@ -152,7 +152,7 @@ describe("validateBuild catches illegal builds", () => {
 
   it("flags an unknown class", () => {
     const build = grukkLevel1();
-    build.levels[0]!.className = "Sorcerer"; // not in SAMPLE_CLASSES
+    build.levels[0]!.className = "Paladin"; // not in SAMPLE_CLASSES yet
     const issues = validateBuild(build);
     expect(issues.some((i) => i.code === "unknown-class")).toBe(true);
   });

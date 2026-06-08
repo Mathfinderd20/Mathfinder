@@ -119,9 +119,11 @@ export function Sheet({ sheet }: { sheet: DerivedSheet }) {
             {sheet.spellcasting.map((c, i) => (
               <div key={i}>
                 <div className="skill"><span className="skill-name">{c.className} CL</span><span className="skill-value">{c.casterLevel}</span></div>
+                <div className="skill"><span className="skill-name">Casting Type</span><span className="skill-value smallcaps">{c.castingType}</span></div>
                 <div className="skill"><span className="skill-name">Concentration</span><span className="skill-value">{sign(c.concentration.total)}</span></div>
                 <div className="skill"><span className="skill-name">Casting Stat</span><span className="skill-value">{c.castingAbility.toUpperCase()}</span></div>
                 <div className="skill"><span className="skill-name">Spells/Day</span><span className="skill-value">{Object.entries(c.spellsPerDay).map(([lvl, n]) => `${lvl}:${n}`).join(" ")}</span></div>
+                <div className="skill"><span className="skill-name">Bonus Slots</span><span className="skill-value">{Object.entries(c.bonusSpellsPerDay).filter(([lvl]) => lvl !== "0").map(([lvl, n]) => `${lvl}:${n}`).join(" ") || "—"}</span></div>
               </div>
             ))}
           </div>

@@ -124,6 +124,51 @@ export const SAMPLE_CLASSES: ClassRegistry = {
       },
     },
   },
+  cleric: {
+    name: "Cleric",
+    hitDie: 8,
+    bab: "three-quarter",
+    goodSaves: ["fort", "will"],
+    skillRanksPerLevel: 2,
+    classSkills: [
+      "appraise", "craft", "diplomacy", "heal", "knowledge.arcana",
+      "knowledge.history", "knowledge.nobility", "knowledge.planes",
+      "knowledge.religion", "linguistics", "profession", "sense-motive", "spellcraft",
+    ],
+    spellcasting: {
+      castingType: "prepared",
+      castingAbility: "wis",
+      spellsPerDay: {
+        1: spellsByLevel(3, 1),
+        2: spellsByLevel(4, 2),
+        3: spellsByLevel(4, 2, 1),
+        4: spellsByLevel(5, 3, 2),
+        5: spellsByLevel(5, 3, 2, 1),
+      },
+    },
+  },
+  sorcerer: {
+    name: "Sorcerer",
+    hitDie: 6,
+    bab: "half",
+    goodSaves: ["will"],
+    skillRanksPerLevel: 2,
+    classSkills: [
+      "appraise", "bluff", "craft", "fly", "intimidate", "knowledge.arcana",
+      "profession", "spellcraft", "use-magic-device",
+    ],
+    spellcasting: {
+      castingType: "spontaneous",
+      castingAbility: "cha",
+      spellsPerDay: {
+        1: spellsByLevel(5, 3),
+        2: spellsByLevel(6, 4),
+        3: spellsByLevel(6, 5),
+        4: spellsByLevel(6, 6, 3),
+        5: spellsByLevel(6, 6, 4),
+      },
+    },
+  },
 };
 
 export function getClassDefinition(

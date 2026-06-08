@@ -259,6 +259,8 @@ export interface DerivedSpellcasting {
   castingAbility: AbilityKey;
   casterLevel: number;
   concentration: DerivedStat;
+  baseSpellsPerDay: Partial<Record<number, number>>;
+  bonusSpellsPerDay: Partial<Record<number, number>>;
   spellsPerDay: Partial<Record<number, number>>;
   spellSaveDcs: Partial<Record<number, number>>;
   maxSpellLevel: number;

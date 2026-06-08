@@ -21,6 +21,11 @@ function maxSpellLevelFromSlots(spellsPerDay: Partial<Record<number, number>>): 
   return levels.length > 0 ? Math.max(...levels) : 0;
 }
 
+export function bonusSpellSlots(castingAbilityMod: number, spellLevel: number): number {
+  if (spellLevel <= 0) return 0;
+  return Math.max(0, Math.floor((castingAbilityMod - spellLevel) / 4) + 1);
+}
+
 export function spellSaveDc(castingAbilityMod: number, spellLevel: number): number {
   return 10 + spellLevel + castingAbilityMod;
 }
@@ -35,11 +40,16 @@ export function deriveSpellcasting(
     const abilityMod = ability.mod;
     const concentration = stat(entry.casterLevel + abilityMod);
     const maxSpellLevel = maxSpellLevelFromSlots(entry.spellsPerDay);
+    const bonusSpellsPerDay: Partial<Record<number, number>> = {};
+    const totalSpellsPerDay: Partial<Record<number, number>> = {};
     const spellSaveDcs: Partial<Record<number, number>> = {};
     for (let level = 0; level <= maxSpellLevel; level += 1) {
-      if ((entry.spellsPerDay[level] ?? 0) > 0) {
-        spellSaveDcs[level] = spellSaveDc(abilityMod, level);
-      }
+      const baseSlots = entry.spellsPerDay[level] ?? 0;
+      if (baseSlots <= 0) continue;
+      const bonusSlots = bonusSpellSlots(abilityMod, level);
+      bonusSpellsPerDay[level] = bonusSlots;
+      totalSpellsPerDay[level] = baseSlots + bonusSlots;
+      spellSaveDcs[level] = spellSaveDc(abilityMod, level);
     }
     return {
       className: entry.className,
@@ -47,7 +57,9 @@ export function deriveSpellcasting(
       castingAbility: entry.castingAbility,
       casterLevel: entry.casterLevel,
       concentration,
-      spellsPerDay: entry.spellsPerDay,
+      baseSpellsPerDay: entry.spellsPerDay,
+      bonusSpellsPerDay,
+      spellsPerDay: totalSpellsPerDay,
       spellSaveDcs,
       maxSpellLevel,
     };
