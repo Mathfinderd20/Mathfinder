@@ -22,6 +22,7 @@ import {
   type SaveKind,
 } from "./classes";
 import { featEffects, FEATS, type FeatRegistry } from "../content/feats";
+import { classSpellLevel, getSpell, SPELLS, type SpellRegistry } from "../content/spells";
 import {
   classFeatureEffects,
   classFeaturesGrantedAt,
@@ -389,6 +390,7 @@ export interface ValidationIssue {
 export function validateBuild(
   build: CharacterBuild,
   registry: ClassRegistry = SAMPLE_CLASSES,
+  spellRegistry: SpellRegistry = SPELLS,
 ): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
   const characterLevel = build.levels.length;
@@ -464,10 +466,39 @@ export function validateBuild(
   }
 
   for (const entry of effectiveSpellcastingSelections(build, registry)) {
+    const validateSelectedSpell = (spellName: string, className: string, spellLevel: number) => {
+      const spell = getSpell(spellRegistry, spellName);
+      if (!spell) {
+        issues.push({
+          severity: "error",
+          code: "unknown-spell",
+          message: `Unknown spell "${spellName}" selected for ${className}.`,
+        });
+        return;
+      }
+      const actualLevel = classSpellLevel(spell, className);
+      if (actualLevel === undefined) {
+        issues.push({
+          severity: "error",
+          code: "spell-not-on-class-list",
+          message: `${className} cannot select "${spellName}" because it is not on that class list.`,
+        });
+        return;
+      }
+      if (actualLevel !== spellLevel) {
+        issues.push({
+          severity: "error",
+          code: "spell-level-mismatch",
+          message: `${className} selected "${spellName}" as level ${spellLevel}, but it is level ${actualLevel}.`,
+        });
+      }
+    };
+
     const prepared = entry.selections?.prepared ?? {};
     for (const [spellLevelStr, names] of Object.entries(prepared)) {
       const spellLevel = Number(spellLevelStr);
-      const selectedCount = (names ?? []).length;
+      const selectedNames = names ?? [];
+      const selectedCount = selectedNames.length;
       const baseSlots = entry.spellsPerDay[spellLevel] ?? 0;
       const capacity = baseSlots > 0
         ? baseSlots + bonusSpellSlotsForLevel(entry.castingAbilityMod, spellLevel)
@@ -479,12 +510,16 @@ export function validateBuild(
           message: `${entry.className} prepared ${selectedCount} level ${spellLevel} spells but capacity is ${capacity}.`,
         });
       }
+      for (const spellName of selectedNames) {
+        validateSelectedSpell(spellName, entry.className, spellLevel);
+      }
     }
 
     const known = entry.selections?.known ?? {};
     for (const [spellLevelStr, names] of Object.entries(known)) {
       const spellLevel = Number(spellLevelStr);
-      const selectedCount = (names ?? []).length;
+      const selectedNames = names ?? [];
+      const selectedCount = selectedNames.length;
       const cap = entry.spellsKnown[spellLevel] ?? 0;
       if (selectedCount > cap) {
         issues.push({
@@ -492,6 +527,9 @@ export function validateBuild(
           code: "spells-known-over-cap",
           message: `${entry.className} selected ${selectedCount} known level ${spellLevel} spells but cap is ${cap}.`,
         });
+      }
+      for (const spellName of selectedNames) {
+        validateSelectedSpell(spellName, entry.className, spellLevel);
       }
     }
   }

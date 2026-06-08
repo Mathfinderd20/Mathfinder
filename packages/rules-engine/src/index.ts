@@ -67,6 +67,18 @@ export {
   type PrereqResult,
 } from "./content/feats";
 
+// ---- Content: spells ----
+export {
+  CORE_SPELLS,
+  SAVAGE_COMPANY_SPELLS,
+  SPELLS,
+  buildSpellRegistry,
+  getSpell,
+  classSpellLevel,
+  type SpellDefinition,
+  type SpellRegistry,
+  type SpellClassLevel,
+} from "./content/spells";
 // ---- Build / level-up layer ----
 export {
   buildCharacter,

@@ -192,4 +192,46 @@ describe("validateBuild catches illegal builds", () => {
     const issues = validateBuild(build);
     expect(issues.some((i) => i.code === "spells-known-over-cap")).toBe(true);
   });
+
+  it("flags unknown spell names in selections", () => {
+    const build: CharacterBuild = {
+      name: "Mystery Goblin",
+      race: { name: "Human", size: "medium", speed: 30 },
+      baseAbilityScores: { str: 8, dex: 14, con: 12, int: 18, wis: 10, cha: 10 },
+      levels: [{ className: "Wizard", hitPointRoll: 6, feats: [] }],
+      spellSelections: {
+        wizard: { prepared: { 1: ["Orb of Taxes"] } },
+      },
+    };
+    const issues = validateBuild(build);
+    expect(issues.some((i) => i.code === "unknown-spell")).toBe(true);
+  });
+
+  it("flags spells not on the class list", () => {
+    const build: CharacterBuild = {
+      name: "Heretical Goblin",
+      race: { name: "Human", size: "medium", speed: 30 },
+      baseAbilityScores: { str: 8, dex: 14, con: 12, int: 18, wis: 10, cha: 10 },
+      levels: [{ className: "Wizard", hitPointRoll: 6, feats: [] }],
+      spellSelections: {
+        wizard: { prepared: { 1: ["Cure Light Wounds"] } },
+      },
+    };
+    const issues = validateBuild(build);
+    expect(issues.some((i) => i.code === "spell-not-on-class-list")).toBe(true);
+  });
+
+  it("flags spell level mismatches", () => {
+    const build: CharacterBuild = {
+      name: "Bucket Goblin",
+      race: { name: "Human", size: "medium", speed: 30 },
+      baseAbilityScores: { str: 8, dex: 14, con: 12, int: 18, wis: 10, cha: 10 },
+      levels: [{ className: "Wizard", hitPointRoll: 6, feats: [] }],
+      spellSelections: {
+        wizard: { prepared: { 0: ["Magic Missile"] } },
+      },
+    };
+    const issues = validateBuild(build);
+    expect(issues.some((i) => i.code === "spell-level-mismatch")).toBe(true);
+  });
 });
