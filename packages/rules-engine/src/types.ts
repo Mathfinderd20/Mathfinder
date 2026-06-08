@@ -245,6 +245,13 @@ export interface InventorySummary {
 
 export type SpellcastingType = "prepared" | "spontaneous";
 
+export type SpellSelectionByLevel = Partial<Record<number, string[]>>;
+
+export interface SpellSelectionState {
+  prepared?: SpellSelectionByLevel;
+  known?: SpellSelectionByLevel;
+}
+
 export interface SpellcastingEntry {
   className: string;
   castingType: SpellcastingType;
@@ -252,6 +259,7 @@ export interface SpellcastingEntry {
   casterLevel: number;
   spellsPerDay: Partial<Record<number, number>>;
   spellsKnown?: Partial<Record<number, number>>;
+  selections?: SpellSelectionState;
 }
 
 export interface DerivedSpellcasting {
@@ -265,6 +273,8 @@ export interface DerivedSpellcasting {
   spellsPerDay: Partial<Record<number, number>>;
   spellsKnown: Partial<Record<number, number>>;
   preparedCapacity: Partial<Record<number, number>>;
+  selectedPreparedSpells: SpellSelectionByLevel;
+  selectedKnownSpells: SpellSelectionByLevel;
   spellSaveDcs: Partial<Record<number, number>>;
   maxSpellLevel: number;
 }

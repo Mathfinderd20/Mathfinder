@@ -14,6 +14,14 @@ function stat(total: number): DerivedStat {
   };
 }
 
+function cloneSelections(byLevel: Partial<Record<number, string[]>> | undefined): Partial<Record<number, string[]>> {
+  const out: Partial<Record<number, string[]>> = {};
+  for (const [level, names] of Object.entries(byLevel ?? {})) {
+    out[Number(level)] = [...(names ?? [])];
+  }
+  return out;
+}
+
 function maxSpellLevelFromSlots(spellsPerDay: Partial<Record<number, number>>): number {
   const levels = Object.entries(spellsPerDay)
     .filter(([, slots]) => (slots ?? 0) > 0)
@@ -62,6 +70,8 @@ export function deriveSpellcasting(
       spellsPerDay: totalSpellsPerDay,
       spellsKnown: entry.spellsKnown ?? {},
       preparedCapacity: entry.castingType === "prepared" ? totalSpellsPerDay : {},
+      selectedPreparedSpells: cloneSelections(entry.selections?.prepared),
+      selectedKnownSpells: cloneSelections(entry.selections?.known),
       spellSaveDcs,
       maxSpellLevel,
     };

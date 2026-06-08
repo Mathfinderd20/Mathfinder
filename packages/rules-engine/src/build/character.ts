@@ -9,6 +9,7 @@ import type {
   SheetDescriptor,
   Size,
   SkillKey,
+  SpellSelectionState,
   SuppressedAcquisition,
   Weapon,
 } from "../types";
@@ -84,6 +85,8 @@ export interface CharacterBuild {
   levels: LevelEntry[];
   equipment?: EquipmentEntry[];
   weapons?: Weapon[];
+  /** Per-class spell prep/known selections keyed by class name. */
+  spellSelections?: Record<string, SpellSelectionState>;
   /** Current character conditions, e.g. fatigued. */
   conditions?: Condition[];
   /** Total carried load in pounds for encumbrance. */
@@ -265,6 +268,7 @@ export function buildCharacter(
       casterLevel: count,
       spellsPerDay: def.spellcasting.spellsPerDay[count] ?? {},
       spellsKnown: def.spellcasting.spellsKnown?.[count] ?? {},
+      selections: build.spellSelections?.[className.toLowerCase()] ?? build.spellSelections?.[def.name.toLowerCase()],
     }];
   });
 

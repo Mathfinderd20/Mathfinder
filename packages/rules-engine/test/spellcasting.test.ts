@@ -29,6 +29,14 @@ describe("wizard spellcasting", () => {
       race: { name: "Human", size: "medium", speed: 30 },
       baseAbilityScores: { str: 8, dex: 14, con: 12, int: 18, wis: 10, cha: 10 },
       levels: [{ className: "Wizard", hitPointRoll: 6, feats: [] }],
+      spellSelections: {
+        wizard: {
+          prepared: {
+            0: ["detect magic", "read magic", "acid splash"],
+            1: ["mage armor", "magic missile"],
+          },
+        },
+      },
     };
     const sheet = computeSheet(buildCharacter(build));
     expect(sheet.spellcasting[0]).toMatchObject({
@@ -42,6 +50,11 @@ describe("wizard spellcasting", () => {
       spellsPerDay: { 0: 3, 1: 2 },
       preparedCapacity: { 0: 3, 1: 2 },
       spellsKnown: {},
+      selectedPreparedSpells: {
+        0: ["detect magic", "read magic", "acid splash"],
+        1: ["mage armor", "magic missile"],
+      },
+      selectedKnownSpells: {},
       spellSaveDcs: { 0: 14, 1: 15 },
     });
     expect(sheet.spellcasting[0]!.concentration.total).toBe(5);
@@ -74,6 +87,14 @@ describe("cleric and sorcerer spellcasting", () => {
       race: { name: "Human", size: "medium", speed: 30 },
       baseAbilityScores: { str: 8, dex: 14, con: 12, int: 10, wis: 10, cha: 18 },
       levels: [{ className: "Sorcerer", hitPointRoll: 6, feats: [] }],
+      spellSelections: {
+        sorcerer: {
+          known: {
+            0: ["detect magic", "read magic", "mage hand", "daze"],
+            1: ["magic missile", "shield"],
+          },
+        },
+      },
     };
     const sheet = computeSheet(buildCharacter(build));
     expect(sheet.spellcasting[0]).toMatchObject({
@@ -85,6 +106,11 @@ describe("cleric and sorcerer spellcasting", () => {
       spellsPerDay: { 0: 5, 1: 4 },
       spellsKnown: { 0: 4, 1: 2 },
       preparedCapacity: {},
+      selectedPreparedSpells: {},
+      selectedKnownSpells: {
+        0: ["detect magic", "read magic", "mage hand", "daze"],
+        1: ["magic missile", "shield"],
+      },
     });
     expect(sheet.spellcasting[0]!.concentration.total).toBe(5);
   });
