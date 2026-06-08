@@ -15,6 +15,7 @@ export {
   CLASS_SKILL_BONUS,
 } from "./skills";
 export { deriveHitPoints, deriveSpeed } from "./vitals";
+export { deriveWeapons } from "./weapons";
 export { renderSheet, explainStat } from "./format";
 
 // ---- Content: activatables ----
@@ -23,10 +24,12 @@ export {
   resolveActivatableSelections,
   groupActivatables,
   activatableModifiers,
+  activatableResourceMax,
   babStep,
   activatableFeaturesForDescriptor,
   activatableFeatsForDescriptor,
   type ActivatableEffect,
+  type ActivatableResource,
   type ActivatableConflict,
   type ResolvedActivatables,
   type ActivationContext,

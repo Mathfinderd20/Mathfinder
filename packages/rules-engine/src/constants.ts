@@ -73,4 +73,6 @@ export const TARGET_ALIASES: Record<string, ModifierTarget[]> = {
   "save.will": ["save.will", "save.all"],
   "attack.melee": ["attack.melee", "attack"],
   "attack.ranged": ["attack.ranged", "attack"],
+  "damage.melee": ["damage.melee", "damage"],
+  "damage.ranged": ["damage.ranged", "damage"],
 };

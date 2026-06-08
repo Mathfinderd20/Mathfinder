@@ -75,10 +75,14 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 
 .hint { font-size: 12px; color: var(--muted); margin: 0 0 12px; line-height: 1.5; }
 
+.buff-block { padding: 4px 0; }
 .buff { display: flex; gap: 10px; align-items: flex-start; padding: 7px 0; cursor: pointer; }
 .buff input { margin-top: 3px; }
 .buff strong { display: block; font-size: 14px; }
 .buff-desc { display: block; font-size: 12px; color: var(--muted); }
+.resource-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 0 0 6px 26px; }
+.resource-label { font-size: 12px; color: var(--accent-2); }
+.resource-buttons { display: flex; gap: 6px; }
 .mode-group { margin: 8px 0 12px; padding: 8px 10px; background: var(--panel-2); border-radius: 8px; border: 1px solid var(--line); }
 .mode-title { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent-2); margin-bottom: 4px; }
 .warn-text { color: var(--accent-2); }
@@ -133,6 +137,13 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 .skills { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px 18px; }
 .skill { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px dotted var(--line); font-size: 13px; }
 .skill-value { font-weight: 600; font-variant-numeric: tabular-nums; }
+.weapons { display: flex; flex-direction: column; gap: 8px; }
+.weapon { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-bottom: 1px dotted var(--line); }
+.weapon-name { font-weight: 600; }
+.weapon-stats { display: flex; gap: 12px; font-variant-numeric: tabular-nums; }
+.weapon-atk { min-width: 26px; text-align: right; }
+.weapon-dmg { min-width: 70px; text-align: right; }
+.weapon-crit { color: var(--muted); min-width: 58px; text-align: right; }
 .tag {
   font-size: 10px;
   background: var(--line);

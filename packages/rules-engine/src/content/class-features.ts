@@ -39,6 +39,12 @@ export const CORE_CLASS_FEATURES: ClassFeatureDefinition[] = [
         { target: "save.will", type: "morale", value: 2, source: "Rage" },
         { target: "ac", type: "untyped", value: -2, source: "Rage" },
       ],
+      resource: {
+        name: "Rage",
+        unit: "rounds/day",
+        // 4 + Con mod at 1st level, +2 per level after (single-class assumption).
+        max: (ctx) => 4 + (ctx.abilityModifiers?.con ?? 0) + 2 * Math.max(0, ctx.characterLevel - 1),
+      },
     },
   },
   {

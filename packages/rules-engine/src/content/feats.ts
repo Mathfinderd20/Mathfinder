@@ -101,11 +101,18 @@ export const CORE_FEATS: FeatDefinition[] = [
     activatable: {
       id: "power-attack",
       name: "Power Attack",
-      description: "-1 melee attack per 4 BAB (+2 damage; damage not yet tracked)",
-      effects: [{ target: "attack.melee", type: "untyped", value: -1, source: "Power Attack" }],
-      scale: (ctx) => [
-        { target: "attack.melee", type: "untyped", value: -babStep(ctx.baseAttackBonus), source: "Power Attack" },
+      description: "-1 melee attack / +2 melee damage per 4 BAB",
+      effects: [
+        { target: "attack.melee", type: "untyped", value: -1, source: "Power Attack" },
+        { target: "damage.melee", type: "untyped", value: 2, source: "Power Attack" },
       ],
+      scale: (ctx) => {
+        const steps = babStep(ctx.baseAttackBonus);
+        return [
+          { target: "attack.melee", type: "untyped", value: -steps, source: "Power Attack" },
+          { target: "damage.melee", type: "untyped", value: 2 * steps, source: "Power Attack" },
+        ];
+      },
     },
   },
   {
@@ -145,11 +152,18 @@ export const CORE_FEATS: FeatDefinition[] = [
     activatable: {
       id: "deadly-aim",
       name: "Deadly Aim",
-      description: "-1 ranged attack per 4 BAB (+2 damage; damage not yet tracked)",
-      effects: [{ target: "attack.ranged", type: "untyped", value: -1, source: "Deadly Aim" }],
-      scale: (ctx) => [
-        { target: "attack.ranged", type: "untyped", value: -babStep(ctx.baseAttackBonus), source: "Deadly Aim" },
+      description: "-1 ranged attack / +2 ranged damage per 4 BAB",
+      effects: [
+        { target: "attack.ranged", type: "untyped", value: -1, source: "Deadly Aim" },
+        { target: "damage.ranged", type: "untyped", value: 2, source: "Deadly Aim" },
       ],
+      scale: (ctx) => {
+        const steps = babStep(ctx.baseAttackBonus);
+        return [
+          { target: "attack.ranged", type: "untyped", value: -steps, source: "Deadly Aim" },
+          { target: "damage.ranged", type: "untyped", value: 2 * steps, source: "Deadly Aim" },
+        ];
+      },
     },
   },
 ];

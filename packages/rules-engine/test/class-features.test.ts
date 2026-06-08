@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { CLASS_FEATURES, classFeaturesGrantedAt } from "../src/content/class-features";
-import { activatableFeaturesForDescriptor } from "../src/content/activatables";
+import {
+  CLASS_FEATURES,
+  CORE_CLASS_FEATURES,
+  classFeaturesGrantedAt,
+} from "../src/content/class-features";
+import {
+  activatableFeaturesForDescriptor,
+  activatableResourceMax,
+} from "../src/content/activatables";
 import { buildCharacter, type CharacterBuild } from "../src/build/character";
 import { computeSheet } from "../src/compute";
 
@@ -35,6 +42,16 @@ describe("class feature effects auto-apply through buildCharacter", () => {
 
   it("resolves Rage as an activatable class feature from the descriptor", () => {
     expect(activatableFeaturesForDescriptor(CLASS_FEATURES, sheet.descriptor).map((f) => f.name)).toEqual(["Rage"]);
+  });
+
+  it("exposes Rage rounds/day as a resource pool (4 + Con + 2/level after 1st)", () => {
+    const rage = CORE_CLASS_FEATURES.find((f) => f.id === "barbarian-rage-l1")!.activatable!;
+    const max = activatableResourceMax(rage, {
+      baseAttackBonus: 1,
+      characterLevel: 1,
+      abilityModifiers: { str: 3, dex: 1, con: 2, int: 0, wis: 1, cha: -1 },
+    });
+    expect(max).toBe(6); // 4 + Con 2 + 0
   });
 
   it("dedupes features if a build manually repeats an auto-granted one", () => {

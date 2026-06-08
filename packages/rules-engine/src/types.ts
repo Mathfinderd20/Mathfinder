@@ -70,6 +70,9 @@ export type ModifierTarget =
   | "attack"
   | "attack.melee"
   | "attack.ranged"
+  | "damage"
+  | "damage.melee"
+  | "damage.ranged"
   | "hp"
   | "speed"
   | (string & {});
@@ -186,12 +189,44 @@ export interface SheetDescriptor {
   features: NamedAcquisition[];
 }
 
+export type WeaponCategory = "melee" | "ranged";
+/** Affects Strength-to-damage multiplier (two-handed 1.5x, off-hand 0.5x). */
+export type WeaponHandedness = "one" | "two" | "off" | "light";
+
+export interface Weapon {
+  name: string;
+  category: WeaponCategory;
+  /** Damage dice, e.g. "1d12". */
+  damageDice: string;
+  handedness?: WeaponHandedness;
+  /** Lowest natural roll that threatens a crit (e.g. 19 for 19-20). Default 20. */
+  critRange?: number;
+  critMultiplier?: number;
+  /** Ability added to damage. Defaults: Str (melee), none (ranged). */
+  damageAbility?: AbilityKey | null;
+}
+
+export interface DerivedWeapon {
+  name: string;
+  category: WeaponCategory;
+  attack: DerivedStat;
+  damageDice: string;
+  damageBonus: number;
+  /** e.g. "1d12+7". */
+  damageDisplay: string;
+  damageBreakdown: BreakdownEntry[];
+  /** e.g. "20/x3" or "19-20/x2". */
+  crit: string;
+}
+
 export interface CharacterInput {
   name: string;
   level: number;
   size: Size;
   /** Descriptive identity (race/class/feats/features) for display. */
   descriptor?: SheetDescriptor;
+  /** Equipped weapons to derive attack/damage lines for. */
+  weapons?: Weapon[];
   /** Base ability scores BEFORE modifiers (racial/enhancement/etc. as modifiers). */
   abilityScores: AbilityScores;
   baseAttackBonus: number;
@@ -227,6 +262,7 @@ export interface DerivedSheet {
   hitPoints: DerivedStat;
   speed: DerivedStat;
   skills: Record<SkillKey, DerivedSkill>;
+  weapons: DerivedWeapon[];
   /** Race/class/feats/features for display (empty if not provided). */
   descriptor: SheetDescriptor;
 }

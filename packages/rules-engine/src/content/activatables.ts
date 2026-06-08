@@ -1,4 +1,4 @@
-import type { Modifier, SheetDescriptor } from "../types";
+import type { AbilityKey, Modifier, SheetDescriptor } from "../types";
 import type { ClassFeatureRegistry } from "./class-features";
 import type { FeatRegistry } from "./feats";
 
@@ -6,10 +6,19 @@ import type { FeatRegistry } from "./feats";
  * A toggleable combat/runtime state sourced from content.
  * Examples: Rage, Combat Expertise, Power Attack, Bardic Performance.
  */
-/** Runtime context an activatable may scale against (BAB, level, ...). */
+/** Runtime context an activatable may scale against (BAB, level, ability mods). */
 export interface ActivationContext {
   baseAttackBonus: number;
   characterLevel: number;
+  abilityModifiers?: Record<AbilityKey, number>;
+}
+
+/** A limited-use resource pool, e.g. Rage rounds/day. */
+export interface ActivatableResource {
+  name: string;
+  unit: string;
+  /** Maximum pool size given the character context. */
+  max: (ctx: ActivationContext) => number;
 }
 
 export interface ActivatableEffect {
@@ -22,6 +31,16 @@ export interface ActivatableEffect {
   scale?: (ctx: ActivationContext) => Modifier[];
   /** Optional exclusivity bucket, e.g. "attack-mode". */
   group?: string;
+  /** Optional limited-use resource pool, e.g. Rage rounds/day. */
+  resource?: ActivatableResource;
+}
+
+/** Resolve an activatable's max resource pool, or undefined if it has none. */
+export function activatableResourceMax(
+  a: ActivatableEffect,
+  ctx: ActivationContext,
+): number | undefined {
+  return a.resource ? Math.max(0, a.resource.max(ctx)) : undefined;
 }
 
 /** Resolve an activatable's modifiers, applying scaling when a context is given. */

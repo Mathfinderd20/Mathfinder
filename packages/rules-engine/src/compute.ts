@@ -9,6 +9,7 @@ import {
 import { modifiersFor, resolveModifiers } from "./modifiers";
 import { deriveSkills } from "./skills";
 import { deriveHitPoints, deriveSpeed } from "./vitals";
+import { deriveWeapons } from "./weapons";
 import type {
   BonusType,
   BreakdownEntry,
@@ -167,6 +168,13 @@ export function computeSheet(input: CharacterInput): DerivedSheet {
   const hitPoints = deriveHitPoints(input, conMod);
   const speed = deriveSpeed(input);
   const skills = deriveSkills(input, abilities);
+  const weapons = deriveWeapons({
+    weapons: input.weapons,
+    strMod,
+    meleeAttack: attack.melee,
+    rangedAttack: attack.ranged,
+    modifiers: input.modifiers,
+  });
 
   return {
     name: input.name,
@@ -183,6 +191,7 @@ export function computeSheet(input: CharacterInput): DerivedSheet {
     hitPoints,
     speed,
     skills,
+    weapons,
     descriptor: input.descriptor ?? { classes: [], feats: [], features: [] },
   };
 }

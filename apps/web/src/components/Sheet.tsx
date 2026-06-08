@@ -64,6 +64,24 @@ export function Sheet({ sheet }: { sheet: DerivedSheet }) {
         </section>
       </div>
 
+      {sheet.weapons.length > 0 ? (
+        <section className="panel">
+          <h2>Weapons</h2>
+          <div className="weapons">
+            {sheet.weapons.map((w, i) => (
+              <div className="weapon" key={i}>
+                <span className="weapon-name">{w.name}</span>
+                <span className="weapon-stats">
+                  <span className="weapon-atk">{sign(w.attack.total)}</span>
+                  <span className="weapon-dmg">{w.damageDisplay}</span>
+                  <span className="weapon-crit">{w.crit}</span>
+                </span>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
       {feats.length > 0 || features.length > 0 ? (
         <section className="panel">
           <h2>Feats &amp; Special Abilities</h2>

@@ -21,6 +21,10 @@ export const initialBuild: CharacterBuild = {
       modifiers: [],
     },
   ],
+  weapons: [
+    { name: "Greataxe", category: "melee", damageDice: "1d12", handedness: "two", critMultiplier: 3 },
+    { name: "Javelin", category: "ranged", damageDice: "1d6" },
+  ],
 };
 
 /** Template used by the "Level Up" button (a +7 HP Barbarian level). */

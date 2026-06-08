@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import {
+  activatableResourceMax,
   applyLevelUp,
   buildCharacter,
   CLASS_FEATURES,
@@ -10,6 +11,8 @@ import {
   levelDown,
   resolveActivatableSelections,
   validateBuild,
+  type AbilityKey,
+  type ActivationContext,
   type CharacterBuild,
   type LevelUpSelection,
   type Modifier,
@@ -22,6 +25,7 @@ export function App() {
   const [build, setBuild] = useState<CharacterBuild>(initialBuild);
   const [activeBuffs, setActiveBuffs] = useState<Record<string, boolean>>({});
   const [leveling, setLeveling] = useState(false);
+  const [resourcesUsed, setResourcesUsed] = useState<Record<string, number>>({});
 
   function confirmLevelUp(selection: LevelUpSelection) {
     setBuild((b) => applyLevelUp(b, selection));
@@ -30,7 +34,7 @@ export function App() {
 
   // The whole app is a pure render of (build + active buffs). Toggle anything
   // and every derived number recomputes instantly — the engine is fast & local.
-  const { sheet, issues, activatableFeatures, activatableGroups, activatableConflicts } = useMemo(() => {
+  const { sheet, issues, activatableGroups, activatableConflicts, resourceMaxes } = useMemo(() => {
     const input = buildCharacter(build);
     const baseSheet = computeSheet(input);
     const activatableFeatures = collectActivatableEffects({
@@ -38,13 +42,26 @@ export function App() {
       classFeatureRegistry: CLASS_FEATURES,
       featRegistry: FEATS,
     });
+    const abilityModifiers = Object.fromEntries(
+      (["str", "dex", "con", "int", "wis", "cha"] as AbilityKey[]).map((k) => [
+        k,
+        baseSheet.abilities[k].mod,
+      ]),
+    ) as Record<AbilityKey, number>;
+    const context: ActivationContext = {
+      baseAttackBonus: baseSheet.baseAttackBonus,
+      characterLevel: baseSheet.level,
+      abilityModifiers,
+    };
+    const resourceMaxes: Record<string, number> = {};
+    for (const f of activatableFeatures) {
+      const max = activatableResourceMax(f, context);
+      if (max !== undefined) resourceMaxes[f.id] = max;
+    }
     const resolvedActivatables = resolveActivatableSelections({
       available: activatableFeatures,
       selected: activeBuffs,
-      context: {
-        baseAttackBonus: baseSheet.baseAttackBonus,
-        characterLevel: baseSheet.level,
-      },
+      context,
     });
     const classAbilityMods: Modifier[] = resolvedActivatables.modifiers;
     const buffMods: Modifier[] = BUFFS.filter((b) => activeBuffs[b.id]).flatMap(
@@ -57,10 +74,47 @@ export function App() {
       activatableFeatures,
       activatableGroups: groupActivatables(activatableFeatures),
       activatableConflicts: resolvedActivatables.conflicts,
+      resourceMaxes,
     };
   }, [build, activeBuffs]);
 
   const errors = issues.filter((i) => i.severity === "error");
+
+  function resourceControls(featureId: string) {
+    const max = resourceMaxes[featureId];
+    if (max === undefined) return null;
+    const used = Math.min(resourcesUsed[featureId] ?? 0, max);
+    const remaining = Math.max(0, max - used);
+    return (
+      <div className="resource-row">
+        <span className="resource-label">{remaining}/{max} left</span>
+        <div className="resource-buttons">
+          <button
+            className="ghost small"
+            onClick={() =>
+              setResourcesUsed((prev) => ({ ...prev, [featureId]: Math.max(0, (prev[featureId] ?? 0) - 1) }))
+            }
+          >
+            -
+          </button>
+          <button
+            className="ghost small"
+            onClick={() =>
+              setResourcesUsed((prev) => ({ ...prev, [featureId]: Math.min(max, (prev[featureId] ?? 0) + 1) }))
+            }
+          >
+            +
+          </button>
+          <button
+            className="ghost small"
+            onClick={() => setResourcesUsed((prev) => ({ ...prev, [featureId]: 0 }))}
+          >
+            Rest
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="app">
@@ -88,37 +142,19 @@ export function App() {
               Toggle a granted class ability, a spell buff, or an aura and watch the
               sheet update live. Same modifier pipeline, less spaghetti.
             </p>
-            {activatableGroups.ungrouped.map((feature) => (
-              <label className="buff" key={feature.id}>
-                <input
-                  type="checkbox"
-                  checked={!!activeBuffs[feature.id]}
-                  onChange={(e) =>
-                    setActiveBuffs((prev) => ({ ...prev, [feature.id]: e.target.checked }))
-                  }
-                />
-                <span>
-                  <strong>{feature.name} (ability)</strong>
-                  <span className="buff-desc">{feature.description}</span>
-                </span>
-              </label>
-            ))}
-            {Object.entries(activatableGroups.grouped).map(([group, items]) => (
-              <div className="mode-group" key={group}>
-                <div className="mode-title">{group.replace(/-/g, " ")}</div>
-                {items.map((feature) => (
-                  <label className="buff" key={feature.id}>
+            {activatableGroups.ungrouped.map((feature) => {
+              const max = resourceMaxes[feature.id];
+              const used = resourcesUsed[feature.id] ?? 0;
+              const activationBlocked = max !== undefined && used >= max && !activeBuffs[feature.id];
+              return (
+                <div className="buff-block" key={feature.id}>
+                  <label className="buff">
                     <input
-                      type="radio"
-                      name={`mode-${group}`}
+                      type="checkbox"
+                      disabled={activationBlocked}
                       checked={!!activeBuffs[feature.id]}
-                      onChange={() =>
-                        setActiveBuffs((prev) => {
-                          const next = { ...prev };
-                          for (const item of items) next[item.id] = false;
-                          next[feature.id] = true;
-                          return next;
-                        })
+                      onChange={(e) =>
+                        setActiveBuffs((prev) => ({ ...prev, [feature.id]: e.target.checked }))
                       }
                     />
                     <span>
@@ -126,6 +162,36 @@ export function App() {
                       <span className="buff-desc">{feature.description}</span>
                     </span>
                   </label>
+                  {resourceControls(feature.id)}
+                </div>
+              );
+            })}
+            {Object.entries(activatableGroups.grouped).map(([group, items]) => (
+              <div className="mode-group" key={group}>
+                <div className="mode-title">{group.replace(/-/g, " ")}</div>
+                {items.map((feature) => (
+                  <div className="buff-block" key={feature.id}>
+                    <label className="buff">
+                      <input
+                        type="radio"
+                        name={`mode-${group}`}
+                        checked={!!activeBuffs[feature.id]}
+                        onChange={() =>
+                          setActiveBuffs((prev) => {
+                            const next = { ...prev };
+                            for (const item of items) next[item.id] = false;
+                            next[feature.id] = true;
+                            return next;
+                          })
+                        }
+                      />
+                      <span>
+                        <strong>{feature.name} (ability)</strong>
+                        <span className="buff-desc">{feature.description}</span>
+                      </span>
+                    </label>
+                    {resourceControls(feature.id)}
+                  </div>
                 ))}
                 <button
                   className="ghost small"

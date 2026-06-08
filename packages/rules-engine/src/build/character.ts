@@ -8,6 +8,7 @@ import type {
   SheetDescriptor,
   Size,
   SkillKey,
+  Weapon,
 } from "../types";
 import {
   babForLevels,
@@ -73,6 +74,7 @@ export interface CharacterBuild {
   baseAbilityScores: AbilityScores;
   levels: LevelEntry[];
   equipment?: EquipmentEntry[];
+  weapons?: Weapon[];
   /** Extra always-on modifiers (rarely needed; buffs are applied at runtime). */
   otherModifiers?: Modifier[];
 }
@@ -242,6 +244,7 @@ export function buildCharacter(
     rolledHitPoints,
     classSkills: [...classSkillSet],
     skillRanks,
+    weapons: build.weapons,
     modifiers,
   };
 }

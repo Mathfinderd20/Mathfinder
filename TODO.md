@@ -30,11 +30,12 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 - [x] Deterministic `computeSheet(input)` with per-stat breakdowns (the 'why' UX)
 - [x] Skills derivation (ranks + class skill + ability + misc - armor check penalty; trained-only)
 - [x] HP (per-die min-1 Con rule + flat bonuses) and Speed derivation
+- [x] Weapon attack/damage lines (attack, damage dice+bonus, crit)
 - [x] Sheet formatter (`renderSheet` / `explainStat`) + runnable demo (`npm run demo`)
 - [x] Golden tests pinned to hand-computed PF1e math (28/28 green)
 - [ ] Spell save DCs + caster stats
 - [ ] Maneuver-specific CMB mods (trip/grapple/etc.)
-- [ ] Carrying capacity / encumbrance auto-from-Str
+- [ ] Carrying capacity / encumbrance auto-from-Str (needed for Fast Movement legality)
 - [x] Character build/level-up state machine (replayable build steps; `buildCharacter`/`levelUp`/`levelDown`)
 - [x] Class progressions: BAB (full/3-4/half) + good/poor saves, multiclass-aware
 - [x] Build validation: skill-rank caps, ability-increase placement, unknown class, skill-point budget
@@ -51,7 +52,7 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 - [x] Generic collector for toggleable abilities from granted features / taken feats
 - [x] Runtime selection resolver for activatables
 - [x] Exclusivity groups for modes/stances (e.g. attack-mode) + UI radios
-- [ ] Activated ability runtime rules: rounds/day tracking
+- [x] Activated ability runtime rules: rounds/day/resource tracking scaffold (Rage rounds/day)
 - [x] Activated ability runtime rules: scaling values by BAB (Power Attack, Combat Expertise, Deadly Aim)
 - [ ] Activated ability runtime rules: conditional requirements / illegal-state suppression
 - [ ] Prerequisite validation for prestige classes, archetypes
