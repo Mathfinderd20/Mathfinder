@@ -51,6 +51,8 @@ export function deriveSpellcasting(
     const bonusSpellsPerDay: Partial<Record<number, number>> = {};
     const totalSpellsPerDay: Partial<Record<number, number>> = {};
     const spellSaveDcs: Partial<Record<number, number>> = {};
+    const slotsUsed: Partial<Record<number, number>> = {};
+    const slotsRemaining: Partial<Record<number, number>> = {};
     for (let level = 0; level <= maxSpellLevel; level += 1) {
       const baseSlots = entry.spellsPerDay[level] ?? 0;
       if (baseSlots <= 0) continue;
@@ -58,6 +60,9 @@ export function deriveSpellcasting(
       bonusSpellsPerDay[level] = bonusSlots;
       totalSpellsPerDay[level] = baseSlots + bonusSlots;
       spellSaveDcs[level] = spellSaveDc(abilityMod, level);
+      const used = Math.min(entry.slotsUsed?.[level] ?? 0, totalSpellsPerDay[level]!);
+      slotsUsed[level] = used;
+      slotsRemaining[level] = Math.max(0, totalSpellsPerDay[level]! - used);
     }
     return {
       className: entry.className,
@@ -72,6 +77,8 @@ export function deriveSpellcasting(
       preparedCapacity: entry.castingType === "prepared" ? totalSpellsPerDay : {},
       selectedPreparedSpells: cloneSelections(entry.selections?.prepared),
       selectedKnownSpells: cloneSelections(entry.selections?.known),
+      slotsUsed,
+      slotsRemaining,
       spellSaveDcs,
       maxSpellLevel,
     };

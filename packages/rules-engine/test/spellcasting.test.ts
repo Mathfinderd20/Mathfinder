@@ -37,6 +37,9 @@ describe("wizard spellcasting", () => {
           },
         },
       },
+      spellSlotUsage: {
+        wizard: { 1: 1 },
+      },
     };
     const sheet = computeSheet(buildCharacter(build));
     expect(sheet.spellcasting[0]).toMatchObject({
@@ -55,6 +58,8 @@ describe("wizard spellcasting", () => {
         1: ["mage armor", "magic missile"],
       },
       selectedKnownSpells: {},
+      slotsUsed: { 0: 0, 1: 1 },
+      slotsRemaining: { 0: 3, 1: 1 },
       spellSaveDcs: { 0: 14, 1: 15 },
     });
     expect(sheet.spellcasting[0]!.concentration.total).toBe(5);
@@ -95,6 +100,9 @@ describe("cleric and sorcerer spellcasting", () => {
           },
         },
       },
+      spellSlotUsage: {
+        sorcerer: { 1: 2 },
+      },
     };
     const sheet = computeSheet(buildCharacter(build));
     expect(sheet.spellcasting[0]).toMatchObject({
@@ -111,6 +119,8 @@ describe("cleric and sorcerer spellcasting", () => {
         0: ["detect magic", "read magic", "mage hand", "daze"],
         1: ["magic missile", "shield"],
       },
+      slotsUsed: { 0: 0, 1: 2 },
+      slotsRemaining: { 0: 5, 1: 2 },
     });
     expect(sheet.spellcasting[0]!.concentration.total).toBe(5);
   });

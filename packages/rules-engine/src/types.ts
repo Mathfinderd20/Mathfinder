@@ -252,6 +252,8 @@ export interface SpellSelectionState {
   known?: SpellSelectionByLevel;
 }
 
+export type SpellSlotUsageByLevel = Partial<Record<number, number>>;
+
 export interface SpellcastingEntry {
   className: string;
   castingType: SpellcastingType;
@@ -260,6 +262,7 @@ export interface SpellcastingEntry {
   spellsPerDay: Partial<Record<number, number>>;
   spellsKnown?: Partial<Record<number, number>>;
   selections?: SpellSelectionState;
+  slotsUsed?: SpellSlotUsageByLevel;
 }
 
 export interface DerivedSpellcasting {
@@ -275,6 +278,8 @@ export interface DerivedSpellcasting {
   preparedCapacity: Partial<Record<number, number>>;
   selectedPreparedSpells: SpellSelectionByLevel;
   selectedKnownSpells: SpellSelectionByLevel;
+  slotsUsed: SpellSlotUsageByLevel;
+  slotsRemaining: SpellSlotUsageByLevel;
   spellSaveDcs: Partial<Record<number, number>>;
   maxSpellLevel: number;
 }

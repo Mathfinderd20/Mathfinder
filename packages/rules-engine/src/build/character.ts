@@ -10,6 +10,7 @@ import type {
   Size,
   SkillKey,
   SpellSelectionState,
+  SpellSlotUsageByLevel,
   SuppressedAcquisition,
   Weapon,
 } from "../types";
@@ -88,6 +89,8 @@ export interface CharacterBuild {
   weapons?: Weapon[];
   /** Per-class spell prep/known selections keyed by class name. */
   spellSelections?: Record<string, SpellSelectionState>;
+  /** Per-class spell slot usage keyed by class name then spell level. */
+  spellSlotUsage?: Record<string, SpellSlotUsageByLevel>;
   /** Current character conditions, e.g. fatigued. */
   conditions?: Condition[];
   /** Total carried load in pounds for encumbrance. */
@@ -302,6 +305,7 @@ export function buildCharacter(
       spellsPerDay: def.spellcasting.spellsPerDay[count] ?? {},
       spellsKnown: def.spellcasting.spellsKnown?.[count] ?? {},
       selections: build.spellSelections?.[className.toLowerCase()] ?? build.spellSelections?.[def.name.toLowerCase()],
+      slotsUsed: build.spellSlotUsage?.[className.toLowerCase()] ?? build.spellSlotUsage?.[def.name.toLowerCase()],
     }];
   });
 

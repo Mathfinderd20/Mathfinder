@@ -123,6 +123,8 @@ export function Sheet({ sheet }: { sheet: DerivedSheet }) {
                 <div className="skill"><span className="skill-name">Concentration</span><span className="skill-value">{sign(c.concentration.total)}</span></div>
                 <div className="skill"><span className="skill-name">Casting Stat</span><span className="skill-value">{c.castingAbility.toUpperCase()}</span></div>
                 <div className="skill"><span className="skill-name">Spells/Day</span><span className="skill-value">{Object.entries(c.spellsPerDay).map(([lvl, n]) => `${lvl}:${n}`).join(" ")}</span></div>
+                <div className="skill"><span className="skill-name">Slots Left</span><span className="skill-value">{Object.entries(c.slotsRemaining).map(([lvl, n]) => `${lvl}:${n}`).join(" ") || "—"}</span></div>
+                <div className="skill"><span className="skill-name">Slots Used</span><span className="skill-value">{Object.entries(c.slotsUsed).map(([lvl, n]) => `${lvl}:${n}`).join(" ") || "—"}</span></div>
                 <div className="skill"><span className="skill-name">Bonus Slots</span><span className="skill-value">{Object.entries(c.bonusSpellsPerDay).filter(([lvl]) => lvl !== "0").map(([lvl, n]) => `${lvl}:${n}`).join(" ") || "—"}</span></div>
                 {c.castingType === "prepared" ? (
                   <>
