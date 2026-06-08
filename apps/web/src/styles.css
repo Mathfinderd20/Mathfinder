@@ -90,6 +90,9 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 .slot-list { display: flex; flex-direction: column; gap: 8px; }
 .slot-row { display: flex; justify-content: space-between; gap: 10px; align-items: center; padding: 8px 0; border-bottom: 1px dotted var(--line); }
 .slot-meta { display: flex; flex-direction: column; gap: 2px; }
+.editor-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.field.compact { margin-bottom: 12px; }
+.field.compact > span { font-size: 12px; }
 .mode-group { margin: 8px 0 12px; padding: 8px 10px; background: var(--panel-2); border-radius: 8px; border: 1px solid var(--line); }
 .mode-title { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent-2); margin-bottom: 4px; }
 .warn-text { color: var(--accent-2); }
@@ -247,4 +250,5 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
   .layout { grid-template-columns: 1fr; }
   .columns { grid-template-columns: 1fr; }
   .skills { grid-template-columns: 1fr; }
+  .editor-grid { grid-template-columns: 1fr 1fr; }
 }

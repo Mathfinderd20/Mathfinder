@@ -73,7 +73,7 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 - [x] Inline validation surfacing
 - [ ] Guided build wizard (race → class → abilities → skills → feats → gear)
 - [ ] Build planner page for future levels / preselected advancement choices
-- [ ] Editable abilities / skill-rank allocation in the UI (currently fixed sample build)
+- [~] Editable core build fields in UI started (name, base abilities, carried weight); skill ranks/race/class/gear editing still pending
 - [ ] Port presentational components to React Native for the phone build
 - [ ] Smart defaults + recommendations
 

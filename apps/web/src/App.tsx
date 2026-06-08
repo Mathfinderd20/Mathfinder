@@ -19,6 +19,8 @@ import {
   type Modifier,
   type SpellSlotUsageByLevel,
 } from "@path-builder/rules-engine";
+
+const ABILITY_ORDER: readonly AbilityKey[] = ["str", "dex", "con", "int", "wis", "cha"];
 import { BUFFS, initialBuild } from "./data";
 import { Sheet } from "./components/Sheet";
 import { LevelUpModal } from "./components/LevelUpModal";
@@ -157,6 +159,16 @@ export function App() {
     setBuild(initialBuild);
     resetRuntimeState();
     setLeveling(false);
+  }
+
+  function updateBaseAbilityScore(ability: AbilityKey, value: number) {
+    setBuild((prev) => ({
+      ...prev,
+      baseAbilityScores: {
+        ...prev.baseAbilityScores,
+        [ability]: Math.max(1, value),
+      },
+    }));
   }
 
   useEffect(() => {
@@ -404,6 +416,47 @@ export function App() {
 
       <div className="layout">
         <aside className="controls">
+          <section className="panel">
+            <h2>Build Editor</h2>
+            <p className="hint">Edit the core build without diving into JSON like some kind of cave wizard.</p>
+            <label className="field compact">
+              <span>Name</span>
+              <input
+                type="text"
+                value={build.name}
+                onChange={(e) => setBuild((prev) => ({ ...prev, name: e.target.value || "Unnamed Hero" }))}
+              />
+            </label>
+            <div className="editor-grid">
+              {ABILITY_ORDER.map((ability) => (
+                <label className="field compact" key={ability}>
+                  <span>{ability.toUpperCase()}</span>
+                  <input
+                    type="number"
+                    min={1}
+                    value={build.baseAbilityScores[ability]}
+                    onChange={(e) => updateBaseAbilityScore(ability, Number(e.target.value) || 1)}
+                  />
+                </label>
+              ))}
+            </div>
+            <label className="field compact">
+              <span>Manual carried weight (lb) <span className="muted">optional override</span></span>
+              <input
+                type="number"
+                min={0}
+                value={build.carriedWeight ?? ""}
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  setBuild((prev) => ({
+                    ...prev,
+                    carriedWeight: raw === "" ? undefined : Math.max(0, Number(raw) || 0),
+                  }));
+                }}
+              />
+            </label>
+          </section>
+
           <section className="panel">
             <h2>Abilities, Buffs &amp; Auras</h2>
             <p className="hint">
