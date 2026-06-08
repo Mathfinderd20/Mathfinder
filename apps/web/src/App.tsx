@@ -23,12 +23,15 @@ import { BUFFS, initialBuild } from "./data";
 import { Sheet } from "./components/Sheet";
 import { LevelUpModal } from "./components/LevelUpModal";
 
+type SpellCastCounts = Record<string, Record<number, Record<string, number>>>;
+
 export function App() {
   const [build, setBuild] = useState<CharacterBuild>(initialBuild);
   const [activeBuffs, setActiveBuffs] = useState<Record<string, boolean>>({});
   const [leveling, setLeveling] = useState(false);
   const [resourcesUsed, setResourcesUsed] = useState<Record<string, number>>({});
   const [spellSlotUsage, setSpellSlotUsage] = useState<Record<string, SpellSlotUsageByLevel>>({});
+  const [spellCastCounts, setSpellCastCounts] = useState<SpellCastCounts>({});
   const [fatigued, setFatigued] = useState(false);
 
   function confirmLevelUp(selection: LevelUpSelection) {
@@ -124,6 +127,42 @@ export function App() {
     );
   }
 
+  function adjustSpellSlot(classKey: string, level: number, max: number, delta: number) {
+    setSpellSlotUsage((prev) => ({
+      ...prev,
+      [classKey]: {
+        ...(prev[classKey] ?? {}),
+        [level]: Math.min(max, Math.max(0, ((prev[classKey] ?? {})[level] ?? 0) + delta)),
+      },
+    }));
+  }
+
+  function castSpell(classKey: string, level: number, max: number, spellName: string, remaining: number) {
+    if (remaining <= 0) return;
+    adjustSpellSlot(classKey, level, max, 1);
+    setSpellCastCounts((prev) => ({
+      ...prev,
+      [classKey]: {
+        ...(prev[classKey] ?? {}),
+        [level]: {
+          ...((prev[classKey] ?? {})[level] ?? {}),
+          [spellName]: (((prev[classKey] ?? {})[level] ?? {})[spellName] ?? 0) + 1,
+        },
+      },
+    }));
+  }
+
+  function resetSpellClassRuntime(classKey: string, levels: number[]) {
+    setSpellSlotUsage((prev) => ({
+      ...prev,
+      [classKey]: Object.fromEntries(levels.map((level) => [level, 0])),
+    }));
+    setSpellCastCounts((prev) => ({
+      ...prev,
+      [classKey]: {},
+    }));
+  }
+
   function spellSlotControls(caster: DerivedSpellcasting) {
     const classKey = caster.className.toLowerCase();
     const levels = Object.keys(caster.spellsPerDay)
@@ -136,56 +175,69 @@ export function App() {
           const max = caster.spellsPerDay[level] ?? 0;
           const used = caster.slotsUsed[level] ?? 0;
           const remaining = caster.slotsRemaining[level] ?? max;
+          const spells = caster.castingType === "prepared"
+            ? (caster.selectedPreparedSpells[level] ?? [])
+            : (caster.selectedKnownSpells[level] ?? []);
           return (
-            <div className="resource-row" key={`${classKey}-${level}`}>
-              <span className="resource-label">L{level}: {remaining}/{max} left</span>
-              <div className="resource-buttons">
-                <button
-                  className="ghost small"
-                  onClick={() =>
-                    setSpellSlotUsage((prev) => ({
-                      ...prev,
-                      [classKey]: {
-                        ...(prev[classKey] ?? {}),
-                        [level]: Math.max(0, ((prev[classKey] ?? {})[level] ?? 0) - 1),
-                      },
-                    }))
-                  }
-                >
-                  -
-                </button>
-                <button
-                  className="ghost small"
-                  onClick={() =>
-                    setSpellSlotUsage((prev) => ({
-                      ...prev,
-                      [classKey]: {
-                        ...(prev[classKey] ?? {}),
-                        [level]: Math.min(max, ((prev[classKey] ?? {})[level] ?? 0) + 1),
-                      },
-                    }))
-                  }
-                >
-                  +
-                </button>
-                <button
-                  className="ghost small"
-                  onClick={() =>
-                    setSpellSlotUsage((prev) => ({
-                      ...prev,
-                      [classKey]: {
-                        ...(prev[classKey] ?? {}),
-                        [level]: 0,
-                      },
-                    }))
-                  }
-                >
-                  Rest
-                </button>
+            <div className="spell-runtime-block" key={`${classKey}-${level}`}>
+              <div className="resource-row">
+                <span className="resource-label">L{level}: {remaining}/{max} left</span>
+                <div className="resource-buttons">
+                  <button
+                    className="ghost small"
+                    onClick={() => adjustSpellSlot(classKey, level, max, -1)}
+                  >
+                    -
+                  </button>
+                  <button
+                    className="ghost small"
+                    onClick={() => adjustSpellSlot(classKey, level, max, 1)}
+                  >
+                    +
+                  </button>
+                  <button
+                    className="ghost small"
+                    onClick={() =>
+                      setSpellSlotUsage((prev) => ({
+                        ...prev,
+                        [classKey]: {
+                          ...(prev[classKey] ?? {}),
+                          [level]: 0,
+                        },
+                      }))
+                    }
+                  >
+                    Rest
+                  </button>
+                </div>
               </div>
+              {spells.length > 0 ? (
+                <div className="spell-cast-list">
+                  {spells.map((spellName) => {
+                    const castCount = spellCastCounts[classKey]?.[level]?.[spellName] ?? 0;
+                    return (
+                      <div className="spell-cast-row" key={`${classKey}-${level}-${spellName}`}>
+                        <span className="resource-label">{spellName} ×{castCount}</span>
+                        <div className="resource-buttons">
+                          <button
+                            className="ghost small"
+                            disabled={remaining <= 0}
+                            onClick={() => castSpell(classKey, level, max, spellName, remaining)}
+                          >
+                            Cast
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : null}
             </div>
           );
         })}
+        <button className="ghost small" onClick={() => resetSpellClassRuntime(classKey, levels)}>
+          Rest All
+        </button>
       </div>
     );
   }
