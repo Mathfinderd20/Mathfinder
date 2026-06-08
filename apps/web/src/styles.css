@@ -134,6 +134,20 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 .item-list { display: flex; flex-direction: column; gap: 10px; }
 .item-list.compact-list { gap: 6px; margin-bottom: 10px; }
 .item-card { background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px; padding: 10px; }
+.equipment-summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 10px; }
+.compact-stat-card { padding: 8px 10px; }
+.compact-summary-value { font-size: 16px; }
+.equipment-card { display: flex; flex-direction: column; gap: 10px; }
+.equipment-card-head,
+.equipment-card-tags { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.equipment-grid { margin-bottom: 0; }
+.equipment-armor-box {
+  background: rgba(0, 0, 0, 0.12);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px;
+}
+.armor-stat-grid { grid-template-columns: repeat(3, 1fr); }
 .item-actions { display: flex; justify-content: flex-end; margin-top: 4px; }
 .item-actions.left { justify-content: flex-start; }
 .inline-row { display: flex; align-items: center; gap: 8px; }
@@ -154,7 +168,37 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 .level-title { margin: 0; }
 .quick-picks { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
 .skill-rank-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px 10px; }
+.compact-skill-rank-grid { grid-template-columns: repeat(3, 1fr); gap: 6px 8px; margin-top: 8px; }
 .skill-rank-field { margin-bottom: 0; }
+.skill-rank-row {
+  margin-bottom: 0;
+  display: grid;
+  grid-template-columns: 1fr 64px;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: rgba(0, 0, 0, 0.12);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.skill-rank-row input { margin: 0; }
+.skill-rank-label { font-size: 11px; line-height: 1.2; }
+.skill-builder {
+  margin-top: 8px;
+  border-top: 1px dotted var(--line);
+  padding-top: 8px;
+}
+.skill-builder-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  cursor: pointer;
+  list-style: none;
+}
+.skill-builder-summary::-webkit-details-marker { display: none; }
+.skill-builder-title { margin: 0; }
+.skill-builder-meta { font-size: 11px; color: var(--accent-2); text-transform: uppercase; letter-spacing: 1px; }
 .field.compact { margin-bottom: 12px; }
 .field.compact > span { font-size: 12px; }
 .checkbox-field { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
@@ -393,8 +437,11 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 @media (max-width: 800px) {
   .layout { grid-template-columns: 1fr; }
   .skills { grid-template-columns: 1fr; }
-  .editor-grid { grid-template-columns: 1fr 1fr; }
-  .skill-rank-grid { grid-template-columns: 1fr; }
+  .editor-grid,
+  .armor-stat-grid,
+  .equipment-summary-grid { grid-template-columns: 1fr 1fr; }
+  .skill-rank-grid,
+  .compact-skill-rank-grid { grid-template-columns: 1fr; }
   .inline-row { flex-direction: column; align-items: stretch; }
   .sheet-stat-grid-compact,
   .sheet-summary-grid,

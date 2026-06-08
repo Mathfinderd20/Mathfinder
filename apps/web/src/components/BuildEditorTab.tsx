@@ -84,6 +84,16 @@ export function BuildEditorTab(props: Props) {
     spellCastCounts,
   } = props;
 
+  const equipment = build.equipment ?? [];
+  const equipmentTotals = equipment.reduce((acc, item) => {
+    const quantity = item.quantity ?? 1;
+    acc.items += quantity;
+    if (item.equipped) acc.equipped += quantity;
+    acc.weight += (item.weight ?? 0) * quantity;
+    acc.cost += (item.costGp ?? 0) * quantity;
+    return acc;
+  }, { items: 0, equipped: 0, weight: 0, cost: 0 });
+
   return (
     <div className="build-page">
       <section className="panel build-panel">
@@ -174,15 +184,22 @@ export function BuildEditorTab(props: Props) {
                   <button className="ghost small" onClick={() => props.onAddLevelFeat(levelIndex)}>Add Feat</button>
                 </div>
               </div>
-              <div className="subsection-title">Skill Ranks</div>
-              <div className="skill-rank-grid">
-                {SKILL_DEFINITIONS.slice().sort((a, b) => a.name.localeCompare(b.name)).map((skill) => (
-                  <label className="field compact skill-rank-field" key={`rank-${levelIndex}-${skill.key}`}>
-                    <span>{skillName.get(skill.key) ?? skill.key}</span>
-                    <input type="number" min={0} step={1} value={level.skillRanks?.[skill.key] ?? 0} onChange={(e) => props.onUpdateLevelSkillRank(levelIndex, skill.key, Math.max(0, Number(e.target.value) || 0))} />
-                  </label>
-                ))}
-              </div>
+              <details className="skill-builder" open={levelIndex === 0}>
+                <summary className="skill-builder-summary">
+                  <span className="subsection-title skill-builder-title">Skill Ranks</span>
+                  <span className="skill-builder-meta">
+                    Allocated: {allocatedSkillRanks(level.skillRanks)}
+                  </span>
+                </summary>
+                <div className="skill-rank-grid compact-skill-rank-grid">
+                  {SKILL_DEFINITIONS.slice().sort((a, b) => a.name.localeCompare(b.name)).map((skill) => (
+                    <label className="field compact skill-rank-row" key={`rank-${levelIndex}-${skill.key}`}>
+                      <span className="skill-rank-label">{skillName.get(skill.key) ?? skill.key}</span>
+                      <input type="number" min={0} step={1} value={level.skillRanks?.[skill.key] ?? 0} onChange={(e) => props.onUpdateLevelSkillRank(levelIndex, skill.key, Math.max(0, Number(e.target.value) || 0))} />
+                    </label>
+                  ))}
+                </div>
+              </details>
             </div>
           ))}
         </div>
@@ -227,23 +244,54 @@ export function BuildEditorTab(props: Props) {
         </EditorSection>
 
         <EditorSection title="Equipment" action={<button className="ghost small" onClick={props.onAddEquipment}>Add Item</button>}>
-          {(build.equipment ?? []).map((item, index) => {
+          <div className="equipment-summary-grid">
+            <div className="stat-card compact-stat-card"><span className="summary-label">Items</span><span className="summary-value compact-summary-value">{equipmentTotals.items}</span></div>
+            <div className="stat-card compact-stat-card"><span className="summary-label">Equipped</span><span className="summary-value compact-summary-value">{equipmentTotals.equipped}</span></div>
+            <div className="stat-card compact-stat-card"><span className="summary-label">Weight</span><span className="summary-value compact-summary-value">{formatCompactNumber(equipmentTotals.weight)} lb</span></div>
+            <div className="stat-card compact-stat-card"><span className="summary-label">Cost</span><span className="summary-value compact-summary-value">{formatCompactNumber(equipmentTotals.cost)} gp</span></div>
+          </div>
+          <p className="hint">Running totals update live. Armor-only fields stay hidden unless the item is actually armor. Stunning innovation.</p>
+          {equipment.length === 0 ? <p className="hint">No equipment yet. Add an item and stop sending your hero into danger naked.</p> : null}
+          {equipment.map((item, index) => {
             const armor: EquipmentArmorEditorState = item.armor
               ? { category: item.armor.category ?? "light", maxDexBonus: item.armor.maxDexBonus, checkPenalty: item.armor.checkPenalty, speedPenalty: item.armor.speedPenalty }
               : { category: "none", maxDexBonus: undefined, checkPenalty: undefined, speedPenalty: undefined };
+            const quantity = item.quantity ?? 1;
+            const weightEach = item.weight ?? 0;
+            const costEach = item.costGp ?? 0;
+            const totalWeight = quantity * weightEach;
+            const totalCost = quantity * costEach;
+            const isArmor = armor.category !== "none";
             return (
-              <div className="item-card" key={`equipment-${index}`}>
-                <div className="editor-grid">
-                  <label className="field compact"><span>Name</span><input type="text" value={item.name} onChange={(e) => props.onUpdateEquipment(index, { name: e.target.value })} /></label>
-                  <label className="field compact"><span>Quantity</span><input type="number" min={0} value={item.quantity ?? 1} onChange={(e) => props.onUpdateEquipment(index, { quantity: Math.max(0, Number(e.target.value) || 0) })} /></label>
-                  <label className="field compact"><span>Weight (lb)</span><input type="number" min={0} value={item.weight ?? 0} onChange={(e) => props.onUpdateEquipment(index, { weight: Math.max(0, Number(e.target.value) || 0) })} /></label>
-                  <label className="field compact"><span>Cost (gp)</span><input type="number" min={0} value={item.costGp ?? 0} onChange={(e) => props.onUpdateEquipment(index, { costGp: Math.max(0, Number(e.target.value) || 0) })} /></label>
-                  <label className="field compact"><span>Armor category</span><select value={armor.category} onChange={(e) => props.onUpdateEquipmentArmor(index, { ...armor, category: e.target.value as EquipmentArmorEditorState["category"] })}><option value="none">None</option><option value="light">Light</option><option value="medium">Medium</option><option value="heavy">Heavy</option></select></label>
-                  <label className="field compact checkbox-field"><span>Equipped</span><input type="checkbox" checked={!!item.equipped} onChange={(e) => props.onUpdateEquipment(index, { equipped: e.target.checked })} /></label>
-                  <label className="field compact"><span>Max Dex</span><input type="number" value={armor.maxDexBonus ?? ""} onChange={(e) => props.onUpdateEquipmentArmor(index, { ...armor, maxDexBonus: e.target.value === "" ? undefined : Number(e.target.value) })} /></label>
-                  <label className="field compact"><span>Armor check penalty</span><input type="number" value={armor.checkPenalty ?? ""} onChange={(e) => props.onUpdateEquipmentArmor(index, { ...armor, checkPenalty: e.target.value === "" ? undefined : Number(e.target.value) })} /></label>
-                  <label className="field compact"><span>Speed penalty</span><input type="number" min={0} value={armor.speedPenalty ?? ""} onChange={(e) => props.onUpdateEquipmentArmor(index, { ...armor, speedPenalty: e.target.value === "" ? undefined : Math.max(0, Number(e.target.value) || 0) })} /></label>
+              <div className="item-card equipment-card" key={`equipment-${index}`}>
+                <div className="equipment-card-head">
+                  <div>
+                    <strong>{item.name || `Item ${index + 1}`}</strong>
+                    <div className="buff-desc">Total: {formatCompactNumber(totalWeight)} lb · {formatCompactNumber(totalCost)} gp</div>
+                  </div>
+                  <div className="equipment-card-tags">
+                    {item.equipped ? <span className="tag">equipped</span> : null}
+                    {isArmor ? <span className="tag feature">{armor.category} armor</span> : null}
+                  </div>
                 </div>
+                <div className="editor-grid equipment-grid">
+                  <label className="field compact"><span>Name</span><input type="text" value={item.name} onChange={(e) => props.onUpdateEquipment(index, { name: e.target.value })} /></label>
+                  <label className="field compact"><span>Quantity</span><input type="number" min={0} value={quantity} onChange={(e) => props.onUpdateEquipment(index, { quantity: Math.max(0, Number(e.target.value) || 0) })} /></label>
+                  <label className="field compact"><span>Weight each (lb)</span><input type="number" min={0} value={weightEach} onChange={(e) => props.onUpdateEquipment(index, { weight: Math.max(0, Number(e.target.value) || 0) })} /></label>
+                  <label className="field compact"><span>Cost each (gp)</span><input type="number" min={0} value={costEach} onChange={(e) => props.onUpdateEquipment(index, { costGp: Math.max(0, Number(e.target.value) || 0) })} /></label>
+                  <label className="field compact checkbox-field"><span>Equipped</span><input type="checkbox" checked={!!item.equipped} onChange={(e) => props.onUpdateEquipment(index, { equipped: e.target.checked })} /></label>
+                  <label className="field compact"><span>Armor category</span><select value={armor.category} onChange={(e) => props.onUpdateEquipmentArmor(index, { ...armor, category: e.target.value as EquipmentArmorEditorState["category"] })}><option value="none">Not armor</option><option value="light">Light armor</option><option value="medium">Medium armor</option><option value="heavy">Heavy armor</option></select></label>
+                </div>
+                {isArmor ? (
+                  <div className="equipment-armor-box">
+                    <div className="subsection-title">Armor Stats</div>
+                    <div className="editor-grid armor-stat-grid">
+                      <label className="field compact"><span>Max Dex</span><input type="number" value={armor.maxDexBonus ?? ""} onChange={(e) => props.onUpdateEquipmentArmor(index, { ...armor, maxDexBonus: e.target.value === "" ? undefined : Number(e.target.value) })} /></label>
+                      <label className="field compact"><span>Armor check penalty</span><input type="number" value={armor.checkPenalty ?? ""} onChange={(e) => props.onUpdateEquipmentArmor(index, { ...armor, checkPenalty: e.target.value === "" ? undefined : Number(e.target.value) })} /></label>
+                      <label className="field compact"><span>Speed penalty</span><input type="number" min={0} value={armor.speedPenalty ?? ""} onChange={(e) => props.onUpdateEquipmentArmor(index, { ...armor, speedPenalty: e.target.value === "" ? undefined : Math.max(0, Number(e.target.value) || 0) })} /></label>
+                    </div>
+                  </div>
+                ) : null}
                 <div className="item-actions"><button className="ghost small" onClick={() => props.onRemoveEquipment(index)}>Remove</button></div>
               </div>
             );
@@ -252,6 +300,14 @@ export function BuildEditorTab(props: Props) {
       </section>
     </div>
   );
+}
+
+function formatCompactNumber(value: number) {
+  return Number.isInteger(value) ? String(value) : value.toFixed(2);
+}
+
+function allocatedSkillRanks(skillRanks: Partial<Record<SkillKey, number>> | undefined) {
+  return Object.values(skillRanks ?? {}).reduce<number>((sum, ranks) => sum + (ranks ?? 0), 0);
 }
 
 function EditorSection({ title, action, children }: { title: string; action?: ReactNode; children: ReactNode }) {
