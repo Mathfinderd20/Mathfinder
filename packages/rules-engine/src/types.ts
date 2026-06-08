@@ -251,6 +251,7 @@ export interface SpellcastingEntry {
   castingAbility: AbilityKey;
   casterLevel: number;
   spellsPerDay: Partial<Record<number, number>>;
+  spellsKnown?: Partial<Record<number, number>>;
 }
 
 export interface DerivedSpellcasting {
@@ -262,6 +263,8 @@ export interface DerivedSpellcasting {
   baseSpellsPerDay: Partial<Record<number, number>>;
   bonusSpellsPerDay: Partial<Record<number, number>>;
   spellsPerDay: Partial<Record<number, number>>;
+  spellsKnown: Partial<Record<number, number>>;
+  preparedCapacity: Partial<Record<number, number>>;
   spellSaveDcs: Partial<Record<number, number>>;
   maxSpellLevel: number;
 }

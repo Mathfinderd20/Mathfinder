@@ -264,6 +264,7 @@ export function buildCharacter(
       castingAbility: def.spellcasting.castingAbility,
       casterLevel: count,
       spellsPerDay: def.spellcasting.spellsPerDay[count] ?? {},
+      spellsKnown: def.spellcasting.spellsKnown?.[count] ?? {},
     }];
   });
 

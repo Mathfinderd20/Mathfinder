@@ -9,6 +9,45 @@ describe("spellcasting helpers", () => {
     expect(spellSaveDc(4, 3)).toBe(17);
   });
 
+  it("computes bonus spell slots from casting modifier", () => {
+    expect(bonusSpellSlots(4, 0)).toBe(0);
+    expect(bonusSpellSlots(4, 1)).toBe(1);
+    expect(bonusSpellSlots(4, 4)).toBe(1);
+    expect(bonusSpellSlots(4, 5)).toBe(0);
+    expect(bonusSpellSlots(5, 1)).toBe(2);
+  });
+
+  it("builds compact spells/day maps", () => {
+    expect(spellsByLevel(3, 1)).toEqual({ 0: 3, 1: 1 });
+  });
+});
+
+describe("wizard spellcasting", () => {
+  it("derives prepared casting with prep capacity", () => {
+    const build: CharacterBuild = {
+      name: "Merisiel But Nerdier",
+      race: { name: "Human", size: "medium", speed: 30 },
+      baseAbilityScores: { str: 8, dex: 14, con: 12, int: 18, wis: 10, cha: 10 },
+      levels: [{ className: "Wizard", hitPointRoll: 6, feats: [] }],
+    };
+    const sheet = computeSheet(buildCharacter(build));
+    expect(sheet.spellcasting[0]).toMatchObject({
+      className: "Wizard",
+      castingType: "prepared",
+      castingAbility: "int",
+      casterLevel: 1,
+      maxSpellLevel: 1,
+      baseSpellsPerDay: { 0: 3, 1: 1 },
+      bonusSpellsPerDay: { 0: 0, 1: 1 },
+      spellsPerDay: { 0: 3, 1: 2 },
+      preparedCapacity: { 0: 3, 1: 2 },
+      spellsKnown: {},
+      spellSaveDcs: { 0: 14, 1: 15 },
+    });
+    expect(sheet.spellcasting[0]!.concentration.total).toBe(5);
+  });
+});
+
 describe("cleric and sorcerer spellcasting", () => {
   it("derives cleric prepared casting with Wisdom bonus slots", () => {
     const build: CharacterBuild = {
@@ -24,10 +63,12 @@ describe("cleric and sorcerer spellcasting", () => {
       castingAbility: "wis",
       spellsPerDay: { 0: 3, 1: 2 },
       bonusSpellsPerDay: { 0: 0, 1: 1 },
+      preparedCapacity: { 0: 3, 1: 2 },
+      spellsKnown: {},
     });
   });
 
-  it("derives sorcerer spontaneous casting with Charisma bonus slots", () => {
+  it("derives sorcerer spontaneous casting with spells known", () => {
     const build: CharacterBuild = {
       name: "Hot Topic Dragonkid",
       race: { name: "Human", size: "medium", speed: 30 },
@@ -42,44 +83,8 @@ describe("cleric and sorcerer spellcasting", () => {
       baseSpellsPerDay: { 0: 5, 1: 3 },
       bonusSpellsPerDay: { 0: 0, 1: 1 },
       spellsPerDay: { 0: 5, 1: 4 },
-    });
-    expect(sheet.spellcasting[0]!.concentration.total).toBe(5);
-  });
-});
-
-  it("computes bonus spell slots from casting modifier", () => {
-    expect(bonusSpellSlots(4, 0)).toBe(0);
-    expect(bonusSpellSlots(4, 1)).toBe(1);
-    expect(bonusSpellSlots(4, 4)).toBe(1);
-    expect(bonusSpellSlots(4, 5)).toBe(0);
-    expect(bonusSpellSlots(5, 1)).toBe(2);
-  });
-
-  it("builds compact spells/day maps", () => {
-    expect(spellsByLevel(3, 1)).toEqual({ 0: 3, 1: 1 });
-  });
-});
-
-describe("wizard spellcasting", () => {
-  it("derives caster level, concentration, save DCs, and spells/day", () => {
-    const build: CharacterBuild = {
-      name: "Merisiel But Nerdier",
-      race: { name: "Human", size: "medium", speed: 30 },
-      baseAbilityScores: { str: 8, dex: 14, con: 12, int: 18, wis: 10, cha: 10 },
-      levels: [{ className: "Wizard", hitPointRoll: 6, feats: [] }],
-    };
-    const sheet = computeSheet(buildCharacter(build));
-    expect(sheet.spellcasting).toHaveLength(1);
-    expect(sheet.spellcasting[0]).toMatchObject({
-      className: "Wizard",
-      castingType: "prepared",
-      castingAbility: "int",
-      casterLevel: 1,
-      maxSpellLevel: 1,
-      baseSpellsPerDay: { 0: 3, 1: 1 },
-      bonusSpellsPerDay: { 0: 0, 1: 1 },
-      spellsPerDay: { 0: 3, 1: 2 },
-      spellSaveDcs: { 0: 14, 1: 15 },
+      spellsKnown: { 0: 4, 1: 2 },
+      preparedCapacity: {},
     });
     expect(sheet.spellcasting[0]!.concentration.total).toBe(5);
   });

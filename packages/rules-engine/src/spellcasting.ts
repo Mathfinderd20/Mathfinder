@@ -60,6 +60,8 @@ export function deriveSpellcasting(
       baseSpellsPerDay: entry.spellsPerDay,
       bonusSpellsPerDay,
       spellsPerDay: totalSpellsPerDay,
+      spellsKnown: entry.spellsKnown ?? {},
+      preparedCapacity: entry.castingType === "prepared" ? totalSpellsPerDay : {},
       spellSaveDcs,
       maxSpellLevel,
     };

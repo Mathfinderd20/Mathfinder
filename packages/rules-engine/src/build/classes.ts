@@ -7,6 +7,7 @@ export interface SpellcastingProgression {
   castingType: SpellcastingType;
   castingAbility: AbilityKey;
   spellsPerDay: Record<number, Partial<Record<number, number>>>;
+  spellsKnown?: Record<number, Partial<Record<number, number>>>;
 }
 
 export interface ClassDefinition {
@@ -166,6 +167,13 @@ export const SAMPLE_CLASSES: ClassRegistry = {
         3: spellsByLevel(6, 5),
         4: spellsByLevel(6, 6, 3),
         5: spellsByLevel(6, 6, 4),
+      },
+      spellsKnown: {
+        1: spellsByLevel(4, 2),
+        2: spellsByLevel(5, 2),
+        3: spellsByLevel(5, 3),
+        4: spellsByLevel(6, 3, 1),
+        5: spellsByLevel(6, 4, 2),
       },
     },
   },
