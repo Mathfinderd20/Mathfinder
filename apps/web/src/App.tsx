@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   activatableResourceMax,
   applyLevelUp,
@@ -25,19 +25,74 @@ import { LevelUpModal } from "./components/LevelUpModal";
 
 type SpellCastCounts = Record<string, Record<number, Record<string, number>>>;
 
+const RUNTIME_STORAGE_KEY = "path-builder:web-runtime:v1";
+
+interface RuntimeStateSnapshot {
+  activeBuffs: Record<string, boolean>;
+  resourcesUsed: Record<string, number>;
+  spellSlotUsage: Record<string, SpellSlotUsageByLevel>;
+  spellCastCounts: SpellCastCounts;
+  fatigued: boolean;
+}
+
+function loadRuntimeState(): RuntimeStateSnapshot {
+  if (typeof window === "undefined") {
+    return {
+      activeBuffs: {},
+      resourcesUsed: {},
+      spellSlotUsage: {},
+      spellCastCounts: {},
+      fatigued: false,
+    };
+  }
+  try {
+    const raw = window.localStorage.getItem(RUNTIME_STORAGE_KEY);
+    if (!raw) throw new Error("empty");
+    const parsed = JSON.parse(raw) as Partial<RuntimeStateSnapshot>;
+    return {
+      activeBuffs: parsed.activeBuffs ?? {},
+      resourcesUsed: parsed.resourcesUsed ?? {},
+      spellSlotUsage: parsed.spellSlotUsage ?? {},
+      spellCastCounts: parsed.spellCastCounts ?? {},
+      fatigued: parsed.fatigued ?? false,
+    };
+  } catch {
+    return {
+      activeBuffs: {},
+      resourcesUsed: {},
+      spellSlotUsage: {},
+      spellCastCounts: {},
+      fatigued: false,
+    };
+  }
+}
+
 export function App() {
+  const [runtimeState] = useState(loadRuntimeState);
   const [build, setBuild] = useState<CharacterBuild>(initialBuild);
-  const [activeBuffs, setActiveBuffs] = useState<Record<string, boolean>>({});
+  const [activeBuffs, setActiveBuffs] = useState<Record<string, boolean>>(runtimeState.activeBuffs);
   const [leveling, setLeveling] = useState(false);
-  const [resourcesUsed, setResourcesUsed] = useState<Record<string, number>>({});
-  const [spellSlotUsage, setSpellSlotUsage] = useState<Record<string, SpellSlotUsageByLevel>>({});
-  const [spellCastCounts, setSpellCastCounts] = useState<SpellCastCounts>({});
-  const [fatigued, setFatigued] = useState(false);
+  const [resourcesUsed, setResourcesUsed] = useState<Record<string, number>>(runtimeState.resourcesUsed);
+  const [spellSlotUsage, setSpellSlotUsage] = useState<Record<string, SpellSlotUsageByLevel>>(runtimeState.spellSlotUsage);
+  const [spellCastCounts, setSpellCastCounts] = useState<SpellCastCounts>(runtimeState.spellCastCounts);
+  const [fatigued, setFatigued] = useState(runtimeState.fatigued);
 
   function confirmLevelUp(selection: LevelUpSelection) {
     setBuild((b) => applyLevelUp(b, selection));
     setLeveling(false);
   }
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const snapshot: RuntimeStateSnapshot = {
+      activeBuffs,
+      resourcesUsed,
+      spellSlotUsage,
+      spellCastCounts,
+      fatigued,
+    };
+    window.localStorage.setItem(RUNTIME_STORAGE_KEY, JSON.stringify(snapshot));
+  }, [activeBuffs, resourcesUsed, spellSlotUsage, spellCastCounts, fatigued]);
 
   // The whole app is a pure render of (build + active buffs). Toggle anything
   // and every derived number recomputes instantly — the engine is fast & local.
