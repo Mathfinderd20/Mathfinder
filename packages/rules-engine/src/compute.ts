@@ -11,7 +11,7 @@ import { deriveSkills } from "./skills";
 import { deriveHitPoints, deriveSpeed } from "./vitals";
 import { deriveWeapons } from "./weapons";
 import { deriveEncumbrance } from "./encumbrance";
-import type {
+import { deriveSpellcasting } from "./spellcasting";import type {
   BonusType,
   BreakdownEntry,
   CharacterInput,
@@ -177,6 +177,7 @@ export function computeSheet(input: CharacterInput): DerivedSheet {
     rangedAttack: attack.ranged,
     modifiers: input.modifiers,
   });
+  const spellcasting = deriveSpellcasting(input, abilities);
 
   return {
     name: input.name,
@@ -196,6 +197,7 @@ export function computeSheet(input: CharacterInput): DerivedSheet {
     weapons,
     encumbrance: deriveEncumbrance(strScore, input.carriedWeight ?? 0),
     inventory: input.inventory ?? { itemCount: 0, equippedCount: 0, totalWeight: 0, totalCostGp: 0 },
+    spellcasting,
     descriptor: input.descriptor ?? { classes: [], feats: [], features: [], suppressedFeatures: [] },
   };
 }

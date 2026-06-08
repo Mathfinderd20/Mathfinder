@@ -243,6 +243,27 @@ export interface InventorySummary {
   totalCostGp: number;
 }
 
+export type SpellcastingType = "prepared" | "spontaneous";
+
+export interface SpellcastingEntry {
+  className: string;
+  castingType: SpellcastingType;
+  castingAbility: AbilityKey;
+  casterLevel: number;
+  spellsPerDay: Partial<Record<number, number>>;
+}
+
+export interface DerivedSpellcasting {
+  className: string;
+  castingType: SpellcastingType;
+  castingAbility: AbilityKey;
+  casterLevel: number;
+  concentration: DerivedStat;
+  spellsPerDay: Partial<Record<number, number>>;
+  spellSaveDcs: Partial<Record<number, number>>;
+  maxSpellLevel: number;
+}
+
 export interface CharacterInput {
   name: string;
   level: number;
@@ -259,6 +280,8 @@ export interface CharacterInput {
   carriedWeight?: number;
   /** Inventory aggregate for UI/reporting. */
   inventory?: InventorySummary;
+  /** Derived spellcasting entries from classes/archetypes/etc. */
+  spellcasting?: SpellcastingEntry[];
   /** Base ability scores BEFORE modifiers (racial/enhancement/etc. as modifiers). */
   abilityScores: AbilityScores;
   baseAttackBonus: number;
@@ -297,6 +320,7 @@ export interface DerivedSheet {
   weapons: DerivedWeapon[];
   encumbrance: Encumbrance;
   inventory: InventorySummary;
+  spellcasting: DerivedSpellcasting[];
   /** Race/class/feats/features for display (empty if not provided). */
   descriptor: SheetDescriptor;
 }

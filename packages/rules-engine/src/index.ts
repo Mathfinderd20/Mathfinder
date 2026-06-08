@@ -17,6 +17,7 @@ export {
 export { deriveHitPoints, deriveSpeed } from "./vitals";
 export { deriveWeapons } from "./weapons";
 export { deriveEncumbrance, loadThresholds, loadBand } from "./encumbrance";
+export { deriveSpellcasting, spellSaveDc } from "./spellcasting";
 export { renderSheet, explainStat } from "./format";
 
 // ---- Content: activatables ----
@@ -91,8 +92,10 @@ export {
   babForLevels,
   goodSaveBase,
   poorSaveBase,
+  spellsByLevel,
   type ClassDefinition,
   type ClassRegistry,
+  type SpellcastingProgression,
   type BabProgression,
   type SaveKind,
 } from "./build/classes";

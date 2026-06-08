@@ -1,7 +1,13 @@
-import type { SkillKey } from "../types";
+import type { AbilityKey, SkillKey, SpellcastingType } from "../types";
 
 export type BabProgression = "full" | "three-quarter" | "half";
 export type SaveKind = "fort" | "ref" | "will";
+
+export interface SpellcastingProgression {
+  castingType: SpellcastingType;
+  castingAbility: AbilityKey;
+  spellsPerDay: Record<number, Partial<Record<number, number>>>;
+}
 
 export interface ClassDefinition {
   name: string;
@@ -10,6 +16,7 @@ export interface ClassDefinition {
   goodSaves: SaveKind[];
   skillRanksPerLevel: number;
   classSkills: SkillKey[];
+  spellcasting?: SpellcastingProgression;
 }
 
 /** Base attack bonus contributed by `levels` levels of a given progression. */
@@ -37,6 +44,14 @@ export function poorSaveBase(levels: number): number {
 
 export function saveBaseForClass(def: ClassDefinition, levels: number, save: SaveKind): number {
   return def.goodSaves.includes(save) ? goodSaveBase(levels) : poorSaveBase(levels);
+}
+
+export function spellsByLevel(...slots: Array<number | undefined>): Partial<Record<number, number>> {
+  const out: Partial<Record<number, number>> = {};
+  slots.forEach((count, spellLevel) => {
+    if ((count ?? 0) > 0) out[spellLevel] = count;
+  });
+  return out;
 }
 
 export type ClassRegistry = Record<string, ClassDefinition>;
@@ -83,6 +98,31 @@ export const SAMPLE_CLASSES: ClassRegistry = {
       "perception", "perform", "profession", "ride", "sense-motive",
       "sleight-of-hand", "stealth", "swim", "use-magic-device",
     ],
+  },
+  wizard: {
+    name: "Wizard",
+    hitDie: 6,
+    bab: "half",
+    goodSaves: ["will"],
+    skillRanksPerLevel: 2,
+    classSkills: [
+      "appraise", "craft", "fly", "knowledge.arcana", "knowledge.dungeoneering",
+      "knowledge.engineering", "knowledge.geography", "knowledge.history",
+      "knowledge.local", "knowledge.nature", "knowledge.nobility",
+      "knowledge.planes", "knowledge.religion", "linguistics", "profession",
+      "spellcraft",
+    ],
+    spellcasting: {
+      castingType: "prepared",
+      castingAbility: "int",
+      spellsPerDay: {
+        1: spellsByLevel(3, 1),
+        2: spellsByLevel(4, 2),
+        3: spellsByLevel(4, 2, 1),
+        4: spellsByLevel(4, 3, 2),
+        5: spellsByLevel(4, 3, 2, 1),
+      },
+    },
   },
 };
 

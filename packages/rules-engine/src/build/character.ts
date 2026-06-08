@@ -255,6 +255,18 @@ export function buildCharacter(
 
   const rolledHitPoints = build.levels.map((l) => l.hitPointRoll);
 
+  const spellcasting = [...counts.entries()].flatMap(([className, count]) => {
+    const def = getClassDefinition(registry, className);
+    if (!def?.spellcasting) return [];
+    return [{
+      className: def.name,
+      castingType: def.spellcasting.castingType,
+      castingAbility: def.spellcasting.castingAbility,
+      casterLevel: count,
+      spellsPerDay: def.spellcasting.spellsPerDay[count] ?? {},
+    }];
+  });
+
   // Descriptor: race, class breakdown, and feats/features with the level gained.
   const feats: NamedAcquisition[] = [];
   const features: NamedAcquisition[] = [...autoGrantedFeatures];
@@ -316,6 +328,7 @@ export function buildCharacter(
     classSkills: [...classSkillSet],
     skillRanks,
     weapons: build.weapons,
+    spellcasting,
     modifiers,
   };
 }

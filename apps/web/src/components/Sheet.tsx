@@ -112,6 +112,22 @@ export function Sheet({ sheet }: { sheet: DerivedSheet }) {
         </section>
       ) : null}
 
+      {sheet.spellcasting.length > 0 ? (
+        <section className="panel">
+          <h2>Spellcasting</h2>
+          <div className="skills">
+            {sheet.spellcasting.map((c, i) => (
+              <div key={i}>
+                <div className="skill"><span className="skill-name">{c.className} CL</span><span className="skill-value">{c.casterLevel}</span></div>
+                <div className="skill"><span className="skill-name">Concentration</span><span className="skill-value">{sign(c.concentration.total)}</span></div>
+                <div className="skill"><span className="skill-name">Casting Stat</span><span className="skill-value">{c.castingAbility.toUpperCase()}</span></div>
+                <div className="skill"><span className="skill-name">Spells/Day</span><span className="skill-value">{Object.entries(c.spellsPerDay).map(([lvl, n]) => `${lvl}:${n}`).join(" ")}</span></div>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
       <section className="panel">
         <h2>Inventory</h2>
         <div className="skills">
