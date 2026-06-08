@@ -4,8 +4,10 @@ import type {
   DerivedSpellcasting,
   DerivedStat,
   SpellcastingEntry,
+  SpellSelectionDiagnostic,
 } from "./types";
 import type { DerivedAbility } from "./types";
+import { SPELLS, classSpellLevel, getSpell } from "./content/spells";
 
 function stat(total: number): DerivedStat {
   return {
@@ -53,6 +55,7 @@ export function deriveSpellcasting(
     const spellSaveDcs: Partial<Record<number, number>> = {};
     const slotsUsed: Partial<Record<number, number>> = {};
     const slotsRemaining: Partial<Record<number, number>> = {};
+    const selectionDiagnostics: Partial<Record<number, SpellSelectionDiagnostic>> = {};
     for (let level = 0; level <= maxSpellLevel; level += 1) {
       const baseSlots = entry.spellsPerDay[level] ?? 0;
       if (baseSlots <= 0) continue;
@@ -63,6 +66,44 @@ export function deriveSpellcasting(
       const used = Math.min(entry.slotsUsed?.[level] ?? 0, totalSpellsPerDay[level]!);
       slotsUsed[level] = used;
       slotsRemaining[level] = Math.max(0, totalSpellsPerDay[level]! - used);
+    }
+    const selectedPreparedSpells = cloneSelections(entry.selections?.prepared);
+    const selectedKnownSpells = cloneSelections(entry.selections?.known);
+    const selectionSource = entry.castingType === "prepared" ? selectedPreparedSpells : selectedKnownSpells;
+    const capacitySource = entry.castingType === "prepared" ? totalSpellsPerDay : (entry.spellsKnown ?? {});
+    for (let level = 0; level <= maxSpellLevel; level += 1) {
+      const selected = selectionSource[level] ?? [];
+      const availableSpellNames = Object.values(SPELLS)
+        .filter((spell) => classSpellLevel(spell, entry.className) === level)
+        .map((spell) => spell.name)
+        .sort((a, b) => a.localeCompare(b));
+      const unknownSpells: string[] = [];
+      const offListSpells: string[] = [];
+      const wrongLevelSpells: { name: string; actualLevel: number }[] = [];
+      for (const name of selected) {
+        const spell = getSpell(SPELLS, name);
+        if (!spell) {
+          unknownSpells.push(name);
+          continue;
+        }
+        const actualLevel = classSpellLevel(spell, entry.className);
+        if (actualLevel === undefined) offListSpells.push(name);
+        else if (actualLevel !== level) wrongLevelSpells.push({ name, actualLevel });
+      }
+      const capacity = capacitySource[level] ?? 0;
+      if (selected.length > 0 || capacity > 0 || availableSpellNames.length > 0) {
+        selectionDiagnostics[level] = {
+          mode: entry.castingType,
+          level,
+          capacity,
+          selectedCount: selected.length,
+          availableSpellNames,
+          unknownSpells,
+          offListSpells,
+          wrongLevelSpells,
+          overCapacity: selected.length > capacity,
+        };
+      }
     }
     return {
       className: entry.className,
@@ -75,8 +116,9 @@ export function deriveSpellcasting(
       spellsPerDay: totalSpellsPerDay,
       spellsKnown: entry.spellsKnown ?? {},
       preparedCapacity: entry.castingType === "prepared" ? totalSpellsPerDay : {},
-      selectedPreparedSpells: cloneSelections(entry.selections?.prepared),
-      selectedKnownSpells: cloneSelections(entry.selections?.known),
+      selectedPreparedSpells,
+      selectedKnownSpells,
+      selectionDiagnostics,
       slotsUsed,
       slotsRemaining,
       spellSaveDcs,

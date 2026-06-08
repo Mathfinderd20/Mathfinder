@@ -378,6 +378,28 @@ export function App() {
     updateSpellSelections(classKey, mode, level, current.filter((_, i) => i !== index));
   }
 
+  function resetSpellSelectionsForLevel(classKey: string, mode: "prepared" | "known", level: number) {
+    updateSpellSelections(classKey, mode, level, []);
+  }
+
+  function appendSpellSelection(classKey: string, mode: "prepared" | "known", level: number, spellName: string) {
+    const current = build.spellSelections?.[classKey]?.[mode]?.[level] ?? [];
+    updateSpellSelections(classKey, mode, level, [...current, spellName]);
+  }
+
+  function resetSpellSelectionsForClass(classKey: string, mode: "prepared" | "known", levels: number[]) {
+    setBuild((prev) => ({
+      ...prev,
+      spellSelections: {
+        ...(prev.spellSelections ?? {}),
+        [classKey]: {
+          ...((prev.spellSelections ?? {})[classKey] ?? {}),
+          [mode]: Object.fromEntries(levels.map((level) => [level, []])),
+        },
+      },
+    }));
+  }
+
   useEffect(() => {
     if (typeof window === "undefined") return;
     const snapshot: RuntimeStateSnapshot = {
@@ -452,20 +474,6 @@ export function App() {
 
   const errors = issues.filter((i) => i.severity === "error");
   const featOptions = listFeats(FEATS).map((feat) => feat.name).sort((a, b) => a.localeCompare(b));
-  const spellOptionsByClassLevel = Object.fromEntries(
-    sheet.spellcasting.map((caster) => {
-      const classKey = caster.className.toLowerCase();
-      const byLevel = Object.fromEntries(
-        Array.from({ length: caster.maxSpellLevel + 1 }, (_, level) => [
-          level,
-          SPELL_OPTIONS.filter((spell) =>
-            spell.classes.some((entry) => entry.className.toLowerCase() === classKey && entry.level === level),
-          ).map((spell) => spell.name),
-        ]),
-      );
-      return [classKey, byLevel];
-    }),
-  ) as Record<string, Record<number, string[]>>;
 
   function resourceControls(featureId: string) {
     const max = resourceMaxes[featureId];
@@ -800,6 +808,7 @@ export function App() {
                 <div className="editor-section-head">
                   <h3>Spellcasting Build Setup</h3>
                 </div>
+                <p className="hint">Manage prepared/known spells, capacity, and legality in one place instead of playing note-card necromancy.</p>
                 <datalist id="spell-options">
                   {SPELL_OPTIONS.map((spell) => <option key={spell.id} value={spell.name} />)}
                 </datalist>
@@ -808,20 +817,72 @@ export function App() {
                     const classKey = caster.className.toLowerCase();
                     const mode = caster.castingType === "prepared" ? "prepared" : "known";
                     const selections = mode === "prepared" ? caster.selectedPreparedSpells : caster.selectedKnownSpells;
-                    const counts = mode === "prepared" ? caster.preparedCapacity : caster.spellsKnown;
-                    const levels = Array.from({ length: caster.maxSpellLevel + 1 }, (_, level) => level)
-                      .filter((level) => (counts[level] ?? 0) > 0 || (spellOptionsByClassLevel[classKey]?.[level]?.length ?? 0) > 0);
+                    const levels = Object.keys(caster.selectionDiagnostics)
+                      .map(Number)
+                      .sort((a, b) => a - b);
+                    const invalidLevels = levels.filter((level) => {
+                      const diag = caster.selectionDiagnostics[level];
+                      return !!diag && (
+                        diag.overCapacity ||
+                        diag.unknownSpells.length > 0 ||
+                        diag.offListSpells.length > 0 ||
+                        diag.wrongLevelSpells.length > 0
+                      );
+                    });
                     return (
                       <div className="item-card" key={`spells-${classKey}`}>
                         <div className="editor-section-head tight">
                           <h3>{caster.className} {mode === "prepared" ? "Prepared Spells" : "Known Spells"}</h3>
+                          <button className="ghost small" onClick={() => resetSpellSelectionsForClass(classKey, mode, levels)}>
+                            Clear All
+                          </button>
+                        </div>
+                        <div className="spell-class-summary">
+                          <span className="resource-label">Caster level {caster.casterLevel}</span>
+                          <span className="resource-label">Concentration +{caster.concentration.total}</span>
+                          {invalidLevels.length > 0 ? (
+                            <span className="warn-pill">Needs fixes on L{invalidLevels.join(", L")}</span>
+                          ) : (
+                            <span className="ok-pill">Selections look legal</span>
+                          )}
                         </div>
                         {levels.map((level) => {
                           const current = selections[level] ?? [];
-                          const capacity = counts[level] ?? 0;
+                          const diag = caster.selectionDiagnostics[level];
+                          if (!diag) return null;
+                          const canAdd = current.length < diag.capacity;
+                          const quickPicks = diag.availableSpellNames.filter((name) => !current.includes(name)).slice(0, 6);
                           return (
                             <div className="spell-level-block" key={`spell-edit-${classKey}-${level}`}>
-                              <div className="subsection-title">Level {level} <span className="muted">{current.length}/{capacity} selected</span></div>
+                              <div className="editor-section-head tight">
+                                <div className="subsection-title level-title">
+                                  Level {level} <span className="muted">{current.length}/{diag.capacity} selected</span>
+                                </div>
+                                <div className="resource-buttons">
+                                  <button
+                                    className="ghost small"
+                                    disabled={!canAdd}
+                                    onClick={() => addSpellSelection(classKey, mode, level)}
+                                  >
+                                    Add Blank
+                                  </button>
+                                  <button
+                                    className="ghost small"
+                                    disabled={current.length === 0}
+                                    onClick={() => resetSpellSelectionsForLevel(classKey, mode, level)}
+                                  >
+                                    Clear Level
+                                  </button>
+                                </div>
+                              </div>
+                              {diag.overCapacity ? <p className="hint warn-text">Over capacity: {current.length}/{diag.capacity} selected.</p> : null}
+                              {diag.unknownSpells.length > 0 ? <p className="hint warn-text">Unknown: {diag.unknownSpells.join(", ")}</p> : null}
+                              {diag.offListSpells.length > 0 ? <p className="hint warn-text">Not on {caster.className} list: {diag.offListSpells.join(", ")}</p> : null}
+                              {diag.wrongLevelSpells.length > 0 ? (
+                                <p className="hint warn-text">
+                                  Wrong level: {diag.wrongLevelSpells.map((s) => `${s.name} (actual ${s.actualLevel})`).join(", ")}
+                                </p>
+                              ) : null}
                               <div className="item-list compact-list">
                                 {current.map((spellName, index) => (
                                   <div className="inline-row" key={`spell-${classKey}-${level}-${index}`}>
@@ -837,15 +898,24 @@ export function App() {
                                     </button>
                                   </div>
                                 ))}
-                                <div className="item-actions left">
-                                  <button className="ghost small" onClick={() => addSpellSelection(classKey, mode, level)}>
-                                    Add Spell
-                                  </button>
-                                </div>
-                                {(spellOptionsByClassLevel[classKey]?.[level] ?? []).length > 0 ? (
-                                  <div className="hint">Known registry options: {(spellOptionsByClassLevel[classKey]?.[level] ?? []).join(", ")}</div>
-                                ) : null}
                               </div>
+                              {quickPicks.length > 0 ? (
+                                <div className="quick-picks">
+                                  {quickPicks.map((spellName) => (
+                                    <button
+                                      key={`${classKey}-${level}-${spellName}`}
+                                      className="ghost small"
+                                      disabled={!canAdd}
+                                      onClick={() => appendSpellSelection(classKey, mode, level, spellName)}
+                                    >
+                                      + {spellName}
+                                    </button>
+                                  ))}
+                                </div>
+                              ) : null}
+                              {diag.availableSpellNames.length > 0 ? (
+                                <div className="hint">Registry options: {diag.availableSpellNames.join(", ")}</div>
+                              ) : null}
                             </div>
                           );
                         })}

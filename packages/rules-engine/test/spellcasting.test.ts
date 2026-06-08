@@ -62,6 +62,14 @@ describe("wizard spellcasting", () => {
       slotsRemaining: { 0: 3, 1: 1 },
       spellSaveDcs: { 0: 14, 1: 15 },
     });
+    expect(sheet.spellcasting[0]!.selectionDiagnostics[1]).toMatchObject({
+      mode: "prepared",
+      level: 1,
+      capacity: 2,
+      selectedCount: 2,
+      overCapacity: false,
+      availableSpellNames: ["Grease", "Mage Armor", "Magic Missile", "Shield"],
+    });
     expect(sheet.spellcasting[0]!.concentration.total).toBe(5);
   });
 });
@@ -122,6 +130,41 @@ describe("cleric and sorcerer spellcasting", () => {
       slotsUsed: { 0: 0, 1: 2 },
       slotsRemaining: { 0: 5, 1: 2 },
     });
+    expect(sheet.spellcasting[0]!.selectionDiagnostics[1]).toMatchObject({
+      mode: "spontaneous",
+      level: 1,
+      capacity: 2,
+      selectedCount: 2,
+      overCapacity: false,
+      availableSpellNames: ["Grease", "Mage Armor", "Magic Missile", "Shield"]
+    });
     expect(sheet.spellcasting[0]!.concentration.total).toBe(5);
+  });
+
+  it("flags unknown off-list and wrong-level spell selections in diagnostics", () => {
+    const build: CharacterBuild = {
+      name: "Bad Wizard Choices",
+      race: { name: "Human", size: "medium", speed: 30 },
+      baseAbilityScores: { str: 8, dex: 14, con: 12, int: 18, wis: 10, cha: 10 },
+      levels: [{ className: "Wizard", hitPointRoll: 6, feats: [] }],
+      spellSelections: {
+        wizard: {
+          prepared: {
+            1: ["Bless", "Detect Magic", "Fake Spell"],
+          },
+        },
+      },
+    };
+    const sheet = computeSheet(buildCharacter(build));
+    expect(sheet.spellcasting[0]!.selectionDiagnostics[1]).toMatchObject({
+      capacity: 2,
+      selectedCount: 3,
+      overCapacity: true,
+      offListSpells: ["Bless"],
+      unknownSpells: ["Fake Spell"],
+    });
+    expect(sheet.spellcasting[0]!.selectionDiagnostics[1]?.wrongLevelSpells).toEqual([
+      { name: "Detect Magic", actualLevel: 0 },
+    ]);
   });
 });

@@ -102,8 +102,21 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 .item-actions.left { justify-content: flex-start; }
 .inline-row { display: flex; align-items: center; gap: 8px; }
 .inline-input { flex: 1 1 auto; }
+.spell-class-summary { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+.warn-pill, .ok-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  border: 1px solid var(--line);
+}
+.warn-pill { color: var(--err); border-color: var(--err); background: #3b2724; }
+.ok-pill { color: var(--ok); border-color: var(--ok); background: #233126; }
 .spell-level-block { padding-top: 6px; border-top: 1px dotted var(--line); margin-top: 8px; }
 .spell-level-block:first-child { border-top: none; margin-top: 0; padding-top: 0; }
+.level-title { margin: 0; }
+.quick-picks { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
 .skill-rank-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px 10px; }
 .skill-rank-field { margin-bottom: 0; }
 .field.compact { margin-bottom: 12px; }

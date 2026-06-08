@@ -265,6 +265,18 @@ export interface SpellcastingEntry {
   slotsUsed?: SpellSlotUsageByLevel;
 }
 
+export interface SpellSelectionDiagnostic {
+  mode: SpellcastingType;
+  level: number;
+  capacity: number;
+  selectedCount: number;
+  availableSpellNames: string[];
+  unknownSpells: string[];
+  offListSpells: string[];
+  wrongLevelSpells: { name: string; actualLevel: number }[];
+  overCapacity: boolean;
+}
+
 export interface DerivedSpellcasting {
   className: string;
   castingType: SpellcastingType;
@@ -278,6 +290,7 @@ export interface DerivedSpellcasting {
   preparedCapacity: Partial<Record<number, number>>;
   selectedPreparedSpells: SpellSelectionByLevel;
   selectedKnownSpells: SpellSelectionByLevel;
+  selectionDiagnostics: Partial<Record<number, SpellSelectionDiagnostic>>;
   slotsUsed: SpellSlotUsageByLevel;
   slotsRemaining: SpellSlotUsageByLevel;
   spellSaveDcs: Partial<Record<number, number>>;
