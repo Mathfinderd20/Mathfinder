@@ -14,8 +14,10 @@ import {
   type AbilityKey,
   type ActivationContext,
   type CharacterBuild,
+  type DerivedSpellcasting,
   type LevelUpSelection,
   type Modifier,
+  type SpellSlotUsageByLevel,
 } from "@path-builder/rules-engine";
 import { BUFFS, initialBuild } from "./data";
 import { Sheet } from "./components/Sheet";
@@ -26,6 +28,7 @@ export function App() {
   const [activeBuffs, setActiveBuffs] = useState<Record<string, boolean>>({});
   const [leveling, setLeveling] = useState(false);
   const [resourcesUsed, setResourcesUsed] = useState<Record<string, number>>({});
+  const [spellSlotUsage, setSpellSlotUsage] = useState<Record<string, SpellSlotUsageByLevel>>({});
   const [fatigued, setFatigued] = useState(false);
 
   function confirmLevelUp(selection: LevelUpSelection) {
@@ -39,6 +42,7 @@ export function App() {
     const input = buildCharacter({
       ...build,
       conditions: fatigued ? ["fatigued"] : [],
+      spellSlotUsage,
     });
     const baseSheet = computeSheet(input);
     const activatableFeatures = collectActivatableEffects({
@@ -80,7 +84,7 @@ export function App() {
       activatableConflicts: resolvedActivatables.conflicts,
       resourceMaxes,
     };
-  }, [build, activeBuffs, fatigued]);
+  }, [build, activeBuffs, fatigued, spellSlotUsage]);
 
   const errors = issues.filter((i) => i.severity === "error");
 
@@ -116,6 +120,72 @@ export function App() {
             Rest
           </button>
         </div>
+      </div>
+    );
+  }
+
+  function spellSlotControls(caster: DerivedSpellcasting) {
+    const classKey = caster.className.toLowerCase();
+    const levels = Object.keys(caster.spellsPerDay)
+      .map(Number)
+      .sort((a, b) => a - b);
+    return (
+      <div className="mode-group" key={classKey}>
+        <div className="mode-title">{caster.className} spell slots</div>
+        {levels.map((level) => {
+          const max = caster.spellsPerDay[level] ?? 0;
+          const used = caster.slotsUsed[level] ?? 0;
+          const remaining = caster.slotsRemaining[level] ?? max;
+          return (
+            <div className="resource-row" key={`${classKey}-${level}`}>
+              <span className="resource-label">L{level}: {remaining}/{max} left</span>
+              <div className="resource-buttons">
+                <button
+                  className="ghost small"
+                  onClick={() =>
+                    setSpellSlotUsage((prev) => ({
+                      ...prev,
+                      [classKey]: {
+                        ...(prev[classKey] ?? {}),
+                        [level]: Math.max(0, ((prev[classKey] ?? {})[level] ?? 0) - 1),
+                      },
+                    }))
+                  }
+                >
+                  -
+                </button>
+                <button
+                  className="ghost small"
+                  onClick={() =>
+                    setSpellSlotUsage((prev) => ({
+                      ...prev,
+                      [classKey]: {
+                        ...(prev[classKey] ?? {}),
+                        [level]: Math.min(max, ((prev[classKey] ?? {})[level] ?? 0) + 1),
+                      },
+                    }))
+                  }
+                >
+                  +
+                </button>
+                <button
+                  className="ghost small"
+                  onClick={() =>
+                    setSpellSlotUsage((prev) => ({
+                      ...prev,
+                      [classKey]: {
+                        ...(prev[classKey] ?? {}),
+                        [level]: 0,
+                      },
+                    }))
+                  }
+                >
+                  Rest
+                </button>
+              </div>
+            </div>
+          );
+        })}
       </div>
     );
   }
@@ -244,6 +314,14 @@ export function App() {
               </label>
             ))}
           </section>
+
+          {sheet.spellcasting.length > 0 ? (
+            <section className="panel">
+              <h2>Spell Slots</h2>
+              <p className="hint">Burn slots by level during play. Same runtime brain, less paper goblinry.</p>
+              {sheet.spellcasting.map((caster) => spellSlotControls(caster))}
+            </section>
+          ) : null}
 
           {errors.length > 0 ? (
             <section className="panel errors">
