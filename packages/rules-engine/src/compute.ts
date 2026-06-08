@@ -10,6 +10,7 @@ import { modifiersFor, resolveModifiers } from "./modifiers";
 import { deriveSkills } from "./skills";
 import { deriveHitPoints, deriveSpeed } from "./vitals";
 import { deriveWeapons } from "./weapons";
+import { deriveEncumbrance } from "./encumbrance";
 import type {
   BonusType,
   BreakdownEntry,
@@ -33,6 +34,7 @@ function stat(breakdown: BreakdownEntry[]): DerivedStat {
  */
 export function computeSheet(input: CharacterInput): DerivedSheet {
   const abilities = deriveAbilities(input);
+  const strScore = abilities.str.score;
   const strMod = abilities.str.mod;
   const dexMod = abilities.dex.mod;
   const conMod = abilities.con.mod;
@@ -192,6 +194,7 @@ export function computeSheet(input: CharacterInput): DerivedSheet {
     speed,
     skills,
     weapons,
+    encumbrance: deriveEncumbrance(strScore, input.carriedWeight ?? 0),
     descriptor: input.descriptor ?? { classes: [], feats: [], features: [] },
   };
 }

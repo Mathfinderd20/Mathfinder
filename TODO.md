@@ -35,7 +35,7 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 - [x] Golden tests pinned to hand-computed PF1e math (28/28 green)
 - [ ] Spell save DCs + caster stats
 - [ ] Maneuver-specific CMB mods (trip/grapple/etc.)
-- [ ] Carrying capacity / encumbrance auto-from-Str (needed for Fast Movement legality)
+- [x] Carrying capacity / encumbrance auto-from-Str
 - [x] Character build/level-up state machine (replayable build steps; `buildCharacter`/`levelUp`/`levelDown`)
 - [x] Class progressions: BAB (full/3-4/half) + good/poor saves, multiclass-aware
 - [x] Build validation: skill-rank caps, ability-increase placement, unknown class, skill-point budget
@@ -54,7 +54,8 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 - [x] Exclusivity groups for modes/stances (e.g. attack-mode) + UI radios
 - [x] Activated ability runtime rules: rounds/day/resource tracking scaffold (Rage rounds/day)
 - [x] Activated ability runtime rules: scaling values by BAB (Power Attack, Combat Expertise, Deadly Aim)
-- [ ] Activated ability runtime rules: conditional requirements / illegal-state suppression
+- [x] Conditional requirement / illegal-state suppression scaffold (Fast Movement blocked by armor/load)
+- [ ] Broaden conditional legality (fatigue, armor restrictions on more abilities, etc.)
 - [ ] Prerequisite validation for prestige classes, archetypes
 - [ ] Parameterized feats (Weapon Focus weapon choice, Skill Focus skill choice)
 

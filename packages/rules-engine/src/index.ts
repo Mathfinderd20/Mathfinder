@@ -16,6 +16,7 @@ export {
 } from "./skills";
 export { deriveHitPoints, deriveSpeed } from "./vitals";
 export { deriveWeapons } from "./weapons";
+export { deriveEncumbrance, loadThresholds, loadBand } from "./encumbrance";
 export { renderSheet, explainStat } from "./format";
 
 // ---- Content: activatables ----

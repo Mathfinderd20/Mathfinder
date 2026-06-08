@@ -25,6 +25,7 @@ import {
   CLASS_FEATURES,
   type ClassFeatureRegistry,
 } from "../content/class-features";
+import { deriveEncumbrance } from "../encumbrance";
 
 /** A character's race choice and the mechanical effects it grants. */
 export interface RaceChoice {
@@ -61,6 +62,7 @@ export interface EquipmentEntry {
   name: string;
   modifiers?: Modifier[];
   armor?: {
+    category?: "light" | "medium" | "heavy";
     maxDexBonus?: number;
     checkPenalty?: number;
     speedPenalty?: number;
@@ -75,6 +77,8 @@ export interface CharacterBuild {
   levels: LevelEntry[];
   equipment?: EquipmentEntry[];
   weapons?: Weapon[];
+  /** Total carried load in pounds for encumbrance. */
+  carriedWeight?: number;
   /** Extra always-on modifiers (rarely needed; buffs are applied at runtime). */
   otherModifiers?: Modifier[];
 }
@@ -144,6 +148,19 @@ export function buildCharacter(
     ...(build.race.abilityModifiers ?? []),
     ...(build.race.traits ?? []),
   ];
+
+  // Equipment-derived legality context.
+  let armorCategory: "none" | "light" | "medium" | "heavy" = "none";
+  for (const item of build.equipment ?? []) {
+    const cat = item.armor?.category;
+    if (cat === "heavy") armorCategory = "heavy";
+    else if (cat === "medium" && armorCategory !== "heavy") armorCategory = "medium";
+    else if (cat === "light" && armorCategory === "none") armorCategory = "light";
+  }
+  const baseScores = effectiveBaseScores(build);
+  const baseStr = baseScores.str + sumRacialAbility(build.race.abilityModifiers, "str");
+  const encumbrance = deriveEncumbrance(baseStr, build.carriedWeight ?? 0);
+
   const classProgress = new Map<string, number>();
   const autoGrantedFeatures: NamedAcquisition[] = [];
   let characterLevelIndex = 0;
@@ -158,7 +175,7 @@ export function buildCharacter(
 
     if (lvl.modifiers) modifiers.push(...lvl.modifiers);
     if (lvl.feats) modifiers.push(...featEffects(lvl.feats, featRegistry));
-    modifiers.push(...classFeatureEffects(granted));
+    modifiers.push(...classFeatureEffects(granted, { armorCategory, loadBand: encumbrance.band }));
     if (lvl.favoredClass === "hp") {
       modifiers.push({ target: "hp", type: "untyped", value: 1, source: "Favored class" });
     }
@@ -238,6 +255,8 @@ export function buildCharacter(
     abilityScores: effectiveBaseScores(build),
     baseAttackBonus,
     baseSaves,
+    armorCategory,
+    carriedWeight: build.carriedWeight ?? 0,
     maxDexBonus,
     armorCheckPenalty: armorCheckPenalty || undefined,
     baseSpeed: build.race.speed ?? 30,

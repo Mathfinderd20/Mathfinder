@@ -38,6 +38,7 @@ describe("class feature effects auto-apply through buildCharacter", () => {
 
   it("applies passive feature effects like Fast Movement", () => {
     expect(sheet.speed.total).toBe(40); // 30 base + 10 Fast Movement
+    expect(sheet.encumbrance.band).toBe("light");
   });
 
   it("resolves Rage as an activatable class feature from the descriptor", () => {
@@ -52,6 +53,23 @@ describe("class feature effects auto-apply through buildCharacter", () => {
       abilityModifiers: { str: 3, dex: 1, con: 2, int: 0, wis: 1, cha: -1 },
     });
     expect(max).toBe(6); // 4 + Con 2 + 0
+  });
+
+  it("suppresses Fast Movement in medium armor or heavy load", () => {
+    const mediumArmorBuild: CharacterBuild = {
+      ...build,
+      equipment: [{ name: "Scale mail", armor: { category: "medium", speedPenalty: 10 } }],
+    };
+    const mediumArmorSheet = computeSheet(buildCharacter(mediumArmorBuild));
+    expect(mediumArmorSheet.speed.total).toBe(20); // 30 base - 10 armor, no Fast Movement
+
+    const heavyLoadBuild: CharacterBuild = {
+      ...build,
+      carriedWeight: 230,
+    };
+    const heavyLoadSheet = computeSheet(buildCharacter(heavyLoadBuild));
+    expect(heavyLoadSheet.encumbrance.band).toBe("heavy");
+    expect(heavyLoadSheet.speed.total).toBe(30); // Fast Movement suppressed
   });
 
   it("dedupes features if a build manually repeats an auto-granted one", () => {

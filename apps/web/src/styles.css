@@ -128,6 +128,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 .stat.static { display: flex; justify-content: space-between; padding: 8px 2px; }
 .stat-label { font-size: 14px; }
 .stat-value { font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.smallcaps { font-size: 12px; letter-spacing: 1px; text-transform: uppercase; }
 
 .breakdown { list-style: none; margin: 0 0 8px; padding: 4px 10px; background: var(--panel-2); border-radius: 6px; }
 .breakdown li { display: flex; justify-content: space-between; font-size: 12px; padding: 3px 0; color: var(--muted); }

@@ -1,5 +1,10 @@
-import type { Modifier } from "../types";
+import type { ArmorCategory, LoadBand, Modifier } from "../types";
 import type { ActivatableEffect } from "./activatables";
+
+export interface ClassFeatureContext {
+  armorCategory: ArmorCategory;
+  loadBand: LoadBand;
+}
 
 export interface ClassFeatureDefinition {
   id: string;
@@ -10,6 +15,8 @@ export interface ClassFeatureDefinition {
   description: string;
   /** Passive effects only. */
   effects: Modifier[];
+  /** Optional availability gate for passive effects. */
+  availableWhen?: (ctx: ClassFeatureContext) => boolean;
   /** Optional activated state, e.g. Rage. */
   activatable?: ActivatableEffect;
 }
@@ -55,6 +62,8 @@ export const CORE_CLASS_FEATURES: ClassFeatureDefinition[] = [
     pack: "core",
     description: "+10 ft enhancement to land speed when in light/no armor and not heavily loaded.",
     effects: [{ target: "speed", type: "enhancement", value: 10, source: "Fast Movement" }],
+    availableWhen: (ctx) =>
+      (ctx.armorCategory === "none" || ctx.armorCategory === "light") && ctx.loadBand === "light",
   },
   {
     id: "fighter-bonus-feat-l1",
@@ -109,7 +118,13 @@ export function classFeaturesGrantedAt(
   return (registry[className.toLowerCase()] ?? []).filter((f) => f.level === classLevel);
 }
 
-export function classFeatureEffects(features: ClassFeatureDefinition[]): Modifier[] {
-  return features.flatMap((f) => f.effects);
+export function classFeatureEffects(
+  features: ClassFeatureDefinition[],
+  ctx?: ClassFeatureContext,
+): Modifier[] {
+  return features.flatMap((f) => {
+    if (f.availableWhen && ctx && !f.availableWhen(ctx)) return [];
+    return f.effects;
+  });
 }
 

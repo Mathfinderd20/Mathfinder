@@ -61,6 +61,10 @@ export function Sheet({ sheet }: { sheet: DerivedSheet }) {
           <Stat label="CMD" stat={sheet.cmd} raw />
           <Stat label="Initiative" stat={sheet.initiative} />
           <Stat label="Speed (ft)" stat={sheet.speed} raw />
+          <div className="stat static">
+            <span className="stat-label">Load</span>
+            <span className="stat-value smallcaps">{sheet.encumbrance.band}</span>
+          </div>
         </section>
       </div>
 

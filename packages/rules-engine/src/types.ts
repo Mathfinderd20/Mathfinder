@@ -192,6 +192,8 @@ export interface SheetDescriptor {
 export type WeaponCategory = "melee" | "ranged";
 /** Affects Strength-to-damage multiplier (two-handed 1.5x, off-hand 0.5x). */
 export type WeaponHandedness = "one" | "two" | "off" | "light";
+export type ArmorCategory = "none" | "light" | "medium" | "heavy";
+export type LoadBand = "light" | "medium" | "heavy" | "overloaded";
 
 export interface Weapon {
   name: string;
@@ -219,6 +221,14 @@ export interface DerivedWeapon {
   crit: string;
 }
 
+export interface Encumbrance {
+  carriedWeight: number;
+  lightMax: number;
+  mediumMax: number;
+  heavyMax: number;
+  band: LoadBand;
+}
+
 export interface CharacterInput {
   name: string;
   level: number;
@@ -227,6 +237,10 @@ export interface CharacterInput {
   descriptor?: SheetDescriptor;
   /** Equipped weapons to derive attack/damage lines for. */
   weapons?: Weapon[];
+  /** Armor category currently worn (for feature legality like Fast Movement). */
+  armorCategory?: ArmorCategory;
+  /** Total carried weight in pounds for encumbrance. */
+  carriedWeight?: number;
   /** Base ability scores BEFORE modifiers (racial/enhancement/etc. as modifiers). */
   abilityScores: AbilityScores;
   baseAttackBonus: number;
@@ -263,6 +277,7 @@ export interface DerivedSheet {
   speed: DerivedStat;
   skills: Record<SkillKey, DerivedSkill>;
   weapons: DerivedWeapon[];
+  encumbrance: Encumbrance;
   /** Race/class/feats/features for display (empty if not provided). */
   descriptor: SheetDescriptor;
 }
