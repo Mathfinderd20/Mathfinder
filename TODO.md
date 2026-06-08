@@ -33,7 +33,7 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 - [x] Weapon attack/damage lines (attack, damage dice+bonus, crit)
 - [x] Sheet formatter (`renderSheet` / `explainStat`) + runnable demo (`npm run demo`)
 - [x] Golden tests pinned to hand-computed PF1e math (28/28 green)
-- [ ] Spell save DCs + caster stats
+- [ ] Spellcasting scaffold: caster stats, spell save DCs, spells/day, prepared/known split
 - [ ] Maneuver-specific CMB mods (trip/grapple/etc.)
 - [x] Carrying capacity / encumbrance auto-from-Str
 - [x] Character build/level-up state machine (replayable build steps; `buildCharacter`/`levelUp`/`levelDown`)
@@ -58,6 +58,7 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 - [x] Suppression reasons surfaced in the sheet (e.g. Fast Movement suppressed: medium armor)
 - [x] Fatigue state + Rage legality suppression
 - [ ] Broaden conditional legality (more armor/load restrictions, class-feature gates, etc.)
+- [~] Equipment/inventory engine: item quantities, costs, auto weight done; slots + mundane/magic item scaffolds pending
 - [ ] Prerequisite validation for prestige classes, archetypes
 - [ ] Parameterized feats (Weapon Focus weapon choice, Skill Focus skill choice)
 
@@ -70,6 +71,7 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 - [x] Interactive level-up modal: class, HP, skill ranks, feat, ability increase (planLevelUp + validation)
 - [x] Inline validation surfacing
 - [ ] Guided build wizard (race → class → abilities → skills → feats → gear)
+- [ ] Build planner page for future levels / preselected advancement choices
 - [ ] Editable abilities / skill-rank allocation in the UI (currently fixed sample build)
 - [ ] Port presentational components to React Native for the phone build
 - [ ] Smart defaults + recommendations
@@ -87,6 +89,11 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 - [ ] Accessibility pass
 - [ ] Beta test with a real Pathfinder group
 - [ ] App store + web deploy
+
+## Next Bulldoze Order
+- [ ] Finish inventory depth: equipment slots, containers, coins/ammo/components, purchase validation
+- [ ] Spellcasting phase 1: caster ability, CL, concentration, save DCs, slots/day tables
+- [ ] Build planning phase 1: future feat/ability/class picks without applying yet
 
 ## Open Questions / Risks
 - [ ] Licensing: confirm OGL/PRD coverage for ALL 1st-party content (Savage Company is owner-authored, no barrier)

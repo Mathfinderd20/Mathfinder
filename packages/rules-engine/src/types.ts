@@ -236,6 +236,13 @@ export interface Encumbrance {
   band: LoadBand;
 }
 
+export interface InventorySummary {
+  itemCount: number;
+  equippedCount: number;
+  totalWeight: number;
+  totalCostGp: number;
+}
+
 export interface CharacterInput {
   name: string;
   level: number;
@@ -250,6 +257,8 @@ export interface CharacterInput {
   armorCategory?: ArmorCategory;
   /** Total carried weight in pounds for encumbrance. */
   carriedWeight?: number;
+  /** Inventory aggregate for UI/reporting. */
+  inventory?: InventorySummary;
   /** Base ability scores BEFORE modifiers (racial/enhancement/etc. as modifiers). */
   abilityScores: AbilityScores;
   baseAttackBonus: number;
@@ -287,6 +296,7 @@ export interface DerivedSheet {
   skills: Record<SkillKey, DerivedSkill>;
   weapons: DerivedWeapon[];
   encumbrance: Encumbrance;
+  inventory: InventorySummary;
   /** Race/class/feats/features for display (empty if not provided). */
   descriptor: SheetDescriptor;
 }

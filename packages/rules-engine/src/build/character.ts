@@ -63,6 +63,10 @@ export interface LevelEntry {
 
 export interface EquipmentEntry {
   name: string;
+  quantity?: number;
+  weight?: number;
+  costGp?: number;
+  equipped?: boolean;
   modifiers?: Modifier[];
   armor?: {
     category?: "light" | "medium" | "heavy";
@@ -119,6 +123,24 @@ function effectiveBaseScores(build: CharacterBuild): AbilityScores {
   return scores;
 }
 
+function equipmentQuantity(item: EquipmentEntry): number {
+  return item.quantity ?? 1;
+}
+
+function sumEquipmentWeight(equipment: EquipmentEntry[] | undefined): number {
+  return (equipment ?? []).reduce((sum, item) => sum + (item.weight ?? 0) * equipmentQuantity(item), 0);
+}
+
+function inventorySummary(equipment: EquipmentEntry[] | undefined) {
+  const items = equipment ?? [];
+  return {
+    itemCount: items.reduce((sum, item) => sum + equipmentQuantity(item), 0),
+    equippedCount: items.filter((item) => item.equipped).reduce((sum, item) => sum + equipmentQuantity(item), 0),
+    totalWeight: sumEquipmentWeight(items),
+    totalCostGp: items.reduce((sum, item) => sum + (item.costGp ?? 0) * equipmentQuantity(item), 0),
+  };
+}
+
 /**
  * Replay a build into a normalized CharacterInput. This is the bridge between
  * the build/level-up layer and the pure derivation engine: buildCharacter()
@@ -164,7 +186,9 @@ export function buildCharacter(
   }
   const baseScores = effectiveBaseScores(build);
   const baseStr = baseScores.str + sumRacialAbility(build.race.abilityModifiers, "str");
-  const encumbrance = deriveEncumbrance(baseStr, build.carriedWeight ?? 0);
+  const equipmentInventory = inventorySummary(build.equipment);
+  const carriedWeight = build.carriedWeight ?? equipmentInventory.totalWeight;
+  const encumbrance = deriveEncumbrance(baseStr, carriedWeight);
 
   const classProgress = new Map<string, number>();
   const autoGrantedFeatures: NamedAcquisition[] = [];
@@ -283,7 +307,8 @@ export function buildCharacter(
     baseAttackBonus,
     baseSaves,
     armorCategory,
-    carriedWeight: build.carriedWeight ?? 0,
+    carriedWeight,
+    inventory: equipmentInventory,
     maxDexBonus,
     armorCheckPenalty: armorCheckPenalty || undefined,
     baseSpeed: build.race.speed ?? 30,

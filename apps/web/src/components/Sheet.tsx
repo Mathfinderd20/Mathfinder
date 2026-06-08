@@ -113,6 +113,16 @@ export function Sheet({ sheet }: { sheet: DerivedSheet }) {
       ) : null}
 
       <section className="panel">
+        <h2>Inventory</h2>
+        <div className="skills">
+          <div className="skill"><span className="skill-name">Items</span><span className="skill-value">{sheet.inventory.itemCount}</span></div>
+          <div className="skill"><span className="skill-name">Equipped</span><span className="skill-value">{sheet.inventory.equippedCount}</span></div>
+          <div className="skill"><span className="skill-name">Weight (lb)</span><span className="skill-value">{sheet.inventory.totalWeight}</span></div>
+          <div className="skill"><span className="skill-name">Cost (gp)</span><span className="skill-value">{sheet.inventory.totalCostGp}</span></div>
+        </div>
+      </section>
+
+      <section className="panel">
         <h2>Skills</h2>
         <div className="skills">
           {rankedSkills.map((s) => (

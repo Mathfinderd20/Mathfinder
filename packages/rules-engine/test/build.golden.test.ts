@@ -67,6 +67,15 @@ describe("buildCharacter + computeSheet (level 1)", () => {
     expect(sheet.descriptor.classes).toEqual([{ name: "Barbarian", level: 1 }]);
     expect(sheet.descriptor.feats).toEqual([{ name: "Toughness", level: 1 }]);
   });
+
+  it("derives empty inventory totals by default", () => {
+    expect(sheet.inventory).toEqual({
+      itemCount: 0,
+      equippedCount: 0,
+      totalWeight: 0,
+      totalCostGp: 0,
+    });
+  });
 });
 
 describe("levelUp to level 2", () => {
@@ -95,6 +104,34 @@ describe("levelUp to level 2", () => {
     const reverted = levelDown(build);
     expect(reverted.levels).toHaveLength(1);
     expect(computeSheet(buildCharacter(reverted)).baseAttackBonus).toBe(1);
+  });
+});
+
+describe("inventory math", () => {
+  it("auto-sums carried weight and total cost from equipment quantities", () => {
+    const build = grukkLevel1();
+    build.equipment = [
+      { name: "Backpack", weight: 2, costGp: 2, equipped: true },
+      { name: "Torch", quantity: 3, weight: 1, costGp: 0.01 },
+      { name: "Rope, hemp", weight: 10, costGp: 1 },
+    ];
+    const sheet = computeSheet(buildCharacter(build));
+    expect(sheet.inventory).toEqual({
+      itemCount: 5,
+      equippedCount: 1,
+      totalWeight: 15,
+      totalCostGp: 3.03,
+    });
+    expect(sheet.encumbrance.carriedWeight).toBe(15);
+  });
+
+  it("lets manual carried weight override auto-summed gear weight", () => {
+    const build = grukkLevel1();
+    build.equipment = [{ name: "Anvil, tragically", weight: 10, costGp: 5 }];
+    build.carriedWeight = 50;
+    const sheet = computeSheet(buildCharacter(build));
+    expect(sheet.inventory.totalWeight).toBe(10);
+    expect(sheet.encumbrance.carriedWeight).toBe(50);
   });
 });
 
