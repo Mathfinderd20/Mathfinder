@@ -26,6 +26,8 @@ import { LevelUpModal } from "./components/LevelUpModal";
 type SpellCastCounts = Record<string, Record<number, Record<string, number>>>;
 
 const RUNTIME_STORAGE_KEY = "path-builder:web-runtime:v1";
+const CURRENT_BUILD_STORAGE_KEY = "path-builder:web-build:v1";
+const BUILD_SLOTS_STORAGE_KEY = "path-builder:web-build-slots:v1";
 
 interface RuntimeStateSnapshot {
   activeBuffs: Record<string, boolean>;
@@ -33,6 +35,13 @@ interface RuntimeStateSnapshot {
   spellSlotUsage: Record<string, SpellSlotUsageByLevel>;
   spellCastCounts: SpellCastCounts;
   fatigued: boolean;
+}
+
+interface SavedBuildSlot {
+  id: string;
+  label: string;
+  savedAt: string;
+  build: CharacterBuild;
 }
 
 function loadRuntimeState(): RuntimeStateSnapshot {
@@ -67,9 +76,33 @@ function loadRuntimeState(): RuntimeStateSnapshot {
   }
 }
 
+function loadCurrentBuild(): CharacterBuild {
+  if (typeof window === "undefined") return initialBuild;
+  try {
+    const raw = window.localStorage.getItem(CURRENT_BUILD_STORAGE_KEY);
+    if (!raw) throw new Error("empty");
+    return JSON.parse(raw) as CharacterBuild;
+  } catch {
+    return initialBuild;
+  }
+}
+
+function loadBuildSlots(): SavedBuildSlot[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(BUILD_SLOTS_STORAGE_KEY);
+    if (!raw) throw new Error("empty");
+    const parsed = JSON.parse(raw) as SavedBuildSlot[];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
 export function App() {
   const [runtimeState] = useState(loadRuntimeState);
-  const [build, setBuild] = useState<CharacterBuild>(initialBuild);
+  const [build, setBuild] = useState<CharacterBuild>(loadCurrentBuild);
+  const [savedBuildSlots, setSavedBuildSlots] = useState<SavedBuildSlot[]>(loadBuildSlots);
   const [activeBuffs, setActiveBuffs] = useState<Record<string, boolean>>(runtimeState.activeBuffs);
   const [leveling, setLeveling] = useState(false);
   const [resourcesUsed, setResourcesUsed] = useState<Record<string, number>>(runtimeState.resourcesUsed);
@@ -79,6 +112,50 @@ export function App() {
 
   function confirmLevelUp(selection: LevelUpSelection) {
     setBuild((b) => applyLevelUp(b, selection));
+    setLeveling(false);
+  }
+
+  function resetRuntimeState() {
+    setActiveBuffs({});
+    setResourcesUsed({});
+    setSpellSlotUsage({});
+    setSpellCastCounts({});
+    setFatigued(false);
+  }
+
+  function saveNewBuildSlot() {
+    const now = new Date().toISOString();
+    const slot: SavedBuildSlot = {
+      id: `${Date.now()}`,
+      label: `${build.name} (L${build.levels.length})`,
+      savedAt: now,
+      build,
+    };
+    setSavedBuildSlots((prev) => [slot, ...prev]);
+  }
+
+  function overwriteBuildSlot(slotId: string) {
+    const now = new Date().toISOString();
+    setSavedBuildSlots((prev) => prev.map((slot) =>
+      slot.id === slotId
+        ? { ...slot, label: `${build.name} (L${build.levels.length})`, savedAt: now, build }
+        : slot
+    ));
+  }
+
+  function loadBuildSlot(slot: SavedBuildSlot) {
+    setBuild(slot.build);
+    resetRuntimeState();
+    setLeveling(false);
+  }
+
+  function deleteBuildSlot(slotId: string) {
+    setSavedBuildSlots((prev) => prev.filter((slot) => slot.id !== slotId));
+  }
+
+  function resetCurrentBuild() {
+    setBuild(initialBuild);
+    resetRuntimeState();
     setLeveling(false);
   }
 
@@ -93,6 +170,16 @@ export function App() {
     };
     window.localStorage.setItem(RUNTIME_STORAGE_KEY, JSON.stringify(snapshot));
   }, [activeBuffs, resourcesUsed, spellSlotUsage, spellCastCounts, fatigued]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(CURRENT_BUILD_STORAGE_KEY, JSON.stringify(build));
+  }, [build]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(BUILD_SLOTS_STORAGE_KEY, JSON.stringify(savedBuildSlots));
+  }, [savedBuildSlots]);
 
   // The whole app is a pure render of (build + active buffs). Toggle anything
   // and every derived number recomputes instantly — the engine is fast & local.
@@ -420,6 +507,32 @@ export function App() {
                 </span>
               </label>
             ))}
+          </section>
+
+          <section className="panel">
+            <h2>Character Saves</h2>
+            <p className="hint">Current build autosaves. Slots let you keep multiple characters/build states around.</p>
+            <div className="save-actions">
+              <button className="ghost small" onClick={saveNewBuildSlot}>Save New Slot</button>
+              <button className="ghost small" onClick={resetCurrentBuild}>Reset Current</button>
+            </div>
+            <div className="slot-list">
+              {savedBuildSlots.length === 0 ? (
+                <p className="hint">No saved slots yet. Shocking restraint.</p>
+              ) : savedBuildSlots.map((slot) => (
+                <div className="slot-row" key={slot.id}>
+                  <div className="slot-meta">
+                    <strong>{slot.label}</strong>
+                    <span className="buff-desc">{new Date(slot.savedAt).toLocaleString()}</span>
+                  </div>
+                  <div className="resource-buttons">
+                    <button className="ghost small" onClick={() => loadBuildSlot(slot)}>Load</button>
+                    <button className="ghost small" onClick={() => overwriteBuildSlot(slot.id)}>Overwrite</button>
+                    <button className="ghost small" onClick={() => deleteBuildSlot(slot.id)}>Delete</button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </section>
 
           {sheet.spellcasting.length > 0 ? (

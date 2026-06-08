@@ -66,6 +66,7 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 - [x] First UI: Vite + React web app (apps/web) wired to the live engine
 - [x] Real-time sheet view (live recompute on any change)
 - [x] Interactive buff/aura toggles -> auto-apply to sheet (proves the multiplayer mechanism)
+- [x] Web persistence: current build autosave + saved character slots
 - [x] Click-to-expand stat breakdowns (the 'why' UX)
 - [x] Level up / undo buttons backed by levelUp/levelDown
 - [x] Interactive level-up modal: class, HP, skill ranks, feat, ability increase (planLevelUp + validation)
@@ -84,7 +85,7 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 - [ ] Permission model (what DM can see/do vs players)
 
 ## Phase 5 — Polish & Launch
-- [ ] Offline support / local-first sync
+- [~] Offline/local persistence started in web (build + runtime localStorage); broader local-first sync pending
 - [ ] Export/print (PDF) character sheets
 - [ ] Accessibility pass
 - [ ] Beta test with a real Pathfinder group
