@@ -144,6 +144,38 @@ function inventorySummary(equipment: EquipmentEntry[] | undefined) {
   };
 }
 
+function bonusSpellSlotsForLevel(castingAbilityMod: number, spellLevel: number): number {
+  if (spellLevel <= 0) return 0;
+  return Math.max(0, Math.floor((castingAbilityMod - spellLevel) / 4) + 1);
+}
+
+function effectiveSpellcastingSelections(
+  build: CharacterBuild,
+  registry: ClassRegistry,
+): Array<{
+  className: string;
+  classLevel: number;
+  castingType: "prepared" | "spontaneous";
+  spellsPerDay: Partial<Record<number, number>>;
+  spellsKnown: Partial<Record<number, number>>;
+  castingAbilityMod: number;
+  selections: SpellSelectionState | undefined;
+}> {
+  return [...classLevelCounts(build).entries()].flatMap(([className, classLevel]) => {
+    const def = getClassDefinition(registry, className);
+    if (!def?.spellcasting) return [];
+    return [{
+      className: def.name,
+      classLevel,
+      castingType: def.spellcasting.castingType,
+      spellsPerDay: def.spellcasting.spellsPerDay[classLevel] ?? {},
+      spellsKnown: def.spellcasting.spellsKnown?.[classLevel] ?? {},
+      castingAbilityMod: effectiveAbilityMod(build, def.spellcasting.castingAbility),
+      selections: build.spellSelections?.[className] ?? build.spellSelections?.[def.name.toLowerCase()],
+    }];
+  });
+}
+
 /**
  * Replay a build into a normalized CharacterInput. This is the bridge between
  * the build/level-up layer and the pure derivation engine: buildCharacter()
@@ -428,6 +460,39 @@ export function validateBuild(
         code: "skill-ranks-over-cap",
         message: `Skill "${key}" totals ${ranks} ranks; character level is ${characterLevel}.`,
       });
+    }
+  }
+
+  for (const entry of effectiveSpellcastingSelections(build, registry)) {
+    const prepared = entry.selections?.prepared ?? {};
+    for (const [spellLevelStr, names] of Object.entries(prepared)) {
+      const spellLevel = Number(spellLevelStr);
+      const selectedCount = (names ?? []).length;
+      const baseSlots = entry.spellsPerDay[spellLevel] ?? 0;
+      const capacity = baseSlots > 0
+        ? baseSlots + bonusSpellSlotsForLevel(entry.castingAbilityMod, spellLevel)
+        : 0;
+      if (selectedCount > capacity) {
+        issues.push({
+          severity: "error",
+          code: "prepared-spells-over-capacity",
+          message: `${entry.className} prepared ${selectedCount} level ${spellLevel} spells but capacity is ${capacity}.`,
+        });
+      }
+    }
+
+    const known = entry.selections?.known ?? {};
+    for (const [spellLevelStr, names] of Object.entries(known)) {
+      const spellLevel = Number(spellLevelStr);
+      const selectedCount = (names ?? []).length;
+      const cap = entry.spellsKnown[spellLevel] ?? 0;
+      if (selectedCount > cap) {
+        issues.push({
+          severity: "error",
+          code: "spells-known-over-cap",
+          message: `${entry.className} selected ${selectedCount} known level ${spellLevel} spells but cap is ${cap}.`,
+        });
+      }
     }
   }
 

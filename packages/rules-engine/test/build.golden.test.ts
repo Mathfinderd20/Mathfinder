@@ -156,4 +156,40 @@ describe("validateBuild catches illegal builds", () => {
     const issues = validateBuild(build);
     expect(issues.some((i) => i.code === "unknown-class")).toBe(true);
   });
+
+  it("flags prepared spell picks above prep capacity", () => {
+    const build: CharacterBuild = {
+      name: "Prep Goblin",
+      race: { name: "Human", size: "medium", speed: 30 },
+      baseAbilityScores: { str: 8, dex: 14, con: 12, int: 18, wis: 10, cha: 10 },
+      levels: [{ className: "Wizard", hitPointRoll: 6, feats: [] }],
+      spellSelections: {
+        wizard: {
+          prepared: {
+            1: ["mage armor", "magic missile", "shield"],
+          },
+        },
+      },
+    };
+    const issues = validateBuild(build);
+    expect(issues.some((i) => i.code === "prepared-spells-over-capacity")).toBe(true);
+  });
+
+  it("flags spontaneous known picks above known count", () => {
+    const build: CharacterBuild = {
+      name: "Known Goblin",
+      race: { name: "Human", size: "medium", speed: 30 },
+      baseAbilityScores: { str: 8, dex: 14, con: 12, int: 10, wis: 10, cha: 18 },
+      levels: [{ className: "Sorcerer", hitPointRoll: 6, feats: [] }],
+      spellSelections: {
+        sorcerer: {
+          known: {
+            1: ["magic missile", "shield", "grease"],
+          },
+        },
+      },
+    };
+    const issues = validateBuild(build);
+    expect(issues.some((i) => i.code === "spells-known-over-cap")).toBe(true);
+  });
 });

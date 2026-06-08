@@ -33,7 +33,7 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 - [x] Weapon attack/damage lines (attack, damage dice+bonus, crit)
 - [x] Sheet formatter (`renderSheet` / `explainStat`) + runnable demo (`npm run demo`)
 - [x] Golden tests pinned to hand-computed PF1e math (28/28 green)
-- [~] Spellcasting scaffold: caster stats + save DCs + spells/day + bonus slots + prepared/known split + selection state started; legality/content validation and extra-slot sources pending
+- [~] Spellcasting scaffold: caster stats + save DCs + spells/day + bonus slots + prepared/known split + selection state + count validation started; content validation and extra-slot sources pending
 - [ ] Maneuver-specific CMB mods (trip/grapple/etc.)
 - [x] Carrying capacity / encumbrance auto-from-Str
 - [x] Character build/level-up state machine (replayable build steps; `buildCharacter`/`levelUp`/`levelDown`)
