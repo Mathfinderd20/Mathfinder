@@ -12,6 +12,14 @@ function compactSpellNames(values: Partial<Record<number, string[]>>) {
   return Object.entries(values).map(([lvl, names]) => `L${lvl}: ${(names ?? []).join(", ")}`).join(" · ") || "—";
 }
 
+function formatGp(value: number) {
+  return Number.isInteger(value) ? `${value} gp` : `${value.toFixed(2)} gp`;
+}
+
+function formatWeight(value: number) {
+  return Number.isInteger(value) ? `${value} lb` : `${value.toFixed(2)} lb`;
+}
+
 /** The full read-only character sheet, rendered from a DerivedSheet. */
 export function Sheet({ sheet }: { sheet: DerivedSheet }) {
   const rankedSkills = Object.values(sheet.skills)
@@ -175,9 +183,38 @@ export function Sheet({ sheet }: { sheet: DerivedSheet }) {
             <div className="sheet-stat-grid sheet-stat-grid-compact">
               <div className="stat-card"><span className="summary-label">Items</span><span className="summary-value">{sheet.inventory.itemCount}</span></div>
               <div className="stat-card"><span className="summary-label">Equipped</span><span className="summary-value">{sheet.inventory.equippedCount}</span></div>
-              <div className="stat-card"><span className="summary-label">Weight</span><span className="summary-value">{sheet.inventory.totalWeight} lb</span></div>
-              <div className="stat-card"><span className="summary-label">Cost</span><span className="summary-value">{sheet.inventory.totalCostGp} gp</span></div>
+              <div className="stat-card"><span className="summary-label">Weight</span><span className="summary-value">{formatWeight(sheet.inventory.totalWeight)}</span></div>
+              <div className="stat-card"><span className="summary-label">Cost</span><span className="summary-value">{formatGp(sheet.inventory.totalCostGp)}</span></div>
             </div>
+            {sheet.inventoryItems.length > 0 ? (
+              <div className="inventory-list">
+                {sheet.inventoryItems.map((item, index) => (
+                  <div className="inventory-item" key={`${item.name}-${index}`}>
+                    <div className="inventory-item-head">
+                      <div className="inventory-item-title-row">
+                        <strong>{item.name}</strong>
+                        {item.equipped ? <span className="tag">equipped</span> : null}
+                        {item.armor ? <span className="tag feature">{item.armor.category} armor</span> : null}
+                      </div>
+                      <span className="inventory-qty">×{item.quantity}</span>
+                    </div>
+                    <div className="inventory-item-stats">
+                      <span>Weight: {formatWeight(item.totalWeight)}{item.quantity > 1 ? ` (${formatWeight(item.weightEach)} each)` : ""}</span>
+                      <span>Cost: {formatGp(item.totalCostGp)}{item.quantity > 1 ? ` (${formatGp(item.costEachGp)} each)` : ""}</span>
+                    </div>
+                    {item.armor ? (
+                      <div className="inventory-armor-details">
+                        <span className="chip">Max Dex: {item.armor.maxDexBonus ?? "—"}</span>
+                        <span className="chip">ACP: {item.armor.checkPenalty ?? 0}</span>
+                        <span className="chip">Speed Penalty: {item.armor.speedPenalty ? `${item.armor.speedPenalty} ft` : "—"}</span>
+                      </div>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="hint">No inventory yet. Bold strategy for an adventurer.</p>
+            )}
           </section>
         </div>
       </div>

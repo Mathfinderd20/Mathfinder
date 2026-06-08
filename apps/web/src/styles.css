@@ -253,6 +253,28 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 .skill-value { font-weight: 600; font-variant-numeric: tabular-nums; }
 .weapons { display: flex; flex-direction: column; gap: 8px; }
 .paper-table { gap: 0; }
+.inventory-list { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+.inventory-item {
+  background: rgba(0, 0, 0, 0.14);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.inventory-item-head,
+.inventory-item-title-row,
+.inventory-item-stats,
+.inventory-armor-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: center;
+}
+.inventory-item-head { justify-content: space-between; }
+.inventory-item-stats { color: var(--muted); font-size: 13px; }
+.inventory-qty { color: var(--accent-2); font-weight: 700; }
 .weapon { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-bottom: 1px dotted var(--line); }
 .weapon-name { font-weight: 600; }
 .weapon-stats { display: flex; gap: 12px; font-variant-numeric: tabular-nums; }

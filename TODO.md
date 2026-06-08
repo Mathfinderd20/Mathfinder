@@ -58,7 +58,7 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 - [x] Suppression reasons surfaced in the sheet (e.g. Fast Movement suppressed: medium armor)
 - [x] Fatigue state + Rage legality suppression
 - [ ] Broaden conditional legality (more armor/load restrictions, class-feature gates, etc.)
-- [~] Equipment/inventory engine: item quantities, costs, auto weight done; slots + mundane/magic item scaffolds pending
+- [~] Equipment/inventory engine: item quantities, costs, auto weight, equipped flags, armor metadata, and read-only sheet itemization done; slots + mundane/magic item scaffolds pending
 - [ ] Prerequisite validation for prestige classes, archetypes
 - [ ] Parameterized feats (Weapon Focus weapon choice, Skill Focus skill choice)
 
@@ -92,7 +92,7 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 - [ ] App store + web deploy
 
 ## Next Bulldoze Order
-- [ ] Finish inventory depth: equipment slots, containers, coins/ammo/components, purchase validation
+- [~] Finish inventory depth: read-only inventory sheet itemization done; equipment slots, containers, coins/ammo/components, purchase validation still pending
 - [ ] Spellcasting phase 1: caster ability, CL, concentration, save DCs, slots/day tables
 - [ ] Build planning phase 1: future feat/ability/class picks without applying yet
 

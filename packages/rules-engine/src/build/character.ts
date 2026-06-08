@@ -151,6 +151,31 @@ function inventorySummary(equipment: EquipmentEntry[] | undefined) {
   };
 }
 
+function inventoryItems(equipment: EquipmentEntry[] | undefined) {
+  return (equipment ?? []).map((item) => {
+    const quantity = equipmentQuantity(item);
+    const weightEach = item.weight ?? 0;
+    const costEachGp = item.costGp ?? 0;
+    return {
+      name: item.name,
+      quantity,
+      weightEach,
+      totalWeight: weightEach * quantity,
+      costEachGp,
+      totalCostGp: costEachGp * quantity,
+      equipped: !!item.equipped,
+      armor: item.armor?.category
+        ? {
+            category: item.armor.category,
+            maxDexBonus: item.armor.maxDexBonus,
+            checkPenalty: item.armor.checkPenalty,
+            speedPenalty: item.armor.speedPenalty,
+          }
+        : undefined,
+    };
+  });
+}
+
 function bonusSpellSlotsForLevel(castingAbilityMod: number, spellLevel: number): number {
   if (spellLevel <= 0) return 0;
   return Math.max(0, Math.floor((castingAbilityMod - spellLevel) / 4) + 1);
@@ -229,6 +254,7 @@ export function buildCharacter(
   const baseScores = effectiveBaseScores(build);
   const baseStr = baseScores.str + sumRacialAbility(build.race.abilityModifiers, "str");
   const equipmentInventory = inventorySummary(build.equipment);
+  const equipmentInventoryItems = inventoryItems(build.equipment);
   const carriedWeight = build.carriedWeight ?? equipmentInventory.totalWeight;
   const encumbrance = deriveEncumbrance(baseStr, carriedWeight);
 
@@ -367,6 +393,7 @@ export function buildCharacter(
     armorCategory,
     carriedWeight,
     inventory: equipmentInventory,
+    inventoryItems: equipmentInventoryItems,
     maxDexBonus,
     armorCheckPenalty: armorCheckPenalty || undefined,
     baseSpeed: build.race.speed ?? 30,
