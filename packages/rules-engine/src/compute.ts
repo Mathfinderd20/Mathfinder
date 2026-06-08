@@ -195,7 +195,7 @@ export function computeSheet(input: CharacterInput): DerivedSheet {
     skills,
     weapons,
     encumbrance: deriveEncumbrance(strScore, input.carriedWeight ?? 0),
-    descriptor: input.descriptor ?? { classes: [], feats: [], features: [] },
+    descriptor: input.descriptor ?? { classes: [], feats: [], features: [], suppressedFeatures: [] },
   };
 }
 

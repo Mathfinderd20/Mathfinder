@@ -10,7 +10,7 @@ export function Sheet({ sheet }: { sheet: DerivedSheet }) {
     .filter((s) => s.ranks > 0 || s.isClassSkill)
     .sort((a, b) => a.name.localeCompare(b.name));
 
-  const { race, classes, feats, features } = sheet.descriptor;
+  const { race, classes, feats, features, suppressedFeatures } = sheet.descriptor;
   const classLine = classes.map((c) => `${c.name} ${c.level}`).join(" / ");
   const identity = [race, classLine].filter(Boolean).join(" ");
 
@@ -86,7 +86,7 @@ export function Sheet({ sheet }: { sheet: DerivedSheet }) {
         </section>
       ) : null}
 
-      {feats.length > 0 || features.length > 0 ? (
+      {feats.length > 0 || features.length > 0 || suppressedFeatures.length > 0 ? (
         <section className="panel">
           <h2>Feats &amp; Special Abilities</h2>
           <div className="acquisitions">
@@ -100,6 +100,12 @@ export function Sheet({ sheet }: { sheet: DerivedSheet }) {
               <span className="chip" key={`ft-${i}`}>
                 {f.name}
                 <span className="chip-lvl">L{f.level}</span>
+              </span>
+            ))}
+            {suppressedFeatures.map((f, i) => (
+              <span className="chip suppressed" key={`sup-${i}`} title={f.reason}>
+                {f.name}
+                <span className="chip-lvl">suppressed: {f.reason}</span>
               </span>
             ))}
           </div>

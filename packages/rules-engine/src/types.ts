@@ -181,12 +181,18 @@ export interface NamedAcquisition {
   level: number;
 }
 
+/** A gained feature/feat currently suppressed by rules conditions. */
+export interface SuppressedAcquisition extends NamedAcquisition {
+  reason: string;
+}
+
 /** Non-mechanical identity carried through to the sheet (race/class/feats/etc.). */
 export interface SheetDescriptor {
   race?: string;
   classes: NamedAcquisition[];
   feats: NamedAcquisition[];
   features: NamedAcquisition[];
+  suppressedFeatures: SuppressedAcquisition[];
 }
 
 export type WeaponCategory = "melee" | "ranged";

@@ -8,6 +8,7 @@ import type {
   SheetDescriptor,
   Size,
   SkillKey,
+  SuppressedAcquisition,
   Weapon,
 } from "../types";
 import {
@@ -22,6 +23,7 @@ import { featEffects, FEATS, type FeatRegistry } from "../content/feats";
 import {
   classFeatureEffects,
   classFeaturesGrantedAt,
+  suppressedClassFeatures,
   CLASS_FEATURES,
   type ClassFeatureRegistry,
 } from "../content/class-features";
@@ -163,6 +165,7 @@ export function buildCharacter(
 
   const classProgress = new Map<string, number>();
   const autoGrantedFeatures: NamedAcquisition[] = [];
+  const autoSuppressedFeatures: SuppressedAcquisition[] = [];
   let characterLevelIndex = 0;
   for (const lvl of build.levels) {
     characterLevelIndex += 1;
@@ -173,9 +176,14 @@ export function buildCharacter(
     const granted = classFeaturesGrantedAt(classFeatureRegistry, lvl.className, classLevel);
     for (const g of granted) autoGrantedFeatures.push({ name: g.name, level: characterLevelIndex });
 
+    const featureCtx = { armorCategory, loadBand: encumbrance.band };
+    for (const s of suppressedClassFeatures(granted, featureCtx)) {
+      autoSuppressedFeatures.push({ name: s.name, level: characterLevelIndex, reason: s.reason });
+    }
+
     if (lvl.modifiers) modifiers.push(...lvl.modifiers);
     if (lvl.feats) modifiers.push(...featEffects(lvl.feats, featRegistry));
-    modifiers.push(...classFeatureEffects(granted, { armorCategory, loadBand: encumbrance.band }));
+    modifiers.push(...classFeatureEffects(granted, featureCtx));
     if (lvl.favoredClass === "hp") {
       modifiers.push({ target: "hp", type: "untyped", value: 1, source: "Favored class" });
     }
@@ -240,11 +248,23 @@ export function buildCharacter(
     }
     return out;
   };
+  const dedupeSuppressed = (items: SuppressedAcquisition[]): SuppressedAcquisition[] => {
+    const seen = new Set<string>();
+    const out: SuppressedAcquisition[] = [];
+    for (const item of items) {
+      const key = `${item.level}::${item.name.toLowerCase()}::${item.reason.toLowerCase()}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(item);
+    }
+    return out;
+  };
   const descriptor: SheetDescriptor = {
     race: build.race.name,
     classes,
     feats: dedupeAcquisitions(feats),
     features: dedupeAcquisitions(features),
+    suppressedFeatures: dedupeSuppressed(autoSuppressedFeatures),
   };
 
   return {

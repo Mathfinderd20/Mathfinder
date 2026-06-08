@@ -62,6 +62,9 @@ describe("class feature effects auto-apply through buildCharacter", () => {
     };
     const mediumArmorSheet = computeSheet(buildCharacter(mediumArmorBuild));
     expect(mediumArmorSheet.speed.total).toBe(20); // 30 base - 10 armor, no Fast Movement
+    expect(mediumArmorSheet.descriptor.suppressedFeatures).toEqual([
+      { name: "Fast Movement", level: 1, reason: "medium armor" },
+    ]);
 
     const heavyLoadBuild: CharacterBuild = {
       ...build,
@@ -70,6 +73,9 @@ describe("class feature effects auto-apply through buildCharacter", () => {
     const heavyLoadSheet = computeSheet(buildCharacter(heavyLoadBuild));
     expect(heavyLoadSheet.encumbrance.band).toBe("heavy");
     expect(heavyLoadSheet.speed.total).toBe(30); // Fast Movement suppressed
+    expect(heavyLoadSheet.descriptor.suppressedFeatures).toEqual([
+      { name: "Fast Movement", level: 1, reason: "heavy load" },
+    ]);
   });
 
   it("dedupes features if a build manually repeats an auto-granted one", () => {

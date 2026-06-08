@@ -6,6 +6,12 @@ export interface ClassFeatureContext {
   loadBand: LoadBand;
 }
 
+export interface SuppressedClassFeature {
+  id: string;
+  name: string;
+  reason: string;
+}
+
 export interface ClassFeatureDefinition {
   id: string;
   name: string;
@@ -17,6 +23,8 @@ export interface ClassFeatureDefinition {
   effects: Modifier[];
   /** Optional availability gate for passive effects. */
   availableWhen?: (ctx: ClassFeatureContext) => boolean;
+  /** Human-readable explanation when unavailable. */
+  unavailableReason?: (ctx: ClassFeatureContext) => string;
   /** Optional activated state, e.g. Rage. */
   activatable?: ActivatableEffect;
 }
@@ -64,6 +72,13 @@ export const CORE_CLASS_FEATURES: ClassFeatureDefinition[] = [
     effects: [{ target: "speed", type: "enhancement", value: 10, source: "Fast Movement" }],
     availableWhen: (ctx) =>
       (ctx.armorCategory === "none" || ctx.armorCategory === "light") && ctx.loadBand === "light",
+    unavailableReason: (ctx) => {
+      if (ctx.armorCategory === "medium" || ctx.armorCategory === "heavy") {
+        return `${ctx.armorCategory} armor`;
+      }
+      if (ctx.loadBand !== "light") return `${ctx.loadBand} load`;
+      return "conditions not met";
+    },
   },
   {
     id: "fighter-bonus-feat-l1",
@@ -126,5 +141,23 @@ export function classFeatureEffects(
     if (f.availableWhen && ctx && !f.availableWhen(ctx)) return [];
     return f.effects;
   });
+}
+
+export function suppressedClassFeatures(
+  features: ClassFeatureDefinition[],
+  ctx?: ClassFeatureContext,
+): SuppressedClassFeature[] {
+  if (!ctx) return [];
+  const out: SuppressedClassFeature[] = [];
+  for (const f of features) {
+    if (f.availableWhen && !f.availableWhen(ctx)) {
+      out.push({
+        id: f.id,
+        name: f.name,
+        reason: f.unavailableReason ? f.unavailableReason(ctx) : "conditions not met",
+      });
+    }
+  }
+  return out;
 }
 

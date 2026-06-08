@@ -168,6 +168,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
   font-size: 13px;
 }
 .chip.feature { border-color: var(--accent); color: var(--accent-2); }
+.chip.suppressed { border-color: var(--err); color: var(--err); }
 .chip-lvl { font-size: 10px; color: var(--muted); }
 
 .modal-backdrop {

@@ -89,6 +89,7 @@ describe("feat effects auto-apply through buildCharacter", () => {
       classes: [{ name: "Fighter", level: 1 }],
       feats: [{ name: "Combat Expertise", level: 1 }],
       features: [],
+      suppressedFeatures: [],
     };
     expect(
       collectActivatableEffects({
