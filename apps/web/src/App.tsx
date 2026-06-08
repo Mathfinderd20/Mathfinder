@@ -19,14 +19,13 @@ import {
   type Modifier,
   type SpellSlotUsageByLevel,
 } from "@path-builder/rules-engine";
-
-const ABILITY_ORDER: readonly AbilityKey[] = ["str", "dex", "con", "int", "wis", "cha"];
 import { BUFFS, initialBuild } from "./data";
 import { Sheet } from "./components/Sheet";
 import { LevelUpModal } from "./components/LevelUpModal";
 
 type SpellCastCounts = Record<string, Record<number, Record<string, number>>>;
 
+const ABILITY_ORDER: readonly AbilityKey[] = ["str", "dex", "con", "int", "wis", "cha"];
 const RUNTIME_STORAGE_KEY = "path-builder:web-runtime:v1";
 const CURRENT_BUILD_STORAGE_KEY = "path-builder:web-build:v1";
 const BUILD_SLOTS_STORAGE_KEY = "path-builder:web-build-slots:v1";
@@ -44,6 +43,13 @@ interface SavedBuildSlot {
   label: string;
   savedAt: string;
   build: CharacterBuild;
+}
+
+interface EquipmentArmorEditorState {
+  category: "none" | "light" | "medium" | "heavy";
+  maxDexBonus?: number;
+  checkPenalty?: number;
+  speedPenalty?: number;
 }
 
 function loadRuntimeState(): RuntimeStateSnapshot {
@@ -168,6 +174,75 @@ export function App() {
         ...prev.baseAbilityScores,
         [ability]: Math.max(1, value),
       },
+    }));
+  }
+
+  function addWeapon() {
+    setBuild((prev) => ({
+      ...prev,
+      weapons: [
+        ...(prev.weapons ?? []),
+        { name: "New Weapon", category: "melee", damageDice: "1d6", handedness: "one", critMultiplier: 2, critRange: 20 },
+      ],
+    }));
+  }
+
+  function updateWeapon(index: number, patch: Partial<NonNullable<CharacterBuild["weapons"]>[number]>) {
+    setBuild((prev) => ({
+      ...prev,
+      weapons: (prev.weapons ?? []).map((weapon, i) => (i === index ? { ...weapon, ...patch } : weapon)),
+    }));
+  }
+
+  function removeWeapon(index: number) {
+    setBuild((prev) => ({
+      ...prev,
+      weapons: (prev.weapons ?? []).filter((_, i) => i !== index),
+    }));
+  }
+
+  function addEquipment() {
+    setBuild((prev) => ({
+      ...prev,
+      equipment: [
+        ...(prev.equipment ?? []),
+        { name: "New Item", quantity: 1, weight: 0, costGp: 0, equipped: false },
+      ],
+    }));
+  }
+
+  function updateEquipment(index: number, patch: Partial<NonNullable<CharacterBuild["equipment"]>[number]>) {
+    setBuild((prev) => ({
+      ...prev,
+      equipment: (prev.equipment ?? []).map((item, i) => (i === index ? { ...item, ...patch } : item)),
+    }));
+  }
+
+  function updateEquipmentArmor(index: number, patch: EquipmentArmorEditorState) {
+    setBuild((prev) => ({
+      ...prev,
+      equipment: (prev.equipment ?? []).map((item, i) =>
+        i === index
+          ? {
+              ...item,
+              armor: patch.category === "none"
+                ? undefined
+                : {
+                    category: patch.category,
+                    maxDexBonus: patch.maxDexBonus,
+                    checkPenalty: patch.checkPenalty,
+                    speedPenalty: patch.speedPenalty,
+                  },
+            }
+          : item,
+      ),
+    }));
+  }
+
+  function removeEquipment(index: number) {
+    setBuild((prev) => ({
+      ...prev,
+      equipment: (prev.equipment ?? []).filter((_, i) => i !== index),
     }));
   }
 
@@ -455,6 +530,119 @@ export function App() {
                 }}
               />
             </label>
+            <div className="editor-section-head">
+              <h3>Weapons</h3>
+              <button className="ghost small" onClick={addWeapon}>Add Weapon</button>
+            </div>
+            <div className="item-list">
+              {(build.weapons ?? []).map((weapon, index) => (
+                <div className="item-card" key={`weapon-${index}`}>
+                  <div className="editor-grid">
+                    <label className="field compact">
+                      <span>Name</span>
+                      <input type="text" value={weapon.name} onChange={(e) => updateWeapon(index, { name: e.target.value })} />
+                    </label>
+                    <label className="field compact">
+                      <span>Category</span>
+                      <select value={weapon.category} onChange={(e) => updateWeapon(index, { category: e.target.value as "melee" | "ranged" })}>
+                        <option value="melee">Melee</option>
+                        <option value="ranged">Ranged</option>
+                      </select>
+                    </label>
+                    <label className="field compact">
+                      <span>Damage dice</span>
+                      <input type="text" value={weapon.damageDice} onChange={(e) => updateWeapon(index, { damageDice: e.target.value || "1d6" })} />
+                    </label>
+                    <label className="field compact">
+                      <span>Handedness</span>
+                      <select value={weapon.handedness ?? "one"} onChange={(e) => updateWeapon(index, { handedness: e.target.value as "one" | "two" | "off" | "light" })}>
+                        <option value="one">One-Handed</option>
+                        <option value="two">Two-Handed</option>
+                        <option value="off">Off-Hand</option>
+                        <option value="light">Light</option>
+                      </select>
+                    </label>
+                    <label className="field compact">
+                      <span>Crit range</span>
+                      <input type="number" min={18} max={20} value={weapon.critRange ?? 20} onChange={(e) => updateWeapon(index, { critRange: Math.max(18, Math.min(20, Number(e.target.value) || 20)) })} />
+                    </label>
+                    <label className="field compact">
+                      <span>Crit multiplier</span>
+                      <input type="number" min={2} max={5} value={weapon.critMultiplier ?? 2} onChange={(e) => updateWeapon(index, { critMultiplier: Math.max(2, Math.min(5, Number(e.target.value) || 2)) })} />
+                    </label>
+                  </div>
+                  <div className="item-actions">
+                    <button className="ghost small" onClick={() => removeWeapon(index)}>Remove</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="editor-section-head">
+              <h3>Equipment</h3>
+              <button className="ghost small" onClick={addEquipment}>Add Item</button>
+            </div>
+            <div className="item-list">
+              {(build.equipment ?? []).map((item, index) => {
+                const armor: EquipmentArmorEditorState = item.armor
+                  ? {
+                      category: item.armor.category ?? "light",
+                      maxDexBonus: item.armor.maxDexBonus,
+                      checkPenalty: item.armor.checkPenalty,
+                      speedPenalty: item.armor.speedPenalty,
+                    }
+                  : { category: "none", maxDexBonus: undefined, checkPenalty: undefined, speedPenalty: undefined };
+                return (
+                  <div className="item-card" key={`equipment-${index}`}>
+                    <div className="editor-grid">
+                      <label className="field compact">
+                        <span>Name</span>
+                        <input type="text" value={item.name} onChange={(e) => updateEquipment(index, { name: e.target.value })} />
+                      </label>
+                      <label className="field compact">
+                        <span>Quantity</span>
+                        <input type="number" min={0} value={item.quantity ?? 1} onChange={(e) => updateEquipment(index, { quantity: Math.max(0, Number(e.target.value) || 0) })} />
+                      </label>
+                      <label className="field compact">
+                        <span>Weight (lb)</span>
+                        <input type="number" min={0} value={item.weight ?? 0} onChange={(e) => updateEquipment(index, { weight: Math.max(0, Number(e.target.value) || 0) })} />
+                      </label>
+                      <label className="field compact">
+                        <span>Cost (gp)</span>
+                        <input type="number" min={0} value={item.costGp ?? 0} onChange={(e) => updateEquipment(index, { costGp: Math.max(0, Number(e.target.value) || 0) })} />
+                      </label>
+                      <label className="field compact">
+                        <span>Armor category</span>
+                        <select value={armor.category ?? "none"} onChange={(e) => updateEquipmentArmor(index, { ...armor, category: e.target.value as "none" | "light" | "medium" | "heavy" })}>
+                          <option value="none">None</option>
+                          <option value="light">Light</option>
+                          <option value="medium">Medium</option>
+                          <option value="heavy">Heavy</option>
+                        </select>
+                      </label>
+                      <label className="field compact checkbox-field">
+                        <span>Equipped</span>
+                        <input type="checkbox" checked={!!item.equipped} onChange={(e) => updateEquipment(index, { equipped: e.target.checked })} />
+                      </label>
+                      <label className="field compact">
+                        <span>Max Dex</span>
+                        <input type="number" value={armor.maxDexBonus ?? ""} onChange={(e) => updateEquipmentArmor(index, { ...armor, maxDexBonus: e.target.value === "" ? undefined : Number(e.target.value) })} />
+                      </label>
+                      <label className="field compact">
+                        <span>Armor check penalty</span>
+                        <input type="number" value={armor.checkPenalty ?? ""} onChange={(e) => updateEquipmentArmor(index, { ...armor, checkPenalty: e.target.value === "" ? undefined : Number(e.target.value) })} />
+                      </label>
+                      <label className="field compact">
+                        <span>Speed penalty</span>
+                        <input type="number" min={0} value={armor.speedPenalty ?? ""} onChange={(e) => updateEquipmentArmor(index, { ...armor, speedPenalty: e.target.value === "" ? undefined : Math.max(0, Number(e.target.value) || 0) })} />
+                      </label>
+                    </div>
+                    <div className="item-actions">
+                      <button className="ghost small" onClick={() => removeEquipment(index)}>Remove</button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </section>
 
           <section className="panel">
