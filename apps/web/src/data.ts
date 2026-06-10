@@ -1,41 +1,16 @@
+import { CORE_RACES } from "@path-builder/rules-data";
 import type { CharacterBuild, LevelEntry, Modifier } from "@path-builder/rules-engine";
 
-export const SAMPLE_RACES: Record<string, CharacterBuild["race"]> = {
-  human: {
-    name: "Human",
-    size: "medium",
-    speed: 30,
-    abilityModifiers: [],
-  },
-  "half-orc": {
-    name: "Half-Orc",
-    size: "medium",
-    speed: 30,
-    abilityModifiers: [
-      { target: "str", type: "racial", value: 2, source: "Half-Orc" },
-    ],
-  },
-  dwarf: {
-    name: "Dwarf",
-    size: "medium",
-    speed: 20,
-    abilityModifiers: [
-      { target: "con", type: "racial", value: 2, source: "Dwarf" },
-      { target: "wis", type: "racial", value: 2, source: "Dwarf" },
-      { target: "cha", type: "racial", value: -2, source: "Dwarf" },
-    ],
-  },
-  elf: {
-    name: "Elf",
-    size: "medium",
-    speed: 30,
-    abilityModifiers: [
-      { target: "dex", type: "racial", value: 2, source: "Elf" },
-      { target: "int", type: "racial", value: 2, source: "Elf" },
-      { target: "con", type: "racial", value: -2, source: "Elf" },
-    ],
-  },
-};
+export const SAMPLE_RACES: Record<string, CharacterBuild["race"]> = Object.fromEntries(
+  CORE_RACES.map((race) => [race.id, {
+    name: race.name,
+    size: race.size,
+    speed: race.speed,
+    abilityModifiers: race.abilityModifiers,
+    traits: race.traits,
+    classSkills: race.classSkills,
+  }]),
+);
 
 /** Starting character: a fresh level-1 Half-Orc Barbarian. */
 export const initialBuild: CharacterBuild = {

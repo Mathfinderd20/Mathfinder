@@ -12,15 +12,15 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 - [x] Init monorepo with npm workspaces (packages/rules-engine live)
 - [x] tsconfig.base + per-package TS config (strict, noUncheckedIndexedAccess)
 - [ ] Lock remaining dependency versions as packages are added
-- [ ] Add apps/web, apps/mobile, packages/shared, services/api
+- [~] Add apps/web, apps/mobile, packages/shared, services/api — apps/web and packages/rules-data/rules-engine live; mobile/shared/api still pending
 - [ ] Set up linting, formatting, CI, and pre-commit hooks
 - [ ] Pick + provision backend (DB, realtime, auth)
 
 ## Phase 1 — Rules Data Foundation
-- [ ] Define canonical JSON schema for all game entities (races, classes, feats, spells, items, etc.)
+- [~] Define canonical rules-data schema/package for core entities (sources, packs, races, classes, class features, feats, skills, spells) — starter TS schema + validation + index/registry done; JSON serialization/items/archetypes still pending
 - [ ] Build/ingest 1st-party (Core, APG, ACG, ARG, UM, UC, etc.) dataset under proper licensing (OGL/PRD)
 - [ ] Ingest **Savage Company (SHM Publishing)** content (cross-check d20pfsrd.com against original manuscript as source of truth)
-- [ ] Add `source` tag + provenance fields to every entity (enables content-pack toggles)
+- [~] Add `source` tag + provenance fields to every entity (enables content-pack toggles) — rules-data sources/packs scaffolded; entity-by-entity provenance expansion still pending
 - [ ] Validate dataset against schema (CI gate)
 - [ ] Versioning strategy for rules data (so sheets don't break on update)
 
