@@ -8,7 +8,7 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      "@path-builder/rules-engine": fileURLToPath(
+      "@mathfinder/rules-engine": fileURLToPath(
         new URL("../../packages/rules-engine/src/index.ts", import.meta.url),
       ),
     },

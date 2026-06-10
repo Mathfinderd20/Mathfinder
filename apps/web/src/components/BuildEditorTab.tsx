@@ -5,7 +5,7 @@ import {
   type CharacterBuild,
   type DerivedSpellcasting,
   type SkillKey,
-} from "@path-builder/rules-engine";
+} from "@mathfinder/rules-engine";
 import type { ReactNode } from "react";
 import { SpellcastingManager } from "./SpellcastingManager";
 

@@ -1,4 +1,4 @@
-# Path-Builder
+# Mathfinder
 
 An interactive smart character sheet for **Pathfinder 1st Edition** (plus **Savage
 Company** by SHM Publishing) — web and mobile.

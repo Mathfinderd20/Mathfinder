@@ -1,4 +1,4 @@
-#  Path-Builder TODO
+#  Mathfinder TODO
 
 Living checklist. Check things off as we go. Newest insights bubble up into the plan.
 

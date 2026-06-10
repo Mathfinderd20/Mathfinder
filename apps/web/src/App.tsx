@@ -22,7 +22,7 @@ import {
   type Modifier,
   type SkillKey,
   type SpellSlotUsageByLevel,
-} from "@path-builder/rules-engine";
+} from "@mathfinder/rules-engine";
 import { BUFFS, initialBuild, SAMPLE_RACES } from "./data";
 import { Sheet } from "./components/Sheet";
 import { LevelUpModal } from "./components/LevelUpModal";
@@ -34,10 +34,10 @@ const ABILITY_ORDER: readonly AbilityKey[] = ["str", "dex", "con", "int", "wis",
 const SKILL_NAME = new Map<string, string>(SKILL_DEFINITIONS.map((d) => [d.key, d.name]));
 const CLASS_OPTIONS = Object.values(SAMPLE_CLASSES).sort((a, b) => a.name.localeCompare(b.name));
 const RACE_OPTIONS = Object.entries(SAMPLE_RACES).sort((a, b) => a[1].name.localeCompare(b[1].name));
-const RUNTIME_STORAGE_KEY = "path-builder:web-runtime:v1";
+const RUNTIME_STORAGE_KEY = "mathfinder:web-runtime:v1";
 const SPELL_OPTIONS = Object.values(SPELLS).sort((a, b) => a.name.localeCompare(b.name));
-const CURRENT_BUILD_STORAGE_KEY = "path-builder:web-build:v1";
-const BUILD_SLOTS_STORAGE_KEY = "path-builder:web-build-slots:v1";
+const CURRENT_BUILD_STORAGE_KEY = "mathfinder:web-build:v1";
+const BUILD_SLOTS_STORAGE_KEY = "mathfinder:web-build-slots:v1";
 
 interface RuntimeStateSnapshot {
   activeBuffs: Record<string, boolean>;
@@ -621,7 +621,7 @@ export function App() {
     <div className="app">
       <header className="app-bar">
         <div className="brand">
-          Path-Builder <span className="brand-sub">Pathfinder 1e smart sheet</span>
+          Mathfinder <span className="brand-sub">Pathfinder 1e smart sheet</span>
         </div>
         <div className="actions">
           <button onClick={() => setLeveling(true)}>⬆ Level Up</button>

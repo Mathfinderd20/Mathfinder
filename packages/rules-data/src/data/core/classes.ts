@@ -3,7 +3,7 @@ import {
   spellsByLevel,
   type ClassDefinition,
   type ClassRegistry,
-} from "@path-builder/rules-engine";
+} from "@mathfinder/rules-engine";
 
 const SAMPLE_CLASS_ARRAY: ClassDefinition[] = Object.values(SAMPLE_CLASSES);
 

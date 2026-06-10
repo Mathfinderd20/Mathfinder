@@ -4,8 +4,8 @@ import type {
   FeatDefinition,
   SkillDefinition,
   SpellDefinition,
-} from "@path-builder/rules-engine";
-import type { Modifier, Size, SkillKey } from "@path-builder/rules-engine";
+} from "@mathfinder/rules-engine";
+import type { Modifier, Size, SkillKey } from "@mathfinder/rules-engine";
 
 export type ContentKind =
   | "class"

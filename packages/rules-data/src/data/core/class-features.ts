@@ -1,7 +1,7 @@
 import {
   CORE_CLASS_FEATURES,
   type ClassFeatureDefinition,
-} from "@path-builder/rules-engine";
+} from "@mathfinder/rules-engine";
 
 export const CORE_RULES_CLASS_FEATURES: ClassFeatureDefinition[] = CORE_CLASS_FEATURES.map((feature) => ({
   ...feature,

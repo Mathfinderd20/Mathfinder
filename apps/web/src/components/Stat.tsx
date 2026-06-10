@@ -1,4 +1,4 @@
-import type { DerivedStat } from "@path-builder/rules-engine";
+import type { DerivedStat } from "@mathfinder/rules-engine";
 import { sign } from "../util";
 
 interface StatProps {

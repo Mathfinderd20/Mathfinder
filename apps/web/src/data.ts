@@ -1,5 +1,5 @@
-import { CORE_RACES } from "@path-builder/rules-data";
-import type { CharacterBuild, LevelEntry, Modifier } from "@path-builder/rules-engine";
+import { CORE_RACES } from "@mathfinder/rules-data";
+import type { CharacterBuild, LevelEntry, Modifier } from "@mathfinder/rules-engine";
 
 export const SAMPLE_RACES: Record<string, CharacterBuild["race"]> = Object.fromEntries(
   CORE_RACES.map((race) => [race.id, {

@@ -4,7 +4,7 @@ import type {
   FeatDefinition,
   SkillDefinition,
   SpellDefinition,
-} from "@path-builder/rules-engine";
+} from "@mathfinder/rules-engine";
 import type { RaceDefinition, RulesDataIndex, RulesDataSet, RulesPack } from "./types";
 
 function byLowerName<T extends { name: string }>(items: T[]): Record<string, T> {

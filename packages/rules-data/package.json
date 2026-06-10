@@ -1,5 +1,5 @@
 {
-  "name": "@path-builder/rules-data",
+  "name": "@mathfinder/rules-data",
   "version": "0.0.0",
   "description": "Canonical Pathfinder 1e rules-data package: content packs, schemas, and validation.",
   "type": "module",
@@ -15,7 +15,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@path-builder/rules-engine": "*"
+    "@mathfinder/rules-engine": "*"
   },
   "devDependencies": {
     "typescript": "^5.6.3"

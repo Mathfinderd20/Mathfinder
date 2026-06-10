@@ -15,7 +15,7 @@ import {
   type CharacterBuild,
   type LevelUpSelection,
   type SkillKey,
-} from "@path-builder/rules-engine";
+} from "@mathfinder/rules-engine";
 
 const ABILITIES: AbilityKey[] = ["str", "dex", "con", "int", "wis", "cha"];
 const SKILL_NAME = new Map<string, string>(SKILL_DEFINITIONS.map((d) => [d.key, d.name]));

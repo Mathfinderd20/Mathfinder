@@ -1,5 +1,5 @@
 {
-  "name": "@path-builder/rules-engine",
+  "name": "@mathfinder/rules-engine",
   "version": "0.0.0",
   "description": "Pure, deterministic Pathfinder 1e rules engine: modifier stacking + stat derivation.",
   "type": "module",

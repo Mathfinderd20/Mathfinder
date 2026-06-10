@@ -1,4 +1,4 @@
-import type { AbilityKey, DerivedSheet } from "@path-builder/rules-engine";
+import type { AbilityKey, DerivedSheet } from "@mathfinder/rules-engine";
 import { sign } from "../util";
 import { Stat } from "./Stat";
 

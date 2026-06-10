@@ -1,4 +1,4 @@
-# Path-Builder — Interactive Smart Character Sheet for Pathfinder 1e
+# Mathfinder — Interactive Smart Character Sheet for Pathfinder 1e
 
 > A cross-platform (web + mobile) app that understands all 1st-party Pathfinder 1e
 > content **plus Savage Company (SHM Publishing)**, lets users build/level/track

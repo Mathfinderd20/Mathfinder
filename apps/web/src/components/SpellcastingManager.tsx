@@ -1,4 +1,4 @@
-import type { DerivedSpellcasting } from "@path-builder/rules-engine";
+import type { DerivedSpellcasting } from "@mathfinder/rules-engine";
 
 type SpellCastCounts = Record<string, Record<number, Record<string, number>>>;
 

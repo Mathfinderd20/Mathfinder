@@ -1,4 +1,4 @@
-import { CORE_FEATS, type FeatDefinition } from "@path-builder/rules-engine";
+import { CORE_FEATS, type FeatDefinition } from "@mathfinder/rules-engine";
 
 export const CORE_RULES_FEATS: FeatDefinition[] = CORE_FEATS.map((feat) => ({
   ...feat,
