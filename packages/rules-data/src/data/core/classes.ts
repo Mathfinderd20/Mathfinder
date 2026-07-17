@@ -11,8 +11,12 @@ function normalizeClassName(name: string) {
   return name.toLowerCase();
 }
 
-function overridePacklessClasses(classes: ClassDefinition[]): ClassDefinition[] {
-  const byName = Object.fromEntries(classes.map((item) => [normalizeClassName(item.name), item])) as ClassRegistry;
+function overridePacklessClasses(
+  classes: ClassDefinition[],
+): ClassDefinition[] {
+  const byName = Object.fromEntries(
+    classes.map((item) => [normalizeClassName(item.name), item]),
+  ) as ClassRegistry;
   return Object.values(byName);
 }
 
@@ -25,8 +29,16 @@ export const CORE_CLASSES: ClassDefinition[] = overridePacklessClasses([
     goodSaves: ["fort", "will"],
     skillRanksPerLevel: 2,
     classSkills: [
-      "craft", "diplomacy", "handle-animal", "heal", "knowledge.nobility",
-      "knowledge.religion", "profession", "ride", "sense-motive", "spellcraft",
+      "craft",
+      "diplomacy",
+      "handle-animal",
+      "heal",
+      "knowledge.nobility",
+      "knowledge.religion",
+      "profession",
+      "ride",
+      "sense-motive",
+      "spellcraft",
     ],
     spellcasting: {
       castingType: "prepared",

@@ -35,6 +35,15 @@ Thumbs.db
 coverage/
 .nyc_output/
 
+# Local content ingestion / source material
+Savage Company/
+packages/content-db/data/
+packages/content-db/packages/content-db/data/
+!apps/web/public/usable-content.json
+
 # Misc
 *.tsbuildinfo
 .cache/
+.tmp-pydeps/
+tmp-*
+tmp_*.txt

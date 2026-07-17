@@ -1,0 +1,35 @@
+{
+  "generatedAt": "2026-06-25T03:26:31.767Z",
+  "totals": {
+    "scrapedSpells": 822,
+    "scrapedFeats": 1826,
+    "scrapedMagicItems": 2620,
+    "scrapedClassFeatures": 606
+  },
+  "issues": {
+    "spellsMissingSchool": {
+      "count": 0,
+      "samples": []
+    },
+    "spellsMissingClasses": {
+      "count": 0,
+      "samples": []
+    },
+    "spellsSuspiciousDescription": {
+      "count": 0,
+      "samples": []
+    },
+    "featsSuspiciousDescription": {
+      "count": 0,
+      "samples": []
+    },
+    "magicItemsSuspiciousDescription": {
+      "count": 0,
+      "samples": []
+    },
+    "classFeaturesMissingLevels": {
+      "count": 0,
+      "samples": []
+    }
+  }
+}

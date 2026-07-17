@@ -1,3 +1,4 @@
+import { buildCompendiumIndex, getCompendiumEntryByName } from "../compendium";
 import type { AbilityKey, DerivedSheet, Modifier } from "../types";
 import { babStep, type ActivatableEffect } from "./activatables";
 
@@ -18,11 +19,15 @@ export interface FeatDefinition {
   pack: string;
   description: string;
   prerequisites: Prerequisite[];
+  /** Grant/source metadata like combat/item-creation/general. */
+  tags?: string[];
   /** Passive effects granted, as modifiers. Empty for purely-activated feats. */
   effects: Modifier[];
   /** Optional activated state, e.g. Combat Expertise. */
   activatable?: ActivatableEffect;
 }
+
+export type FeatGrantKind = "general" | "fighter-bonus";
 
 export type FeatRegistry = Record<string, FeatDefinition>;
 
@@ -46,7 +51,15 @@ export const CORE_FEATS: FeatDefinition[] = [
     pack: "core",
     description: "+4 bonus on initiative checks.",
     prerequisites: [],
-    effects: [{ target: "init", type: "untyped", value: 4, source: "Improved Initiative" }],
+    tags: ["combat"],
+    effects: [
+      {
+        target: "init",
+        type: "untyped",
+        value: 4,
+        source: "Improved Initiative",
+      },
+    ],
   },
   {
     id: "iron-will",
@@ -54,7 +67,19 @@ export const CORE_FEATS: FeatDefinition[] = [
     pack: "core",
     description: "+2 bonus on Will saves.",
     prerequisites: [],
-    effects: [{ target: "save.will", type: "untyped", value: 2, source: "Iron Will" }],
+    effects: [
+      { target: "save.will", type: "untyped", value: 2, source: "Iron Will" },
+    ],
+  },
+  {
+    id: "improved-unarmed-strike",
+    name: "Improved Unarmed Strike",
+    pack: "core",
+    description:
+      "You are considered armed even when unarmed and do not provoke attacks of opportunity when making unarmed strikes.",
+    prerequisites: [],
+    tags: ["combat"],
+    effects: [],
   },
   {
     id: "great-fortitude",
@@ -62,7 +87,14 @@ export const CORE_FEATS: FeatDefinition[] = [
     pack: "core",
     description: "+2 bonus on Fortitude saves.",
     prerequisites: [],
-    effects: [{ target: "save.fort", type: "untyped", value: 2, source: "Great Fortitude" }],
+    effects: [
+      {
+        target: "save.fort",
+        type: "untyped",
+        value: 2,
+        source: "Great Fortitude",
+      },
+    ],
   },
   {
     id: "lightning-reflexes",
@@ -70,29 +102,127 @@ export const CORE_FEATS: FeatDefinition[] = [
     pack: "core",
     description: "+2 bonus on Reflex saves.",
     prerequisites: [],
-    effects: [{ target: "save.ref", type: "untyped", value: 2, source: "Lightning Reflexes" }],
+    effects: [
+      {
+        target: "save.ref",
+        type: "untyped",
+        value: 2,
+        source: "Lightning Reflexes",
+      },
+    ],
   },
   {
     id: "dodge",
     name: "Dodge",
     pack: "core",
     description: "+1 dodge bonus to AC.",
-    prerequisites: [{ type: "ability", ability: "dex", min: 13, description: "Dex 13" }],
+    tags: ["combat"],
+    prerequisites: [
+      { type: "ability", ability: "dex", min: 13, description: "Dex 13" },
+    ],
     effects: [{ target: "ac", type: "dodge", value: 1, source: "Dodge" }],
   },
   {
     id: "weapon-focus",
     name: "Weapon Focus",
     pack: "core",
-    description: "+1 bonus on attack rolls with a chosen weapon (modeled as melee).",
+    description:
+      "+1 bonus on attack rolls with a chosen weapon (modeled as melee).",
+    tags: ["combat"],
     prerequisites: [{ type: "bab", min: 1, description: "BAB +1" }],
-    effects: [{ target: "attack.melee", type: "untyped", value: 1, source: "Weapon Focus" }],
+    effects: [
+      {
+        target: "attack.melee",
+        type: "untyped",
+        value: 1,
+        source: "Weapon Focus",
+      },
+    ],
+  },
+  {
+    id: "weapon-finesse",
+    name: "Weapon Finesse",
+    pack: "core",
+    description:
+      "Use Dexterity instead of Strength on attack rolls with light/finesse weapons (specific weapon modeling not yet implemented).",
+    prerequisites: [],
+    tags: ["combat"],
+    effects: [],
+  },
+  {
+    id: "endurance",
+    name: "Endurance",
+    pack: "core",
+    description: "You excel at physical endurance and environmental hardship.",
+    prerequisites: [],
+    effects: [],
+  },
+  {
+    id: "diehard",
+    name: "Diehard",
+    pack: "core",
+    description: "You remain conscious and can act while dying.",
+    prerequisites: [
+      { type: "feat", featName: "Endurance", description: "Endurance" },
+    ],
+    effects: [],
+  },
+  {
+    id: "eschew-materials",
+    name: "Eschew Materials",
+    pack: "core",
+    description:
+      "You can cast many spells without insignificant material components.",
+    prerequisites: [],
+    effects: [],
+  },
+  {
+    id: "master-craftsman",
+    name: "Master Craftsman",
+    pack: "core",
+    description:
+      "Exceptional mundane crafting talent can stand in for caster level prerequisites.",
+    prerequisites: [],
+    effects: [],
+  },
+  {
+    id: "craft-construct",
+    name: "Craft Construct",
+    pack: "core",
+    description: "You can create construct magic items.",
+    prerequisites: [],
+    effects: [],
+  },
+  {
+    id: "siege-engineer",
+    name: "Siege Engineer",
+    pack: "core",
+    description:
+      "You are trained in the operation and maintenance of siege engines.",
+    prerequisites: [],
+    effects: [],
+  },
+  {
+    id: "master-siege-engineer",
+    name: "Master Siege Engineer",
+    pack: "core",
+    description: "You are an expert at commanding and employing siege weapons.",
+    prerequisites: [
+      {
+        type: "feat",
+        featName: "Siege Engineer",
+        description: "Siege Engineer",
+      },
+    ],
+    effects: [],
   },
   {
     id: "power-attack",
     name: "Power Attack",
     pack: "core",
-    description: "Trade melee attack for damage; scales by BAB (damage not yet tracked).",
+    description:
+      "Trade melee attack for damage; scales by BAB (damage not yet tracked).",
+    tags: ["combat"],
     prerequisites: [
       { type: "ability", ability: "str", min: 13, description: "Str 13" },
       { type: "bab", min: 1, description: "BAB +1" },
@@ -103,14 +233,34 @@ export const CORE_FEATS: FeatDefinition[] = [
       name: "Power Attack",
       description: "-1 melee attack / +2 melee damage per 4 BAB",
       effects: [
-        { target: "attack.melee", type: "untyped", value: -1, source: "Power Attack" },
-        { target: "damage.melee", type: "untyped", value: 2, source: "Power Attack" },
+        {
+          target: "attack.melee",
+          type: "untyped",
+          value: -1,
+          source: "Power Attack",
+        },
+        {
+          target: "damage.melee",
+          type: "untyped",
+          value: 2,
+          source: "Power Attack",
+        },
       ],
       scale: (ctx) => {
         const steps = babStep(ctx.baseAttackBonus);
         return [
-          { target: "attack.melee", type: "untyped", value: -steps, source: "Power Attack" },
-          { target: "damage.melee", type: "untyped", value: 2 * steps, source: "Power Attack" },
+          {
+            target: "attack.melee",
+            type: "untyped",
+            value: -steps,
+            source: "Power Attack",
+          },
+          {
+            target: "damage.melee",
+            type: "untyped",
+            value: 2 * steps,
+            source: "Power Attack",
+          },
         ];
       },
     },
@@ -120,21 +270,39 @@ export const CORE_FEATS: FeatDefinition[] = [
     name: "Combat Expertise",
     pack: "core",
     description: "Trade attack bonus for AC; scales by BAB.",
-    prerequisites: [{ type: "ability", ability: "int", min: 13, description: "Int 13" }],
+    tags: ["combat"],
+    prerequisites: [
+      { type: "ability", ability: "int", min: 13, description: "Int 13" },
+    ],
     effects: [],
     activatable: {
       id: "combat-expertise",
       name: "Combat Expertise",
       description: "-1 attack / +1 dodge AC per 4 BAB",
       effects: [
-        { target: "attack", type: "untyped", value: -1, source: "Combat Expertise" },
+        {
+          target: "attack",
+          type: "untyped",
+          value: -1,
+          source: "Combat Expertise",
+        },
         { target: "ac", type: "dodge", value: 1, source: "Combat Expertise" },
       ],
       scale: (ctx) => {
         const steps = babStep(ctx.baseAttackBonus);
         return [
-          { target: "attack", type: "untyped", value: -steps, source: "Combat Expertise" },
-          { target: "ac", type: "dodge", value: steps, source: "Combat Expertise" },
+          {
+            target: "attack",
+            type: "untyped",
+            value: -steps,
+            source: "Combat Expertise",
+          },
+          {
+            target: "ac",
+            type: "dodge",
+            value: steps,
+            source: "Combat Expertise",
+          },
         ];
       },
     },
@@ -143,7 +311,9 @@ export const CORE_FEATS: FeatDefinition[] = [
     id: "deadly-aim",
     name: "Deadly Aim",
     pack: "core",
-    description: "Trade ranged attack for damage; scales by BAB (damage not yet tracked).",
+    description:
+      "Trade ranged attack for damage; scales by BAB (damage not yet tracked).",
+    tags: ["combat"],
     prerequisites: [
       { type: "ability", ability: "dex", min: 13, description: "Dex 13" },
       { type: "bab", min: 1, description: "BAB +1" },
@@ -154,14 +324,34 @@ export const CORE_FEATS: FeatDefinition[] = [
       name: "Deadly Aim",
       description: "-1 ranged attack / +2 ranged damage per 4 BAB",
       effects: [
-        { target: "attack.ranged", type: "untyped", value: -1, source: "Deadly Aim" },
-        { target: "damage.ranged", type: "untyped", value: 2, source: "Deadly Aim" },
+        {
+          target: "attack.ranged",
+          type: "untyped",
+          value: -1,
+          source: "Deadly Aim",
+        },
+        {
+          target: "damage.ranged",
+          type: "untyped",
+          value: 2,
+          source: "Deadly Aim",
+        },
       ],
       scale: (ctx) => {
         const steps = babStep(ctx.baseAttackBonus);
         return [
-          { target: "attack.ranged", type: "untyped", value: -steps, source: "Deadly Aim" },
-          { target: "damage.ranged", type: "untyped", value: 2 * steps, source: "Deadly Aim" },
+          {
+            target: "attack.ranged",
+            type: "untyped",
+            value: -steps,
+            source: "Deadly Aim",
+          },
+          {
+            target: "damage.ranged",
+            type: "untyped",
+            value: 2 * steps,
+            source: "Deadly Aim",
+          },
         ];
       },
     },
@@ -176,18 +366,28 @@ export const SAVAGE_COMPANY_FEATS: FeatDefinition[] = [];
 
 /** Merge one or more feat packs into a lookup keyed by lowercased name. */
 export function buildFeatRegistry(...packs: FeatDefinition[][]): FeatRegistry {
-  const registry: FeatRegistry = {};
-  for (const pack of packs) {
-    for (const feat of pack) registry[feat.name.toLowerCase()] = feat;
-  }
-  return registry;
+  return Object.fromEntries(
+    buildCompendiumIndex(packs.flat()).all.map((feat) => [
+      feat.name.toLowerCase(),
+      feat,
+    ]),
+  );
 }
 
 /** Default registry: core + (empty) Savage Company pack. */
-export const FEATS: FeatRegistry = buildFeatRegistry(CORE_FEATS, SAVAGE_COMPANY_FEATS);
+export const FEATS: FeatRegistry = buildFeatRegistry(
+  CORE_FEATS,
+  SAVAGE_COMPANY_FEATS,
+);
 
-export function getFeat(registry: FeatRegistry, name: string): FeatDefinition | undefined {
-  return registry[name.toLowerCase()];
+export function getFeat(
+  registry: FeatRegistry,
+  name: string,
+): FeatDefinition | undefined {
+  return getCompendiumEntryByName(
+    buildCompendiumIndex(Object.values(registry)),
+    name,
+  );
 }
 
 export function listFeats(registry: FeatRegistry): FeatDefinition[] {
@@ -195,7 +395,20 @@ export function listFeats(registry: FeatRegistry): FeatDefinition[] {
 }
 
 /** Collect the passive effects of the named feats from a registry. */
-export function featEffects(featNames: string[], registry: FeatRegistry): Modifier[] {
+export function featQualifiesForGrant(
+  feat: FeatDefinition,
+  grantKind: FeatGrantKind,
+): boolean {
+  if (grantKind === "general") return true;
+  if (grantKind === "fighter-bonus")
+    return (feat.tags ?? []).some((tag) => tag.toLowerCase() === "combat");
+  return true;
+}
+
+export function featEffects(
+  featNames: string[],
+  registry: FeatRegistry,
+): Modifier[] {
   const out: Modifier[] = [];
   for (const name of featNames) {
     const feat = getFeat(registry, name);
@@ -234,7 +447,10 @@ function prerequisiteMet(p: Prerequisite, ctx: FeatContext): boolean {
   }
 }
 
-export function checkPrerequisites(feat: FeatDefinition, ctx: FeatContext): PrereqResult {
+export function checkPrerequisites(
+  feat: FeatDefinition,
+  ctx: FeatContext,
+): PrereqResult {
   const unmet = feat.prerequisites.filter((p) => !prerequisiteMet(p, ctx));
   return { met: unmet.length === 0, unmet };
 }

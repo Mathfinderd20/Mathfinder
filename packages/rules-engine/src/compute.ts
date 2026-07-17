@@ -11,16 +11,45 @@ import { deriveSkills } from "./skills";
 import { deriveHitPoints, deriveSpeed } from "./vitals";
 import { deriveWeapons } from "./weapons";
 import { deriveEncumbrance } from "./encumbrance";
-import { deriveSpellcasting } from "./spellcasting";import type {
+import { deriveSpellcasting } from "./spellcasting";
+import type {
   BonusType,
   BreakdownEntry,
   CharacterInput,
   DerivedSheet,
   DerivedStat,
+  HitPointDetails,
 } from "./types";
 
 function sumBreakdown(breakdown: BreakdownEntry[]): number {
   return breakdown.reduce((sum, entry) => sum + entry.value, 0);
+}
+
+function normalizeAmmoType(name: string): string {
+  return name.trim().toLowerCase();
+}
+
+function deriveAmmoByType(
+  items: CharacterInput["inventoryItems"],
+): Record<string, number> {
+  const ammo: Record<string, number> = {};
+  for (const item of items ?? []) {
+    const explicitType = item.ammoType?.trim();
+    const fallbackName = normalizeAmmoType(item.name);
+    const inferredType = explicitType
+      ? normalizeAmmoType(explicitType)
+      : fallbackName.endsWith("arrow") ||
+          fallbackName.endsWith("arrows") ||
+          fallbackName.endsWith("bolt") ||
+          fallbackName.endsWith("bolts") ||
+          fallbackName.endsWith("bullet") ||
+          fallbackName.endsWith("bullets")
+        ? fallbackName.replace(/s$/, "")
+        : "";
+    if (!inferredType) continue;
+    ammo[inferredType] = (ammo[inferredType] ?? 0) + item.quantity;
+  }
+  return ammo;
 }
 
 function stat(breakdown: BreakdownEntry[]): DerivedStat {
@@ -59,7 +88,11 @@ export function computeSheet(input: CharacterInput): DerivedSheet {
       { source: "base", type: "base", value: 10 },
     ];
     if (sizeAcAttack !== 0) {
-      breakdown.push({ source: `size (${input.size})`, type: "size", value: sizeAcAttack });
+      breakdown.push({
+        source: `size (${input.size})`,
+        type: "size",
+        value: sizeAcAttack,
+      });
     }
     if (opts.includeDex && dexToAc !== 0) {
       breakdown.push({ source: "Dexterity", type: "dex", value: dexToAc });
@@ -74,7 +107,10 @@ export function computeSheet(input: CharacterInput): DerivedSheet {
   const ac = {
     normal: buildAc({ includeDex: true, excludeTypes: new Set() }),
     touch: buildAc({ includeDex: true, excludeTypes: TOUCH_EXCLUDED_AC_TYPES }),
-    flatFooted: buildAc({ includeDex: false, excludeTypes: FLAT_FOOTED_EXCLUDED_AC_TYPES }),
+    flatFooted: buildAc({
+      includeDex: false,
+      excludeTypes: FLAT_FOOTED_EXCLUDED_AC_TYPES,
+    }),
   };
 
   // ---- Saving throws -----------------------------------------------------
@@ -88,7 +124,8 @@ export function computeSheet(input: CharacterInput): DerivedSheet {
       { source: "base save", type: "base", value: base },
       { source: abilityLabel, type: "ability", value: abilityMod },
     ];
-    for (const m of resolveModifiers(modifiersFor(input.modifiers, target)).contributing) {
+    for (const m of resolveModifiers(modifiersFor(input.modifiers, target))
+      .contributing) {
       breakdown.push({ source: m.source, type: m.type, value: m.value });
     }
     return stat(breakdown);
@@ -104,7 +141,8 @@ export function computeSheet(input: CharacterInput): DerivedSheet {
   const initBreakdown: BreakdownEntry[] = [
     { source: "Dexterity", type: "ability", value: dexMod },
   ];
-  for (const m of resolveModifiers(modifiersFor(input.modifiers, "init")).contributing) {
+  for (const m of resolveModifiers(modifiersFor(input.modifiers, "init"))
+    .contributing) {
     initBreakdown.push({ source: m.source, type: m.type, value: m.value });
   }
   const initiative = stat(initBreakdown);
@@ -115,9 +153,14 @@ export function computeSheet(input: CharacterInput): DerivedSheet {
     { source: "Strength", type: "ability", value: strMod },
   ];
   if (sizeCmbCmd !== 0) {
-    cmbBreakdown.push({ source: `size (${input.size})`, type: "size", value: sizeCmbCmd });
+    cmbBreakdown.push({
+      source: `size (${input.size})`,
+      type: "size",
+      value: sizeCmbCmd,
+    });
   }
-  for (const m of resolveModifiers(modifiersFor(input.modifiers, "cmb")).contributing) {
+  for (const m of resolveModifiers(modifiersFor(input.modifiers, "cmb"))
+    .contributing) {
     cmbBreakdown.push({ source: m.source, type: m.type, value: m.value });
   }
   const cmb = stat(cmbBreakdown);
@@ -129,7 +172,11 @@ export function computeSheet(input: CharacterInput): DerivedSheet {
     { source: "Dexterity", type: "ability", value: dexMod },
   ];
   if (sizeCmbCmd !== 0) {
-    cmdBreakdown.push({ source: `size (${input.size})`, type: "size", value: sizeCmbCmd });
+    cmdBreakdown.push({
+      source: `size (${input.size})`,
+      type: "size",
+      value: sizeCmbCmd,
+    });
   }
   // Dodge/deflection/etc. bonuses to AC also improve CMD.
   for (const m of acMods.contributing) {
@@ -137,7 +184,8 @@ export function computeSheet(input: CharacterInput): DerivedSheet {
       cmdBreakdown.push({ source: m.source, type: m.type, value: m.value });
     }
   }
-  for (const m of resolveModifiers(modifiersFor(input.modifiers, "cmd")).contributing) {
+  for (const m of resolveModifiers(modifiersFor(input.modifiers, "cmd"))
+    .contributing) {
     cmdBreakdown.push({ source: m.source, type: m.type, value: m.value });
   }
   const cmd = stat(cmdBreakdown);
@@ -153,9 +201,14 @@ export function computeSheet(input: CharacterInput): DerivedSheet {
       { source: abilityLabel, type: "ability", value: abilityMod },
     ];
     if (sizeAcAttack !== 0) {
-      breakdown.push({ source: `size (${input.size})`, type: "size", value: sizeAcAttack });
+      breakdown.push({
+        source: `size (${input.size})`,
+        type: "size",
+        value: sizeAcAttack,
+      });
     }
-    for (const m of resolveModifiers(modifiersFor(input.modifiers, target)).contributing) {
+    for (const m of resolveModifiers(modifiersFor(input.modifiers, target))
+      .contributing) {
       breakdown.push({ source: m.source, type: m.type, value: m.value });
     }
     return stat(breakdown);
@@ -168,18 +221,55 @@ export function computeSheet(input: CharacterInput): DerivedSheet {
 
   // ---- Vitals & skills ---------------------------------------------------
   const hitPoints = deriveHitPoints(input, conMod);
+  const hpModifierContributions = resolveModifiers(
+    modifiersFor(input.modifiers, "hp"),
+  ).contributing;
+  const hitPointDetails: HitPointDetails = {
+    dice: input.hitPointDetails?.dice ?? [],
+    rolledHpTotal:
+      input.hitPointDetails?.rolledHpTotal ??
+      (input.rolledHitPoints ?? []).reduce((sum, value) => sum + value, 0),
+    constitutionBonusTotal: (input.rolledHitPoints ?? []).reduce(
+      (sum, value) => sum + Math.max(1, value + conMod) - value,
+      0,
+    ),
+    favoredClassHpTotal: hpModifierContributions
+      .filter((modifier) => modifier.source === "Favored class")
+      .reduce((sum, modifier) => sum + modifier.value, 0),
+    miscHpTotal: hpModifierContributions
+      .filter((modifier) => modifier.source !== "Favored class")
+      .reduce((sum, modifier) => sum + modifier.value, 0),
+  };
   const speed = deriveSpeed(input);
   const skills = deriveSkills(input, abilities);
+  const ammoByType = deriveAmmoByType(input.inventoryItems);
   const weapons = deriveWeapons({
-    weapons: input.weapons,
+    weapons: input.weapons ?? [],
+    ammoAvailabilityByWeapon: Object.fromEntries(
+      (input.weapons ?? []).map((weapon) => {
+        const weaponKey = `${weapon.weaponTemplateId?.toLowerCase() ?? weapon.name.toLowerCase()}::${weapon.sourceKind ?? "custom"}::${weapon.sourceIndex ?? -1}`;
+        const availability = (weapon.ammoConsumptions ?? [])
+          .filter((entry) => entry.amount > 0)
+          .map((entry) => ({
+            ammoType: normalizeAmmoType(entry.ammoType),
+            amount: entry.amount,
+            available:
+              ammoByType[normalizeAmmoType(entry.ammoType)] ?? 0,
+          }));
+        return [weaponKey, availability] as const;
+      }),
+    ),
     strMod,
+    dexMod,
     meleeAttack: attack.melee,
     rangedAttack: attack.ranged,
     modifiers: input.modifiers,
+    weaponDamageAbilityOverrides: input.weaponDamageAbilityOverrides,
   });
   const spellcasting = deriveSpellcasting(input, abilities);
 
   return {
+    raceMetadata: input.raceMetadata,
     name: input.name,
     level: input.level,
     size: input.size,
@@ -192,14 +282,27 @@ export function computeSheet(input: CharacterInput): DerivedSheet {
     cmd,
     attack,
     hitPoints,
+    hitPointDetails,
     speed,
     skills,
     weapons,
     encumbrance: deriveEncumbrance(strScore, input.carriedWeight ?? 0),
-    inventory: input.inventory ?? { itemCount: 0, equippedCount: 0, totalWeight: 0, totalCostGp: 0 },
+    inventory: input.inventory ?? {
+      itemCount: 0,
+      equippedCount: 0,
+      totalWeight: 0,
+      totalCostGp: 0,
+    },
     inventoryItems: input.inventoryItems ?? [],
+    rangedCombat: { ammoByType },
     spellcasting,
-    descriptor: input.descriptor ?? { classes: [], feats: [], features: [], suppressedFeatures: [] },
+    descriptor: input.descriptor ?? {
+      classes: [],
+      archetypes: [],
+      feats: [],
+      features: [],
+      suppressedFeatures: [],
+    },
   };
 }
 

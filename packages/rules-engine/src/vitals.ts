@@ -9,7 +9,10 @@ const DEFAULT_SPEED = 30;
  * The per-die max(1, ...) enforces Pathfinder's "minimum 1 HP gained per Hit
  * Die" rule even when Constitution is low.
  */
-export function deriveHitPoints(input: CharacterInput, conMod: number): DerivedStat {
+export function deriveHitPoints(
+  input: CharacterInput,
+  conMod: number,
+): DerivedStat {
   const rolled = input.rolledHitPoints ?? [];
   let fromHitDice = 0;
   for (const r of rolled) {
@@ -24,7 +27,8 @@ export function deriveHitPoints(input: CharacterInput, conMod: number): DerivedS
     },
   ];
 
-  for (const m of resolveModifiers(modifiersFor(input.modifiers, "hp")).contributing) {
+  for (const m of resolveModifiers(modifiersFor(input.modifiers, "hp"))
+    .contributing) {
     breakdown.push({ source: m.source, type: m.type, value: m.value });
   }
 
@@ -39,7 +43,8 @@ export function deriveSpeed(input: CharacterInput): DerivedStat {
     { source: "base speed", type: "base", value: base },
   ];
 
-  for (const m of resolveModifiers(modifiersFor(input.modifiers, "speed")).contributing) {
+  for (const m of resolveModifiers(modifiersFor(input.modifiers, "speed"))
+    .contributing) {
     breakdown.push({ source: m.source, type: m.type, value: m.value });
   }
 

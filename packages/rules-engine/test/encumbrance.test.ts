@@ -3,8 +3,16 @@ import { deriveEncumbrance, loadThresholds } from "../src/encumbrance";
 
 describe("encumbrance", () => {
   it("uses the PF1e carrying capacity table", () => {
-    expect(loadThresholds(10)).toEqual({ lightMax: 33, mediumMax: 66, heavyMax: 100 });
-    expect(loadThresholds(18)).toEqual({ lightMax: 100, mediumMax: 200, heavyMax: 300 });
+    expect(loadThresholds(10)).toEqual({
+      lightMax: 33,
+      mediumMax: 66,
+      heavyMax: 100,
+    });
+    expect(loadThresholds(18)).toEqual({
+      lightMax: 100,
+      mediumMax: 200,
+      heavyMax: 300,
+    });
   });
 
   it("classifies load bands correctly", () => {

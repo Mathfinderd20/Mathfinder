@@ -62,7 +62,10 @@ export const CORE_CLASS_FEATURES: ClassFeatureDefinition[] = [
         name: "Rage",
         unit: "rounds/day",
         // 4 + Con mod at 1st level, +2 per level after (single-class assumption).
-        max: (ctx) => 4 + (ctx.abilityModifiers?.con ?? 0) + 2 * Math.max(0, ctx.characterLevel - 1),
+        max: (ctx) =>
+          4 +
+          (ctx.abilityModifiers?.con ?? 0) +
+          2 * Math.max(0, ctx.characterLevel - 1),
       },
     },
   },
@@ -72,14 +75,18 @@ export const CORE_CLASS_FEATURES: ClassFeatureDefinition[] = [
     className: "barbarian",
     level: 1,
     pack: "core",
-    description: "+10 ft enhancement to land speed when in light/no armor and not heavily loaded.",
-    effects: [{ target: "speed", type: "enhancement", value: 10, source: "Fast Movement" }],
-    availableWhen: (ctx) =>
-      (ctx.armorCategory === "none" || ctx.armorCategory === "light") && ctx.loadBand === "light",
+    description:
+      "+10 ft enhancement to land speed unless reduced by encumbrance.",
+    effects: [
+      {
+        target: "speed",
+        type: "enhancement",
+        value: 10,
+        source: "Fast Movement",
+      },
+    ],
+    availableWhen: (ctx) => ctx.loadBand === "light",
     unavailableReason: (ctx) => {
-      if (ctx.armorCategory === "medium" || ctx.armorCategory === "heavy") {
-        return `${ctx.armorCategory} armor`;
-      }
       if (ctx.loadBand !== "light") return `${ctx.loadBand} load`;
       return "conditions not met";
     },
@@ -99,7 +106,8 @@ export const CORE_CLASS_FEATURES: ClassFeatureDefinition[] = [
     className: "rogue",
     level: 1,
     pack: "core",
-    description: "+1 bonus on Perception to locate traps and Disable Device on traps.",
+    description:
+      "+1 bonus on Perception to locate traps and Disable Device on traps.",
     effects: [],
   },
 ];
@@ -119,7 +127,9 @@ export function buildClassFeatureRegistry(
     }
   }
   for (const key of Object.keys(registry)) {
-    registry[key]!.sort((a, b) => a.level - b.level || a.name.localeCompare(b.name));
+    registry[key]!.sort(
+      (a, b) => a.level - b.level || a.name.localeCompare(b.name),
+    );
   }
   return registry;
 }
@@ -134,7 +144,9 @@ export function classFeaturesGrantedAt(
   className: string,
   classLevel: number,
 ): ClassFeatureDefinition[] {
-  return (registry[className.toLowerCase()] ?? []).filter((f) => f.level === classLevel);
+  return (registry[className.toLowerCase()] ?? []).filter(
+    (f) => f.level === classLevel,
+  );
 }
 
 export function classFeatureEffects(
@@ -158,10 +170,11 @@ export function suppressedClassFeatures(
       out.push({
         id: f.id,
         name: f.name,
-        reason: f.unavailableReason ? f.unavailableReason(ctx) : "conditions not met",
+        reason: f.unavailableReason
+          ? f.unavailableReason(ctx)
+          : "conditions not met",
       });
     }
   }
   return out;
 }
-

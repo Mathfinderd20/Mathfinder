@@ -14,7 +14,10 @@ export interface ResolvedModifiers {
  * Filter a modifier stream to those that apply to `target`, expanding group
  * aliases (e.g. a "save.all" modifier counts toward "save.fort").
  */
-export function modifiersFor(mods: Modifier[], target: ModifierTarget): Modifier[] {
+export function modifiersFor(
+  mods: Modifier[],
+  target: ModifierTarget,
+): Modifier[] {
   const accepted = new Set<ModifierTarget>(TARGET_ALIASES[target] ?? [target]);
   return mods.filter((m) => m.enabled !== false && accepted.has(m.target));
 }

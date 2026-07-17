@@ -14,6 +14,7 @@ Early planning. See:
 
 - [`PLAN.md`](./PLAN.md) — architecture, tech stack, rules-engine design, roadmap
 - [`TODO.md`](./TODO.md) — living checklist of steps
+- [`BACKEND_ISSUES.md`](./BACKEND_ISSUES.md) — contributor-facing backend/API issue tracking log
 
 ## Decisions Locked
 

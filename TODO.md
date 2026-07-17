@@ -1,30 +1,34 @@
-#  Mathfinder TODO
+# Mathfinder TODO
 
 Living checklist. Check things off as we go. Newest insights bubble up into the plan.
 
 ## Decisions Locked
+
 - [x] Tech stack: **TypeScript + React Native / RN-Web** (shared web + phone, shared rules engine)
 - [x] Content scope for v1: **All 1st-party** (Core, APG, ACG, ARG, UM, UC, etc.) **+ Savage Company (SHM Publishing)** — big lift, ingest incrementally
 - [x] Savage Company: authored by project owner (no third-party licensing issue); some content on d20pfsrd.com
 
 ## Phase 0 — Project Scaffolding
+
 - [x] Install toolchain (Node LTS 24.16, npm 11.13, Git) via winget
 - [x] Init monorepo with npm workspaces (packages/rules-engine live)
 - [x] tsconfig.base + per-package TS config (strict, noUncheckedIndexedAccess)
 - [ ] Lock remaining dependency versions as packages are added
 - [~] Add apps/web, apps/mobile, packages/shared, services/api — apps/web and packages/rules-data/rules-engine live; mobile/shared/api still pending
-- [ ] Set up linting, formatting, CI, and pre-commit hooks
-- [ ] Pick + provision backend (DB, realtime, auth)
+- [~] Set up linting, formatting, CI, and pre-commit hooks — ESLint + Prettier + GitHub Actions CI added; pre-commit hooks still pending
+- [~] Pick + provision backend (DB, realtime, auth) — local SQLite content DB + ingestion workspace now exists in `packages/content-db`; broader API/realtime/auth platform decision still pending
 
 ## Phase 1 — Rules Data Foundation
+
 - [~] Define canonical rules-data schema/package for core entities (sources, packs, races, classes, class features, feats, skills, spells) — starter TS schema + validation + index/registry done; JSON serialization/items/archetypes still pending
-- [ ] Build/ingest 1st-party (Core, APG, ACG, ARG, UM, UC, etc.) dataset under proper licensing (OGL/PRD)
+- [~] Build/ingest 1st-party (Core, APG, ACG, ARG, UM, UC, etc.) dataset under proper licensing (OGL/PRD) — local canonical content is now seedable into SQLite and AoN spell scraping pipeline exists; broad-book ingestion coverage is still pending
 - [ ] Ingest **Savage Company (SHM Publishing)** content (cross-check d20pfsrd.com against original manuscript as source of truth)
 - [~] Add `source` tag + provenance fields to every entity (enables content-pack toggles) — rules-data sources/packs scaffolded; entity-by-entity provenance expansion still pending
 - [ ] Validate dataset against schema (CI gate)
 - [ ] Versioning strategy for rules data (so sheets don't break on update)
 
 ## Phase 2 — Rules Engine (the brain)
+
 - [x] Modifier stacking + typed bonus rules (the hard part!) — `resolveModifiers`
 - [x] Stat derivation pipeline (abilities → mods → AC/saves/init/CMB/CMD/attack)
 - [x] Deterministic `computeSheet(input)` with per-stat breakdowns (the 'why' UX)
@@ -33,7 +37,7 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 - [x] Weapon attack/damage lines (attack, damage dice+bonus, crit)
 - [x] Sheet formatter (`renderSheet` / `explainStat`) + runnable demo (`npm run demo`)
 - [x] Golden tests pinned to hand-computed PF1e math (28/28 green)
-- [~] Spellcasting scaffold: caster stats + save DCs + spells/day + bonus slots + prepared/known split + editable web selection UI + spell library/learnable pools + engine-backed diagnostics/warnings + capacity-aware quick-picks/fill-from-library + selection state + count/class/level/library validation + slot expenditure tracking + web runtime cast controls + local persistence started; full content DB and extra-slot sources pending
+- [~] Spellcasting scaffold: caster stats + save DCs + spells/day + bonus slots + prepared/known split + editable web selection UI + spell library/learnable pools + engine-backed diagnostics/warnings + capacity-aware quick-picks/fill-from-library + selection state + count/class/level/library validation + slot expenditure tracking + web runtime cast controls + ability-score gating/diagnostics + manual extra-slot infrastructure + sample cleric domain slots/selections + sample wizard specialist school slots + restricted domain/specialist-slot enforcement + content-db-backed 3k+ runtime spell catalog + support/provenance-aware spell browser/runtime UI done; deeper spell-effect automation breadth is still incremental
 - [ ] Maneuver-specific CMB mods (trip/grapple/etc.)
 - [x] Carrying capacity / encumbrance auto-from-Str
 - [x] Character build/level-up state machine (replayable build steps; `buildCharacter`/`levelUp`/`levelDown`)
@@ -58,11 +62,12 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 - [x] Suppression reasons surfaced in the sheet (e.g. Fast Movement suppressed: medium armor)
 - [x] Fatigue state + Rage legality suppression
 - [ ] Broaden conditional legality (more armor/load restrictions, class-feature gates, etc.)
-- [~] Equipment/inventory engine: item quantities, costs, auto weight, equipped flags, armor metadata, and read-only sheet itemization done; slots + mundane/magic item scaffolds pending
+- [x] Equipment/inventory engine: item quantities, costs, auto weight, equipped flags, armor metadata, slots, containers, coin/ammo/component tracking, purchase validation, and sheet itemization are all live
 - [ ] Prerequisite validation for prestige classes, archetypes
 - [ ] Parameterized feats (Weapon Focus weapon choice, Skill Focus skill choice)
 
 ## Phase 3 — Character Builder UX
+
 - [x] First UI: Vite + React web app (apps/web) wired to the live engine
 - [x] Real-time sheet view (live recompute on any change)
 - [x] Interactive buff/aura toggles -> auto-apply to sheet (proves the multiplayer mechanism)
@@ -72,12 +77,13 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 - [x] Interactive level-up modal: class, HP, skill ranks, feat, ability increase (planLevelUp + validation)
 - [x] Inline validation surfacing
 - [ ] Guided build wizard (race → class → abilities → skills → feats → gear)
-- [ ] Build planner page for future levels / preselected advancement choices
-- [~] Editable core build fields in UI started (name, base abilities, carried weight, sample race presets, per-level class/HP/favored-class/ASI, weapons, improved equipment/armor cards with running totals, per-level feats, compact/collapsible per-level skill rank builder); compendium-backed gear/content editing still pending
+- [x] Build planner page for future levels / preselected advancement choices
+- [~] Editable core build fields in UI started (name, base abilities, carried weight, sample race presets, per-level class/HP/favored-class/ASI, weapons, full inventory/equipment editing with slots/containers/coins/ammo/components/purchase flows, improved equipment/armor cards with running totals, per-level feats, compact/collapsible per-level skill rank builder); broader compendium-backed content editing is still incremental
 - [ ] Port presentational components to React Native for the phone build
 - [ ] Smart defaults + recommendations
 
 ## Phase 4 — Multiplayer / Group Layer
+
 - [ ] Group/party model + invites
 - [ ] DM dashboard (party overview, key stats, perception/saves at a glance)
 - [ ] Realtime sync of sheet state
@@ -85,6 +91,7 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 - [ ] Permission model (what DM can see/do vs players)
 
 ## Phase 5 — Polish & Launch
+
 - [~] Offline/local persistence started in web (build + runtime localStorage); broader local-first sync pending
 - [ ] Export/print (PDF) character sheets
 - [ ] Accessibility pass
@@ -92,11 +99,13 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 - [ ] App store + web deploy
 
 ## Next Bulldoze Order
-- [~] Finish inventory depth: read-only inventory sheet itemization done; equipment slots, containers, coins/ammo/components, purchase validation still pending
-- [ ] Spellcasting phase 1: caster ability, CL, concentration, save DCs, slots/day tables
-- [ ] Build planning phase 1: future feat/ability/class picks without applying yet
+
+- [x] Finish inventory depth: equipment slots, containers, coins/ammo/components, purchase validation, and sheet itemization are in
+- [x] Broaden spellcasting content + polish: runtime now loads the content-db-backed 3k+ spell catalog, spell browser/runtime rows surface support and provenance metadata, explicit cast logging is in, and tracked-effect vs manual-resolution coverage is visible in UI
+- [x] Build planning phase 1: future feat/ability/class picks without applying yet
 
 ## Open Questions / Risks
+
 - [ ] Licensing: confirm OGL/PRD coverage for ALL 1st-party content (Savage Company is owner-authored, no barrier)
 - [ ] Ingestion order: which books first so we have a usable slice before the full set lands?
 - [ ] Modifier stacking edge cases (the eternal Pathfinder boss fight)

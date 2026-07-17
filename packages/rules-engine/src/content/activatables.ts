@@ -40,7 +40,8 @@ export function activatableResourceMax(
   a: ActivatableEffect,
   ctx: ActivationContext,
 ): number | undefined {
-  return a.resource ? Math.max(0, a.resource.max(ctx)) : undefined;
+  if (!a.resource || typeof a.resource.max !== "function") return undefined;
+  return Math.max(0, a.resource.max(ctx));
 }
 
 /** Resolve an activatable's modifiers, applying scaling when a context is given. */
@@ -73,7 +74,9 @@ export function activatableFeaturesForDescriptor(
   descriptor: SheetDescriptor,
 ): ActivatableEffect[] {
   const names = new Set(descriptor.features.map((f) => f.name.toLowerCase()));
-  const suppressed = new Set(descriptor.suppressedFeatures.map((f) => f.name.toLowerCase()));
+  const suppressed = new Set(
+    descriptor.suppressedFeatures.map((f) => f.name.toLowerCase()),
+  );
   const out: ActivatableEffect[] = [];
   const seen = new Set<string>();
   for (const defs of Object.values(registry)) {
@@ -112,7 +115,10 @@ export function collectActivatableEffects(args: {
   featRegistry: FeatRegistry;
 }): ActivatableEffect[] {
   const out = [
-    ...activatableFeaturesForDescriptor(args.classFeatureRegistry, args.descriptor),
+    ...activatableFeaturesForDescriptor(
+      args.classFeatureRegistry,
+      args.descriptor,
+    ),
     ...activatableFeatsForDescriptor(args.featRegistry, args.descriptor),
   ];
   const seen = new Set<string>();

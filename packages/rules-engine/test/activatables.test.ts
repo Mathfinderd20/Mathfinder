@@ -18,14 +18,18 @@ const CE: ActivatableEffect = {
   name: "Combat Expertise",
   description: "ce",
   group: "attack-mode",
-  effects: [{ target: "ac", type: "dodge", value: 1, source: "Combat Expertise" }],
+  effects: [
+    { target: "ac", type: "dodge", value: 1, source: "Combat Expertise" },
+  ],
 };
 const PA: ActivatableEffect = {
   id: "power-attack",
   name: "Power Attack",
   description: "pa",
   group: "attack-mode",
-  effects: [{ target: "attack", type: "untyped", value: -1, source: "Power Attack" }],
+  effects: [
+    { target: "attack", type: "untyped", value: -1, source: "Power Attack" },
+  ],
 };
 
 describe("resolveActivatableSelections", () => {
@@ -57,9 +61,21 @@ describe("scaling activatables", () => {
     id: "pa",
     name: "Power Attack",
     description: "",
-    effects: [{ target: "attack.melee", type: "untyped", value: -1, source: "Power Attack" }],
+    effects: [
+      {
+        target: "attack.melee",
+        type: "untyped",
+        value: -1,
+        source: "Power Attack",
+      },
+    ],
     scale: (ctx) => [
-      { target: "attack.melee", type: "untyped", value: -babStep(ctx.baseAttackBonus), source: "Power Attack" },
+      {
+        target: "attack.melee",
+        type: "untyped",
+        value: -babStep(ctx.baseAttackBonus),
+        source: "Power Attack",
+      },
     ],
   };
 
@@ -68,9 +84,24 @@ describe("scaling activatables", () => {
   });
 
   it("scales the penalty by BAB step when a context is given", () => {
-    expect(activatableModifiers(scaled, { baseAttackBonus: 1, characterLevel: 1 })[0]!.value).toBe(-1);
-    expect(activatableModifiers(scaled, { baseAttackBonus: 4, characterLevel: 4 })[0]!.value).toBe(-2);
-    expect(activatableModifiers(scaled, { baseAttackBonus: 8, characterLevel: 8 })[0]!.value).toBe(-3);
+    expect(
+      activatableModifiers(scaled, {
+        baseAttackBonus: 1,
+        characterLevel: 1,
+      })[0]!.value,
+    ).toBe(-1);
+    expect(
+      activatableModifiers(scaled, {
+        baseAttackBonus: 4,
+        characterLevel: 4,
+      })[0]!.value,
+    ).toBe(-2);
+    expect(
+      activatableModifiers(scaled, {
+        baseAttackBonus: 8,
+        characterLevel: 8,
+      })[0]!.value,
+    ).toBe(-3);
   });
 
   it("resolveActivatableSelections applies scaling through the context", () => {

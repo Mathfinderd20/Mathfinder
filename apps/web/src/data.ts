@@ -1,28 +1,63 @@
 import { CORE_RACES } from "@mathfinder/rules-data";
-import type { CharacterBuild, LevelEntry, Modifier } from "@mathfinder/rules-engine";
+import {
+  SPELL_EFFECTS,
+  equipmentWeaponTemplate,
+  getWeapon,
+  resolveSpellEffect,
+  type CharacterBuild,
+  type LevelEntry,
+  type Modifier,
+  type SpellEffectRuntimeContext,
+} from "@mathfinder/rules-engine";
 
-export const SAMPLE_RACES: Record<string, CharacterBuild["race"]> = Object.fromEntries(
-  CORE_RACES.map((race) => [race.id, {
-    name: race.name,
-    size: race.size,
-    speed: race.speed,
-    abilityModifiers: race.abilityModifiers,
-    traits: race.traits,
-    classSkills: race.classSkills,
-  }]),
-);
+export const SAMPLE_RACES: Record<string, CharacterBuild["race"]> =
+  Object.fromEntries(
+    CORE_RACES.map((race) => [
+      race.id,
+      {
+        name: race.name,
+        size: race.size,
+        speed: race.speed,
+        abilityModifiers: race.abilityModifiers,
+        traits: race.traits,
+        classSkills: race.classSkills,
+        weaponProficiencies: race.weaponProficiencies,
+        specificWeaponProficiencies: race.specificWeaponProficiencies,
+        grantedWeapons: race.grantedWeapons,
+        choiceOptions: race.choiceOptions,
+        alternateTraits: race.alternateTraits,
+        movementModes: race.movementModes,
+        senses: race.senses,
+        resistances: race.resistances,
+        notes: race.notes,
+      },
+    ]),
+  );
+
+const greataxeTemplate = getWeapon("greataxe");
+const javelinTemplate = getWeapon("javelin");
 
 /** Starting character: a fresh level-1 Half-Orc Barbarian. */
 export const initialBuild: CharacterBuild = {
   name: "Grukk",
   race: {
+    id: "half-orc",
     name: "Half-Orc",
     size: "medium",
     speed: 30,
-    abilityModifiers: [
-      { target: "str", type: "racial", value: 2, source: "Half-Orc" },
+    abilityModifiers: [],
+    choiceOptions: {
+      flexibleAbilityBonus: { value: 2 },
+    },
+    choiceSelection: {
+      flexibleAbility: "str",
+    },
+    notes: [
+      "Orc Ferocity, Intimidating, and weapon familiarity are not automated yet.",
     ],
   },
+  favoredClassName: "Barbarian",
+  coinPurse: { pp: 0, gp: 12, sp: 5, cp: 0 },
   baseAbilityScores: { str: 14, dex: 13, con: 14, int: 10, wis: 12, cha: 8 },
   levels: [
     {
@@ -34,13 +69,33 @@ export const initialBuild: CharacterBuild = {
     },
   ],
   weapons: [
-    { name: "Greataxe", category: "melee", damageDice: "1d12", handedness: "two", critMultiplier: 3 },
-    { name: "Javelin", category: "ranged", damageDice: "1d6" },
+    ...(greataxeTemplate
+      ? [
+          {
+            name: greataxeTemplate.name,
+            ...equipmentWeaponTemplate(greataxeTemplate).weapon,
+          },
+        ]
+      : []),
+    ...(javelinTemplate
+      ? [
+          {
+            name: javelinTemplate.name,
+            ...equipmentWeaponTemplate(javelinTemplate).weapon,
+          },
+        ]
+      : []),
+  ],
+  equipment: [
+    { name: "Arrows", quantity: 20, weight: 3, costGp: 1, equipped: false },
+    { name: "Bolts", quantity: 10, weight: 1, costGp: 1, equipped: false },
   ],
 };
 
 /** Template used by the "Level Up" button (a +7 HP Barbarian level). */
-export const nextBarbarianLevel: Omit<LevelEntry, "hitPointRoll"> & { hitPointRoll: number } = {
+export const nextBarbarianLevel: Omit<LevelEntry, "hitPointRoll"> & {
+  hitPointRoll: number;
+} = {
   className: "Barbarian",
   hitPointRoll: 7,
   skillRanks: { climb: 1, perception: 1, intimidate: 1, survival: 1 },
@@ -67,47 +122,24 @@ export interface Buff {
   name: string;
   description: string;
   modifiers: Modifier[];
+  limitations?: string[];
+  trackerLabel?: string;
+  trackerMax?: number;
 }
 
-/**
- * Toggleable party buffs / auras. Each is just a bundle of Modifiers appended
- * to the sheet at runtime — exactly how the DM's aura broadcast will work.
- */
-export const BUFFS: Buff[] = [
-  {
-    id: "bless",
-    name: "Bless",
-    description: "+1 morale to attack rolls",
-    modifiers: [{ target: "attack", type: "morale", value: 1, source: "Bless" }],
-  },
-  {
-    id: "heroism",
-    name: "Heroism",
-    description: "+2 morale to attacks and all saves",
-    modifiers: [
-      { target: "attack", type: "morale", value: 2, source: "Heroism" },
-      { target: "save.all", type: "morale", value: 2, source: "Heroism" },
-    ],
-  },
-  {
-    id: "mage-armor",
-    name: "Mage Armor",
-    description: "+4 armor bonus to AC",
-    modifiers: [{ target: "ac", type: "armor", value: 4, source: "Mage Armor" }],
-  },
-  {
-    id: "shield-of-faith",
-    name: "Shield of Faith",
-    description: "+2 deflection bonus to AC",
-    modifiers: [{ target: "ac", type: "deflection", value: 2, source: "Shield of Faith" }],
-  },
-  {
-    id: "haste",
-    name: "Haste",
-    description: "+1 to attack, +1 dodge to AC",
-    modifiers: [
-      { target: "attack", type: "untyped", value: 1, source: "Haste" },
-      { target: "ac", type: "dodge", value: 1, source: "Haste" },
-    ],
-  },
-];
+export function buildRuntimeBuffs(
+  context: SpellEffectRuntimeContext,
+): Buff[] {
+  return SPELL_EFFECTS.map((effect) => {
+    const resolved = resolveSpellEffect(effect, context);
+    return {
+      id: resolved.id,
+      name: resolved.spellName,
+      description: resolved.description,
+      modifiers: resolved.modifiers,
+      limitations: resolved.limitations,
+      trackerLabel: resolved.tracker?.label,
+      trackerMax: resolved.tracker?.max,
+    } satisfies Buff;
+  });
+}

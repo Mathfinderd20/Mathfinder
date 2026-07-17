@@ -1,9 +1,5 @@
 import { modifiersFor, resolveModifiers } from "./modifiers";
-import type {
-  AbilityKey,
-  CharacterInput,
-  DerivedAbility,
-} from "./types";
+import type { AbilityKey, CharacterInput, DerivedAbility } from "./types";
 
 const ABILITY_KEYS: readonly AbilityKey[] = [
   "str",

@@ -25,22 +25,83 @@ export const savageBerserkerL1: CharacterInput = {
   baseSpeed: 30,
   rolledHitPoints: [12], // max d12 at level 1
   abilityScores: { str: 16, dex: 14, con: 14, int: 10, wis: 12, cha: 8 },
-  classSkills: ["climb", "swim", "intimidate", "perception", "stealth", "survival"],
+  classSkills: [
+    "climb",
+    "swim",
+    "intimidate",
+    "perception",
+    "stealth",
+    "survival",
+  ],
   skillRanks: { climb: 1, perception: 1, stealth: 1, intimidate: 1 },
   modifiers: [
     // Gear
-    { target: "str", type: "enhancement", value: 2, source: "Belt of Giant Strength +2", pack: "core" },
-    { target: "ac", type: "armor", value: 5, source: "Scale mail", pack: "core" },
-    { target: "ac", type: "shield", value: 2, source: "Heavy steel shield", pack: "core" },
+    {
+      target: "str",
+      type: "enhancement",
+      value: 2,
+      source: "Belt of Giant Strength +2",
+      pack: "core",
+    },
+    {
+      target: "ac",
+      type: "armor",
+      value: 5,
+      source: "Scale mail",
+      pack: "core",
+    },
+    {
+      target: "ac",
+      type: "shield",
+      value: 2,
+      source: "Heavy steel shield",
+      pack: "core",
+    },
     // Feats
     { target: "ac", type: "dodge", value: 1, source: "Dodge", pack: "core" },
-    { target: "attack.melee", type: "untyped", value: 1, source: "Weapon Focus (longsword)", pack: "core" },
+    {
+      target: "attack.melee",
+      type: "untyped",
+      value: 1,
+      source: "Weapon Focus (longsword)",
+      pack: "core",
+    },
     // Vitals
-    { target: "hp", type: "untyped", value: 3, source: "Toughness", pack: "core" },
-    { target: "speed", type: "untyped", value: -10, source: "Scale mail (medium armor)", pack: "core" },
+    {
+      target: "hp",
+      type: "untyped",
+      value: 3,
+      source: "Toughness",
+      pack: "core",
+    },
+    {
+      target: "speed",
+      type: "untyped",
+      value: -10,
+      source: "Scale mail (medium armor)",
+      pack: "core",
+    },
     // Buffs / auras
-    { target: "attack", type: "morale", value: 1, source: "Bless", pack: "core" },
-    { target: "attack", type: "morale", value: 2, source: "Heroism", pack: "core" },
-    { target: "save.all", type: "morale", value: 2, source: "Heroism", pack: "core" },
+    {
+      target: "attack",
+      type: "morale",
+      value: 1,
+      source: "Bless",
+      pack: "core",
+    },
+    {
+      target: "attack",
+      type: "morale",
+      value: 2,
+      source: "Heroism",
+      pack: "core",
+    },
+    {
+      target: "save.all",
+      type: "morale",
+      value: 2,
+      source: "Heroism",
+      pack: "core",
+    },
   ],
 };

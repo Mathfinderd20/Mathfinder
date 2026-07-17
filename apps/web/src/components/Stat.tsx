@@ -12,11 +12,17 @@ interface StatProps {
  * A single derived stat. Click to expand its full provenance breakdown —
  * the "why is this number what it is?" feature, working live.
  */
+function breakdownTooltip(stat: DerivedStat, raw?: boolean) {
+  const total = raw ? `${stat.total}` : sign(stat.total);
+  const parts = stat.breakdown.map((b) => `${b.source}: ${sign(b.value)}`);
+  return [`Total ${total}`, ...parts].join(" • ");
+}
+
 export function Stat({ label, stat, raw }: StatProps) {
   const display = raw ? `${stat.total}` : sign(stat.total);
   return (
     <details className="stat">
-      <summary>
+      <summary title={breakdownTooltip(stat, raw)}>
         <span className="stat-label">{label}</span>
         <span className="stat-value">{display}</span>
       </summary>

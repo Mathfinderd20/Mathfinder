@@ -13,7 +13,8 @@ export const RULES_DATA_SET: RulesDataSet = {
       product: "Pathfinder Roleplaying Game Reference Document",
       type: "first-party",
       license: "prdofficial",
-      notes: "Starter seed pack. Expand incrementally with provenance preserved.",
+      notes:
+        "Starter seed pack. Expand incrementally with provenance preserved.",
     },
     {
       id: "savage-company",

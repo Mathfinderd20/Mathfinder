@@ -8,7 +8,10 @@ import {
   type FeatContext,
 } from "../src/content/feats";
 import { CLASS_FEATURES } from "../src/content/class-features";
-import { activatableModifiers, collectActivatableEffects } from "../src/content/activatables";
+import {
+  activatableModifiers,
+  collectActivatableEffects,
+} from "../src/content/activatables";
 import { buildCharacter, type CharacterBuild } from "../src/build/character";
 import { computeSheet } from "../src/compute";
 
@@ -21,7 +24,9 @@ const baseCtx: FeatContext = {
 
 describe("feat prerequisites", () => {
   it("passes a feat with no prerequisites", () => {
-    expect(checkPrerequisites(getFeat(FEATS, "Toughness")!, baseCtx).met).toBe(true);
+    expect(checkPrerequisites(getFeat(FEATS, "Toughness")!, baseCtx).met).toBe(
+      true,
+    );
   });
 
   it("blocks Dodge without Dex 13 and reports the reason", () => {
@@ -31,13 +36,17 @@ describe("feat prerequisites", () => {
   });
 
   it("allows Power Attack only with Str 13 and BAB +1", () => {
-    expect(checkPrerequisites(getFeat(FEATS, "Power Attack")!, baseCtx).met).toBe(false);
+    expect(
+      checkPrerequisites(getFeat(FEATS, "Power Attack")!, baseCtx).met,
+    ).toBe(false);
     const ctx: FeatContext = {
       ...baseCtx,
       baseAttackBonus: 1,
       abilityScores: { ...baseCtx.abilityScores, str: 13 },
     };
-    expect(checkPrerequisites(getFeat(FEATS, "Power Attack")!, ctx).met).toBe(true);
+    expect(checkPrerequisites(getFeat(FEATS, "Power Attack")!, ctx).met).toBe(
+      true,
+    );
   });
 
   it("lists feats alphabetically", () => {
@@ -79,14 +88,21 @@ describe("feat effects auto-apply through buildCharacter", () => {
 
   it("Power Attack activatable scales its melee penalty by BAB", () => {
     const pa = getFeat(FEATS, "Power Attack")!.activatable!;
-    expect(activatableModifiers(pa, { baseAttackBonus: 1, characterLevel: 1 })[0]!.value).toBe(-1);
-    expect(activatableModifiers(pa, { baseAttackBonus: 8, characterLevel: 8 })[0]!.value).toBe(-3);
+    expect(
+      activatableModifiers(pa, { baseAttackBonus: 1, characterLevel: 1 })[0]!
+        .value,
+    ).toBe(-1);
+    expect(
+      activatableModifiers(pa, { baseAttackBonus: 8, characterLevel: 8 })[0]!
+        .value,
+    ).toBe(-3);
   });
 
   it("can expose activatable feats through the general collector", () => {
     const descriptor = {
       race: "Human",
       classes: [{ name: "Fighter", level: 1 }],
+      archetypes: [],
       feats: [{ name: "Combat Expertise", level: 1 }],
       features: [],
       suppressedFeatures: [],

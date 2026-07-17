@@ -5,6 +5,7 @@ import type {
   DerivedWeapon,
   Modifier,
   Weapon,
+  WeaponAmmoAvailability,
   WeaponHandedness,
 } from "./types";
 
@@ -37,48 +38,135 @@ function critDisplay(weapon: Weapon): string {
 export function deriveWeapons(args: {
   weapons: Weapon[] | undefined;
   strMod: number;
+  dexMod: number;
   meleeAttack: DerivedStat;
   rangedAttack: DerivedStat;
   modifiers: Modifier[];
+  weaponDamageAbilityOverrides?: Partial<
+    Record<string, "str" | "dex" | "con" | "int" | "wis" | "cha" | null>
+  >;
+  ammoAvailabilityByWeapon?: Partial<Record<string, WeaponAmmoAvailability[]>>;
 }): DerivedWeapon[] {
-  const { weapons, strMod, meleeAttack, rangedAttack, modifiers } = args;
+  const {
+    weapons,
+    strMod,
+    dexMod,
+    meleeAttack,
+    rangedAttack,
+    modifiers,
+    weaponDamageAbilityOverrides,
+    ammoAvailabilityByWeapon,
+  } = args;
   if (!weapons || weapons.length === 0) return [];
 
   return weapons.map((weapon) => {
     const isMelee = weapon.category === "melee";
-    const attack = isMelee ? meleeAttack : rangedAttack;
+    const baseAttack = isMelee ? meleeAttack : rangedAttack;
+    const attackBreakdown = [...baseAttack.breakdown];
+    if (weapon.proficient === false) {
+      attackBreakdown.push({
+        source: "Nonproficient",
+        type: "untyped",
+        value: -4,
+      });
+    }
+    if ((weapon.attackModifier ?? 0) !== 0) {
+      attackBreakdown.push({
+        source: "Ammo / payload",
+        type: "untyped",
+        value: weapon.attackModifier ?? 0,
+      });
+    }
+    const attack = {
+      total: attackBreakdown.reduce((sum, entry) => sum + entry.value, 0),
+      breakdown: attackBreakdown,
+    };
 
     const breakdown: BreakdownEntry[] = [];
 
     // Ability-to-damage: Str for melee by default; ranged adds nothing unless set.
+    const weaponOverrideKey =
+      weapon.weaponTemplateId?.toLowerCase() ?? weapon.name.toLowerCase();
+    const explicitDamageAbility =
+      weaponDamageAbilityOverrides?.[weaponOverrideKey] ?? weapon.damageAbility;
     const abilityToDamage =
-      weapon.damageAbility === undefined ? (isMelee ? strMod : null) : null;
+      explicitDamageAbility === undefined
+        ? isMelee
+          ? strMod
+          : null
+        : explicitDamageAbility === null
+          ? null
+          : explicitDamageAbility === "str"
+            ? strMod
+            : explicitDamageAbility === "dex"
+              ? dexMod
+              : 0;
     if (abilityToDamage !== null && abilityToDamage !== 0) {
       const factor = strDamageFactor(weapon.handedness);
       const value = Math.floor(abilityToDamage * factor);
       if (value !== 0) {
-        const label = factor === 1 ? "Strength" : `Strength x${factor}`;
+        const abilityLabel =
+          explicitDamageAbility === "dex" ? "Dexterity" : "Strength";
+        const label =
+          factor === 1 ? abilityLabel : `${abilityLabel} x${factor}`;
         breakdown.push({ source: label, type: "ability", value });
       }
     }
 
     const damageTarget = isMelee ? "damage.melee" : "damage.ranged";
-    for (const m of resolveModifiers(modifiersFor(modifiers, damageTarget)).contributing) {
+    for (const m of resolveModifiers(modifiersFor(modifiers, damageTarget))
+      .contributing) {
       breakdown.push({ source: m.source, type: m.type, value: m.value });
     }
 
     const damageBonus = breakdown.reduce((sum, b) => sum + b.value, 0);
-    const bonusStr = damageBonus === 0 ? "" : damageBonus > 0 ? `+${damageBonus}` : `${damageBonus}`;
+    const bonusStr =
+      damageBonus === 0
+        ? ""
+        : damageBonus > 0
+          ? `+${damageBonus}`
+          : `${damageBonus}`;
+
+    const ammoAvailability =
+      ammoAvailabilityByWeapon?.[
+        `${weapon.weaponTemplateId?.toLowerCase() ?? weapon.name.toLowerCase()}::${weapon.sourceKind ?? "custom"}::${weapon.sourceIndex ?? -1}`
+      ];
+    const extraDamageDice = weapon.extraDamageDice?.filter(Boolean) ?? [];
+    const extraDamageDisplay = extraDamageDice.length
+      ? ` + ${extraDamageDice.join(" + ")}`
+      : "";
 
     return {
       name: weapon.name,
+      weaponTemplateId: weapon.weaponTemplateId,
       category: weapon.category,
       attack,
       damageDice: weapon.damageDice,
       damageBonus,
-      damageDisplay: `${weapon.damageDice}${bonusStr}`,
+      damageDisplay: `${weapon.damageDice}${extraDamageDisplay}${bonusStr}`,
       damageBreakdown: breakdown,
       crit: critDisplay(weapon),
+      rangeIncrementFeet: weapon.rangeIncrementFeet,
+      damageTypes: weapon.damageTypes,
+      specialTags: weapon.specialTags,
+      ammoType: weapon.ammoType,
+      loadedAmmoType: weapon.loadedAmmoType,
+      ammoAvailable: ammoAvailability?.[0]?.available,
+      ammoPerAttack: weapon.ammoPerAttack,
+      ammoConsumptions: weapon.ammoConsumptions,
+      ammoAvailability,
+      reloadType: weapon.reloadType,
+      firearmCategory: weapon.firearmCategory,
+      weaponTechnology: weapon.weaponTechnology,
+      attackModifier: weapon.attackModifier,
+      extraDamageDice: weapon.extraDamageDice,
+      ammoNotes: weapon.ammoNotes,
+      ordnanceProfile: weapon.ordnanceProfile,
+      sourceKind: weapon.sourceKind,
+      sourceIndex: weapon.sourceIndex,
+      misfire: weapon.misfire,
+      targetsTouchAcWithinFirstRangeIncrement:
+        weapon.targetsTouchAcWithinFirstRangeIncrement,
     };
   });
 }

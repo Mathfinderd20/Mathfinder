@@ -1,0 +1,57 @@
+{
+  "name": "@mathfinder/content-db",
+  "version": "0.0.0",
+  "description": "SQLite content database, seed pipeline, and scraper ingestion for Mathfinder.",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "db:init": "tsx src/cli.ts init",
+    "db:seed-local": "tsx src/cli.ts seed-local",
+    "db:scrape:aon-spells": "tsx src/cli.ts scrape-aon-spells",
+    "db:refresh:cached-aon-spells": "tsx src/cli.ts refresh-cached-aon-spells",
+    "db:refresh:cached-aon-feats": "tsx src/cli.ts refresh-cached-aon-feats",
+    "db:refresh:cached-aon-magic-items": "tsx src/cli.ts refresh-cached-aon-magic-items",
+    "db:refresh:cached-aon-class-features": "tsx src/cli.ts refresh-cached-aon-class-features",
+    "db:scrape:aon-feats": "tsx src/cli.ts scrape-aon-feats all",
+    "db:scrape:aon-feats-category": "tsx src/cli.ts scrape-aon-feats",
+    "db:scrape:aon-races": "tsx src/cli.ts scrape-aon-races all",
+    "db:scrape:aon-race-category": "tsx src/cli.ts scrape-aon-races",
+    "db:scrape:aon-magic-item-urls": "tsx src/cli.ts scrape-aon-magic-item-urls",
+    "db:scrape:aon-wondrous-items": "tsx src/cli.ts scrape-aon-wondrous-items",
+    "db:scrape:aon-rings": "tsx src/cli.ts scrape-aon-rings",
+    "db:scrape:aon-rods": "tsx src/cli.ts scrape-aon-rods",
+    "db:scrape:aon-staves": "tsx src/cli.ts scrape-aon-staves",
+    "db:scrape:aon-class-features": "tsx src/cli.ts scrape-aon-class-features",
+    "db:scrape:aon-base-class-features": "tsx src/cli.ts scrape-aon-base-class-features",
+    "db:scrape:aon-weapons": "tsx src/cli.ts scrape-aon-weapons",
+    "db:scrape:aon-armor": "tsx src/cli.ts scrape-aon-armor",
+    "db:scrape:aon-gear": "tsx src/cli.ts scrape-aon-gear",
+    "db:export:content-json": "tsx src/cli.ts export-content-json",
+    "db:export:feat-rules-json": "tsx src/cli.ts export-feat-rules-json",
+    "db:export:usable-json": "tsx src/cli.ts export-usable-json",
+    "db:report:parser-qa": "tsx src/cli.ts report-parser-qa"
+  },
+  "dependencies": {
+    "@mathfinder/rules-data": "*",
+    "better-sqlite3": "^12.4.1",
+    "cheerio": "^1.1.2",
+    "undici": "^7.16.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^24.5.2",
+    "typescript": "^5.6.3",
+    "tsx": "^4.19.2",
+    "vitest": "^2.1.8"
+  },
+  "license": "UNLICENSED"
+}

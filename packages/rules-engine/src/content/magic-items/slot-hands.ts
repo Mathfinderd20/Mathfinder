@@ -1,0 +1,82 @@
+import type { MagicItemDefinition } from "./shared";
+import { enhancementAbilityChain, item, multiSkillBonusItem } from "./helpers";
+
+export const HANDS_ITEMS: MagicItemDefinition[] = [
+  ...enhancementAbilityChain({
+    key: "dex",
+    sourceBase: "Gloves of Dexterity",
+    itemBaseName: "Gloves of Dexterity",
+    slot: "hands",
+    weightLb: 1,
+    values: [2, 4, 6],
+    costs: [4000, 16000, 36000],
+    tags: ["ability", "dexterity"],
+  }),
+  item({
+    id: "gauntlets-of-ogre-power",
+    name: "Gauntlets of Ogre Power",
+    slot: "hands",
+    weightLb: 1,
+    costGp: 4000,
+    tags: ["ability", "strength"],
+    modifiers: [
+      {
+        target: "str",
+        type: "enhancement",
+        value: 2,
+        source: "Gauntlets of Ogre Power",
+        pack: "core",
+      },
+    ],
+  }),
+  multiSkillBonusItem({
+    id: "gloves-of-swimming-and-climbing",
+    name: "Gloves of Swimming and Climbing",
+    slot: "hands",
+    weightLb: 1,
+    costGp: 6250,
+    skills: ["climb", "swim"],
+    value: 5,
+    tags: ["skills"],
+  }),
+  item({
+    id: "gauntlet-of-rust",
+    name: "Gauntlet of Rust",
+    slot: "hands",
+    weightLb: 1,
+    costGp: 11500,
+    tags: ["rust"],
+  }),
+  item({
+    id: "gloves-of-arrow-snaring",
+    name: "Gloves of Arrow Snaring",
+    slot: "hands",
+    weightLb: 1,
+    costGp: 4000,
+    tags: ["archery"],
+  }),
+  item({
+    id: "gloves-of-storing",
+    name: "Gloves of Storing",
+    slot: "hands",
+    weightLb: 1,
+    costGp: 10000,
+    tags: ["storage"],
+  }),
+  item({
+    id: "gloves-of-reconnaissance",
+    name: "Gloves of Reconnaissance",
+    slot: "hands",
+    weightLb: 1,
+    costGp: 2000,
+    tags: ["scouting"],
+  }),
+  item({
+    id: "gloves-of-shaping",
+    name: "Gloves of Shaping",
+    slot: "hands",
+    weightLb: 1,
+    costGp: 10000,
+    tags: ["earth"],
+  }),
+];

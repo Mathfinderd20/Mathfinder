@@ -9,7 +9,23 @@
   ],
   "scripts": {
     "test": "npm run test --workspaces --if-present",
-    "typecheck": "npm run typecheck --workspaces --if-present"
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "build:web": "npm run build --workspace @mathfinder/web",
+    "verify": "npm run typecheck && npm run lint && npm run test && npm run build:web && npm run format:check",
+    "web:forever": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/dev-web-forever.ps1",
+    "web:forever:stop": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/stop-web-forever.ps1",
+    "web:startup:enable": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/register-startup-task.ps1",
+    "web:startup:disable": "schtasks /Delete /TN MathfinderWebForever /F"
   },
-  "license": "UNLICENSED"
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.4.1",
+    "globals": "^17.6.0",
+    "prettier": "^3.8.4",
+    "typescript-eslint": "^8.61.0"
+  }
 }

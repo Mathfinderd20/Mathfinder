@@ -37,31 +37,29 @@ export const STACKING_BONUS_TYPES: ReadonlySet<BonusType> = new Set<BonusType>([
 ]);
 
 /** AC bonus types EXCLUDED when computing touch AC. */
-export const TOUCH_EXCLUDED_AC_TYPES: ReadonlySet<BonusType> = new Set<BonusType>([
-  "armor",
-  "shield",
-  "natural-armor",
-]);
+export const TOUCH_EXCLUDED_AC_TYPES: ReadonlySet<BonusType> =
+  new Set<BonusType>(["armor", "shield", "natural-armor"]);
 
 /** AC bonus types EXCLUDED when computing flat-footed AC. */
-export const FLAT_FOOTED_EXCLUDED_AC_TYPES: ReadonlySet<BonusType> = new Set<BonusType>([
-  "dodge",
-]);
+export const FLAT_FOOTED_EXCLUDED_AC_TYPES: ReadonlySet<BonusType> =
+  new Set<BonusType>(["dodge"]);
 
 /**
  * AC bonus types that ALSO apply to CMD. (Armor, shield, and natural armor do
  * not improve CMD; dodge/deflection/etc. do.)
  */
-export const CMD_RELEVANT_AC_TYPES: ReadonlySet<BonusType> = new Set<BonusType>([
-  "deflection",
-  "dodge",
-  "circumstance",
-  "insight",
-  "luck",
-  "morale",
-  "profane",
-  "sacred",
-]);
+export const CMD_RELEVANT_AC_TYPES: ReadonlySet<BonusType> = new Set<BonusType>(
+  [
+    "deflection",
+    "dodge",
+    "circumstance",
+    "insight",
+    "luck",
+    "morale",
+    "profane",
+    "sacred",
+  ],
+);
 
 /**
  * Group-target expansion. A modifier on a group target counts toward each

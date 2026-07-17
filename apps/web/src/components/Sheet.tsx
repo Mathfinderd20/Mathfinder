@@ -1,15 +1,56 @@
-import type { AbilityKey, DerivedSheet } from "@mathfinder/rules-engine";
+import { useState } from "react";
+import type {
+  AbilityKey,
+  BreakdownEntry,
+  DerivedSheet,
+  DerivedStat,
+  InventoryEquipmentSlot,
+} from "@mathfinder/rules-engine";
+import type {
+  AttackOutcome,
+  SpellCastCounts,
+  WeaponAttackHistory,
+} from "../runtimeState";
+import type { WealthSummary } from "../wealth";
+import {
+  displayDomainNames,
+  displaySchoolName,
+  displaySpellName,
+} from "../spellLabels";
+import { featTitle, spellTitle } from "../rulesText";
 import { sign } from "../util";
-import { Stat } from "./Stat";
+import { compatibleAmmoEntries } from "../ammoCatalog";
+import { weaponAmmoUxLabel } from "../weaponUx";
+import { Tooltip } from "./Tooltip";
 
-const ABILITY_ORDER: readonly AbilityKey[] = ["str", "dex", "con", "int", "wis", "cha"];
+const ABILITY_ORDER: readonly AbilityKey[] = [
+  "str",
+  "dex",
+  "con",
+  "int",
+  "wis",
+  "cha",
+];
 
 function compactByLevel(values: Partial<Record<number, number>>) {
-  return Object.entries(values).map(([lvl, n]) => `L${lvl}:${n}`).join(" · ") || "—";
+  return (
+    Object.entries(values)
+      .map(([lvl, n]) => `L${lvl}:${n}`)
+      .join(" · ") || "—"
+  );
 }
 
-function compactSpellNames(values: Partial<Record<number, string[]>>) {
-  return Object.entries(values).map(([lvl, names]) => `L${lvl}: ${(names ?? []).join(", ")}`).join(" · ") || "—";
+function uniqueSpellNames(spellNames: string[]) {
+  return [...new Set(spellNames.map((name) => name.trim()).filter(Boolean))];
+}
+
+function compactSpellCastHistory(casts: Record<string, number> | undefined) {
+  if (!casts) return "—";
+  const parts = Object.entries(casts)
+    .filter(([, count]) => count > 0)
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([spellName, count]) => `${displaySpellName(spellName)} ×${count}`);
+  return parts.join(" · ") || "—";
 }
 
 function formatGp(value: number) {
@@ -20,15 +61,367 @@ function formatWeight(value: number) {
   return Number.isInteger(value) ? `${value} lb` : `${value.toFixed(2)} lb`;
 }
 
+function displayEquipmentSlot(slot: InventoryEquipmentSlot) {
+  return slot === "slotless" ? "slotless" : slot.replace(/-/g, " ");
+}
+
+function compactWeaponTags(tags: string[] | undefined) {
+  return (tags ?? []).join(", ") || "—";
+}
+
+function compactDamageTypes(types: string[] | undefined) {
+  return (types ?? []).join("/") || "—";
+}
+
+function titleCaseLabel(value: string) {
+  return value
+    .split("-")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function weaponRuntimeKey(
+  weapon: { name: string; weaponTemplateId?: string; category: string },
+  index: number,
+) {
+  return `${weapon.weaponTemplateId ?? weapon.name.toLowerCase()}::${weapon.category}::${index}`;
+}
+
+function compactAttackHistory(
+  entries:
+    | Array<{ at: string; outcome?: AttackOutcome; note?: string }>
+    | undefined,
+) {
+  return (
+    (entries ?? [])
+      .slice(-3)
+      .map((entry) => {
+        const time = new Date(entry.at).toLocaleTimeString([], {
+          hour: "numeric",
+          minute: "2-digit",
+          second: "2-digit",
+        });
+        const bits = [
+          time,
+          entry.outcome?.toUpperCase(),
+          entry.note ? `“${entry.note}”` : undefined,
+        ].filter(Boolean);
+        return bits.join(" ");
+      })
+      .join(" · ") || "—"
+  );
+}
+
+function breakdownTooltip(total: string, breakdown: BreakdownEntry[]) {
+  return [
+    `Total ${total}`,
+    ...breakdown.map((b) => `${b.source}: ${sign(b.value)}`),
+  ].join(" • ");
+}
+
+function statTooltip(stat: DerivedStat, raw?: boolean) {
+  return breakdownTooltip(
+    raw ? `${stat.total}` : sign(stat.total),
+    stat.breakdown,
+  );
+}
+
+function weaponDamageTooltip(weapon: DerivedSheet["weapons"][number]) {
+  return breakdownTooltip(weapon.damageDisplay, weapon.damageBreakdown);
+}
+
+function ordnanceSummary(weapon: DerivedSheet["weapons"][number]) {
+  const profile = weapon.ordnanceProfile;
+  if (!profile) return undefined;
+  return [
+    profile.saveDc && profile.saveType
+      ? `DC ${profile.saveDc} ${profile.saveType.toUpperCase()}`
+      : undefined,
+    profile.area,
+    profile.duration ? `Duration ${profile.duration}` : undefined,
+    profile.directHitEffect,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+}
+
+function weaponAttackNote(weapon: DerivedSheet["weapons"][number]) {
+  return [...(weapon.ammoNotes ?? []), ...(weapon.ordnanceProfile?.notes ?? [])]
+    .filter(Boolean)
+    .join(" · ");
+}
+
+function weaponCanAttack(weapon: DerivedSheet["weapons"][number]) {
+  return (weapon.ammoAvailability ?? []).every(
+    (entry) => entry.available >= entry.amount,
+  );
+}
+
+function critMultiplier(crit: string) {
+  const match = /x(\d+)/i.exec(crit);
+  return match ? Math.max(1, Number(match[1]) || 1) : 1;
+}
+
+function abilityTooltip(score: number, breakdown: BreakdownEntry[]) {
+  return breakdownTooltip(`${score}`, breakdown);
+}
+
+function encumbranceTooltip(encumbrance: DerivedSheet["encumbrance"]) {
+  return [
+    `Load: ${encumbrance.band}`,
+    `Carried: ${formatWeight(encumbrance.carriedWeight)}`,
+    `Light max: ${formatWeight(encumbrance.lightMax)}`,
+    `Medium max: ${formatWeight(encumbrance.mediumMax)}`,
+    `Heavy max: ${formatWeight(encumbrance.heavyMax)}`,
+  ].join(" • ");
+}
+
+function hitPointTooltip(sheet: DerivedSheet) {
+  const diceLines = sheet.hitPointDetails.dice.map(
+    (entry) =>
+      `${entry.count}d${entry.hitDie} (${entry.className}) = ${entry.hpFromRolls}`,
+  );
+  const parts = [
+    `Total ${sheet.hitPoints.total}`,
+    ...diceLines,
+    `Hit die HP: +${sheet.hitPointDetails.rolledHpTotal}`,
+    `Con bonus: ${sign(sheet.hitPointDetails.constitutionBonusTotal)}`,
+  ];
+  if (sheet.hitPointDetails.favoredClassHpTotal !== 0)
+    parts.push(
+      `Favored class HP: ${sign(sheet.hitPointDetails.favoredClassHpTotal)}`,
+    );
+  if (sheet.hitPointDetails.miscHpTotal !== 0)
+    parts.push(`Misc HP: ${sign(sheet.hitPointDetails.miscHpTotal)}`);
+  return parts.join(" • ");
+}
+
+function racialAbilitySummary(sheet: DerivedSheet) {
+  return ABILITY_ORDER.flatMap((key) => {
+    const total = sheet.abilities[key].breakdown
+      .filter((entry) => entry.type === "racial")
+      .reduce((sum, entry) => sum + entry.value, 0);
+    return total === 0 ? [] : [`${key.toUpperCase()} ${sign(total)}`];
+  });
+}
+
 /** The full read-only character sheet, rendered from a DerivedSheet. */
-export function Sheet({ sheet }: { sheet: DerivedSheet }) {
+export function Sheet({
+  sheet,
+  wealthSummary,
+  currentHp,
+  hpDamageTaken,
+  tempHp,
+  nonlethalDamage,
+  stable,
+  bleeding,
+  onApplyDamage,
+  onApplyHealing,
+  onSetTempHp,
+  onApplyNonlethal,
+  onHealNonlethal,
+  onSetStable,
+  onSetBleeding,
+  onResetHp,
+  spellCastCounts,
+  onCastSpell,
+  onResetSpellSlotLevel,
+  weaponAttackHistory,
+  onWeaponAttack,
+  onUndoWeaponAttack,
+  onTagWeaponAttackOutcome,
+  onSetWeaponAttackOutcome,
+  onSetWeaponAttackNote,
+  onSetSpecificWeaponAttackNote,
+  onResetWeaponAttackHistory,
+  onResetAmmo,
+  onSetWeaponLoadedAmmo,
+}: {
+  sheet: DerivedSheet;
+  wealthSummary: WealthSummary;
+  currentHp: number;
+  hpDamageTaken: number;
+  tempHp: number;
+  nonlethalDamage: number;
+  stable: boolean;
+  bleeding: boolean;
+  onApplyDamage?: (amount: number, damageType?: string) => void;
+  onApplyHealing?: (amount: number) => void;
+  onSetTempHp?: (amount: number) => void;
+  onApplyNonlethal?: (amount: number) => void;
+  onHealNonlethal?: (amount: number) => void;
+  onSetStable?: (value: boolean) => void;
+  onSetBleeding?: (value: boolean) => void;
+  onResetHp?: () => void;
+  spellCastCounts?: SpellCastCounts;
+  onCastSpell?: (
+    classKey: string,
+    level: number,
+    max: number,
+    spellName: string,
+    remaining: number,
+  ) => void;
+  onResetSpellSlotLevel?: (classKey: string, level: number) => void;
+  weaponAttackHistory?: WeaponAttackHistory;
+  onWeaponAttack?: (
+    weaponKey: string,
+    weaponName: string,
+    ammoType?: string,
+    ammoSpent?: number,
+    attackNote?: string,
+    ammoEntries?: Array<{ ammoType: string; amount: number }>,
+  ) => void;
+  onSetWeaponLoadedAmmo?: (
+    sourceKind: "race" | "equipment" | "build" | undefined,
+    sourceIndex: number | undefined,
+    loadedAmmoType?: string,
+  ) => void;
+  onUndoWeaponAttack?: (weaponKey: string, weaponName: string) => void;
+  onTagWeaponAttackOutcome?: (
+    weaponKey: string,
+    outcome: AttackOutcome,
+  ) => void;
+  onSetWeaponAttackOutcome?: (
+    weaponKey: string,
+    attackId: string,
+    outcome: AttackOutcome,
+  ) => void;
+  onSetWeaponAttackNote?: (weaponKey: string, note: string) => void;
+  onSetSpecificWeaponAttackNote?: (
+    weaponKey: string,
+    attackId: string,
+    note: string,
+  ) => void;
+  onResetWeaponAttackHistory?: (
+    weaponKey?: string,
+    weaponName?: string,
+  ) => void;
+  onResetAmmo?: (ammoType?: string) => void;
+}) {
+  const [attackNoteDrafts, setAttackNoteDrafts] = useState<
+    Record<string, string>
+  >({});
+  const [attackRollDrafts, setAttackRollDrafts] = useState<
+    Record<string, string>
+  >({});
+  const [damageRollDrafts, setDamageRollDrafts] = useState<
+    Record<string, string>
+  >({});
+  const [damageInput, setDamageInput] = useState("");
+  const [damageTypeInput, setDamageTypeInput] = useState<string>("untyped");
+  const [healingInput, setHealingInput] = useState("");
+  const [saveRollDrafts, setSaveRollDrafts] = useState<Record<string, string>>(
+    {},
+  );
+  const [skillRollDrafts, setSkillRollDrafts] = useState<
+    Record<string, string>
+  >({});
+  const [initiativeRollDraft, setInitiativeRollDraft] = useState("");
+  const [cmbRollDraft, setCmbRollDraft] = useState("");
+  const [tempHpInput, setTempHpInput] = useState("");
+  const [nonlethalInput, setNonlethalInput] = useState("");
+  const [nonlethalHealingInput, setNonlethalHealingInput] = useState("");
   const rankedSkills = Object.values(sheet.skills)
     .filter((s) => s.ranks > 0 || s.isClassSkill)
     .sort((a, b) => a.name.localeCompare(b.name));
 
-  const { race, classes, feats, features, suppressedFeatures } = sheet.descriptor;
+  const { race, classes, archetypes, feats, features, suppressedFeatures } =
+    sheet.descriptor;
   const classLine = classes.map((c) => `${c.name} ${c.level}`).join(" / ");
-  const identity = [race, classLine].filter(Boolean).join(" · ");
+  const archetypeLine = archetypes.map((a) => a.name).join(", ");
+  const identity = [race, classLine, archetypeLine].filter(Boolean).join(" · ");
+  const racialBonuses = racialAbilitySummary(sheet);
+
+  function noteDraftValue(draftKey: string, currentNote?: string) {
+    return attackNoteDrafts[draftKey] ?? currentNote ?? "";
+  }
+
+  function saveAttackNote(weaponKey: string, currentNote?: string) {
+    const nextNote = noteDraftValue(`${weaponKey}::latest`, currentNote);
+    onSetWeaponAttackNote?.(weaponKey, nextNote);
+    setAttackNoteDrafts((prev) => ({
+      ...prev,
+      [`${weaponKey}::latest`]: nextNote.trim(),
+    }));
+  }
+
+  function saveSpecificAttackNote(
+    weaponKey: string,
+    attackId: string,
+    currentNote?: string,
+  ) {
+    const draftKey = `${weaponKey}::${attackId}`;
+    const nextNote = noteDraftValue(draftKey, currentNote);
+    onSetSpecificWeaponAttackNote?.(weaponKey, attackId, nextNote);
+    setAttackNoteDrafts((prev) => ({ ...prev, [draftKey]: nextNote.trim() }));
+  }
+
+  function parsedRollTotal(raw: string | undefined) {
+    if (!raw || raw.trim() === "") return undefined;
+    const value = Number(raw);
+    return Number.isFinite(value) ? value : undefined;
+  }
+
+  function applyDamage() {
+    const amount = Math.max(0, Number(damageInput) || 0);
+    if (amount <= 0) return;
+    onApplyDamage?.(
+      amount,
+      damageTypeInput === "untyped" ? undefined : damageTypeInput,
+    );
+    setDamageInput("");
+  }
+
+  function applyHealing() {
+    const amount = Math.max(0, Number(healingInput) || 0);
+    if (amount <= 0) return;
+    onApplyHealing?.(amount);
+    setHealingInput("");
+  }
+
+  function setTempHp() {
+    const amount = Math.max(0, Number(tempHpInput) || 0);
+    onSetTempHp?.(amount);
+    setTempHpInput("");
+  }
+
+  function applyNonlethal() {
+    const amount = Math.max(0, Number(nonlethalInput) || 0);
+    if (amount <= 0) return;
+    onApplyNonlethal?.(amount);
+    setNonlethalInput("");
+  }
+
+  function healNonlethal() {
+    const amount = Math.max(0, Number(nonlethalHealingInput) || 0);
+    if (amount <= 0) return;
+    onHealNonlethal?.(amount);
+    setNonlethalHealingInput("");
+  }
+
+  function checkTotal(raw: string | undefined, modifier: number) {
+    const roll = parsedRollTotal(raw);
+    return roll === undefined ? undefined : roll + modifier;
+  }
+
+  const deathThreshold = -sheet.abilities.con.score;
+  const status =
+    currentHp <= deathThreshold
+      ? { label: "Dead", tone: "dead" }
+      : currentHp < 0
+        ? {
+            label: stable ? "Stable" : bleeding ? "Dying · Bleeding" : "Dying",
+            tone: stable ? "warn" : "dead",
+          }
+        : nonlethalDamage > currentHp
+          ? { label: "Unconscious", tone: "warn" }
+          : currentHp === 0
+            ? { label: "Disabled", tone: "warn" }
+            : nonlethalDamage === currentHp && nonlethalDamage > 0
+              ? { label: "Staggered", tone: "warn" }
+              : bleeding
+                ? { label: "Bleeding", tone: "warn" }
+                : { label: "Okay-ish", tone: "ok" };
 
   return (
     <div className="sheet paper-sheet">
@@ -41,95 +434,850 @@ export function Sheet({ sheet }: { sheet: DerivedSheet }) {
           <div className="sheet-meta-line">
             <span>{identity || "Unspecified heroics"}</span>
             <span>Size: {sheet.size}</span>
-            <span>Load: {sheet.encumbrance.band}</span>
-          </div>
-        </div>
-        <div className="sheet-summary-grid">
-          <div className="summary-box">
-            <span className="summary-label">HP</span>
-            <span className="summary-value">{sheet.hitPoints.total}</span>
-          </div>
-          <div className="summary-box">
-            <span className="summary-label">AC</span>
-            <span className="summary-value">{sheet.ac.normal.total}</span>
-          </div>
-          <div className="summary-box">
-            <span className="summary-label">Initiative</span>
-            <span className="summary-value">{sign(sheet.initiative.total)}</span>
-          </div>
-          <div className="summary-box">
-            <span className="summary-label">Speed</span>
-            <span className="summary-value">{sheet.speed.total} ft</span>
+            <span title={encumbranceTooltip(sheet.encumbrance)}>
+              Load: {sheet.encumbrance.band}
+            </span>
+            <span className={`tag hp-status ${status.tone}`}>
+              {status.label}
+            </span>
           </div>
         </div>
       </section>
 
-      <section className="abilities paper-abilities panel paper-panel">
-        {ABILITY_ORDER.map((key) => {
-          const a = sheet.abilities[key];
-          return (
-            <div className="ability paper-ability" key={key}>
-              <div className="ability-key">{key.toUpperCase()}</div>
-              <div className="ability-score">{a.score}</div>
-              <div className="ability-mod">{sign(a.mod)}</div>
+      <div className="sheet-top-grid">
+        <section className="abilities paper-abilities panel paper-panel">
+          <h2>Ability Scores</h2>
+          {race && racialBonuses.length > 0 ? (
+            <p className="hint">
+              {race} racial adjustments: {racialBonuses.join(" · ")}
+            </p>
+          ) : null}
+          <div className="abilities-grid">
+            {ABILITY_ORDER.map((key) => {
+              const a = sheet.abilities[key];
+              return (
+                <Tooltip
+                  key={key}
+                  content={abilityTooltip(a.score, a.breakdown)}
+                  className="mf-tooltip-anchor-block"
+                >
+                  <div className="ability paper-ability">
+                    <div className="ability-key">{key.toUpperCase()}</div>
+                    <div className="ability-score">{a.score}</div>
+                    <div className="ability-mod">{sign(a.mod)}</div>
+                  </div>
+                </Tooltip>
+              );
+            })}
+          </div>
+        </section>
+
+        <div className="sheet-stack">
+          <section className="panel paper-panel">
+            <h2>Defense Snapshot</h2>
+            <div className="sheet-ac-grid">
+              <div
+                className="summary-box ac-primary"
+                title={statTooltip(sheet.ac.normal, true)}
+              >
+                <span className="summary-label">Armor Class</span>
+                <span className="summary-value">{sheet.ac.normal.total}</span>
+              </div>
+              <div
+                className="summary-box"
+                title={statTooltip(sheet.ac.touch, true)}
+              >
+                <span className="summary-label">Touch</span>
+                <span className="summary-value">{sheet.ac.touch.total}</span>
+              </div>
+              <div
+                className="summary-box"
+                title={statTooltip(sheet.ac.flatFooted, true)}
+              >
+                <span className="summary-label">Flat-Footed</span>
+                <span className="summary-value">
+                  {sheet.ac.flatFooted.total}
+                </span>
+              </div>
+              <div className="summary-box" title={hitPointTooltip(sheet)}>
+                <span className="summary-label">Hit Points</span>
+                <span className="summary-value">
+                  {currentHp} / {sheet.hitPoints.total}
+                </span>
+              </div>
+              <div
+                className="summary-box"
+                title={statTooltip(sheet.saves.fort)}
+              >
+                <span className="summary-label">Fort</span>
+                <span className="summary-value">
+                  {sign(sheet.saves.fort.total)}
+                </span>
+                <label className="sheet-roll-entry">
+                  <span>Roll</span>
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    placeholder="d20"
+                    value={saveRollDrafts.fort ?? ""}
+                    onChange={(event) =>
+                      setSaveRollDrafts((prev) => ({
+                        ...prev,
+                        fort: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+                <span className="sheet-roll-total">
+                  {checkTotal(saveRollDrafts.fort, sheet.saves.fort.total) ===
+                  undefined
+                    ? "—"
+                    : sign(
+                        checkTotal(
+                          saveRollDrafts.fort,
+                          sheet.saves.fort.total,
+                        ) ?? 0,
+                      )}
+                </span>
+              </div>
+              <div className="summary-box" title={statTooltip(sheet.saves.ref)}>
+                <span className="summary-label">Ref</span>
+                <span className="summary-value">
+                  {sign(sheet.saves.ref.total)}
+                </span>
+                <label className="sheet-roll-entry">
+                  <span>Roll</span>
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    placeholder="d20"
+                    value={saveRollDrafts.ref ?? ""}
+                    onChange={(event) =>
+                      setSaveRollDrafts((prev) => ({
+                        ...prev,
+                        ref: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+                <span className="sheet-roll-total">
+                  {checkTotal(saveRollDrafts.ref, sheet.saves.ref.total) ===
+                  undefined
+                    ? "—"
+                    : sign(
+                        checkTotal(saveRollDrafts.ref, sheet.saves.ref.total) ??
+                          0,
+                      )}
+                </span>
+              </div>
+              <div
+                className="summary-box"
+                title={statTooltip(sheet.saves.will)}
+              >
+                <span className="summary-label">Will</span>
+                <span className="summary-value">
+                  {sign(sheet.saves.will.total)}
+                </span>
+                <label className="sheet-roll-entry">
+                  <span>Roll</span>
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    placeholder="d20"
+                    value={saveRollDrafts.will ?? ""}
+                    onChange={(event) =>
+                      setSaveRollDrafts((prev) => ({
+                        ...prev,
+                        will: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+                <span className="sheet-roll-total">
+                  {checkTotal(saveRollDrafts.will, sheet.saves.will.total) ===
+                  undefined
+                    ? "—"
+                    : sign(
+                        checkTotal(
+                          saveRollDrafts.will,
+                          sheet.saves.will.total,
+                        ) ?? 0,
+                      )}
+                </span>
+              </div>
             </div>
-          );
-        })}
-      </section>
+            <div className="weapon-history-note-row">
+              <label className="weapon-note-editor">
+                <span>Damage</span>
+                <input
+                  type="number"
+                  min={0}
+                  inputMode="numeric"
+                  placeholder="0"
+                  value={damageInput}
+                  onChange={(event) => setDamageInput(event.target.value)}
+                />
+              </label>
+              <label className="weapon-note-editor">
+                <span>Type</span>
+                <select
+                  value={damageTypeInput}
+                  onChange={(event) => setDamageTypeInput(event.target.value)}
+                >
+                  <option value="untyped">Untyped</option>
+                  <option value="physical">Physical</option>
+                  <option value="acid">Acid</option>
+                  <option value="cold">Cold</option>
+                  <option value="electricity">Electricity</option>
+                  <option value="fire">Fire</option>
+                  <option value="sonic">Sonic</option>
+                </select>
+              </label>
+              <button className="ghost small" onClick={applyDamage}>
+                Apply Damage
+              </button>
+              <label className="weapon-note-editor">
+                <span>Healing</span>
+                <input
+                  type="number"
+                  min={0}
+                  inputMode="numeric"
+                  placeholder="0"
+                  value={healingInput}
+                  onChange={(event) => setHealingInput(event.target.value)}
+                />
+              </label>
+              <button className="ghost small" onClick={applyHealing}>
+                Apply Healing
+              </button>
+              <label className="weapon-note-editor">
+                <span>Temp HP</span>
+                <input
+                  type="number"
+                  min={0}
+                  inputMode="numeric"
+                  placeholder="0"
+                  value={tempHpInput}
+                  onChange={(event) => setTempHpInput(event.target.value)}
+                />
+              </label>
+              <button className="ghost small" onClick={setTempHp}>
+                Set Temp
+              </button>
+              <label className="weapon-note-editor">
+                <span>Nonlethal</span>
+                <input
+                  type="number"
+                  min={0}
+                  inputMode="numeric"
+                  placeholder="0"
+                  value={nonlethalInput}
+                  onChange={(event) => setNonlethalInput(event.target.value)}
+                />
+              </label>
+              <button className="ghost small" onClick={applyNonlethal}>
+                Apply Nonlethal
+              </button>
+              <label className="weapon-note-editor">
+                <span>NL Heal</span>
+                <input
+                  type="number"
+                  min={0}
+                  inputMode="numeric"
+                  placeholder="0"
+                  value={nonlethalHealingInput}
+                  onChange={(event) =>
+                    setNonlethalHealingInput(event.target.value)
+                  }
+                />
+              </label>
+              <button className="ghost small" onClick={healNonlethal}>
+                Heal NL
+              </button>
+              <button
+                className={
+                  stable ? "ghost small active-template-choice" : "ghost small"
+                }
+                onClick={() => onSetStable?.(!stable)}
+              >
+                {stable ? "Stable " : "Stable"}
+              </button>
+              <button
+                className={
+                  bleeding
+                    ? "ghost small active-template-choice"
+                    : "ghost small"
+                }
+                onClick={() => onSetBleeding?.(!bleeding)}
+              >
+                {bleeding ? "Bleeding " : "Bleeding"}
+              </button>
+              <button className="ghost small" onClick={() => onResetHp?.()}>
+                Full Heal
+              </button>
+              <span className="weapon-crit">Damage Taken {hpDamageTaken}</span>
+              <span className="weapon-crit">Temp HP {tempHp}</span>
+              <span className="weapon-crit">Nonlethal {nonlethalDamage}</span>
+              <span className={`tag hp-status ${status.tone}`}>
+                {status.label}
+              </span>
+            </div>
+          </section>
 
-      <section className="panel paper-panel">
-        <h2>Combat</h2>
-        <div className="sheet-stat-grid sheet-stat-grid-compact">
-          <div className="stat-card"><span className="summary-label">Base Attack</span><span className="summary-value">{sign(sheet.baseAttackBonus)}</span></div>
-          <div className="stat-card"><span className="summary-label">Melee</span><span className="summary-value">{sign(sheet.attack.melee.total)}</span></div>
-          <div className="stat-card"><span className="summary-label">Ranged</span><span className="summary-value">{sign(sheet.attack.ranged.total)}</span></div>
-          <div className="stat-card"><span className="summary-label">CMB</span><span className="summary-value">{sign(sheet.cmb.total)}</span></div>
-          <div className="stat-card"><span className="summary-label">CMD</span><span className="summary-value">{sheet.cmd.total}</span></div>
-          <div className="stat-card"><span className="summary-label">Touch / FF</span><span className="summary-value">{sheet.ac.touch.total} / {sheet.ac.flatFooted.total}</span></div>
+          <section className="panel paper-panel">
+            <h2>Combat & Movement</h2>
+            <div className="sheet-stat-grid sheet-stat-grid-compact paper-sheet-combat-grid">
+              <div className="stat-card">
+                <span className="summary-label">Base Attack</span>
+                <span className="summary-value">
+                  {sign(sheet.baseAttackBonus)}
+                </span>
+              </div>
+              <div className="stat-card" title={statTooltip(sheet.initiative)}>
+                <span className="summary-label">Initiative</span>
+                <span className="summary-value">
+                  {sign(sheet.initiative.total)}
+                </span>
+                <label className="sheet-roll-entry">
+                  <span>Roll</span>
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    placeholder="d20"
+                    value={initiativeRollDraft}
+                    onChange={(event) =>
+                      setInitiativeRollDraft(event.target.value)
+                    }
+                  />
+                </label>
+                <span className="sheet-roll-total">
+                  {checkTotal(initiativeRollDraft, sheet.initiative.total) ===
+                  undefined
+                    ? "—"
+                    : sign(
+                        checkTotal(
+                          initiativeRollDraft,
+                          sheet.initiative.total,
+                        ) ?? 0,
+                      )}
+                </span>
+              </div>
+              <div className="stat-card" title={statTooltip(sheet.speed, true)}>
+                <span className="summary-label">Speed</span>
+                <span className="summary-value">{sheet.speed.total} ft</span>
+              </div>
+              <div
+                className="stat-card"
+                title={statTooltip(sheet.attack.melee)}
+              >
+                <span className="summary-label">Melee</span>
+                <span className="summary-value">
+                  {sign(sheet.attack.melee.total)}
+                </span>
+              </div>
+              <div
+                className="stat-card"
+                title={statTooltip(sheet.attack.ranged)}
+              >
+                <span className="summary-label">Ranged</span>
+                <span className="summary-value">
+                  {sign(sheet.attack.ranged.total)}
+                </span>
+              </div>
+              <div className="stat-card" title={statTooltip(sheet.cmb)}>
+                <span className="summary-label">CMB</span>
+                <span className="summary-value">{sign(sheet.cmb.total)}</span>
+                <label className="sheet-roll-entry">
+                  <span>Roll</span>
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    placeholder="d20"
+                    value={cmbRollDraft}
+                    onChange={(event) => setCmbRollDraft(event.target.value)}
+                  />
+                </label>
+                <span className="sheet-roll-total">
+                  {checkTotal(cmbRollDraft, sheet.cmb.total) === undefined
+                    ? "—"
+                    : sign(checkTotal(cmbRollDraft, sheet.cmb.total) ?? 0)}
+                </span>
+              </div>
+              <div className="stat-card" title={statTooltip(sheet.cmd, true)}>
+                <span className="summary-label">CMD</span>
+                <span className="summary-value">{sheet.cmd.total}</span>
+              </div>
+              <div
+                className="stat-card"
+                title={encumbranceTooltip(sheet.encumbrance)}
+              >
+                <span className="summary-label">Encumbrance</span>
+                <span className="summary-value smallcaps">
+                  {sheet.encumbrance.band}
+                </span>
+              </div>
+            </div>
+            {sheet.raceMetadata ? (
+              <div className="race-travel-grid">
+                {sheet.raceMetadata.movementModes &&
+                Object.keys(sheet.raceMetadata.movementModes).length > 0 ? (
+                  <div className="race-meta-card">
+                    <span className="spell-chip-label">Movement Modes</span>
+                    <div className="spell-chip-list readonly">
+                      {Object.entries(sheet.raceMetadata.movementModes).map(
+                        ([mode, speed]) => (
+                          <span
+                            key={`move-${mode}`}
+                            className="spell-name-chip"
+                          >
+                            {titleCaseLabel(mode)} {speed} ft
+                          </span>
+                        ),
+                      )}
+                    </div>
+                  </div>
+                ) : null}
+                {sheet.raceMetadata.senses &&
+                (sheet.raceMetadata.senses.darkvisionFeet ||
+                  sheet.raceMetadata.senses.lowLightVision) ? (
+                  <div className="race-meta-card">
+                    <span className="spell-chip-label">Senses</span>
+                    <div className="spell-chip-list readonly">
+                      {sheet.raceMetadata.senses.darkvisionFeet ? (
+                        <span className="spell-name-chip">
+                          Darkvision {sheet.raceMetadata.senses.darkvisionFeet}{" "}
+                          ft
+                        </span>
+                      ) : null}
+                      {sheet.raceMetadata.senses.lowLightVision ? (
+                        <span className="spell-name-chip">
+                          Low-light vision
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
+                ) : null}
+                {sheet.raceMetadata.resistances &&
+                Object.keys(sheet.raceMetadata.resistances).length > 0 ? (
+                  <div className="race-meta-card">
+                    <span className="spell-chip-label">Resistances</span>
+                    <div className="spell-chip-list readonly">
+                      {Object.entries(sheet.raceMetadata.resistances).map(
+                        ([kind, value]) => (
+                          <span
+                            key={`resist-${kind}`}
+                            className="spell-name-chip accent"
+                          >
+                            {titleCaseLabel(kind)} {value}
+                          </span>
+                        ),
+                      )}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+            {sheet.raceMetadata?.notes?.length ? (
+              <details className="equipment-details" style={{ marginTop: 10 }}>
+                <summary>Race Traits & Notes</summary>
+                <div className="magic-item-meta-list">
+                  {sheet.raceMetadata.notes.map((note, index) => (
+                    <div key={`race-note-${index}`}>{note}</div>
+                  ))}
+                </div>
+              </details>
+            ) : null}
+          </section>
         </div>
-      </section>
-
-      <div className="sheet-sections">
-        <section className="panel paper-panel">
-          <h2>Defense</h2>
-          <Stat label="Armor Class" stat={sheet.ac.normal} raw />
-          <Stat label="Touch AC" stat={sheet.ac.touch} raw />
-          <Stat label="Flat-Footed AC" stat={sheet.ac.flatFooted} raw />
-          <Stat label="Fortitude" stat={sheet.saves.fort} />
-          <Stat label="Reflex" stat={sheet.saves.ref} />
-          <Stat label="Will" stat={sheet.saves.will} />
-          <Stat label="Hit Points" stat={sheet.hitPoints} raw />
-        </section>
-
-        <section className="panel paper-panel">
-          <h2>Offense & Movement</h2>
-          <Stat label="Melee Attack" stat={sheet.attack.melee} />
-          <Stat label="Ranged Attack" stat={sheet.attack.ranged} />
-          <Stat label="Initiative" stat={sheet.initiative} />
-          <Stat label="CMB" stat={sheet.cmb} />
-          <Stat label="CMD" stat={sheet.cmd} raw />
-          <Stat label="Speed" stat={sheet.speed} raw />
-          <div className="stat static">
-            <span className="stat-label">Encumbrance</span>
-            <span className="stat-value smallcaps">{sheet.encumbrance.band}</span>
-          </div>
-        </section>
       </div>
 
       {sheet.weapons.length > 0 ? (
         <section className="panel paper-panel">
-          <h2>Weapons</h2>
+          <div className="editor-section-head tight">
+            <h2>Weapons</h2>
+            {Object.keys(sheet.rangedCombat.ammoByType).length > 0 &&
+            onResetAmmo ? (
+              <button className="ghost small" onClick={() => onResetAmmo()}>
+                Reset Ammo
+              </button>
+            ) : null}
+          </div>
           <div className="weapons paper-table">
-            {sheet.weapons.map((w, i) => (
-              <div className="weapon" key={i}>
-                <span className="weapon-name">{w.name}</span>
-                <span className="weapon-stats">
-                  <span className="weapon-atk">Atk {sign(w.attack.total)}</span>
-                  <span className="weapon-dmg">Dmg {w.damageDisplay}</span>
-                  <span className="weapon-crit">Crit {w.crit}</span>
-                </span>
-              </div>
-            ))}
+            {sheet.weapons.map((w, i) => {
+              const runtimeKey = weaponRuntimeKey(w, i);
+              const history = weaponAttackHistory?.[runtimeKey] ?? [];
+              const latestAttack = history[history.length - 1];
+              const rawDamageTotal =
+                (parsedRollTotal(damageRollDrafts[runtimeKey]) ?? 0) +
+                w.damageBonus;
+              const displayedDamageTotal =
+                latestAttack?.outcome === "crit"
+                  ? rawDamageTotal * critMultiplier(w.crit)
+                  : rawDamageTotal;
+              return (
+                <div className="weapon" key={i}>
+                  <span className="weapon-name">{w.name}</span>
+                  <span className="weapon-stats">
+                    <span className="weapon-atk" title={statTooltip(w.attack)}>
+                      Atk {sign(w.attack.total)}
+                    </span>
+                    <span className="weapon-dmg" title={weaponDamageTooltip(w)}>
+                      Dmg {w.damageDisplay}
+                    </span>
+                    <span className="weapon-crit">Crit {w.crit}</span>
+                    {w.rangeIncrementFeet ? (
+                      <span className="weapon-crit">
+                        Range {w.rangeIncrementFeet} ft
+                      </span>
+                    ) : null}
+                    {w.damageTypes?.length ? (
+                      <span className="weapon-crit">
+                        Type {compactDamageTypes(w.damageTypes)}
+                      </span>
+                    ) : null}
+                    {w.specialTags?.length ? (
+                      <span className="weapon-crit">
+                        Tags {compactWeaponTags(w.specialTags)}
+                      </span>
+                    ) : null}
+                    {w.ammoAvailability?.length ? (
+                      <span className="weapon-crit">
+                        Ammo {w.ammoAvailability
+                          .map(
+                            (entry) =>
+                              `${entry.available} ${entry.ammoType}${entry.available === 1 ? "" : "s"}`,
+                          )
+                          .join(" + ")}
+                      </span>
+                    ) : null}
+                    {w.loadedAmmoType ? (
+                      <span className="weapon-crit">Loaded {w.loadedAmmoType}</span>
+                    ) : null}
+                    {weaponAmmoUxLabel(w) ? (
+                      <span className="weapon-crit">
+                        Load {weaponAmmoUxLabel(w)}
+                      </span>
+                    ) : null}
+                    {w.reloadType ? (
+                      <span className="weapon-crit">Reload {w.reloadType}</span>
+                    ) : null}
+                    {w.weaponTechnology ? (
+                      <span className="weapon-crit">Tech {w.weaponTechnology}</span>
+                    ) : null}
+                    {ordnanceSummary(w) ? (
+                      <span className="weapon-crit">Payload {ordnanceSummary(w)}</span>
+                    ) : null}
+                    {w.ammoNotes?.length ? (
+                      <span className="weapon-crit">Notes {w.ammoNotes.join(", ")}</span>
+                    ) : null}
+                    <span className="weapon-crit">
+                      Attacks {history.length}
+                    </span>
+                    {history.length > 0 ? (
+                      <span className="weapon-crit">
+                        Recent {compactAttackHistory(history)}
+                      </span>
+                    ) : null}
+                    {latestAttack?.outcome ? (
+                      <span className={`tag outcome ${latestAttack.outcome}`}>
+                        latest {latestAttack.outcome}
+                      </span>
+                    ) : null}
+                    {latestAttack?.note ? (
+                      <span className="weapon-crit weapon-note">
+                        Note “{latestAttack.note}”
+                      </span>
+                    ) : null}
+                    <span className="weapon-crit weapon-actions-block">
+                      <label className="weapon-note-editor">
+                        <span>Roll</span>
+                        <input
+                          type="number"
+                          inputMode="numeric"
+                          placeholder="d20"
+                          value={attackRollDrafts[runtimeKey] ?? ""}
+                          onChange={(event) =>
+                            setAttackRollDrafts((prev) => ({
+                              ...prev,
+                              [runtimeKey]: event.target.value,
+                            }))
+                          }
+                        />
+                      </label>
+                      <span className="weapon-crit">
+                        Attack Total{" "}
+                        {sign(
+                          (parsedRollTotal(attackRollDrafts[runtimeKey]) ?? 0) +
+                            w.attack.total,
+                        )}
+                      </span>
+                      <label className="weapon-note-editor">
+                        <span>Dmg Roll</span>
+                        <input
+                          type="number"
+                          inputMode="numeric"
+                          placeholder="dice"
+                          value={damageRollDrafts[runtimeKey] ?? ""}
+                          onChange={(event) =>
+                            setDamageRollDrafts((prev) => ({
+                              ...prev,
+                              [runtimeKey]: event.target.value,
+                            }))
+                          }
+                        />
+                      </label>
+                      <span className="weapon-crit">
+                        Damage Total {displayedDamageTotal}
+                        {latestAttack?.outcome === "crit"
+                          ? ` (${critMultiplier(w.crit)}×)`
+                          : ""}
+                      </span>
+                    </span>
+                    {onWeaponAttack ? (
+                      <span className="weapon-crit weapon-actions-block">
+                        <button
+                          className="ghost small"
+                          disabled={!weaponCanAttack(w)}
+                          onClick={() =>
+                            onWeaponAttack(
+                              runtimeKey,
+                              w.name,
+                              w.ammoType,
+                              w.ammoPerAttack ?? 1,
+                              weaponAttackNote(w),
+                              w.ammoConsumptions,
+                            )
+                          }
+                        >
+                          Attack
+                        </button>{" "}
+                        {onSetWeaponLoadedAmmo &&
+                        compatibleAmmoEntries(w.ammoType).length > 0 ? (
+                          <>
+                            <button
+                              className="ghost small"
+                              onClick={() =>
+                                onSetWeaponLoadedAmmo(
+                                  w.sourceKind,
+                                  w.sourceIndex,
+                                  undefined,
+                                )
+                              }
+                            >
+                              Base Ammo
+                            </button>{" "}
+                            {compatibleAmmoEntries(w.ammoType).map((entry) => (
+                              <button
+                                key={`${runtimeKey}::${entry.ammoType}`}
+                                className="ghost small"
+                                onClick={() =>
+                                  onSetWeaponLoadedAmmo(
+                                    w.sourceKind,
+                                    w.sourceIndex,
+                                    entry.ammoType,
+                                  )
+                                }
+                              >
+                                {entry.name}
+                              </button>
+                            ))}{" "}
+                          </>
+                        ) : null}
+                        <button
+                          className="ghost small"
+                          disabled={history.length <= 0}
+                          onClick={() =>
+                            onUndoWeaponAttack?.(runtimeKey, w.name)
+                          }
+                        >
+                          Undo Attack
+                        </button>{" "}
+                        <button
+                          className="ghost small"
+                          disabled={history.length <= 0}
+                          onClick={() =>
+                            onTagWeaponAttackOutcome?.(runtimeKey, "hit")
+                          }
+                        >
+                          Hit
+                        </button>{" "}
+                        <button
+                          className="ghost small"
+                          disabled={history.length <= 0}
+                          onClick={() =>
+                            onTagWeaponAttackOutcome?.(runtimeKey, "miss")
+                          }
+                        >
+                          Miss
+                        </button>{" "}
+                        <button
+                          className="ghost small"
+                          disabled={history.length <= 0}
+                          onClick={() =>
+                            onTagWeaponAttackOutcome?.(runtimeKey, "crit")
+                          }
+                        >
+                          Crit
+                        </button>{" "}
+                        {onResetWeaponAttackHistory ? (
+                          <button
+                            className="ghost small"
+                            disabled={history.length <= 0}
+                            onClick={() =>
+                              onResetWeaponAttackHistory(runtimeKey, w.name)
+                            }
+                          >
+                            Reset History
+                          </button>
+                        ) : null}{" "}
+                        {w.ammoType && onResetAmmo ? (
+                          <button
+                            className="ghost small"
+                            onClick={() => onResetAmmo(w.ammoType!)}
+                          >
+                            Restock
+                          </button>
+                        ) : null}
+                        {history.length > 0 && onSetWeaponAttackNote ? (
+                          <span className="weapon-note-editor">
+                            <input
+                              type="text"
+                              placeholder="Damage / result note"
+                              value={noteDraftValue(
+                                `${runtimeKey}::latest`,
+                                latestAttack?.note,
+                              )}
+                              onChange={(event) =>
+                                setAttackNoteDrafts((prev) => ({
+                                  ...prev,
+                                  [`${runtimeKey}::latest`]: event.target.value,
+                                }))
+                              }
+                            />
+                            <button
+                              className="ghost small"
+                              onClick={() =>
+                                saveAttackNote(runtimeKey, latestAttack?.note)
+                              }
+                            >
+                              Save Note
+                            </button>
+                          </span>
+                        ) : null}
+                      </span>
+                    ) : null}
+                    {history.length > 0 ? (
+                      <details className="weapon-history-editor">
+                        <summary>Full History ({history.length})</summary>
+                        <div className="weapon-history-list">
+                          {history
+                            .slice()
+                            .reverse()
+                            .map((entry, historyIndex) => {
+                              const attackId =
+                                entry.id ?? `${runtimeKey}::${historyIndex}`;
+                              const draftKey = `${runtimeKey}::${attackId}`;
+                              return (
+                                <div
+                                  className="weapon-history-item"
+                                  key={attackId}
+                                >
+                                  <div className="weapon-history-head">
+                                    <span className="weapon-history-time">
+                                      {new Date(entry.at).toLocaleTimeString(
+                                        [],
+                                        {
+                                          hour: "numeric",
+                                          minute: "2-digit",
+                                          second: "2-digit",
+                                        },
+                                      )}
+                                    </span>
+                                    <div className="weapon-history-actions">
+                                      <button
+                                        className="ghost small"
+                                        onClick={() =>
+                                          onSetWeaponAttackOutcome?.(
+                                            runtimeKey,
+                                            attackId,
+                                            "hit",
+                                          )
+                                        }
+                                      >
+                                        Hit
+                                      </button>
+                                      <button
+                                        className="ghost small"
+                                        onClick={() =>
+                                          onSetWeaponAttackOutcome?.(
+                                            runtimeKey,
+                                            attackId,
+                                            "miss",
+                                          )
+                                        }
+                                      >
+                                        Miss
+                                      </button>
+                                      <button
+                                        className="ghost small"
+                                        onClick={() =>
+                                          onSetWeaponAttackOutcome?.(
+                                            runtimeKey,
+                                            attackId,
+                                            "crit",
+                                          )
+                                        }
+                                      >
+                                        Crit
+                                      </button>
+                                      {entry.outcome ? (
+                                        <span
+                                          className={`tag outcome ${entry.outcome}`}
+                                        >
+                                          {entry.outcome}
+                                        </span>
+                                      ) : null}
+                                    </div>
+                                  </div>
+                                  <div className="weapon-history-note-row">
+                                    <input
+                                      type="text"
+                                      placeholder="Damage / result note"
+                                      value={noteDraftValue(
+                                        draftKey,
+                                        entry.note,
+                                      )}
+                                      onChange={(event) =>
+                                        setAttackNoteDrafts((prev) => ({
+                                          ...prev,
+                                          [draftKey]: event.target.value,
+                                        }))
+                                      }
+                                    />
+                                    <button
+                                      className="ghost small"
+                                      onClick={() =>
+                                        onSetSpecificWeaponAttackNote &&
+                                        saveSpecificAttackNote(
+                                          runtimeKey,
+                                          attackId,
+                                          entry.note,
+                                        )
+                                      }
+                                    >
+                                      Save Note
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                        </div>
+                      </details>
+                    ) : null}
+                  </span>
+                </div>
+              );
+            })}
           </div>
         </section>
       ) : null}
@@ -139,23 +1287,60 @@ export function Sheet({ sheet }: { sheet: DerivedSheet }) {
           <h2>Skills</h2>
           <div className="skills paper-skill-grid">
             {rankedSkills.map((s) => (
-              <div className="skill" key={s.key}>
-                <span className="skill-name">
-                  {s.name}
-                  {s.isClassSkill ? <span className="tag">class</span> : null}
-                  {s.trainedOnly && !s.usable ? <span className="tag warn">untrained</span> : null}
-                </span>
-                <span className="skill-value">{sign(s.total)}</span>
-              </div>
+              <Tooltip
+                key={s.key}
+                content={breakdownTooltip(sign(s.total), s.breakdown)}
+                className="mf-tooltip-anchor-block"
+              >
+                <div className="skill">
+                  <span className="skill-name">
+                    {s.name}
+                    {s.isClassSkill ? <span className="tag">class</span> : null}
+                    {s.trainedOnly && !s.usable ? (
+                      <span className="tag warn">untrained</span>
+                    ) : null}
+                  </span>
+                  <span className="skill-value">{sign(s.total)}</span>
+                  <label className="sheet-roll-entry skill-roll-entry-inline">
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      placeholder="d20"
+                      aria-label={`${s.name} d20 roll`}
+                      value={skillRollDrafts[s.key] ?? ""}
+                      onChange={(event) =>
+                        setSkillRollDrafts((prev) => ({
+                          ...prev,
+                          [s.key]: event.target.value,
+                        }))
+                      }
+                    />
+                  </label>
+                  <span className="sheet-roll-total">
+                    {checkTotal(skillRollDrafts[s.key], s.total) === undefined
+                      ? "—"
+                      : sign(checkTotal(skillRollDrafts[s.key], s.total) ?? 0)}
+                  </span>
+                </div>
+              </Tooltip>
             ))}
           </div>
         </section>
 
         <div className="sheet-stack">
-          {(feats.length > 0 || features.length > 0 || suppressedFeatures.length > 0) ? (
+          {archetypes.length > 0 ||
+          feats.length > 0 ||
+          features.length > 0 ||
+          suppressedFeatures.length > 0 ? (
             <section className="panel paper-panel">
               <h2>Feats & Special Abilities</h2>
               <div className="acquisitions">
+                {archetypes.map((a, i) => (
+                  <span className="chip feature" key={`arch-${i}`}>
+                    {a.name}
+                    <span className="chip-lvl">L{a.level}</span>
+                  </span>
+                ))}
                 {features.map((f, i) => (
                   <span className="chip feature" key={`feat-${i}`}>
                     {f.name}
@@ -163,13 +1348,19 @@ export function Sheet({ sheet }: { sheet: DerivedSheet }) {
                   </span>
                 ))}
                 {feats.map((f, i) => (
-                  <span className="chip" key={`ft-${i}`}>
-                    {f.name}
-                    <span className="chip-lvl">L{f.level}</span>
-                  </span>
+                  <Tooltip key={`ft-${i}`} content={featTitle(f.name)}>
+                    <span className="chip">
+                      {f.name}
+                      <span className="chip-lvl">L{f.level}</span>
+                    </span>
+                  </Tooltip>
                 ))}
                 {suppressedFeatures.map((f, i) => (
-                  <span className="chip suppressed" key={`sup-${i}`} title={f.reason}>
+                  <span
+                    className="chip suppressed"
+                    key={`sup-${i}`}
+                    title={f.reason}
+                  >
                     {f.name}
                     <span className="chip-lvl">suppressed: {f.reason}</span>
                   </span>
@@ -181,11 +1372,73 @@ export function Sheet({ sheet }: { sheet: DerivedSheet }) {
           <section className="panel paper-panel">
             <h2>Inventory</h2>
             <div className="sheet-stat-grid sheet-stat-grid-compact">
-              <div className="stat-card"><span className="summary-label">Items</span><span className="summary-value">{sheet.inventory.itemCount}</span></div>
-              <div className="stat-card"><span className="summary-label">Equipped</span><span className="summary-value">{sheet.inventory.equippedCount}</span></div>
-              <div className="stat-card"><span className="summary-label">Weight</span><span className="summary-value">{formatWeight(sheet.inventory.totalWeight)}</span></div>
-              <div className="stat-card"><span className="summary-label">Cost</span><span className="summary-value">{formatGp(sheet.inventory.totalCostGp)}</span></div>
+              <div className="stat-card">
+                <span className="summary-label">Items</span>
+                <span className="summary-value">
+                  {sheet.inventory.itemCount}
+                </span>
+              </div>
+              <div className="stat-card">
+                <span className="summary-label">Equipped</span>
+                <span className="summary-value">
+                  {sheet.inventory.equippedCount}
+                </span>
+              </div>
+              <div className="stat-card">
+                <span className="summary-label">Gear Weight</span>
+                <span className="summary-value">
+                  {formatWeight(sheet.inventory.totalWeight)}
+                </span>
+              </div>
+              <div className="stat-card">
+                <span className="summary-label">Gear Cost</span>
+                <span className="summary-value">
+                  {formatGp(sheet.inventory.totalCostGp)}
+                </span>
+              </div>
+              <div className="stat-card">
+                <span className="summary-label">Coinpurse</span>
+                <span className="summary-value">
+                  {formatGp(wealthSummary.liquidWealthGp)}
+                </span>
+              </div>
+              <div className="stat-card">
+                <span className="summary-label">Coin Weight</span>
+                <span className="summary-value">
+                  {formatWeight(wealthSummary.coinWeightLb)}
+                </span>
+              </div>
+              <div className="stat-card">
+                <span className="summary-label">Wishlist</span>
+                <span className="summary-value">
+                  {formatGp(wealthSummary.wishlistCostGp)}
+                </span>
+              </div>
+              <div className="stat-card">
+                <span className="summary-label">Total Wealth</span>
+                <span className="summary-value">
+                  {formatGp(wealthSummary.totalWealthGp)}
+                </span>
+              </div>
             </div>
+            {wealthSummary.pp +
+              wealthSummary.gp +
+              wealthSummary.sp +
+              wealthSummary.cp >
+            0 ? (
+              <p className="hint">
+                Coinpurse: {wealthSummary.pp} pp · {wealthSummary.gp} gp ·{" "}
+                {wealthSummary.sp} sp · {wealthSummary.cp} cp
+              </p>
+            ) : null}
+            {Object.keys(sheet.rangedCombat.ammoByType).length > 0 ? (
+              <p className="hint">
+                Ammo:{" "}
+                {Object.entries(sheet.rangedCombat.ammoByType)
+                  .map(([type, qty]) => `${type} ×${qty}`)
+                  .join(" · ")}
+              </p>
+            ) : null}
             {sheet.inventoryItems.length > 0 ? (
               <div className="inventory-list">
                 {sheet.inventoryItems.map((item, index) => (
@@ -193,27 +1446,194 @@ export function Sheet({ sheet }: { sheet: DerivedSheet }) {
                     <div className="inventory-item-head">
                       <div className="inventory-item-title-row">
                         <strong>{item.name}</strong>
-                        {item.equipped ? <span className="tag">equipped</span> : null}
-                        {item.armor ? <span className="tag feature">{item.armor.category} armor</span> : null}
+                        {item.equipped ? (
+                          <span className="tag">equipped</span>
+                        ) : null}
+                        {item.slot ? (
+                          <span className="tag">
+                            {displayEquipmentSlot(item.slot)}
+                          </span>
+                        ) : null}
+                        {item.armor ? (
+                          <span className="tag feature">
+                            {item.armor.category} armor
+                          </span>
+                        ) : null}
+                        {item.weapon ? (
+                          <span className="tag feature">weapon</span>
+                        ) : null}
+                        {item.carryState ? (
+                          <span className="tag feature">{item.carryState}</span>
+                        ) : null}
+                        {item.containerName ? (
+                          <span className="tag feature">in {item.containerName}</span>
+                        ) : null}
+                        {typeof item.containerCapacityLb === "number" ? (
+                          <span className="tag feature">
+                            container {formatWeight(item.containerCapacityLb)}
+                          </span>
+                        ) : null}
+                        {item.componentCategory ? (
+                          <span className="tag feature">
+                            {item.componentCategory}
+                          </span>
+                        ) : null}
+                        {item.spellTriggerNames?.length ? (
+                          <span className="tag feature">
+                            spells {item.spellTriggerNames.join(", ")}
+                          </span>
+                        ) : null}
+                        {item.ammoType ? (
+                          <span className="tag feature">
+                            ammo {item.ammoType}
+                          </span>
+                        ) : null}
+                        {typeof item.usesRemaining === "number" ||
+                        typeof item.usesMax === "number" ? (
+                          <span className="tag feature">
+                            uses {item.usesRemaining ?? 0}/{item.usesMax ?? 0}
+                          </span>
+                        ) : null}
                       </div>
                       <span className="inventory-qty">×{item.quantity}</span>
                     </div>
                     <div className="inventory-item-stats">
-                      <span>Weight: {formatWeight(item.totalWeight)}{item.quantity > 1 ? ` (${formatWeight(item.weightEach)} each)` : ""}</span>
-                      <span>Cost: {formatGp(item.totalCostGp)}{item.quantity > 1 ? ` (${formatGp(item.costEachGp)} each)` : ""}</span>
+                      <span>
+                        Weight: {formatWeight(item.totalWeight)}
+                        {item.quantity > 1
+                          ? ` (${formatWeight(item.weightEach)} each)`
+                          : ""}
+                      </span>
+                      <span>
+                        Cost: {formatGp(item.totalCostGp)}
+                        {item.quantity > 1
+                          ? ` (${formatGp(item.costEachGp)} each)`
+                          : ""}
+                      </span>
                     </div>
                     {item.armor ? (
                       <div className="inventory-armor-details">
-                        <span className="chip">Max Dex: {item.armor.maxDexBonus ?? "—"}</span>
-                        <span className="chip">ACP: {item.armor.checkPenalty ?? 0}</span>
-                        <span className="chip">Speed Penalty: {item.armor.speedPenalty ? `${item.armor.speedPenalty} ft` : "—"}</span>
+                        <span className="chip">
+                          Armor AC: {item.armor.acBonus ?? 0}
+                        </span>
+                        <span className="chip">
+                          Max Dex: {item.armor.maxDexBonus ?? "—"}
+                        </span>
+                        <span className="chip">
+                          ACP: {item.armor.checkPenalty ?? 0}
+                        </span>
+                        <span className="chip">
+                          Speed Penalty:{" "}
+                          {item.armor.speedPenalty
+                            ? `${sign(-item.armor.speedPenalty)} ft`
+                            : "—"}
+                        </span>
+                      </div>
+                    ) : null}
+                    {item.shield ? (
+                      <div className="inventory-armor-details">
+                        <span className="chip">
+                          Shield AC: {item.shield.acBonus ?? 0}
+                        </span>
+                        <span className="chip">
+                          Shield ACP: {item.shield.checkPenalty ?? 0}
+                        </span>
+                      </div>
+                    ) : null}
+                    {item.ammoType && !item.weapon ? (
+                      <div className="inventory-armor-details">
+                        <span className="chip">
+                          Ammo Stack: {item.ammoType}
+                        </span>
+                      </div>
+                    ) : null}
+                    {typeof item.usesRemaining === "number" ||
+                    typeof item.usesMax === "number" ? (
+                      <div className="inventory-armor-details">
+                        <span className="chip">
+                          Uses: {item.usesRemaining ?? 0}/{item.usesMax ?? 0}
+                        </span>
+                      </div>
+                    ) : null}
+                    {item.weapon ? (
+                      <div className="inventory-armor-details">
+                        <span className="chip">
+                          Weapon: {item.weapon.category}
+                        </span>
+                        <span className="chip">
+                          Damage: {item.weapon.damageDice}
+                        </span>
+                        <span className="chip">
+                          Prof: {item.weapon.proficiencyGroup ?? "—"}
+                        </span>
+                        <span className="chip">
+                          Crit:{" "}
+                          {(item.weapon.critRange ?? 20) >= 20
+                            ? "20"
+                            : `${item.weapon.critRange}-20`}
+                          /x{item.weapon.critMultiplier ?? 2}
+                        </span>
+                        {item.weapon.rangeIncrementFeet ? (
+                          <span className="chip">
+                            Range: {item.weapon.rangeIncrementFeet} ft
+                          </span>
+                        ) : null}
+                        {item.weapon.damageTypes?.length ? (
+                          <span className="chip">
+                            Type: {compactDamageTypes(item.weapon.damageTypes)}
+                          </span>
+                        ) : null}
+                        {item.weapon.specialTags?.length ? (
+                          <span className="chip">
+                            Tags: {compactWeaponTags(item.weapon.specialTags)}
+                          </span>
+                        ) : null}
+                        {item.weapon.ammoType ? (
+                          <span className="chip">
+                            Ammo Type: {item.weapon.ammoType}
+                          </span>
+                        ) : null}
+                        {item.weapon.loadedAmmoType ? (
+                          <span className="chip">
+                            Loaded: {item.weapon.loadedAmmoType}
+                          </span>
+                        ) : null}
+                        {weaponAmmoUxLabel(item.weapon) ? (
+                          <span className="chip">
+                            Load: {weaponAmmoUxLabel(item.weapon)}
+                          </span>
+                        ) : null}
+                        {item.weapon.reloadType ? (
+                          <span className="chip">
+                            Reload: {item.weapon.reloadType}
+                          </span>
+                        ) : null}
+                        {item.weapon.weaponTechnology ? (
+                          <span className="chip">
+                            Tech: {item.weapon.weaponTechnology}
+                          </span>
+                        ) : null}
+                        {item.weapon.ordnanceProfile ? (
+                          <span className="chip">
+                            Payload: {[
+                              item.weapon.ordnanceProfile.saveDc && item.weapon.ordnanceProfile.saveType
+                                ? `DC ${item.weapon.ordnanceProfile.saveDc} ${item.weapon.ordnanceProfile.saveType.toUpperCase()}`
+                                : undefined,
+                              item.weapon.ordnanceProfile.area,
+                            ]
+                              .filter(Boolean)
+                              .join(" · ")}
+                          </span>
+                        ) : null}
                       </div>
                     ) : null}
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="hint">No inventory yet. Bold strategy for an adventurer.</p>
+              <p className="hint">
+                No inventory yet. Bold strategy for an adventurer.
+              </p>
             )}
           </section>
         </div>
@@ -223,34 +1643,239 @@ export function Sheet({ sheet }: { sheet: DerivedSheet }) {
         <section className="panel paper-panel">
           <h2>Spellcasting</h2>
           <div className="spell-sheet-grid">
-            {sheet.spellcasting.map((c, i) => (
-              <div className="spell-sheet-card" key={i}>
-                <div className="editor-section-head tight">
-                  <h3>{c.className}</h3>
-                  <span className="paper-badge">{c.castingType}</span>
+            {sheet.spellcasting.map((c, i) => {
+              const classKey = c.className.toLowerCase();
+              const levels = Object.keys(c.selectionDiagnostics)
+                .map(Number)
+                .sort((a, b) => a - b);
+              return (
+                <div className="spell-sheet-card" key={i}>
+                  <div className="editor-section-head tight">
+                    <h3>{c.className}</h3>
+                    <span className="paper-badge">{c.castingType}</span>
+                  </div>
+                  <div className="spell-sheet-meta spell-sheet-meta-cards">
+                    <div className="spell-summary-card">
+                      <span className="spell-summary-label">Caster Level</span>
+                      <strong>{c.casterLevel}</strong>
+                    </div>
+                    <div className="spell-summary-card">
+                      <span className="spell-summary-label">Casting Stat</span>
+                      <strong>
+                        {c.castingAbility.toUpperCase()} {c.castingAbilityScore}
+                      </strong>
+                    </div>
+                    <div className="spell-summary-card">
+                      <span className="spell-summary-label">Concentration</span>
+                      <strong>{sign(c.concentration.total)}</strong>
+                    </div>
+                    <div className="spell-summary-card">
+                      <span className="spell-summary-label">Slots</span>
+                      <strong>{compactByLevel(c.slotsRemaining)}</strong>
+                    </div>
+                    {c.domains.length > 0 ? (
+                      <span className="chip">
+                        Domains: {displayDomainNames(c.domains).join(", ")}
+                      </span>
+                    ) : null}
+                    {c.specialistSchool ? (
+                      <span className="chip">
+                        School: {displaySchoolName(c.specialistSchool)}
+                      </span>
+                    ) : null}
+                  </div>
+                  <div className="spell-level-list">
+                    {levels.map((level) => {
+                      const diag = c.selectionDiagnostics[level];
+                      if (!diag) return null;
+                      const selected =
+                        c.castingType === "prepared"
+                          ? (c.selectedPreparedSpells[level] ?? [])
+                          : (c.selectedKnownSpells[level] ?? []);
+                      const library = c.librarySpells[level] ?? [];
+                      const granted = c.grantedSpells[level] ?? [];
+                      const castables = uniqueSpellNames(
+                        selected.length > 0
+                          ? selected
+                          : [...granted, ...library],
+                      );
+                      const slotsMax = c.spellsPerDay[level] ?? 0;
+                      const slotsLeft = c.slotsRemaining[level] ?? slotsMax;
+                      const spellDc = c.spellSaveDcs[level];
+                      const castHistory = spellCastCounts?.[classKey]?.[level];
+                      const canSpendSlot = diag.isAtWill || slotsLeft > 0;
+                      return (
+                        <details
+                          className="spell-level-sheet-block spell-level-details"
+                          key={`${classKey}-${level}`}
+                          open
+                        >
+                          <summary className="spell-level-summary-head spell-level-sheet-head">
+                            <div>
+                              <div className="subsection-title spell-level-sheet-title">
+                                Level {level}
+                              </div>
+                              <div className="spell-level-sheet-stats">
+                                <span>
+                                  {diag.isAtWill
+                                    ? "At will"
+                                    : `${slotsLeft}/${slotsMax} slots left`}
+                                </span>
+                                {spellDc ? <span>DC {spellDc}</span> : null}
+                                {diag.capacity > 0 ? (
+                                  <span>
+                                    {selected.length}/{diag.capacity} ready
+                                  </span>
+                                ) : null}
+                                {c.bonusSpellsPerDay[level] ? (
+                                  <span>
+                                    Bonus +{c.bonusSpellsPerDay[level]}
+                                  </span>
+                                ) : null}
+                                {c.extraSlotsPerDay[level] ? (
+                                  <span>
+                                    Extra +{c.extraSlotsPerDay[level]}
+                                  </span>
+                                ) : null}
+                              </div>
+                            </div>
+                            <div className="spell-level-head-meta">
+                              {!diag.isAtWill && slotsMax > 0 ? (
+                                <span>Reset below</span>
+                              ) : (
+                                <span>Open to cast</span>
+                              )}
+                            </div>
+                          </summary>
+
+                          <div className="spell-level-sheet-actions">
+                            {!diag.isAtWill && slotsMax > 0 ? (
+                              <button
+                                className="ghost small"
+                                onClick={() =>
+                                  onResetSpellSlotLevel?.(classKey, level)
+                                }
+                              >
+                                Reset Slots
+                              </button>
+                            ) : null}
+                          </div>
+
+                          {castables.length > 0 ? (
+                            <div className="spell-chip-section spell-cast-panel">
+                              <div className="spell-chip-label">
+                                Ready To Cast
+                              </div>
+                              <div className="spell-chip-list">
+                                {castables.map((spellName) => (
+                                  <Tooltip
+                                    key={`${classKey}-${level}-${spellName}`}
+                                    content={spellTitle(spellName)}
+                                  >
+                                    <button
+                                      className="spell-cast-chip spell-cast-chip-large"
+                                      type="button"
+                                      disabled={!canSpendSlot}
+                                      onClick={() =>
+                                        onCastSpell?.(
+                                          classKey,
+                                          level,
+                                          slotsMax,
+                                          spellName,
+                                          slotsLeft,
+                                        )
+                                      }
+                                    >
+                                      {displaySpellName(spellName)}
+                                    </button>
+                                  </Tooltip>
+                                ))}
+                              </div>
+                            </div>
+                          ) : (
+                            <p className="hint">
+                              No spells queued here yet. Wizard admin failure.
+                            </p>
+                          )}
+
+                          {selected.length > 0 ? (
+                            <div className="spell-chip-section">
+                              <div className="spell-chip-label">
+                                {c.castingType === "prepared"
+                                  ? "Prepared Today"
+                                  : "Known Right Now"}
+                              </div>
+                              <div className="spell-chip-list readonly">
+                                {selected.map((spellName, index) => (
+                                  <Tooltip
+                                    key={`${classKey}-${level}-selected-${index}`}
+                                    content={spellTitle(spellName)}
+                                  >
+                                    <span className="spell-name-chip">
+                                      {displaySpellName(spellName)}
+                                    </span>
+                                  </Tooltip>
+                                ))}
+                              </div>
+                            </div>
+                          ) : null}
+
+                          {granted.length > 0 ? (
+                            <div className="spell-chip-section">
+                              <div className="spell-chip-label">
+                                Always Available / Granted
+                              </div>
+                              <div className="spell-chip-list readonly">
+                                {granted.map((spellName, index) => (
+                                  <Tooltip
+                                    key={`${classKey}-${level}-granted-${index}`}
+                                    content={spellTitle(spellName)}
+                                  >
+                                    <span className="spell-name-chip accent">
+                                      {displaySpellName(spellName)}
+                                    </span>
+                                  </Tooltip>
+                                ))}
+                              </div>
+                            </div>
+                          ) : null}
+
+                          {library.length > 0 ? (
+                            <details className="spell-reference-details">
+                              <summary>
+                                Reference library ({library.length})
+                              </summary>
+                              <div className="spell-chip-list readonly spell-reference-list">
+                                {library.map((spellName, index) => (
+                                  <Tooltip
+                                    key={`${classKey}-${level}-library-${index}`}
+                                    content={spellTitle(spellName)}
+                                  >
+                                    <span className="spell-name-chip">
+                                      {displaySpellName(spellName)}
+                                    </span>
+                                  </Tooltip>
+                                ))}
+                              </div>
+                            </details>
+                          ) : null}
+
+                          {castHistory ? (
+                            <div
+                              className="spell-cast-history"
+                              title={compactSpellCastHistory(castHistory)}
+                            >
+                              Cast this session:{" "}
+                              {compactSpellCastHistory(castHistory)}
+                            </div>
+                          ) : null}
+                        </details>
+                      );
+                    })}
+                  </div>
                 </div>
-                <div className="skills single-column-skills">
-                  <div className="skill"><span className="skill-name">Caster Level</span><span className="skill-value">{c.casterLevel}</span></div>
-                  <div className="skill"><span className="skill-name">Casting Stat</span><span className="skill-value">{c.castingAbility.toUpperCase()}</span></div>
-                  <div className="skill"><span className="skill-name">Concentration</span><span className="skill-value">{sign(c.concentration.total)}</span></div>
-                  <div className="skill"><span className="skill-name">Spells / Day</span><span className="skill-value">{compactByLevel(c.spellsPerDay)}</span></div>
-                  <div className="skill"><span className="skill-name">Slots Left</span><span className="skill-value">{compactByLevel(c.slotsRemaining)}</span></div>
-                  <div className="skill"><span className="skill-name">Bonus Slots</span><span className="skill-value">{compactByLevel(c.bonusSpellsPerDay)}</span></div>
-                  <div className="skill"><span className="skill-name">Library</span><span className="skill-value">{compactSpellNames(c.librarySpells)}</span></div>
-                  {c.castingType === "prepared" ? (
-                    <>
-                      <div className="skill"><span className="skill-name">Prep Capacity</span><span className="skill-value">{compactByLevel(c.preparedCapacity)}</span></div>
-                      <div className="skill"><span className="skill-name">Prepared</span><span className="skill-value">{compactSpellNames(c.selectedPreparedSpells)}</span></div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="skill"><span className="skill-name">Spells Known</span><span className="skill-value">{compactByLevel(c.spellsKnown)}</span></div>
-                      <div className="skill"><span className="skill-name">Known Picks</span><span className="skill-value">{compactSpellNames(c.selectedKnownSpells)}</span></div>
-                    </>
-                  )}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
       ) : null}

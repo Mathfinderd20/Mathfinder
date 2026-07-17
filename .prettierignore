@@ -1,0 +1,10 @@
+node_modules/
+dist/
+coverage/
+package-lock.json
+.tmp-pydeps/
+tmp-*
+tmp_*.txt
+1)
+m[0])
+x[1])

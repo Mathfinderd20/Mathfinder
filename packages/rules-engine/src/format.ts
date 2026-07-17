@@ -1,6 +1,13 @@
 import type { AbilityKey, DerivedSheet, DerivedStat } from "./types";
 
-const ABILITY_ORDER: readonly AbilityKey[] = ["str", "dex", "con", "int", "wis", "cha"];
+const ABILITY_ORDER: readonly AbilityKey[] = [
+  "str",
+  "dex",
+  "con",
+  "int",
+  "wis",
+  "cha",
+];
 
 function sign(n: number): string {
   return n >= 0 ? `+${n}` : `${n}`;
@@ -27,7 +34,9 @@ export function renderSheet(sheet: DerivedSheet): string {
   lines.push(abilityCols.join("   "));
   lines.push("");
 
-  lines.push(`HP ${sheet.hitPoints.total}    Speed ${sheet.speed.total} ft    Init ${sign(sheet.initiative.total)}`);
+  lines.push(
+    `HP ${sheet.hitPoints.total}    Speed ${sheet.speed.total} ft    Init ${sign(sheet.initiative.total)}`,
+  );
   lines.push(
     `AC ${sheet.ac.normal.total}   Touch ${sheet.ac.touch.total}   Flat-Footed ${sheet.ac.flatFooted.total}`,
   );
@@ -52,8 +61,13 @@ export function renderSheet(sheet: DerivedSheet): string {
     lines.push(`  ${s.name.padEnd(24)} ${sign(s.total).padStart(4)}${tagStr}`);
   }
 
+  const archetypes = sheet.descriptor.archetypes.map((f) => f.name);
   const feats = sheet.descriptor.feats.map((f) => f.name);
   const features = sheet.descriptor.features.map((f) => f.name);
+  if (archetypes.length) {
+    lines.push("");
+    lines.push(`Archetypes: ${archetypes.join(", ")}`);
+  }
   if (feats.length) {
     lines.push("");
     lines.push(`Feats: ${feats.join(", ")}`);

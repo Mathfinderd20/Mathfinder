@@ -24,8 +24,12 @@ describe("abilityModifier", () => {
 
 describe("resolveModifiers stacking rules", () => {
   it("same typed bonus does not stack: take the highest", () => {
-    expect(resolveModifiers([m("enhancement", 1), m("enhancement", 2)]).total).toBe(2);
-    expect(resolveModifiers([m("competence", 3), m("competence", 2)]).total).toBe(3);
+    expect(
+      resolveModifiers([m("enhancement", 1), m("enhancement", 2)]).total,
+    ).toBe(2);
+    expect(
+      resolveModifiers([m("competence", 3), m("competence", 2)]).total,
+    ).toBe(3);
   });
 
   it("dodge bonuses stack", () => {
@@ -33,7 +37,9 @@ describe("resolveModifiers stacking rules", () => {
   });
 
   it("circumstance bonuses stack", () => {
-    expect(resolveModifiers([m("circumstance", 2), m("circumstance", 2)]).total).toBe(4);
+    expect(
+      resolveModifiers([m("circumstance", 2), m("circumstance", 2)]).total,
+    ).toBe(4);
   });
 
   it("untyped bonuses stack", () => {
@@ -41,7 +47,9 @@ describe("resolveModifiers stacking rules", () => {
   });
 
   it("different types stack with each other", () => {
-    expect(resolveModifiers([m("enhancement", 2), m("dodge", 1)]).total).toBe(3);
+    expect(resolveModifiers([m("enhancement", 2), m("dodge", 1)]).total).toBe(
+      3,
+    );
   });
 
   it("penalties always stack, even same-type", () => {
@@ -50,7 +58,9 @@ describe("resolveModifiers stacking rules", () => {
 
   it("a penalty applies alongside the highest same-type bonus", () => {
     // highest enhancement bonus (+3) plus a stacking penalty (-1)
-    expect(resolveModifiers([m("enhancement", 3), m("enhancement", -1)]).total).toBe(2);
+    expect(
+      resolveModifiers([m("enhancement", 3), m("enhancement", -1)]).total,
+    ).toBe(2);
   });
 
   it("ignores disabled modifiers", () => {
@@ -80,7 +90,12 @@ describe("modifiersFor target aliasing", () => {
   it("expands attack to melee and ranged", () => {
     const mods: Modifier[] = [
       { type: "morale", value: 1, source: "Bless", target: "attack" },
-      { type: "untyped", value: 1, source: "Weapon Focus", target: "attack.melee" },
+      {
+        type: "untyped",
+        value: 1,
+        source: "Weapon Focus",
+        target: "attack.melee",
+      },
     ];
     expect(modifiersFor(mods, "attack.melee")).toHaveLength(2);
     expect(modifiersFor(mods, "attack.ranged")).toHaveLength(1);

@@ -1,7 +1,10 @@
 import type { Encumbrance, LoadBand } from "./types";
 
 /** PF1e carrying capacity table for Medium bipeds, Str 1-29. */
-const LOAD_TABLE: Record<number, [light: number, medium: number, heavy: number]> = {
+const LOAD_TABLE: Record<
+  number,
+  [light: number, medium: number, heavy: number]
+> = {
   1: [3, 6, 10],
   2: [6, 13, 20],
   3: [10, 20, 30],
@@ -52,14 +55,22 @@ export function loadThresholds(strScore: number): {
   };
 }
 
-export function loadBand(carriedWeight: number, heavyMax: number, mediumMax: number, lightMax: number): LoadBand {
+export function loadBand(
+  carriedWeight: number,
+  heavyMax: number,
+  mediumMax: number,
+  lightMax: number,
+): LoadBand {
   if (carriedWeight <= lightMax) return "light";
   if (carriedWeight <= mediumMax) return "medium";
   if (carriedWeight <= heavyMax) return "heavy";
   return "overloaded";
 }
 
-export function deriveEncumbrance(strScore: number, carriedWeight = 0): Encumbrance {
+export function deriveEncumbrance(
+  strScore: number,
+  carriedWeight = 0,
+): Encumbrance {
   const { lightMax, mediumMax, heavyMax } = loadThresholds(strScore);
   return {
     carriedWeight,
