@@ -27,12 +27,7 @@ import {
   type ClassRegistry,
   type SaveKind,
 } from "./classes";
-import {
-  featEffects,
-  FEATS,
-  type FeatGrantKind,
-  type FeatRegistry,
-} from "../content/feats";
+import { featEffects, FEATS, type FeatRegistry } from "../content/feats";
 import {
   domainExtraSlots,
   getDomain,
@@ -366,10 +361,7 @@ function isWeaponProficient(
 ): boolean {
   if (specificWeaponProficiencies.has(normalizeWeaponName(weapon.name)))
     return true;
-  const effectiveGroup = effectiveWeaponProficiencyGroup(
-    weapon,
-    campaignRules,
-  );
+  const effectiveGroup = effectiveWeaponProficiencyGroup(weapon, campaignRules);
   if (effectiveGroup) return weaponProficiencies.has(effectiveGroup);
   return true;
 }
@@ -547,11 +539,15 @@ function analyzeContainers(equipment: EquipmentEntry[] | undefined) {
   }
   const duplicateNames = [...containerNameCounts.entries()]
     .filter(([, count]) => count > 1)
-    .map(([normalizedName]) =>
-      containers.find((entry) => entry.normalizedName === normalizedName)?.name,
+    .map(
+      ([normalizedName]) =>
+        containers.find((entry) => entry.normalizedName === normalizedName)
+          ?.name,
     )
     .filter((name): name is string => !!name);
-  const availableNames = new Set(containers.map((entry) => entry.normalizedName));
+  const availableNames = new Set(
+    containers.map((entry) => entry.normalizedName),
+  );
   const missingAssignments = owned.filter((item) => {
     const containerName = item.containerName?.trim().toLowerCase();
     return !!containerName && !availableNames.has(containerName);
@@ -566,7 +562,8 @@ function analyzeContainers(equipment: EquipmentEntry[] | undefined) {
         .filter(
           (item) =>
             item !== container.item &&
-            item.containerName?.trim().toLowerCase() === container.normalizedName,
+            item.containerName?.trim().toLowerCase() ===
+              container.normalizedName,
         )
         .reduce(
           (sum, item) => sum + (item.weight ?? 0) * equipmentQuantity(item),
@@ -590,37 +587,40 @@ function equippedWeaponsFromEquipment(
   equipment: EquipmentEntry[] | undefined,
 ): Weapon[] {
   return (equipment ?? []).flatMap((item, index) => {
-    if (!item.equipped || item.carryState === "cached" || !item.weapon) return [];
-    return [{
-      name: item.name,
-      weaponTemplateId: item.weapon.weaponTemplateId,
-      category: item.weapon.category ?? "melee",
-      proficiencyGroup: item.weapon.proficiencyGroup,
-      damageDice: item.weapon.damageDice ?? "1d6",
-      handedness: item.weapon.handedness,
-      critRange: item.weapon.critRange,
-      critMultiplier: item.weapon.critMultiplier,
-      rangeIncrementFeet: item.weapon.rangeIncrementFeet,
-      damageTypes: item.weapon.damageTypes,
-      specialTags: item.weapon.specialTags,
-      ammoType: item.weapon.ammoType,
-      loadedAmmoType: item.weapon.loadedAmmoType,
-      ammoPerAttack: item.weapon.ammoPerAttack,
-      ammoConsumptions: item.weapon.ammoConsumptions,
-      reloadType: item.weapon.reloadType,
-      firearmCategory: item.weapon.firearmCategory,
-      weaponTechnology: item.weapon.weaponTechnology,
-      attackModifier: item.weapon.attackModifier,
-      extraDamageDice: item.weapon.extraDamageDice,
-      ammoNotes: item.weapon.ammoNotes,
-      ordnanceProfile: item.weapon.ordnanceProfile,
-      sourceKind: "equipment" as const,
-      sourceIndex: index,
-      misfire: item.weapon.misfire,
-      targetsTouchAcWithinFirstRangeIncrement:
-        item.weapon.targetsTouchAcWithinFirstRangeIncrement,
-      damageAbility: item.weapon.damageAbility,
-    }];
+    if (!item.equipped || item.carryState === "cached" || !item.weapon)
+      return [];
+    return [
+      {
+        name: item.name,
+        weaponTemplateId: item.weapon.weaponTemplateId,
+        category: item.weapon.category ?? "melee",
+        proficiencyGroup: item.weapon.proficiencyGroup,
+        damageDice: item.weapon.damageDice ?? "1d6",
+        handedness: item.weapon.handedness,
+        critRange: item.weapon.critRange,
+        critMultiplier: item.weapon.critMultiplier,
+        rangeIncrementFeet: item.weapon.rangeIncrementFeet,
+        damageTypes: item.weapon.damageTypes,
+        specialTags: item.weapon.specialTags,
+        ammoType: item.weapon.ammoType,
+        loadedAmmoType: item.weapon.loadedAmmoType,
+        ammoPerAttack: item.weapon.ammoPerAttack,
+        ammoConsumptions: item.weapon.ammoConsumptions,
+        reloadType: item.weapon.reloadType,
+        firearmCategory: item.weapon.firearmCategory,
+        weaponTechnology: item.weapon.weaponTechnology,
+        attackModifier: item.weapon.attackModifier,
+        extraDamageDice: item.weapon.extraDamageDice,
+        ammoNotes: item.weapon.ammoNotes,
+        ordnanceProfile: item.weapon.ordnanceProfile,
+        sourceKind: "equipment" as const,
+        sourceIndex: index,
+        misfire: item.weapon.misfire,
+        targetsTouchAcWithinFirstRangeIncrement:
+          item.weapon.targetsTouchAcWithinFirstRangeIncrement,
+        damageAbility: item.weapon.damageAbility,
+      },
+    ];
   });
 }
 
@@ -875,7 +875,9 @@ export function buildCharacter(
 
   // Equipment-derived legality context.
   let armorCategory: "none" | "light" | "medium" | "heavy" = "none";
-  for (const item of equippedArmorEntries((build.equipment ?? []).filter(equipmentIsOwned))) {
+  for (const item of equippedArmorEntries(
+    (build.equipment ?? []).filter(equipmentIsOwned),
+  )) {
     const cat = item.armor?.category;
     if (cat === "heavy") armorCategory = "heavy";
     else if (cat === "medium" && armorCategory !== "heavy")
@@ -1985,8 +1987,7 @@ function featSlotsForClassLevel(
     });
   }
   if (normalizedClass === "fighter") {
-    const nextFighterLevel =
-      (classLevelCounts(build).get("fighter") ?? 0) + 1;
+    const nextFighterLevel = (classLevelCounts(build).get("fighter") ?? 0) + 1;
     if (nextFighterLevel === 1 || nextFighterLevel % 2 === 0) {
       slots.push({
         kind: "fighter-bonus",

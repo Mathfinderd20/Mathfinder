@@ -29,6 +29,11 @@ Useful commands:
 - `npm run content:refresh:web` — export current local DB state into the committed web runtime asset
 - `npm run content:verify:web` — verify the runtime asset shape without touching the DB
 
+CI also enforces the content contract:
+
+- the committed runtime asset must be structurally valid
+- content-affecting source/export changes must include a refreshed `apps/web/public/usable-content.json`
+
 See [`CONTENT_PIPELINE.md`](./CONTENT_PIPELINE.md) for the real source-of-truth rules and commit policy.
 
 ## Decisions Locked

@@ -19,6 +19,7 @@
     "content:db:seed-local": "npm run db:seed-local --workspace @mathfinder/content-db",
     "content:export:web": "npm run db:export:usable-json --workspace @mathfinder/content-db -- ../../apps/web/public/usable-content.json",
     "content:verify:web": "node ./scripts/verify-usable-content.mjs",
+    "content:check-contract": "node ./scripts/check-content-contract.mjs",
     "content:refresh:web": "npm run content:export:web && npm run content:verify:web",
     "content:bootstrap": "npm run content:db:init && npm run content:db:seed-local && npm run content:refresh:web",
     "web:forever": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/dev-web-forever.ps1",

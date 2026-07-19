@@ -11,7 +11,6 @@ import {
   listFeats,
   resolveActivatableSelections,
   SKILL_DEFINITIONS,
-  spellEffectResourceLabel,
   spellEffectResourceMax,
   equipmentWeaponTemplate,
   validateBuild,
@@ -259,7 +258,9 @@ function normalizeBuild(build: CharacterBuild): CharacterBuild {
           kind: item.kind ?? "mundane",
           ownership: item.ownership ?? "owned",
           carryState: item.carryState ?? (item.equipped ? "carried" : "stowed"),
-          spellTriggerNames: (item.spellTriggerNames ?? []).map((name) => name.trim()).filter(Boolean),
+          spellTriggerNames: (item.spellTriggerNames ?? [])
+            .map((name) => name.trim())
+            .filter(Boolean),
         };
       }
       const magicItem = getRuntimeMagicItem(item.itemTemplateId);
@@ -273,7 +274,9 @@ function normalizeBuild(build: CharacterBuild): CharacterBuild {
                 ...item,
                 kind: "mundane",
                 ownership: item.ownership ?? "owned",
-                spellTriggerNames: (item.spellTriggerNames ?? []).map((name) => name.trim()).filter(Boolean),
+                spellTriggerNames: (item.spellTriggerNames ?? [])
+                  .map((name) => name.trim())
+                  .filter(Boolean),
                 itemTemplateId: armorItem.id,
                 name: armorItem.name,
                 weight: armorItem.weightLb,
@@ -289,7 +292,9 @@ function normalizeBuild(build: CharacterBuild): CharacterBuild {
                 ...item,
                 kind: "mundane",
                 ownership: item.ownership ?? "owned",
-                spellTriggerNames: (item.spellTriggerNames ?? []).map((name) => name.trim()).filter(Boolean),
+                spellTriggerNames: (item.spellTriggerNames ?? [])
+                  .map((name) => name.trim())
+                  .filter(Boolean),
                 itemTemplateId: armorItem.id,
                 name: armorItem.name,
                 weight: armorItem.weightLb,
@@ -319,7 +324,9 @@ function normalizeBuild(build: CharacterBuild): CharacterBuild {
               ...item,
               kind: "mundane",
               ownership: item.ownership ?? "owned",
-              spellTriggerNames: (item.spellTriggerNames ?? []).map((name) => name.trim()).filter(Boolean),
+              spellTriggerNames: (item.spellTriggerNames ?? [])
+                .map((name) => name.trim())
+                .filter(Boolean),
               carryState:
                 item.carryState ?? (item.equipped ? "carried" : "stowed"),
               itemTemplateId: mundaneItem.id,
@@ -336,7 +343,9 @@ function normalizeBuild(build: CharacterBuild): CharacterBuild {
         ...item,
         kind: "magic",
         ownership: item.ownership ?? "owned",
-        spellTriggerNames: (item.spellTriggerNames ?? []).map((name) => name.trim()).filter(Boolean),
+        spellTriggerNames: (item.spellTriggerNames ?? [])
+          .map((name) => name.trim())
+          .filter(Boolean),
         itemTemplateId: template.itemTemplateId,
         name: template.name,
         weight: template.weight,
@@ -439,7 +448,9 @@ function runtimeWeaponOptions(build: CharacterBuild) {
   );
 }
 
-function syncTemplatedWeaponsToCampaignRules(build: CharacterBuild): CharacterBuild {
+function syncTemplatedWeaponsToCampaignRules(
+  build: CharacterBuild,
+): CharacterBuild {
   const weaponById = new Map(
     runtimeWeaponOptions(build).map((weapon) => [weapon.id, weapon] as const),
   );
@@ -518,7 +529,9 @@ function loadBuildSlots(): SavedBuildSlot[] {
     return Array.isArray(parsed)
       ? parsed.map((slot) => ({
           ...slot,
-          build: syncTemplatedWeaponsToCampaignRules(normalizeBuild(slot.build)),
+          build: syncTemplatedWeaponsToCampaignRules(
+            normalizeBuild(slot.build),
+          ),
         }))
       : [];
   } catch {
@@ -847,8 +860,14 @@ export function App() {
     setBuild((prev) => {
       const item = prev.equipment?.[index];
       if (!item) return prev;
-      const count = Math.max(1, Math.min(item.quantity ?? 1, Math.floor(quantity)));
-      const nextCoinPurse = spendCoinPurse(prev.coinPurse, (item.costGp ?? 0) * count);
+      const count = Math.max(
+        1,
+        Math.min(item.quantity ?? 1, Math.floor(quantity)),
+      );
+      const nextCoinPurse = spendCoinPurse(
+        prev.coinPurse,
+        (item.costGp ?? 0) * count,
+      );
       if (!nextCoinPurse) return prev;
       const equipment = [...(prev.equipment ?? [])];
       const entry = equipment[index];
@@ -866,7 +885,10 @@ export function App() {
         else equipment.splice(index, 1);
         equipment.unshift(ownedCopy);
       } else {
-        equipment[index] = { ...entry, quantity: (entry.quantity ?? 1) + count };
+        equipment[index] = {
+          ...entry,
+          quantity: (entry.quantity ?? 1) + count,
+        };
       }
       return { ...prev, coinPurse: nextCoinPurse, equipment };
     });
@@ -876,14 +898,20 @@ export function App() {
     setBuild((prev) => {
       const item = prev.equipment?.[index];
       if (!item || (item.ownership ?? "owned") !== "owned") return prev;
-      const count = Math.max(1, Math.min(item.quantity ?? 1, Math.floor(quantity)));
+      const count = Math.max(
+        1,
+        Math.min(item.quantity ?? 1, Math.floor(quantity)),
+      );
       const equipment = [...(prev.equipment ?? [])];
       const remaining = Math.max(0, (item.quantity ?? 1) - count);
       if (remaining > 0) equipment[index] = { ...item, quantity: remaining };
       else equipment.splice(index, 1);
       return {
         ...prev,
-        coinPurse: addCoinPurseValue(prev.coinPurse, ((item.costGp ?? 0) * count) / 2),
+        coinPurse: addCoinPurseValue(
+          prev.coinPurse,
+          ((item.costGp ?? 0) * count) / 2,
+        ),
         equipment,
       };
     });
@@ -897,8 +925,17 @@ export function App() {
     remaining: number,
   ) {
     const effect = getSpellEffectByName(spellName);
-    const spellResourceMax = effect ? spellEffectResourceMax(effect, spellEffectContext) : undefined;
-    runtimeCastSpell(classKey, level, max, spellName, remaining, spellResourceMax);
+    const spellResourceMax = effect
+      ? spellEffectResourceMax(effect, spellEffectContext)
+      : undefined;
+    runtimeCastSpell(
+      classKey,
+      level,
+      max,
+      spellName,
+      remaining,
+      spellResourceMax,
+    );
     let consumedItems: Array<{ itemName: string; quantity: number }> = [];
     setBuild((prev) => {
       const equipment = prev.equipment ?? [];
@@ -962,7 +999,11 @@ export function App() {
           : [];
     let nextEquipment = build.equipment ?? [];
     const consumedEntries = fallbackEntries.map((entry) => {
-      const next = consumeAmmoFromEquipment(nextEquipment, entry.ammoType, entry.amount);
+      const next = consumeAmmoFromEquipment(
+        nextEquipment,
+        entry.ammoType,
+        entry.amount,
+      );
       nextEquipment = next.equipment;
       return { ammoType: entry.ammoType, amount: next.consumed };
     });
@@ -984,7 +1025,11 @@ export function App() {
   function undoWeaponAttack(weaponKey: string, weaponName: string) {
     const attacks = weaponAttackHistory[weaponKey] ?? [];
     const last = attacks[attacks.length - 1];
-    if ((last?.ammoEntries ?? []).some((entry) => (ammoSpent[entry.ammoType] ?? 0) > 0)) {
+    if (
+      (last?.ammoEntries ?? []).some(
+        (entry) => (ammoSpent[entry.ammoType] ?? 0) > 0,
+      )
+    ) {
       setBuild((prev) => ({
         ...prev,
         equipment: (last?.ammoEntries ?? []).reduce(
@@ -1003,7 +1048,8 @@ export function App() {
       setBuild((prev) => ({
         ...prev,
         equipment: Object.entries(ammoRestores).reduce(
-          (equipment, [type, amount]) => restoreAmmoToEquipment(equipment, type, amount),
+          (equipment, [type, amount]) =>
+            restoreAmmoToEquipment(equipment, type, amount),
           prev.equipment ?? [],
         ),
       }));
@@ -2039,7 +2085,8 @@ export function App() {
       if (max !== undefined) resourceMaxes[f.id] = max;
     }
     for (const buff of runtimeBuffs) {
-      if (buff.trackerMax !== undefined) resourceMaxes[buff.id] = buff.trackerMax;
+      if (buff.trackerMax !== undefined)
+        resourceMaxes[buff.id] = buff.trackerMax;
       if (buff.trackerLabel) resourceLabels[buff.id] = buff.trackerLabel;
     }
     const resolvedActivatables = resolveActivatableSelections({

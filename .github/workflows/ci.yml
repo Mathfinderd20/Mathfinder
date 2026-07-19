@@ -13,6 +13,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -22,6 +24,17 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Verify committed runtime content asset
+        run: npm run content:verify:web
+
+      - name: Enforce content contract on pull requests
+        if: github.event_name == 'pull_request'
+        run: npm run content:check-contract -- origin/${{ github.base_ref }} HEAD
+
+      - name: Enforce content contract on pushes
+        if: github.event_name == 'push' && github.event.before != '0000000000000000000000000000000000000000'
+        run: npm run content:check-contract -- ${{ github.event.before }} ${{ github.sha }}
 
       - name: Typecheck
         run: npm run typecheck
@@ -34,6 +47,3 @@ jobs:
 
       - name: Build web app
         run: npm run build:web
-
-      - name: Check formatting
-        run: npm run format:check

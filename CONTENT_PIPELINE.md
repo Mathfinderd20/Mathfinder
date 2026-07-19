@@ -124,6 +124,27 @@ Do **not** commit:
 - duplicate intermediate exports
 - raw source files used only for local ingestion
 
+## CI enforcement
+
+GitHub Actions now enforces two parts of the content contract:
+
+1. `npm run content:verify:web`
+   - the committed runtime asset must be structurally valid
+2. `npm run content:check-contract -- <base-ref> <head-ref>`
+   - if canonical rules data or runtime-export normalization logic changed, then `apps/web/public/usable-content.json` must also be updated in the same change
+
+The guarded content-affecting paths are intentionally narrow:
+
+- `packages/rules-data/`
+- `packages/content-db/src/exporter.ts`
+- `packages/content-db/src/seed-local.ts`
+- `packages/content-db/src/armor-normalization.ts`
+- `packages/content-db/src/gear-normalization.ts`
+- `packages/content-db/src/rich-mapping.ts`
+- `packages/content-db/src/overrides.ts`
+
+So if you touch those and forget to refresh the runtime asset, CI will bark at you like it should.
+
 ## Recommended verification before pushing
 
 ```bash
