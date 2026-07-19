@@ -248,7 +248,18 @@ export function computeSheet(input: CharacterInput): DerivedSheet {
     ammoAvailabilityByWeapon: Object.fromEntries(
       (input.weapons ?? []).map((weapon) => {
         const weaponKey = `${weapon.weaponTemplateId?.toLowerCase() ?? weapon.name.toLowerCase()}::${weapon.sourceKind ?? "custom"}::${weapon.sourceIndex ?? -1}`;
-        const availability = (weapon.ammoConsumptions ?? [])
+        const ammoConsumptions =
+          weapon.ammoConsumptions && weapon.ammoConsumptions.length > 0
+            ? weapon.ammoConsumptions
+            : weapon.ammoType && (weapon.ammoPerAttack ?? 0) > 0
+              ? [
+                  {
+                    ammoType: weapon.ammoType,
+                    amount: weapon.ammoPerAttack ?? 1,
+                  },
+                ]
+              : [];
+        const availability = ammoConsumptions
           .filter((entry) => entry.amount > 0)
           .map((entry) => ({
             ammoType: normalizeAmmoType(entry.ammoType),
