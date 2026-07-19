@@ -95,6 +95,7 @@ interface Props {
     featIndex: number,
     value: string,
   ) => void;
+  onApplyPlannerSuggestions: (levelIndex: number) => void;
   onClearPlannedLevelChoices: (levelIndex: number) => void;
   onAddSelection: (classKey: string, mode: SpellMode, level: number) => void;
   onAppendSelection: (
@@ -508,6 +509,7 @@ export function BuildEditorTab(props: Props) {
               onSetCurrentLevel={props.onSetCurrentLevel}
               onUpdateLevelField={props.onUpdateLevelField}
               onSetLevelFeat={props.onSetLevelFeat}
+              onApplyPlannerSuggestions={props.onApplyPlannerSuggestions}
               onClearPlannedLevelChoices={props.onClearPlannedLevelChoices}
             />
           ) : null}

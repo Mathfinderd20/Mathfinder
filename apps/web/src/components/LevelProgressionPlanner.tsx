@@ -26,6 +26,7 @@ interface LevelProgressionPlannerProps {
     featIndex: number,
     value: string,
   ) => void;
+  onApplyPlannerSuggestions: (levelIndex: number) => void;
   onClearPlannedLevelChoices: (levelIndex: number) => void;
 }
 
@@ -69,11 +70,58 @@ function SuggestionButtons<T extends string>(props: {
                   </span>
                 ) : null}
               </span>
-              <span className="planner-suggestion-card-label">{choice.label}</span>
-              <span className="planner-suggestion-card-reason">{choice.reason}</span>
+              <span className="planner-suggestion-card-label">
+                {choice.label}
+              </span>
+              <span className="planner-suggestion-card-reason">
+                {choice.reason}
+              </span>
             </button>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+function SuggestionPreviewList({
+  title,
+  choices,
+}: {
+  title: string;
+  choices: PlannerSuggestionChoice<string>[];
+}) {
+  if (choices.length === 0) return null;
+  return (
+    <div className="planner-suggestion-stack">
+      <div className="planner-suggestion-stack-title">{title}</div>
+      <div className="planner-suggestions planner-suggestions-rich">
+        {choices.map((choice, index) => (
+          <div
+            key={`${choice.value}-${choice.reason}`}
+            className={`planner-suggestion-card tone-${suggestionTone(choice)}`}
+          >
+            <span className="planner-suggestion-card-head">
+              <span className="planner-suggestion-rank">#{index + 1}</span>
+              {choice.sourceLabel ? (
+                <span className="planner-suggestion-source">
+                  {choice.sourceLabel}
+                </span>
+              ) : null}
+              {choice.sourceKind ? (
+                <span className="planner-suggestion-kind">
+                  {choice.sourceKind}
+                </span>
+              ) : null}
+            </span>
+            <span className="planner-suggestion-card-label">
+              {choice.label}
+            </span>
+            <span className="planner-suggestion-card-reason">
+              {choice.reason}
+            </span>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -106,6 +154,7 @@ export function LevelProgressionPlanner({
   onSetCurrentLevel,
   onUpdateLevelField,
   onSetLevelFeat,
+  onApplyPlannerSuggestions,
   onClearPlannedLevelChoices,
 }: LevelProgressionPlannerProps) {
   return (
@@ -178,6 +227,7 @@ export function LevelProgressionPlanner({
                     option.name === (level?.className ?? defaultClass),
                 )?.hitDie ?? 20;
               const suggestions = plannerSuggestions[index] ?? {
+                guideChoices: [],
                 classChoices: [],
                 featChoices: [],
                 favoredClassChoices: [],
@@ -295,23 +345,37 @@ export function LevelProgressionPlanner({
                   </td>
                   <td>
                     {isActive ? (
-                      <select
-                        value={level.favoredClass ?? ""}
-                        onChange={(e) =>
-                          onUpdateLevelField(
-                            index,
-                            "favoredClass",
-                            (e.target.value || undefined) as
-                              | "hp"
-                              | "skill"
-                              | undefined,
-                          )
-                        }
-                      >
-                        <option value="">None</option>
-                        <option value="hp">HP</option>
-                        <option value="skill">Skill</option>
-                      </select>
+                      <>
+                        <select
+                          value={level.favoredClass ?? ""}
+                          onChange={(e) =>
+                            onUpdateLevelField(
+                              index,
+                              "favoredClass",
+                              (e.target.value || undefined) as
+                                | "hp"
+                                | "skill"
+                                | undefined,
+                            )
+                          }
+                        >
+                          <option value="">None</option>
+                          <option value="hp">HP</option>
+                          <option value="skill">Skill</option>
+                        </select>
+                        <SuggestionButtons
+                          title="Recommended favored bonus"
+                          choices={suggestions.favoredClassChoices}
+                          selectedValue={level.favoredClass ?? "none"}
+                          onApply={(value) =>
+                            onUpdateLevelField(
+                              index,
+                              "favoredClass",
+                              value === "none" ? undefined : value,
+                            )
+                          }
+                        />
+                      </>
                     ) : (
                       <span className="planner-empty">—</span>
                     )}
@@ -373,6 +437,12 @@ export function LevelProgressionPlanner({
                         )}
                         <button
                           className="ghost small"
+                          onClick={() => onApplyPlannerSuggestions(index)}
+                        >
+                          Apply Top Picks
+                        </button>
+                        <button
+                          className="ghost small"
                           onClick={() => onClearPlannedLevelChoices(index)}
                         >
                           Clear Picks
@@ -388,6 +458,10 @@ export function LevelProgressionPlanner({
                     )}
                   </td>
                   <td>
+                    <SuggestionPreviewList
+                      title="Guide read"
+                      choices={suggestions.guideChoices}
+                    />
                     <SuggestionNotes notes={suggestions.notes} />
                   </td>
                 </tr>

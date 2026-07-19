@@ -73,8 +73,12 @@ import { GearTab } from "./components/GearTab";
 import { RuntimeControlsPanel } from "./components/RuntimeControlsPanel";
 import { BuildSlotsPanel } from "./components/BuildSlotsPanel";
 import { ValidationPanel } from "./components/ValidationPanel";
-import { buildSuggestions } from "./buildSuggestions";
+import {
+  buildSuggestions,
+  type LevelPlannerSuggestions,
+} from "./buildSuggestions";
 import type { RuntimeProfile } from "./runtimeInsights";
+import { normalizeFeatListLength, plannedFeatSlotsForLevel } from "./featSlots";
 
 const ABILITY_ORDER: readonly AbilityKey[] = [
   "str",
@@ -1121,6 +1125,50 @@ export function App() {
         };
       }),
     }));
+  }
+
+  function applyPlannerSuggestions(
+    levelIndex: number,
+    suggestions: LevelPlannerSuggestions,
+  ) {
+    setBuild((prev) => {
+      const currentLevel = prev.levels[levelIndex];
+      if (!currentLevel) return prev;
+      const nextLevels = [...prev.levels];
+      const nextClassName =
+        suggestions.classChoices[0]?.value ?? currentLevel.className;
+      const nextFavoredClass = suggestions.favoredClassChoices[0]?.value;
+      const nextAbilityIncrease =
+        suggestions.abilityChoices[0]?.value ?? currentLevel.abilityIncrease;
+      nextLevels[levelIndex] = {
+        ...currentLevel,
+        className: nextClassName,
+        favoredClass:
+          nextFavoredClass === "none"
+            ? undefined
+            : (nextFavoredClass ?? currentLevel.favoredClass),
+        abilityIncrease: nextAbilityIncrease,
+      };
+      const previewBuild = { ...prev, levels: nextLevels };
+      const slotCount = plannedFeatSlotsForLevel(
+        previewBuild,
+        levelIndex,
+      ).length;
+      const existingFeats =
+        normalizeFeatListLength(nextLevels[levelIndex]?.feats, slotCount) ??
+        Array.from({ length: slotCount }, () => "");
+      if (slotCount > 0 && suggestions.featChoices[0]?.value) {
+        existingFeats[0] = suggestions.featChoices[0].value;
+      }
+      nextLevels[levelIndex] = {
+        ...nextLevels[levelIndex],
+        feats:
+          slotCount > 0
+            ? normalizeFeatListLength(existingFeats, slotCount)
+            : undefined,
+      };
+      return { ...prev, levels: nextLevels };
+    });
   }
 
   function addStructureLevel() {
@@ -2322,6 +2370,11 @@ export function App() {
           onUpdateLevelField={updateLevelField}
           onUpdateLevelSkillRank={updateLevelSkillRank}
           onSetLevelFeat={setLevelFeat}
+          onApplyPlannerSuggestions={(levelIndex) => {
+            const suggestions = suggestionBundle.planner[levelIndex];
+            if (!suggestions) return;
+            applyPlannerSuggestions(levelIndex, suggestions);
+          }}
           onClearPlannedLevelChoices={clearPlannedLevelChoices}
           onAddSelection={addSpellSelection}
           onAppendSelection={appendSpellSelection}
@@ -2484,6 +2537,7 @@ export function App() {
             suggestionBundle.planner[
               Math.max(0, effectiveBuild.levels.length)
             ] ?? {
+              guideChoices: [],
               classChoices: [],
               featChoices: [],
               favoredClassChoices: [],

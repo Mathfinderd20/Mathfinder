@@ -51,6 +51,7 @@ export interface PlannerSuggestionNote {
 }
 
 export interface LevelPlannerSuggestions {
+  guideChoices: PlannerSuggestionChoice<string>[];
   classChoices: PlannerSuggestionChoice<string>[];
   featChoices: PlannerSuggestionChoice<string>[];
   favoredClassChoices: PlannerSuggestionChoice<"hp" | "skill" | "none">[];
@@ -962,6 +963,8 @@ function suggestClassChoices(
             label: className,
             reason: `${guide.name}: ${guide.description}`,
             score: 102 + score - index * 4,
+            sourceKind: "branch",
+            sourceLabel: guide.name,
           }) satisfies PlannerSuggestionChoice<string>,
       ),
     ),
@@ -973,6 +976,8 @@ function suggestClassChoices(
             label: className,
             reason: `${guide.name}: ${guide.description}`,
             score: 94 + score - index * 4,
+            sourceKind: "band",
+            sourceLabel: guide.name,
           }) satisfies PlannerSuggestionChoice<string>,
       ),
     ),
@@ -991,6 +996,60 @@ function suggestClassChoices(
       )
       .filter((choice) => choice.score > 0),
   ]);
+}
+
+function describeBandRange(band: BuildGuideProgressionBand) {
+  const min = band.minLevel ?? 1;
+  const max = band.maxLevel ?? 20;
+  if (min === max) return `Level ${min}`;
+  if (min <= 1) return `Levels 1-${max}`;
+  if (max >= 20) return `Levels ${min}+`;
+  return `Levels ${min}-${max}`;
+}
+
+function titleCaseWords(value: string) {
+  return value
+    .split(/[-_\s]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function suggestGuideChoices(profile: BuildProfile) {
+  const branchChoices = profile.activeBranches.map(({ guide, branch, score }) =>
+    choiceWithMeta({
+      value: `${guide.id}::branch::${branch.id}`,
+      label: `${guide.name} — ${titleCaseWords(branch.id)}`,
+      reason: branch.notes?.[0] ?? guide.description,
+      score: 124 + score,
+      sourceKind: "branch",
+      sourceLabel: guide.name,
+    }),
+  );
+  const bandChoices = profile.activeBands.map(({ guide, band, score }) =>
+    choiceWithMeta({
+      value: `${guide.id}::band::${band.minLevel ?? 1}-${band.maxLevel ?? 20}`,
+      label: `${guide.name} — ${describeBandRange(band)}`,
+      reason: band.notes?.[0] ?? guide.description,
+      score: 112 + score,
+      sourceKind: "band",
+      sourceLabel: guide.name,
+    }),
+  );
+  const guideChoices = profile.matchedGuides.map(({ guide, score }) =>
+    choiceWithMeta({
+      value: guide.id,
+      label: guide.name,
+      reason: guide.notes?.[0] ?? guide.description,
+      score: 96 + score,
+      sourceKind: "guide",
+      sourceLabel: guide.pack,
+    }),
+  );
+  return uniqueTopChoices(
+    [...branchChoices, ...bandChoices, ...guideChoices],
+    4,
+  );
 }
 
 function suggestNotes(
@@ -1019,11 +1078,7 @@ function suggestNotes(
     );
   } else if (profile.activeBands[0]?.band.notes?.[0]) {
     notes.push(
-      noteWithMeta(
-        "Band",
-        profile.activeBands[0].band.notes[0],
-        "band",
-      ),
+      noteWithMeta("Band", profile.activeBands[0].band.notes[0], "band"),
     );
   }
   if (profile.dominantClassName) {
@@ -1317,6 +1372,7 @@ export function buildSuggestions(
     );
     const grantsAbilityIncrease = (levelIndex + 1) % 4 === 0;
     return {
+      guideChoices: suggestGuideChoices(profile),
       classChoices: suggestClassChoices(args, levelIndex, profile),
       featChoices:
         plan.featSlots.length > 0
