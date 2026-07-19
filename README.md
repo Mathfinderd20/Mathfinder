@@ -15,6 +15,21 @@ Early planning. See:
 - [`PLAN.md`](./PLAN.md) — architecture, tech stack, rules-engine design, roadmap
 - [`TODO.md`](./TODO.md) — living checklist of steps
 - [`BACKEND_ISSUES.md`](./BACKEND_ISSUES.md) — contributor-facing backend/API issue tracking log
+- [`CONTENT_PIPELINE.md`](./CONTENT_PIPELINE.md) — canonical content, local DB workflow, runtime export contract
+
+## Content workflow
+
+The web app runtime content is loaded from:
+
+- `apps/web/public/usable-content.json`
+
+Useful commands:
+
+- `npm run content:bootstrap` — init local content DB, seed from canonical rules-data, export runtime asset, verify it
+- `npm run content:refresh:web` — export current local DB state into the committed web runtime asset
+- `npm run content:verify:web` — verify the runtime asset shape without touching the DB
+
+See [`CONTENT_PIPELINE.md`](./CONTENT_PIPELINE.md) for the real source-of-truth rules and commit policy.
 
 ## Decisions Locked
 
