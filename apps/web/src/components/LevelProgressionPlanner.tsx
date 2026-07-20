@@ -230,6 +230,7 @@ export function LevelProgressionPlanner({
                 guideChoices: [],
                 classChoices: [],
                 featChoices: [],
+                featChoicesBySlot: [],
                 favoredClassChoices: [],
                 abilityChoices: [],
                 notes: [],
@@ -325,16 +326,18 @@ export function LevelProgressionPlanner({
                                 options={slotOptions}
                                 placeholder="Search feat"
                               />
-                              {featIndex === 0 ? (
-                                <SuggestionButtons
-                                  title="Recommended feat picks"
-                                  choices={suggestions.featChoices}
-                                  selectedValue={selectedFeat}
-                                  onApply={(value) =>
-                                    onSetLevelFeat(index, featIndex, value)
-                                  }
-                                />
-                              ) : null}
+                              <SuggestionButtons
+                                title={`Recommended ${slot.label.toLowerCase()} picks`}
+                                choices={
+                                  suggestions.featChoicesBySlot.find(
+                                    (entry) => entry.slotIndex === featIndex,
+                                  )?.choices ?? []
+                                }
+                                selectedValue={selectedFeat}
+                                onApply={(value) =>
+                                  onSetLevelFeat(index, featIndex, value)
+                                }
+                              />
                             </div>
                           );
                         })}

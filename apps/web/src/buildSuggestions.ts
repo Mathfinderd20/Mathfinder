@@ -12,6 +12,7 @@ import {
   type ClassFeatureRegistry,
   type DerivedSpellcasting,
   type FeatDefinition,
+  type FeatGrantKind,
   type FeatRegistry,
   type SkillKey,
   type SpellRegistry,
@@ -50,10 +51,19 @@ export interface PlannerSuggestionNote {
   sourceKind?: SuggestionSourceKind;
 }
 
+export interface PlannerFeatSlotSuggestions {
+  slotIndex: number;
+  slotLabel: string;
+  slotSource: string;
+  slotKind: FeatGrantKind;
+  choices: PlannerSuggestionChoice<string>[];
+}
+
 export interface LevelPlannerSuggestions {
   guideChoices: PlannerSuggestionChoice<string>[];
   classChoices: PlannerSuggestionChoice<string>[];
   featChoices: PlannerSuggestionChoice<string>[];
+  featChoicesBySlot: PlannerFeatSlotSuggestions[];
   favoredClassChoices: PlannerSuggestionChoice<"hp" | "skill" | "none">[];
   abilityChoices: PlannerSuggestionChoice<AbilityKey>[];
   notes: PlannerSuggestionNote[];
@@ -579,7 +589,13 @@ function scoreFeat(
   levelContext: ReturnType<typeof featContextFromSheet>,
   weakestSave: "fort" | "ref" | "will",
   taken: Set<string>,
+  slotKind: FeatGrantKind,
 ) {
+  if (
+    slotKind === "fighter-bonus" &&
+    !(feat.tags ?? []).some((tag) => tag.toLowerCase() === "combat")
+  )
+    return null;
   const key = normalize(feat.name);
   if (taken.has(key) || !checkPrerequisites(feat, levelContext).met)
     return null;
@@ -640,6 +656,7 @@ function bandFeatChoices(
   levelContext: ReturnType<typeof featContextFromSheet>,
   taken: Set<string>,
   feats: FeatRegistry,
+  slotKind: FeatGrantKind,
 ) {
   const picks: PlannerSuggestionChoice<string>[] = [];
   const bandSources = [
@@ -670,7 +687,9 @@ function bandFeatChoices(
       if (
         !feat ||
         taken.has(normalize(feat.name)) ||
-        !checkPrerequisites(feat, levelContext).met
+        !checkPrerequisites(feat, levelContext).met ||
+        (slotKind === "fighter-bonus" &&
+          !(feat.tags ?? []).some((tag) => tag.toLowerCase() === "combat"))
       )
         return;
       picks.push(
@@ -688,14 +707,14 @@ function bandFeatChoices(
   return picks;
 }
 
-function suggestFeatChoices(
+function suggestFeatChoiceSlots(
   args: BuildSuggestionArgs,
   levelIndex: number,
   profile: BuildProfile,
 ) {
   const previewSheet = buildPreviewSheet(args, levelIndex);
   const levelContext = featContextFromSheet(previewSheet);
-  const taken = new Set(priorFeatNames(args.build, levelIndex));
+  const reserved = new Set(priorFeatNames(args.build, levelIndex));
   const saves: Array<["fort" | "ref" | "will", number]> = [
     ["fort", previewSheet.saves.fort.total],
     ["ref", previewSheet.saves.ref.total],
@@ -708,22 +727,41 @@ function suggestFeatChoices(
     args.classes,
     args.archetypes,
   );
-  const featSlot = plan.featSlots[0];
-  if (!featSlot) return [];
-  return uniqueTopChoices([
-    ...bandFeatChoices(profile, levelContext, taken, args.feats),
-    ...listFeats(args.feats)
-      .filter(
-        (feat) =>
-          featSlot.kind !== "fighter-bonus" ||
-          (feat.tags ?? []).some((tag) => tag.toLowerCase() === "combat"),
-      )
-      .map((feat) => scoreFeat(feat, profile, levelContext, weakestSave, taken))
-      .filter(
-        (choice): choice is PlannerSuggestionChoice<string> =>
-          !!choice && choice.score > 0,
+  return plan.featSlots.map((slot, slotIndex) => {
+    const choices = uniqueTopChoices([
+      ...bandFeatChoices(
+        profile,
+        levelContext,
+        reserved,
+        args.feats,
+        slot.kind,
       ),
-  ]);
+      ...listFeats(args.feats)
+        .map((feat) =>
+          scoreFeat(
+            feat,
+            profile,
+            levelContext,
+            weakestSave,
+            reserved,
+            slot.kind,
+          ),
+        )
+        .filter(
+          (choice): choice is PlannerSuggestionChoice<string> =>
+            !!choice && choice.score > 0,
+        ),
+    ]);
+    const top = choices[0]?.value;
+    if (top) reserved.add(normalize(top));
+    return {
+      slotIndex,
+      slotLabel: slot.label,
+      slotSource: slot.source,
+      slotKind: slot.kind,
+      choices,
+    } satisfies PlannerFeatSlotSuggestions;
+  });
 }
 
 function suggestAbilityChoices(profile: BuildProfile) {
@@ -1371,13 +1409,15 @@ export function buildSuggestions(
       args.archetypes,
     );
     const grantsAbilityIncrease = (levelIndex + 1) % 4 === 0;
+    const featChoicesBySlot =
+      plan.featSlots.length > 0
+        ? suggestFeatChoiceSlots(args, levelIndex, profile)
+        : [];
     return {
       guideChoices: suggestGuideChoices(profile),
       classChoices: suggestClassChoices(args, levelIndex, profile),
-      featChoices:
-        plan.featSlots.length > 0
-          ? suggestFeatChoices(args, levelIndex, profile)
-          : [],
+      featChoices: featChoicesBySlot[0]?.choices ?? [],
+      featChoicesBySlot,
       favoredClassChoices: suggestFavoredClassChoices(
         args.build,
         levelIndex,

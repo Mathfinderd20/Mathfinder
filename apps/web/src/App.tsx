@@ -1157,9 +1157,15 @@ export function App() {
       const existingFeats =
         normalizeFeatListLength(nextLevels[levelIndex]?.feats, slotCount) ??
         Array.from({ length: slotCount }, () => "");
-      if (slotCount > 0 && suggestions.featChoices[0]?.value) {
-        existingFeats[0] = suggestions.featChoices[0].value;
-      }
+      suggestions.featChoicesBySlot.forEach((slotSuggestion) => {
+        if (
+          slotSuggestion.slotIndex < slotCount &&
+          slotSuggestion.choices[0]?.value
+        ) {
+          existingFeats[slotSuggestion.slotIndex] =
+            slotSuggestion.choices[0].value;
+        }
+      });
       nextLevels[levelIndex] = {
         ...nextLevels[levelIndex],
         feats:
@@ -2540,6 +2546,7 @@ export function App() {
               guideChoices: [],
               classChoices: [],
               featChoices: [],
+              featChoicesBySlot: [],
               favoredClassChoices: [],
               abilityChoices: [],
               notes: [],

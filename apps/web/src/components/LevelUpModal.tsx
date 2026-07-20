@@ -87,8 +87,12 @@ function SuggestionCardRow<T extends string>({
                   </span>
                 ) : null}
               </span>
-              <span className="planner-suggestion-card-label">{choice.label}</span>
-              <span className="planner-suggestion-card-reason">{choice.reason}</span>
+              <span className="planner-suggestion-card-label">
+                {choice.label}
+              </span>
+              <span className="planner-suggestion-card-reason">
+                {choice.reason}
+              </span>
             </button>
           );
         })}
@@ -244,7 +248,9 @@ export function LevelUpModal({
     .map((key) => SKILL_NAME.get(key) ?? key)
     .sort((a, b) => a.localeCompare(b));
   const suggestedFeatNames = new Set(
-    plannerSuggestions.featChoices.map((choice) => choice.value.toLowerCase()),
+    plannerSuggestions.featChoicesBySlot.flatMap((slot) =>
+      slot.choices.map((choice) => choice.value.toLowerCase()),
+    ),
   );
   const suggestedAbilities = new Set(
     plannerSuggestions.abilityChoices.map((choice) => choice.value),
@@ -298,7 +304,8 @@ export function LevelUpModal({
       ),
     );
     return plan.featSlots.map((slot, slotIndex) => {
-      const currentSelection = selectedFeats[slotIndex]?.trim().toLowerCase() ?? "";
+      const currentSelection =
+        selectedFeats[slotIndex]?.trim().toLowerCase() ?? "";
       const taken = new Set(
         ctx.featNames
           .map((name) => name.toLowerCase())
@@ -313,8 +320,12 @@ export function LevelUpModal({
         }))
         .filter(({ prereq }) => prereq.met)
         .sort((a, b) => {
-          const aSuggested = suggestedFeatNames.has(a.feat.name.toLowerCase()) ? 1 : 0;
-          const bSuggested = suggestedFeatNames.has(b.feat.name.toLowerCase()) ? 1 : 0;
+          const aSuggested = suggestedFeatNames.has(a.feat.name.toLowerCase())
+            ? 1
+            : 0;
+          const bSuggested = suggestedFeatNames.has(b.feat.name.toLowerCase())
+            ? 1
+            : 0;
           if (aSuggested !== bSuggested) return bSuggested - aSuggested;
           return a.feat.name.localeCompare(b.feat.name);
         })
@@ -619,7 +630,10 @@ export function LevelUpModal({
                 >
                   <span>
                     {slot.label}
-                    <span className="muted"> · {slot.source} · {featSlotTag(slot.kind)}</span>
+                    <span className="muted">
+                      {" "}
+                      · {slot.source} · {featSlotTag(slot.kind)}
+                    </span>
                   </span>
                   <CompendiumPicker
                     value={selectedFeat}
@@ -634,20 +648,22 @@ export function LevelUpModal({
                     placeholder="Search legal feat"
                     tooltip={featTitle(selectedFeat)}
                   />
-                  {slotIndex === 0 ? (
-                    <SuggestionCardRow
-                      title="Why these feat picks"
-                      choices={plannerSuggestions.featChoices}
-                      selectedValue={selectedFeat}
-                      onPick={(value) =>
-                        setSelectedFeats((prev) => {
-                          const next = [...prev];
-                          next[slotIndex] = value;
-                          return next;
-                        })
-                      }
-                    />
-                  ) : null}
+                  <SuggestionCardRow
+                    title={`Why these ${slot.label.toLowerCase()} picks`}
+                    choices={
+                      plannerSuggestions.featChoicesBySlot.find(
+                        (entry) => entry.slotIndex === slotIndex,
+                      )?.choices ?? []
+                    }
+                    selectedValue={selectedFeat}
+                    onPick={(value) =>
+                      setSelectedFeats((prev) => {
+                        const next = [...prev];
+                        next[slotIndex] = value;
+                        return next;
+                      })
+                    }
+                  />
                   {options.length === 0 ? (
                     <span className="hint">
                       No legal feats found for this slot yet.
