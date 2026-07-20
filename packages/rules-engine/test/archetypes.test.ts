@@ -93,6 +93,20 @@ const TEST_ARCHETYPES: ArchetypeRegistry = {
       },
     ],
   },
+  "shield-bruiser": {
+    id: "shield-bruiser",
+    name: "Shield Bruiser",
+    baseClassName: "Fighter",
+    description: "Also trades away bravery.",
+    replaces: ["bravery"],
+  },
+  "fearless-bruiser": {
+    id: "fearless-bruiser",
+    name: "Fearless Bruiser",
+    baseClassName: "Fighter",
+    description: "Also messes with bravery.",
+    modifies: ["bravery"],
+  },
 };
 
 const TEST_ARCHETYPE_RULE_CLASSES: ClassRegistry = {
@@ -473,5 +487,41 @@ describe("archetype class overrides", () => {
     expect(
       ARCHETYPE_RULES["skirmish-marauder"]?.modifierGrants?.[0]?.valueScale,
     ).toBe("weapon-training-lite");
+  });
+
+  it("validates unknown and wrong-class archetype selections", () => {
+    const build: CharacterBuild = {
+      ...baseBuild("Fighter"),
+      classArchetypes: { fighter: ["missing-archetype", "battle-chaplain"] },
+    };
+    const issues = validateBuild(build, undefined, undefined, TEST_ARCHETYPES);
+    expect(issues.some((issue) => issue.code === "unknown-archetype")).toBe(
+      true,
+    );
+    expect(
+      issues.some((issue) => issue.code === "archetype-wrong-base-class"),
+    ).toBe(true);
+  });
+
+  it("validates stacking conflicts between archetypes that touch the same feature", () => {
+    const build: CharacterBuild = {
+      ...baseBuild("Fighter"),
+      classArchetypes: { fighter: ["shield-bruiser", "fearless-bruiser"] },
+    };
+    const issues = validateBuild(build, undefined, undefined, TEST_ARCHETYPES);
+    expect(
+      issues.some((issue) => issue.code === "archetype-feature-conflict"),
+    ).toBe(true);
+  });
+
+  it("warns when archetypes are attached to classes not present in the build", () => {
+    const build: CharacterBuild = {
+      ...baseBuild("Fighter"),
+      classArchetypes: { cleric: ["battle-chaplain"] },
+    };
+    const issues = validateBuild(build, undefined, undefined, TEST_ARCHETYPES);
+    expect(
+      issues.some((issue) => issue.code === "archetype-class-not-in-build"),
+    ).toBe(true);
   });
 });

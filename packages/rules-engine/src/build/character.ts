@@ -648,6 +648,16 @@ function selectedArchetypeIds(
   return [...new Set(ids.map((id) => id.trim()).filter(Boolean))];
 }
 
+function archetypeFeatureBuckets(archetype: ArchetypeDefinitionLike): string[] {
+  return [
+    ...(archetype.replaces ?? []),
+    ...(archetype.alters ?? []),
+    ...(archetype.modifies ?? []),
+  ]
+    .map((feature) => feature.trim().toLowerCase())
+    .filter(Boolean);
+}
+
 function selectedArchetypesForClass(
   build: CharacterBuild,
   className: string,
@@ -1480,6 +1490,71 @@ export function validateBuild(
     }
   }
   const classCounts = classLevelCounts(build);
+  if (archetypeRegistry) {
+    for (const [classKey, archetypeIds] of Object.entries(
+      build.classArchetypes ?? {},
+    )) {
+      const normalizedClassKey = classKey.trim().toLowerCase();
+      if (!normalizedClassKey) continue;
+      if (!classCounts.has(normalizedClassKey)) {
+        issues.push({
+          severity: "warning",
+          code: "archetype-class-not-in-build",
+          message: `Archetypes are selected for class "${classKey}", but the build has no levels in that class.`,
+        });
+      }
+      const seenIds = new Set<string>();
+      const selectedArchetypes: ArchetypeDefinitionLike[] = [];
+      for (const rawId of archetypeIds ?? []) {
+        const normalizedId = rawId.trim().toLowerCase();
+        if (!normalizedId) continue;
+        const archetype = archetypeRegistry[normalizedId];
+        if (!archetype) {
+          issues.push({
+            severity: "error",
+            code: "unknown-archetype",
+            message: `Unknown archetype "${rawId}" is selected for class "${classKey}".`,
+          });
+          continue;
+        }
+        if (seenIds.has(normalizedId)) {
+          issues.push({
+            severity: "error",
+            code: "duplicate-archetype",
+            message: `Archetype "${archetype.name}" is selected more than once for class "${classKey}".`,
+          });
+          continue;
+        }
+        seenIds.add(normalizedId);
+        if (
+          archetype.baseClassName.trim().toLowerCase() !== normalizedClassKey
+        ) {
+          issues.push({
+            severity: "error",
+            code: "archetype-wrong-base-class",
+            message: `Archetype "${archetype.name}" applies to ${archetype.baseClassName}, not ${classKey}.`,
+          });
+          continue;
+        }
+        selectedArchetypes.push(archetype);
+      }
+      const claimedBuckets = new Map<string, string>();
+      for (const archetype of selectedArchetypes) {
+        for (const bucket of archetypeFeatureBuckets(archetype)) {
+          const prior = claimedBuckets.get(bucket);
+          if (prior) {
+            issues.push({
+              severity: "error",
+              code: "archetype-feature-conflict",
+              message: `Archetypes "${prior}" and "${archetype.name}" both modify/replace "${bucket}" for ${classKey}.`,
+            });
+          } else {
+            claimedBuckets.set(bucket, archetype.name);
+          }
+        }
+      }
+    }
+  }
   const armorProficiencies = new Set<"light" | "medium" | "heavy">();
   const shieldProficiencies = new Set<"shield" | "tower-shield">();
   const weaponProficiencies = new Set<"simple" | "martial" | "exotic">(

@@ -42,7 +42,7 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 - [x] Carrying capacity / encumbrance auto-from-Str
 - [x] Character build/level-up state machine (replayable build steps; `buildCharacter`/`levelUp`/`levelDown`)
 - [x] Class progressions: BAB (full/3-4/half) + good/poor saves, multiclass-aware
-- [x] Build validation: skill-rank caps, ability-increase placement, unknown class, skill-point budget
+- [~] Build validation: skill-rank caps, ability-increase placement, unknown class, skill-point budget, equipment/container legality, spell selection diagnostics, and archetype legality/conflict checks are live; prestige-class validation is still pending
 - [x] Build -> computeSheet golden tests incl. level-up (40/40 green)
 - [x] Feat content model (FeatDefinition: prereqs + effects + pack tag) with core feat set
 - [x] Feat prerequisite checking (BAB/ability/feat/level) with reasons
@@ -63,7 +63,7 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 - [x] Fatigue state + Rage legality suppression
 - [ ] Broaden conditional legality (more armor/load restrictions, class-feature gates, etc.)
 - [x] Equipment/inventory engine: item quantities, costs, auto weight, equipped flags, armor metadata, slots, containers, coin/ammo/component tracking, purchase validation, and sheet itemization are all live
-- [ ] Prerequisite validation for prestige classes, archetypes
+- [~] Prerequisite validation for prestige classes, archetypes — archetype legality/conflict validation is live; prestige-class prerequisites still pending
 - [ ] Parameterized feats (Weapon Focus weapon choice, Skill Focus skill choice)
 
 ## Phase 3 — Character Builder UX
@@ -78,9 +78,9 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 - [x] Inline validation surfacing
 - [ ] Guided build wizard (race → class → abilities → skills → feats → gear)
 - [x] Build planner page for future levels / preselected advancement choices
-- [~] Editable core build fields in UI started (name, base abilities, carried weight, sample race presets, per-level class/HP/favored-class/ASI, weapons, full inventory/equipment editing with slots/containers/coins/ammo/components/purchase flows, improved equipment/armor cards with running totals, per-level feats, compact/collapsible per-level skill rank builder); broader compendium-backed content editing is still incremental
+- [~] Editable core build fields in UI are substantial (name, base abilities, carried weight, sample race presets, race choice selections, class archetypes, per-level class/HP/favored-class/ASI, weapons, full inventory/equipment editing with slots/containers/coins/ammo/components/purchase flows, improved equipment/armor cards with running totals, per-level feats, compact/collapsible per-level skill rank builder, and spell library/selection management); broader compendium-backed content editing is still incremental
 - [ ] Port presentational components to React Native for the phone build
-- [ ] Smart defaults + recommendations
+- [~] Smart defaults + recommendations — planner/level-up suggestions for classes, feats, favored-class bonuses, ability increases, and spell picks are live; broader guided defaults/wizard flows are still pending
 
 ## Phase 4 — Multiplayer / Group Layer
 
@@ -100,9 +100,11 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 
 ## Next Bulldoze Order
 
-- [x] Finish inventory depth: equipment slots, containers, coins/ammo/components, purchase validation, and sheet itemization are in
-- [x] Broaden spellcasting content + polish: runtime now loads the content-db-backed 3k+ spell catalog, spell browser/runtime rows surface support and provenance metadata, explicit cast logging is in, and tracked-effect vs manual-resolution coverage is visible in UI
-- [x] Build planning phase 1: future feat/ability/class picks without applying yet
+- [ ] Parameterized feats (Weapon Focus weapon choice, Skill Focus skill choice)
+- [ ] Prestige-class prerequisite validation
+- [ ] Guided build wizard / broader smart-default flows
+- [ ] Shared compendium/runtime normalization work from `PLAN.md`
+- [ ] Savage Company content ingestion breadth
 
 ## Open Questions / Risks
 
