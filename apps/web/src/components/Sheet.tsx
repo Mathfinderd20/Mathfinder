@@ -196,6 +196,86 @@ function hitPointTooltip(sheet: DerivedSheet) {
   return parts.join(" • ");
 }
 
+function hpStatusTooltip(
+  currentHp: number,
+  hpDamageTaken: number,
+  tempHp: number,
+  nonlethalDamage: number,
+  deathThreshold: number,
+  stable: boolean,
+  bleeding: boolean,
+) {
+  return [
+    `Current HP ${currentHp}`,
+    `Damage taken ${hpDamageTaken}`,
+    `Temp HP ${tempHp}`,
+    `Nonlethal ${nonlethalDamage}`,
+    `Death at ${deathThreshold}`,
+    `Stable ${stable ? "yes" : "no"}`,
+    `Bleeding ${bleeding ? "yes" : "no"}`,
+  ].join(" • ");
+}
+
+function wealthTooltip(
+  wealthSummary: WealthSummary,
+  inventory: DerivedSheet["inventory"],
+) {
+  return [
+    `Liquid wealth = ${wealthSummary.pp} pp + ${wealthSummary.gp} gp + ${wealthSummary.sp} sp + ${wealthSummary.cp} cp = ${formatGp(wealthSummary.liquidWealthGp)}`,
+    `Coin weight = (${wealthSummary.pp} + ${wealthSummary.gp} + ${wealthSummary.sp} + ${wealthSummary.cp}) / 50 = ${formatWeight(wealthSummary.coinWeightLb)}`,
+    `Owned gear = ${formatGp(wealthSummary.gearCostGp)}`,
+    `Wishlist = ${formatGp(wealthSummary.wishlistCostGp)}`,
+    `Inventory cost total = ${formatGp(inventory.totalCostGp)}`,
+    `Total wealth = liquid + owned gear = ${formatGp(wealthSummary.totalWealthGp)}`,
+  ].join(" • ");
+}
+
+function spellLevelMathTooltip(
+  casting: DerivedSheet["spellcasting"][number],
+  level: number,
+  slotsMax: number,
+  slotsLeft: number,
+) {
+  const bonus = casting.bonusSpellsPerDay[level] ?? 0;
+  const extra = casting.extraSlotsPerDay[level] ?? 0;
+  const used = casting.slotsUsed[level] ?? 0;
+  const parts = [
+    `Level ${level} slots`,
+    `Base ${casting.baseSpellsPerDay[level] ?? 0}`,
+    `Bonus ${sign(bonus)}`,
+    `Extra ${sign(extra)}`,
+    `Total ${slotsMax}`,
+  ];
+  if (!casting.selectionDiagnostics[level]?.isAtWill)
+    parts.push(`Used ${used}`, `Remaining ${slotsLeft}`);
+  return parts.join(" • ");
+}
+
+function spellDcTooltip(
+  casting: DerivedSheet["spellcasting"][number],
+  level: number,
+  dc: number,
+) {
+  const abilityMod = Math.floor((casting.castingAbilityScore - 10) / 2);
+  return [
+    `Spell DC ${dc}`,
+    `10 base`,
+    `Spell level ${level}`,
+    `${casting.castingAbility.toUpperCase()} mod ${sign(abilityMod)}`,
+  ].join(" • ");
+}
+
+function spellcastingSummaryTooltip(
+  casting: DerivedSheet["spellcasting"][number],
+) {
+  return [
+    `Caster level ${casting.casterLevel}`,
+    `Casting ability ${casting.castingAbility.toUpperCase()} ${casting.castingAbilityScore}`,
+    `Concentration ${sign(casting.concentration.total)}`,
+    `Max spell level ${casting.maxSpellLevel}`,
+  ].join(" • ");
+}
+
 function racialAbilitySummary(sheet: DerivedSheet) {
   return ABILITY_ORDER.flatMap((key) => {
     const total = sheet.abilities[key].breakdown
@@ -434,12 +514,24 @@ export function Sheet({
           <div className="sheet-meta-line">
             <span>{identity || "Unspecified heroics"}</span>
             <span>Size: {sheet.size}</span>
-            <span title={encumbranceTooltip(sheet.encumbrance)}>
-              Load: {sheet.encumbrance.band}
-            </span>
-            <span className={`tag hp-status ${status.tone}`}>
-              {status.label}
-            </span>
+            <Tooltip content={encumbranceTooltip(sheet.encumbrance)}>
+              <span>Load: {sheet.encumbrance.band}</span>
+            </Tooltip>
+            <Tooltip
+              content={hpStatusTooltip(
+                currentHp,
+                hpDamageTaken,
+                tempHp,
+                nonlethalDamage,
+                deathThreshold,
+                stable,
+                bleeding,
+              )}
+            >
+              <span className={`tag hp-status ${status.tone}`}>
+                {status.label}
+              </span>
+            </Tooltip>
           </div>
         </div>
       </section>
@@ -476,135 +568,157 @@ export function Sheet({
           <section className="panel paper-panel">
             <h2>Defense Snapshot</h2>
             <div className="sheet-ac-grid">
-              <div
-                className="summary-box ac-primary"
-                title={statTooltip(sheet.ac.normal, true)}
+              <Tooltip
+                content={statTooltip(sheet.ac.normal, true)}
+                className="mf-tooltip-anchor-block"
               >
-                <span className="summary-label">Armor Class</span>
-                <span className="summary-value">{sheet.ac.normal.total}</span>
-              </div>
-              <div
-                className="summary-box"
-                title={statTooltip(sheet.ac.touch, true)}
+                <div className="summary-box ac-primary">
+                  <span className="summary-label">Armor Class</span>
+                  <span className="summary-value">{sheet.ac.normal.total}</span>
+                </div>
+              </Tooltip>
+              <Tooltip
+                content={statTooltip(sheet.ac.touch, true)}
+                className="mf-tooltip-anchor-block"
               >
-                <span className="summary-label">Touch</span>
-                <span className="summary-value">{sheet.ac.touch.total}</span>
-              </div>
-              <div
-                className="summary-box"
-                title={statTooltip(sheet.ac.flatFooted, true)}
+                <div className="summary-box">
+                  <span className="summary-label">Touch</span>
+                  <span className="summary-value">{sheet.ac.touch.total}</span>
+                </div>
+              </Tooltip>
+              <Tooltip
+                content={statTooltip(sheet.ac.flatFooted, true)}
+                className="mf-tooltip-anchor-block"
               >
-                <span className="summary-label">Flat-Footed</span>
-                <span className="summary-value">
-                  {sheet.ac.flatFooted.total}
-                </span>
-              </div>
-              <div className="summary-box" title={hitPointTooltip(sheet)}>
-                <span className="summary-label">Hit Points</span>
-                <span className="summary-value">
-                  {currentHp} / {sheet.hitPoints.total}
-                </span>
-              </div>
-              <div
-                className="summary-box"
-                title={statTooltip(sheet.saves.fort)}
+                <div className="summary-box">
+                  <span className="summary-label">Flat-Footed</span>
+                  <span className="summary-value">
+                    {sheet.ac.flatFooted.total}
+                  </span>
+                </div>
+              </Tooltip>
+              <Tooltip
+                content={hitPointTooltip(sheet)}
+                className="mf-tooltip-anchor-block"
               >
-                <span className="summary-label">Fort</span>
-                <span className="summary-value">
-                  {sign(sheet.saves.fort.total)}
-                </span>
-                <label className="sheet-roll-entry">
-                  <span>Roll</span>
-                  <input
-                    type="number"
-                    inputMode="numeric"
-                    placeholder="d20"
-                    value={saveRollDrafts.fort ?? ""}
-                    onChange={(event) =>
-                      setSaveRollDrafts((prev) => ({
-                        ...prev,
-                        fort: event.target.value,
-                      }))
-                    }
-                  />
-                </label>
-                <span className="sheet-roll-total">
-                  {checkTotal(saveRollDrafts.fort, sheet.saves.fort.total) ===
-                  undefined
-                    ? "—"
-                    : sign(
-                        checkTotal(
-                          saveRollDrafts.fort,
-                          sheet.saves.fort.total,
-                        ) ?? 0,
-                      )}
-                </span>
-              </div>
-              <div className="summary-box" title={statTooltip(sheet.saves.ref)}>
-                <span className="summary-label">Ref</span>
-                <span className="summary-value">
-                  {sign(sheet.saves.ref.total)}
-                </span>
-                <label className="sheet-roll-entry">
-                  <span>Roll</span>
-                  <input
-                    type="number"
-                    inputMode="numeric"
-                    placeholder="d20"
-                    value={saveRollDrafts.ref ?? ""}
-                    onChange={(event) =>
-                      setSaveRollDrafts((prev) => ({
-                        ...prev,
-                        ref: event.target.value,
-                      }))
-                    }
-                  />
-                </label>
-                <span className="sheet-roll-total">
-                  {checkTotal(saveRollDrafts.ref, sheet.saves.ref.total) ===
-                  undefined
-                    ? "—"
-                    : sign(
-                        checkTotal(saveRollDrafts.ref, sheet.saves.ref.total) ??
-                          0,
-                      )}
-                </span>
-              </div>
-              <div
-                className="summary-box"
-                title={statTooltip(sheet.saves.will)}
+                <div className="summary-box">
+                  <span className="summary-label">Hit Points</span>
+                  <span className="summary-value">
+                    {currentHp} / {sheet.hitPoints.total}
+                  </span>
+                </div>
+              </Tooltip>
+              <Tooltip
+                content={statTooltip(sheet.saves.fort)}
+                className="mf-tooltip-anchor-block"
               >
-                <span className="summary-label">Will</span>
-                <span className="summary-value">
-                  {sign(sheet.saves.will.total)}
-                </span>
-                <label className="sheet-roll-entry">
-                  <span>Roll</span>
-                  <input
-                    type="number"
-                    inputMode="numeric"
-                    placeholder="d20"
-                    value={saveRollDrafts.will ?? ""}
-                    onChange={(event) =>
-                      setSaveRollDrafts((prev) => ({
-                        ...prev,
-                        will: event.target.value,
-                      }))
-                    }
-                  />
-                </label>
-                <span className="sheet-roll-total">
-                  {checkTotal(saveRollDrafts.will, sheet.saves.will.total) ===
-                  undefined
-                    ? "—"
-                    : sign(
-                        checkTotal(
-                          saveRollDrafts.will,
-                          sheet.saves.will.total,
-                        ) ?? 0,
-                      )}
-                </span>
-              </div>
+                <div className="summary-box">
+                  <span className="summary-label">Fort</span>
+                  <span className="summary-value">
+                    {sign(sheet.saves.fort.total)}
+                  </span>
+                  <label className="sheet-roll-entry">
+                    <span>Roll</span>
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      placeholder="d20"
+                      value={saveRollDrafts.fort ?? ""}
+                      onChange={(event) =>
+                        setSaveRollDrafts((prev) => ({
+                          ...prev,
+                          fort: event.target.value,
+                        }))
+                      }
+                    />
+                  </label>
+                  <span className="sheet-roll-total">
+                    {checkTotal(saveRollDrafts.fort, sheet.saves.fort.total) ===
+                    undefined
+                      ? "—"
+                      : sign(
+                          checkTotal(
+                            saveRollDrafts.fort,
+                            sheet.saves.fort.total,
+                          ) ?? 0,
+                        )}
+                  </span>
+                </div>
+              </Tooltip>
+              <Tooltip
+                content={statTooltip(sheet.saves.ref)}
+                className="mf-tooltip-anchor-block"
+              >
+                <div className="summary-box">
+                  <span className="summary-label">Ref</span>
+                  <span className="summary-value">
+                    {sign(sheet.saves.ref.total)}
+                  </span>
+                  <label className="sheet-roll-entry">
+                    <span>Roll</span>
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      placeholder="d20"
+                      value={saveRollDrafts.ref ?? ""}
+                      onChange={(event) =>
+                        setSaveRollDrafts((prev) => ({
+                          ...prev,
+                          ref: event.target.value,
+                        }))
+                      }
+                    />
+                  </label>
+                  <span className="sheet-roll-total">
+                    {checkTotal(saveRollDrafts.ref, sheet.saves.ref.total) ===
+                    undefined
+                      ? "—"
+                      : sign(
+                          checkTotal(
+                            saveRollDrafts.ref,
+                            sheet.saves.ref.total,
+                          ) ?? 0,
+                        )}
+                  </span>
+                </div>
+              </Tooltip>
+              <Tooltip
+                content={statTooltip(sheet.saves.will)}
+                className="mf-tooltip-anchor-block"
+              >
+                <div className="summary-box">
+                  <span className="summary-label">Will</span>
+                  <span className="summary-value">
+                    {sign(sheet.saves.will.total)}
+                  </span>
+                  <label className="sheet-roll-entry">
+                    <span>Roll</span>
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      placeholder="d20"
+                      value={saveRollDrafts.will ?? ""}
+                      onChange={(event) =>
+                        setSaveRollDrafts((prev) => ({
+                          ...prev,
+                          will: event.target.value,
+                        }))
+                      }
+                    />
+                  </label>
+                  <span className="sheet-roll-total">
+                    {checkTotal(saveRollDrafts.will, sheet.saves.will.total) ===
+                    undefined
+                      ? "—"
+                      : sign(
+                          checkTotal(
+                            saveRollDrafts.will,
+                            sheet.saves.will.total,
+                          ) ?? 0,
+                        )}
+                  </span>
+                </div>
+              </Tooltip>
             </div>
             <div className="weapon-history-note-row">
               <label className="weapon-note-editor">
@@ -733,89 +847,115 @@ export function Sheet({
                   {sign(sheet.baseAttackBonus)}
                 </span>
               </div>
-              <div className="stat-card" title={statTooltip(sheet.initiative)}>
-                <span className="summary-label">Initiative</span>
-                <span className="summary-value">
-                  {sign(sheet.initiative.total)}
-                </span>
-                <label className="sheet-roll-entry">
-                  <span>Roll</span>
-                  <input
-                    type="number"
-                    inputMode="numeric"
-                    placeholder="d20"
-                    value={initiativeRollDraft}
-                    onChange={(event) =>
-                      setInitiativeRollDraft(event.target.value)
-                    }
-                  />
-                </label>
-                <span className="sheet-roll-total">
-                  {checkTotal(initiativeRollDraft, sheet.initiative.total) ===
-                  undefined
-                    ? "—"
-                    : sign(
-                        checkTotal(
-                          initiativeRollDraft,
-                          sheet.initiative.total,
-                        ) ?? 0,
-                      )}
-                </span>
-              </div>
-              <div className="stat-card" title={statTooltip(sheet.speed, true)}>
-                <span className="summary-label">Speed</span>
-                <span className="summary-value">{sheet.speed.total} ft</span>
-              </div>
-              <div
-                className="stat-card"
-                title={statTooltip(sheet.attack.melee)}
+              <Tooltip
+                content={statTooltip(sheet.initiative)}
+                className="mf-tooltip-anchor-block"
               >
-                <span className="summary-label">Melee</span>
-                <span className="summary-value">
-                  {sign(sheet.attack.melee.total)}
-                </span>
-              </div>
-              <div
-                className="stat-card"
-                title={statTooltip(sheet.attack.ranged)}
+                <div className="stat-card">
+                  <span className="summary-label">Initiative</span>
+                  <span className="summary-value">
+                    {sign(sheet.initiative.total)}
+                  </span>
+                  <label className="sheet-roll-entry">
+                    <span>Roll</span>
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      placeholder="d20"
+                      value={initiativeRollDraft}
+                      onChange={(event) =>
+                        setInitiativeRollDraft(event.target.value)
+                      }
+                    />
+                  </label>
+                  <span className="sheet-roll-total">
+                    {checkTotal(initiativeRollDraft, sheet.initiative.total) ===
+                    undefined
+                      ? "—"
+                      : sign(
+                          checkTotal(
+                            initiativeRollDraft,
+                            sheet.initiative.total,
+                          ) ?? 0,
+                        )}
+                  </span>
+                </div>
+              </Tooltip>
+              <Tooltip
+                content={statTooltip(sheet.speed, true)}
+                className="mf-tooltip-anchor-block"
               >
-                <span className="summary-label">Ranged</span>
-                <span className="summary-value">
-                  {sign(sheet.attack.ranged.total)}
-                </span>
-              </div>
-              <div className="stat-card" title={statTooltip(sheet.cmb)}>
-                <span className="summary-label">CMB</span>
-                <span className="summary-value">{sign(sheet.cmb.total)}</span>
-                <label className="sheet-roll-entry">
-                  <span>Roll</span>
-                  <input
-                    type="number"
-                    inputMode="numeric"
-                    placeholder="d20"
-                    value={cmbRollDraft}
-                    onChange={(event) => setCmbRollDraft(event.target.value)}
-                  />
-                </label>
-                <span className="sheet-roll-total">
-                  {checkTotal(cmbRollDraft, sheet.cmb.total) === undefined
-                    ? "—"
-                    : sign(checkTotal(cmbRollDraft, sheet.cmb.total) ?? 0)}
-                </span>
-              </div>
-              <div className="stat-card" title={statTooltip(sheet.cmd, true)}>
-                <span className="summary-label">CMD</span>
-                <span className="summary-value">{sheet.cmd.total}</span>
-              </div>
-              <div
-                className="stat-card"
-                title={encumbranceTooltip(sheet.encumbrance)}
+                <div className="stat-card">
+                  <span className="summary-label">Speed</span>
+                  <span className="summary-value">{sheet.speed.total} ft</span>
+                </div>
+              </Tooltip>
+              <Tooltip
+                content={statTooltip(sheet.attack.melee)}
+                className="mf-tooltip-anchor-block"
               >
-                <span className="summary-label">Encumbrance</span>
-                <span className="summary-value smallcaps">
-                  {sheet.encumbrance.band}
-                </span>
-              </div>
+                <div className="stat-card">
+                  <span className="summary-label">Melee</span>
+                  <span className="summary-value">
+                    {sign(sheet.attack.melee.total)}
+                  </span>
+                </div>
+              </Tooltip>
+              <Tooltip
+                content={statTooltip(sheet.attack.ranged)}
+                className="mf-tooltip-anchor-block"
+              >
+                <div className="stat-card">
+                  <span className="summary-label">Ranged</span>
+                  <span className="summary-value">
+                    {sign(sheet.attack.ranged.total)}
+                  </span>
+                </div>
+              </Tooltip>
+              <Tooltip
+                content={statTooltip(sheet.cmb)}
+                className="mf-tooltip-anchor-block"
+              >
+                <div className="stat-card">
+                  <span className="summary-label">CMB</span>
+                  <span className="summary-value">{sign(sheet.cmb.total)}</span>
+                  <label className="sheet-roll-entry">
+                    <span>Roll</span>
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      placeholder="d20"
+                      value={cmbRollDraft}
+                      onChange={(event) => setCmbRollDraft(event.target.value)}
+                    />
+                  </label>
+                  <span className="sheet-roll-total">
+                    {checkTotal(cmbRollDraft, sheet.cmb.total) === undefined
+                      ? "—"
+                      : sign(checkTotal(cmbRollDraft, sheet.cmb.total) ?? 0)}
+                  </span>
+                </div>
+              </Tooltip>
+              <Tooltip
+                content={statTooltip(sheet.cmd, true)}
+                className="mf-tooltip-anchor-block"
+              >
+                <div className="stat-card">
+                  <span className="summary-label">CMD</span>
+                  <span className="summary-value">{sheet.cmd.total}</span>
+                </div>
+              </Tooltip>
+              <Tooltip
+                content={encumbranceTooltip(sheet.encumbrance)}
+                className="mf-tooltip-anchor-block"
+              >
+                <div className="stat-card">
+                  <span className="summary-label">Encumbrance</span>
+                  <span className="summary-value smallcaps">
+                    {sheet.encumbrance.band}
+                  </span>
+                </div>
+              </Tooltip>
             </div>
             {sheet.raceMetadata ? (
               <div className="race-travel-grid">
@@ -918,12 +1058,14 @@ export function Sheet({
                 <div className="weapon" key={i}>
                   <span className="weapon-name">{w.name}</span>
                   <span className="weapon-stats">
-                    <span className="weapon-atk" title={statTooltip(w.attack)}>
-                      Atk {sign(w.attack.total)}
-                    </span>
-                    <span className="weapon-dmg" title={weaponDamageTooltip(w)}>
-                      Dmg {w.damageDisplay}
-                    </span>
+                    <Tooltip content={statTooltip(w.attack)}>
+                      <span className="weapon-atk">
+                        Atk {sign(w.attack.total)}
+                      </span>
+                    </Tooltip>
+                    <Tooltip content={weaponDamageTooltip(w)}>
+                      <span className="weapon-dmg">Dmg {w.damageDisplay}</span>
+                    </Tooltip>
                     <span className="weapon-crit">Crit {w.crit}</span>
                     {w.rangeIncrementFeet ? (
                       <span className="weapon-crit">
@@ -942,7 +1084,8 @@ export function Sheet({
                     ) : null}
                     {w.ammoAvailability?.length ? (
                       <span className="weapon-crit">
-                        Ammo {w.ammoAvailability
+                        Ammo{" "}
+                        {w.ammoAvailability
                           .map(
                             (entry) =>
                               `${entry.available} ${entry.ammoType}${entry.available === 1 ? "" : "s"}`,
@@ -951,7 +1094,9 @@ export function Sheet({
                       </span>
                     ) : null}
                     {w.loadedAmmoType ? (
-                      <span className="weapon-crit">Loaded {w.loadedAmmoType}</span>
+                      <span className="weapon-crit">
+                        Loaded {w.loadedAmmoType}
+                      </span>
                     ) : null}
                     {weaponAmmoUxLabel(w) ? (
                       <span className="weapon-crit">
@@ -962,13 +1107,19 @@ export function Sheet({
                       <span className="weapon-crit">Reload {w.reloadType}</span>
                     ) : null}
                     {w.weaponTechnology ? (
-                      <span className="weapon-crit">Tech {w.weaponTechnology}</span>
+                      <span className="weapon-crit">
+                        Tech {w.weaponTechnology}
+                      </span>
                     ) : null}
                     {ordnanceSummary(w) ? (
-                      <span className="weapon-crit">Payload {ordnanceSummary(w)}</span>
+                      <span className="weapon-crit">
+                        Payload {ordnanceSummary(w)}
+                      </span>
                     ) : null}
                     {w.ammoNotes?.length ? (
-                      <span className="weapon-crit">Notes {w.ammoNotes.join(", ")}</span>
+                      <span className="weapon-crit">
+                        Notes {w.ammoNotes.join(", ")}
+                      </span>
                     ) : null}
                     <span className="weapon-crit">
                       Attacks {history.length}
@@ -1356,14 +1507,12 @@ export function Sheet({
                   </Tooltip>
                 ))}
                 {suppressedFeatures.map((f, i) => (
-                  <span
-                    className="chip suppressed"
-                    key={`sup-${i}`}
-                    title={f.reason}
-                  >
-                    {f.name}
-                    <span className="chip-lvl">suppressed: {f.reason}</span>
-                  </span>
+                  <Tooltip key={`sup-${i}`} content={f.reason}>
+                    <span className="chip suppressed">
+                      {f.name}
+                      <span className="chip-lvl">suppressed: {f.reason}</span>
+                    </span>
+                  </Tooltip>
                 ))}
               </div>
             </section>
@@ -1390,36 +1539,61 @@ export function Sheet({
                   {formatWeight(sheet.inventory.totalWeight)}
                 </span>
               </div>
-              <div className="stat-card">
-                <span className="summary-label">Gear Cost</span>
-                <span className="summary-value">
-                  {formatGp(sheet.inventory.totalCostGp)}
-                </span>
-              </div>
-              <div className="stat-card">
-                <span className="summary-label">Coinpurse</span>
-                <span className="summary-value">
-                  {formatGp(wealthSummary.liquidWealthGp)}
-                </span>
-              </div>
-              <div className="stat-card">
-                <span className="summary-label">Coin Weight</span>
-                <span className="summary-value">
-                  {formatWeight(wealthSummary.coinWeightLb)}
-                </span>
-              </div>
-              <div className="stat-card">
-                <span className="summary-label">Wishlist</span>
-                <span className="summary-value">
-                  {formatGp(wealthSummary.wishlistCostGp)}
-                </span>
-              </div>
-              <div className="stat-card">
-                <span className="summary-label">Total Wealth</span>
-                <span className="summary-value">
-                  {formatGp(wealthSummary.totalWealthGp)}
-                </span>
-              </div>
+              <Tooltip
+                content={wealthTooltip(wealthSummary, sheet.inventory)}
+                className="mf-tooltip-anchor-block"
+              >
+                <div className="stat-card">
+                  <span className="summary-label">Gear Cost</span>
+                  <span className="summary-value">
+                    {formatGp(sheet.inventory.totalCostGp)}
+                  </span>
+                </div>
+              </Tooltip>
+              <Tooltip
+                content={wealthTooltip(wealthSummary, sheet.inventory)}
+                className="mf-tooltip-anchor-block"
+              >
+                <div className="stat-card">
+                  <span className="summary-label">Coinpurse</span>
+                  <span className="summary-value">
+                    {formatGp(wealthSummary.liquidWealthGp)}
+                  </span>
+                </div>
+              </Tooltip>
+              <Tooltip
+                content={wealthTooltip(wealthSummary, sheet.inventory)}
+                className="mf-tooltip-anchor-block"
+              >
+                <div className="stat-card">
+                  <span className="summary-label">Coin Weight</span>
+                  <span className="summary-value">
+                    {formatWeight(wealthSummary.coinWeightLb)}
+                  </span>
+                </div>
+              </Tooltip>
+              <Tooltip
+                content={wealthTooltip(wealthSummary, sheet.inventory)}
+                className="mf-tooltip-anchor-block"
+              >
+                <div className="stat-card">
+                  <span className="summary-label">Wishlist</span>
+                  <span className="summary-value">
+                    {formatGp(wealthSummary.wishlistCostGp)}
+                  </span>
+                </div>
+              </Tooltip>
+              <Tooltip
+                content={wealthTooltip(wealthSummary, sheet.inventory)}
+                className="mf-tooltip-anchor-block"
+              >
+                <div className="stat-card">
+                  <span className="summary-label">Total Wealth</span>
+                  <span className="summary-value">
+                    {formatGp(wealthSummary.totalWealthGp)}
+                  </span>
+                </div>
+              </Tooltip>
             </div>
             {wealthSummary.pp +
               wealthSummary.gp +
@@ -1466,7 +1640,9 @@ export function Sheet({
                           <span className="tag feature">{item.carryState}</span>
                         ) : null}
                         {item.containerName ? (
-                          <span className="tag feature">in {item.containerName}</span>
+                          <span className="tag feature">
+                            in {item.containerName}
+                          </span>
                         ) : null}
                         {typeof item.containerCapacityLb === "number" ? (
                           <span className="tag feature">
@@ -1615,8 +1791,10 @@ export function Sheet({
                         ) : null}
                         {item.weapon.ordnanceProfile ? (
                           <span className="chip">
-                            Payload: {[
-                              item.weapon.ordnanceProfile.saveDc && item.weapon.ordnanceProfile.saveType
+                            Payload:{" "}
+                            {[
+                              item.weapon.ordnanceProfile.saveDc &&
+                              item.weapon.ordnanceProfile.saveType
                                 ? `DC ${item.weapon.ordnanceProfile.saveDc} ${item.weapon.ordnanceProfile.saveType.toUpperCase()}`
                                 : undefined,
                               item.weapon.ordnanceProfile.area,
@@ -1655,24 +1833,51 @@ export function Sheet({
                     <span className="paper-badge">{c.castingType}</span>
                   </div>
                   <div className="spell-sheet-meta spell-sheet-meta-cards">
-                    <div className="spell-summary-card">
-                      <span className="spell-summary-label">Caster Level</span>
-                      <strong>{c.casterLevel}</strong>
-                    </div>
-                    <div className="spell-summary-card">
-                      <span className="spell-summary-label">Casting Stat</span>
-                      <strong>
-                        {c.castingAbility.toUpperCase()} {c.castingAbilityScore}
-                      </strong>
-                    </div>
-                    <div className="spell-summary-card">
-                      <span className="spell-summary-label">Concentration</span>
-                      <strong>{sign(c.concentration.total)}</strong>
-                    </div>
-                    <div className="spell-summary-card">
-                      <span className="spell-summary-label">Slots</span>
-                      <strong>{compactByLevel(c.slotsRemaining)}</strong>
-                    </div>
+                    <Tooltip
+                      content={spellcastingSummaryTooltip(c)}
+                      className="mf-tooltip-anchor-block"
+                    >
+                      <div className="spell-summary-card">
+                        <span className="spell-summary-label">
+                          Caster Level
+                        </span>
+                        <strong>{c.casterLevel}</strong>
+                      </div>
+                    </Tooltip>
+                    <Tooltip
+                      content={spellcastingSummaryTooltip(c)}
+                      className="mf-tooltip-anchor-block"
+                    >
+                      <div className="spell-summary-card">
+                        <span className="spell-summary-label">
+                          Casting Stat
+                        </span>
+                        <strong>
+                          {c.castingAbility.toUpperCase()}{" "}
+                          {c.castingAbilityScore}
+                        </strong>
+                      </div>
+                    </Tooltip>
+                    <Tooltip
+                      content={statTooltip(c.concentration)}
+                      className="mf-tooltip-anchor-block"
+                    >
+                      <div className="spell-summary-card">
+                        <span className="spell-summary-label">
+                          Concentration
+                        </span>
+                        <strong>{sign(c.concentration.total)}</strong>
+                      </div>
+                    </Tooltip>
+                    <Tooltip
+                      content={compactByLevel(c.slotsRemaining)}
+                      className="mf-tooltip-anchor-block"
+                    >
+                      <div className="spell-summary-card">
+                        <span className="spell-summary-label">Slots</span>
+                        <strong>{compactByLevel(c.slotsRemaining)}</strong>
+                      </div>
+                    </Tooltip>
                     {c.domains.length > 0 ? (
                       <span className="chip">
                         Domains: {displayDomainNames(c.domains).join(", ")}
@@ -1716,12 +1921,27 @@ export function Sheet({
                                 Level {level}
                               </div>
                               <div className="spell-level-sheet-stats">
-                                <span>
-                                  {diag.isAtWill
-                                    ? "At will"
-                                    : `${slotsLeft}/${slotsMax} slots left`}
-                                </span>
-                                {spellDc ? <span>DC {spellDc}</span> : null}
+                                <Tooltip
+                                  content={spellLevelMathTooltip(
+                                    c,
+                                    level,
+                                    slotsMax,
+                                    slotsLeft,
+                                  )}
+                                >
+                                  <span>
+                                    {diag.isAtWill
+                                      ? "At will"
+                                      : `${slotsLeft}/${slotsMax} slots left`}
+                                  </span>
+                                </Tooltip>
+                                {spellDc ? (
+                                  <Tooltip
+                                    content={spellDcTooltip(c, level, spellDc)}
+                                  >
+                                    <span>DC {spellDc}</span>
+                                  </Tooltip>
+                                ) : null}
                                 {diag.capacity > 0 ? (
                                   <span>
                                     {selected.length}/{diag.capacity} ready
@@ -1861,13 +2081,14 @@ export function Sheet({
                           ) : null}
 
                           {castHistory ? (
-                            <div
-                              className="spell-cast-history"
-                              title={compactSpellCastHistory(castHistory)}
+                            <Tooltip
+                              content={compactSpellCastHistory(castHistory)}
                             >
-                              Cast this session:{" "}
-                              {compactSpellCastHistory(castHistory)}
-                            </div>
+                              <div className="spell-cast-history">
+                                Cast this session:{" "}
+                                {compactSpellCastHistory(castHistory)}
+                              </div>
+                            </Tooltip>
                           ) : null}
                         </details>
                       );

@@ -1,5 +1,6 @@
 import type { DerivedStat } from "@mathfinder/rules-engine";
 import { sign } from "../util";
+import { Tooltip } from "./Tooltip";
 
 interface StatProps {
   label: string;
@@ -22,9 +23,13 @@ export function Stat({ label, stat, raw }: StatProps) {
   const display = raw ? `${stat.total}` : sign(stat.total);
   return (
     <details className="stat">
-      <summary title={breakdownTooltip(stat, raw)}>
-        <span className="stat-label">{label}</span>
-        <span className="stat-value">{display}</span>
+      <summary>
+        <Tooltip content={breakdownTooltip(stat, raw)} className="inline-grow">
+          <>
+            <span className="stat-label">{label}</span>
+            <span className="stat-value">{display}</span>
+          </>
+        </Tooltip>
       </summary>
       <ul className="breakdown">
         {stat.breakdown.map((b, i) => (
