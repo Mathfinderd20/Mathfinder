@@ -1,4 +1,5 @@
 import { abilityModifier } from "../abilities";
+import { computeSheet } from "../compute";
 import { effectiveWeaponProficiencyGroup } from "../campaign-rules";
 import type {
   AbilityKey,
@@ -20,6 +21,7 @@ import type {
 
 import {
   babForLevels,
+  checkClassPrerequisites,
   getClassDefinition,
   saveBaseForClass,
   SAMPLE_CLASSES,
@@ -27,7 +29,14 @@ import {
   type ClassRegistry,
   type SaveKind,
 } from "./classes";
-import { featEffects, FEATS, type FeatRegistry } from "../content/feats";
+import {
+  checkPrerequisites,
+  featContextFromSheet,
+  featEffects,
+  FEATS,
+  parseFeatSelection,
+  type FeatRegistry,
+} from "../content/feats";
 import {
   domainExtraSlots,
   getDomain,
@@ -658,6 +667,12 @@ function archetypeFeatureBuckets(archetype: ArchetypeDefinitionLike): string[] {
     .filter(Boolean);
 }
 
+function featSelectionBaseName(selection: string): string {
+  const trimmed = selection.trim();
+  const match = /^(.*?)\s*\(.+\)\s*$/.exec(trimmed);
+  return (match?.[1] ?? trimmed).trim().toLowerCase();
+}
+
 function selectedArchetypesForClass(
   build: CharacterBuild,
   className: string,
@@ -1286,6 +1301,7 @@ export function buildCharacter(
   const feats: NamedAcquisition[] = [...autoGrantedFeats];
   const archetypes: NamedAcquisition[] = [...autoGrantedArchetypes];
   const features: NamedAcquisition[] = [...autoGrantedFeatures];
+
   build.levels.forEach((lvl, index) => {
     const levelNum = index + 1;
     for (const feat of lvl.feats ?? [])
@@ -1393,6 +1409,7 @@ export function validateBuild(
   registry: ClassRegistry = SAMPLE_CLASSES,
   spellRegistry: SpellRegistry = SPELLS,
   archetypeRegistry?: ArchetypeRegistry,
+  featRegistry: FeatRegistry = FEATS,
 ): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
   const characterLevel = build.levels.length;
@@ -1583,6 +1600,9 @@ export function validateBuild(
     }
   }
 
+  const runningClassLevels = new Map<string, number>();
+  const chosenFeatSelections = [...raceBonusFeatNames(activeRace)];
+
   build.levels.forEach((lvl, index) => {
     const levelNum = index + 1;
     const def = resolvedClassDefinition(
@@ -1599,6 +1619,34 @@ export function validateBuild(
         level: levelNum,
         message: `Unknown class "${lvl.className}" at level ${levelNum}.`,
       });
+    }
+
+    const priorClassLevels =
+      runningClassLevels.get(lvl.className.toLowerCase()) ?? 0;
+    if (def?.isPrestigeClass && priorClassLevels === 0) {
+      const prefixBuild = { ...build, levels: build.levels.slice(0, index) };
+      const prefixSheet = computeSheet(
+        buildCharacter(
+          prefixBuild,
+          registry,
+          featRegistry,
+          undefined,
+          archetypeRegistry,
+        ),
+      );
+      const classPrereqs = checkClassPrerequisites(def, {
+        ...featContextFromSheet(prefixSheet),
+        skillRanks: { ...runningRanks },
+        classLevels: new Map(runningClassLevels),
+      });
+      if (classPrereqs.length > 0) {
+        issues.push({
+          severity: "error",
+          code: "prestige-class-prerequisites",
+          level: levelNum,
+          message: `${lvl.className} prerequisites not met at level ${levelNum}: ${classPrereqs.map((prereq) => prereq.description).join(", ")}.`,
+        });
+      }
     }
 
     if (lvl.abilityIncrease && levelNum % 4 !== 0) {
@@ -1635,6 +1683,78 @@ export function validateBuild(
       }
     }
 
+    if (lvl.feats?.length) {
+      const currentBuild = {
+        ...build,
+        levels: build.levels.slice(0, index + 1),
+      };
+      const currentSheet = computeSheet(
+        buildCharacter(
+          currentBuild,
+          registry,
+          featRegistry,
+          undefined,
+          archetypeRegistry,
+        ),
+      );
+      let featContext = {
+        ...featContextFromSheet(currentSheet),
+        featNames: [...chosenFeatSelections],
+      };
+      for (const featSelection of lvl.feats) {
+        const parsed = parseFeatSelection(featRegistry, featSelection);
+        if (!parsed) {
+          issues.push({
+            severity: "error",
+            code: "unknown-feat",
+            level: levelNum,
+            message: `Unknown feat "${featSelection}" at level ${levelNum}.`,
+          });
+          continue;
+        }
+        if (parsed.feat.parameter && !parsed.parameterValue) {
+          issues.push({
+            severity: "error",
+            code: "feat-parameter-missing",
+            level: levelNum,
+            message: `${parsed.feat.name} at level ${levelNum} requires a ${parsed.feat.parameter.label.toLowerCase()} choice.`,
+          });
+          continue;
+        }
+        const duplicate = parsed.feat.repeatable
+          ? chosenFeatSelections.some(
+              (selection) =>
+                selection.toLowerCase() === featSelection.toLowerCase(),
+            )
+          : chosenFeatSelections.some(
+              (selection) =>
+                featSelectionBaseName(selection) ===
+                parsed.feat.name.toLowerCase(),
+            );
+        if (duplicate) {
+          issues.push({
+            severity: "error",
+            code: "duplicate-feat",
+            level: levelNum,
+            message: `${parsed.selectionName} is selected more than once.`,
+          });
+          continue;
+        }
+        const prereq = checkPrerequisites(parsed.feat, featContext);
+        if (!prereq.met) {
+          issues.push({
+            severity: "error",
+            code: "feat-prerequisites",
+            level: levelNum,
+            message: `${parsed.selectionName} prerequisites not met at level ${levelNum}: ${prereq.unmet.map((entry) => entry.description).join(", ")}.`,
+          });
+          continue;
+        }
+        chosenFeatSelections.push(parsed.selectionName);
+        featContext = { ...featContext, featNames: [...chosenFeatSelections] };
+      }
+    }
+
     // Per-skill rank cap = character level.
     if (lvl.skillRanks) {
       for (const [key, ranks] of Object.entries(lvl.skillRanks) as [
@@ -1652,6 +1772,7 @@ export function validateBuild(
         }
       }
     }
+    runningClassLevels.set(lvl.className.toLowerCase(), priorClassLevels + 1);
   });
 
   // Final-state cap check against full character level (covers spread-out ranks).

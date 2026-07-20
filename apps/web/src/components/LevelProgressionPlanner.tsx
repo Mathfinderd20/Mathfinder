@@ -1,18 +1,35 @@
-import type { AbilityKey, CharacterBuild } from "@mathfinder/rules-engine";
+import {
+  buildCharacter,
+  computeSheet,
+  featContextFromSheet,
+  type AbilityKey,
+  type CharacterBuild,
+} from "@mathfinder/rules-engine";
 import type {
   LevelPlannerSuggestions,
   PlannerSuggestionChoice,
   PlannerSuggestionNote,
 } from "../buildSuggestions";
 import { featSlotTag, plannedFeatSlotsForLevel } from "../featSlots";
-import { CompendiumPicker, type CompendiumOption } from "./CompendiumPicker";
+import {
+  buildFeatPickerOptions,
+  collectFeatWeaponNames,
+  normalizeSelectedFeatSelection,
+} from "../featOptionData";
+import {
+  RUNTIME_ARCHETYPES,
+  RUNTIME_CLASS_FEATURES,
+  RUNTIME_CLASSES,
+  RUNTIME_FEATS,
+  RUNTIME_WEAPONS,
+} from "../content";
+import { CompendiumPicker } from "./CompendiumPicker";
 
 interface LevelProgressionPlannerProps {
   build: CharacterBuild;
   currentLevel: number;
   abilityOrder: readonly AbilityKey[];
   classOptions: Array<{ name: string; hitDie: number }>;
-  featOptions: CompendiumOption[];
   plannerSuggestions: LevelPlannerSuggestions[];
   onEnsureLevelCount: (count: number) => void;
   onSetCurrentLevel: (level: number) => void;
@@ -148,7 +165,6 @@ export function LevelProgressionPlanner({
   currentLevel,
   abilityOrder,
   classOptions,
-  featOptions,
   plannerSuggestions,
   onEnsureLevelCount,
   onSetCurrentLevel,
@@ -157,6 +173,8 @@ export function LevelProgressionPlanner({
   onApplyPlannerSuggestions,
   onClearPlannedLevelChoices,
 }: LevelProgressionPlannerProps) {
+  const availableWeaponNames = collectFeatWeaponNames(build, RUNTIME_WEAPONS);
+
   return (
     <section className="planner-shell">
       <div className="editor-section-head">
@@ -235,6 +253,19 @@ export function LevelProgressionPlanner({
                 abilityChoices: [],
                 notes: [],
               };
+              const featContext = isActive
+                ? featContextFromSheet(
+                    computeSheet(
+                      buildCharacter(
+                        { ...build, levels: build.levels.slice(0, index + 1) },
+                        RUNTIME_CLASSES,
+                        RUNTIME_FEATS,
+                        RUNTIME_CLASS_FEATURES,
+                        RUNTIME_ARCHETYPES,
+                      ),
+                    ),
+                  )
+                : undefined;
               return (
                 <tr
                   key={`planner-row-${index + 1}`}
@@ -302,11 +333,21 @@ export function LevelProgressionPlanner({
                       <div className="planner-feat-slots">
                         {featSlots.map((slot, featIndex) => {
                           const selectedFeat = level.feats?.[featIndex] ?? "";
-                          const slotOptions = featOptions.filter(
-                            (option) =>
-                              slot.kind !== "fighter-bonus" ||
-                              option.tags?.includes("combat"),
-                          );
+                          const slotOptions = featContext
+                            ? buildFeatPickerOptions({
+                                featRegistry: RUNTIME_FEATS,
+                                featContext,
+                                grantKind: slot.kind,
+                                takenSelections: featContext.featNames,
+                                currentSelection: selectedFeat,
+                                availableWeaponNames,
+                                suggestedFeatNames: new Set(
+                                  suggestions.featChoices.map((choice) =>
+                                    choice.value.trim().toLowerCase(),
+                                  ),
+                                ),
+                              })
+                            : [];
                           return (
                             <div
                               key={`${levelNumber}-${slot.source}-${featIndex}`}
@@ -321,7 +362,14 @@ export function LevelProgressionPlanner({
                               <CompendiumPicker
                                 value={selectedFeat}
                                 onChange={(value) =>
-                                  onSetLevelFeat(index, featIndex, value)
+                                  onSetLevelFeat(
+                                    index,
+                                    featIndex,
+                                    normalizeSelectedFeatSelection(
+                                      RUNTIME_FEATS,
+                                      value,
+                                    ),
+                                  )
                                 }
                                 options={slotOptions}
                                 placeholder="Search feat"

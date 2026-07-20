@@ -1,5 +1,6 @@
 import { buildCompendiumIndex, getCompendiumEntryByName } from "../compendium";
-import type { AbilityKey, DerivedSheet, Modifier } from "../types";
+import { SKILL_DEFINITIONS } from "../skills";
+import type { AbilityKey, DerivedSheet, Modifier, SkillKey } from "../types";
 import { babStep, type ActivatableEffect } from "./activatables";
 
 /** A single feat prerequisite, with a human-readable label for the UI. */
@@ -12,6 +13,13 @@ export interface Prerequisite {
   description: string;
 }
 
+export type FeatParameterKind = "weapon" | "skill";
+
+export interface FeatParameterDefinition {
+  kind: FeatParameterKind;
+  label: string;
+}
+
 export interface FeatDefinition {
   id: string;
   name: string;
@@ -21,6 +29,10 @@ export interface FeatDefinition {
   prerequisites: Prerequisite[];
   /** Grant/source metadata like combat/item-creation/general. */
   tags?: string[];
+  /** Whether the feat can be selected multiple times with different choices. */
+  repeatable?: boolean;
+  /** Optional choice payload for feats like Weapon Focus or Skill Focus. */
+  parameter?: FeatParameterDefinition;
   /** Passive effects granted, as modifiers. Empty for purely-activated feats. */
   effects: Modifier[];
   /** Optional activated state, e.g. Combat Expertise. */
@@ -126,18 +138,22 @@ export const CORE_FEATS: FeatDefinition[] = [
     id: "weapon-focus",
     name: "Weapon Focus",
     pack: "core",
-    description:
-      "+1 bonus on attack rolls with a chosen weapon (modeled as melee).",
+    description: "+1 bonus on attack rolls with a chosen weapon.",
     tags: ["combat"],
+    repeatable: true,
+    parameter: { kind: "weapon", label: "Weapon" },
     prerequisites: [{ type: "bab", min: 1, description: "BAB +1" }],
-    effects: [
-      {
-        target: "attack.melee",
-        type: "untyped",
-        value: 1,
-        source: "Weapon Focus",
-      },
-    ],
+    effects: [],
+  },
+  {
+    id: "skill-focus",
+    name: "Skill Focus",
+    pack: "core",
+    description: "+3 bonus on checks with one chosen skill.",
+    repeatable: true,
+    parameter: { kind: "skill", label: "Skill" },
+    prerequisites: [],
+    effects: [],
   },
   {
     id: "weapon-finesse",
@@ -380,14 +396,69 @@ export const FEATS: FeatRegistry = buildFeatRegistry(
   SAVAGE_COMPANY_FEATS,
 );
 
+export interface ParsedFeatSelection {
+  feat: FeatDefinition;
+  selectionName: string;
+  parameterValue?: string;
+}
+
+const FEAT_SELECTION_RE = /^(.*?)\s*\((.+)\)\s*$/;
+const SKILL_NAME_TO_KEY = new Map(
+  SKILL_DEFINITIONS.map((skill) => [skill.name.toLowerCase(), skill.key]),
+);
+const SKILL_KEY_TO_NAME = new Map(
+  SKILL_DEFINITIONS.map((skill) => [skill.key, skill.name]),
+);
+
+function normalizeWeaponChoice(value: string): string {
+  return value.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+function normalizeSkillChoice(value: string): SkillKey | undefined {
+  const trimmed = value.trim().toLowerCase();
+  return (SKILL_NAME_TO_KEY.get(trimmed) ?? trimmed) as SkillKey | undefined;
+}
+
+export function formatFeatSelection(
+  name: string,
+  parameterValue?: string,
+): string {
+  const trimmedParameter = parameterValue?.trim();
+  return trimmedParameter ? `${name} (${trimmedParameter})` : name;
+}
+
+export function parseFeatSelection(
+  registry: FeatRegistry,
+  selectionName: string,
+): ParsedFeatSelection | undefined {
+  const trimmed = selectionName.trim();
+  const exact = getCompendiumEntryByName(
+    buildCompendiumIndex(Object.values(registry)),
+    trimmed,
+  );
+  if (exact) return { feat: exact, selectionName: exact.name };
+  const match = FEAT_SELECTION_RE.exec(trimmed);
+  if (!match) return undefined;
+  const baseName = match[1]?.trim();
+  const parameterValue = match[2]?.trim();
+  if (!baseName || !parameterValue) return undefined;
+  const feat = getCompendiumEntryByName(
+    buildCompendiumIndex(Object.values(registry)),
+    baseName,
+  );
+  if (!feat) return undefined;
+  return {
+    feat,
+    selectionName: formatFeatSelection(feat.name, parameterValue),
+    parameterValue,
+  };
+}
+
 export function getFeat(
   registry: FeatRegistry,
   name: string,
 ): FeatDefinition | undefined {
-  return getCompendiumEntryByName(
-    buildCompendiumIndex(Object.values(registry)),
-    name,
-  );
+  return parseFeatSelection(registry, name)?.feat;
 }
 
 export function listFeats(registry: FeatRegistry): FeatDefinition[] {
@@ -405,14 +476,61 @@ export function featQualifiesForGrant(
   return true;
 }
 
+function parameterizedFeatEffects(selection: ParsedFeatSelection): Modifier[] {
+  const { feat, parameterValue } = selection;
+  if (feat.id === "weapon-focus") {
+    const normalizedWeapon = normalizeWeaponChoice(parameterValue ?? "");
+    if (!normalizedWeapon) return [];
+    return [
+      {
+        target: `weapon.attack.${normalizedWeapon}`,
+        type: "untyped",
+        value: 1,
+        source: formatFeatSelection(feat.name, parameterValue),
+      },
+    ];
+  }
+  if (feat.id === "skill-focus") {
+    const skillKey = normalizeSkillChoice(parameterValue ?? "");
+    if (!skillKey) return [];
+    return [
+      {
+        target: `skill.${skillKey}`,
+        type: "untyped",
+        value: 3,
+        source: formatFeatSelection(feat.name, SKILL_KEY_TO_NAME.get(skillKey)),
+      },
+    ];
+  }
+  return [];
+}
+
+export function featParameterOptions(
+  feat: FeatDefinition,
+  availableWeaponNames?: string[],
+): string[] {
+  if (feat.parameter?.kind === "skill") {
+    return SKILL_DEFINITIONS.map((skill) => skill.name);
+  }
+  if (feat.parameter?.kind === "weapon") {
+    return [
+      ...new Set(
+        (availableWeaponNames ?? []).map((name) => name.trim()).filter(Boolean),
+      ),
+    ].sort((a, b) => a.localeCompare(b));
+  }
+  return [];
+}
+
 export function featEffects(
   featNames: string[],
   registry: FeatRegistry,
 ): Modifier[] {
   const out: Modifier[] = [];
   for (const name of featNames) {
-    const feat = getFeat(registry, name);
-    if (feat) out.push(...feat.effects);
+    const selection = parseFeatSelection(registry, name);
+    if (!selection) continue;
+    out.push(...selection.feat.effects, ...parameterizedFeatEffects(selection));
   }
   return out;
 }
@@ -442,7 +560,12 @@ function prerequisiteMet(p: Prerequisite, ctx: FeatContext): boolean {
       return ctx.characterLevel >= (p.min ?? 0);
     case "feat": {
       const want = (p.featName ?? "").toLowerCase();
-      return ctx.featNames.some((n) => n.toLowerCase() === want);
+      return ctx.featNames.some((name) => {
+        const lowered = name.toLowerCase();
+        if (lowered === want) return true;
+        const match = FEAT_SELECTION_RE.exec(name.trim());
+        return match?.[1]?.trim().toLowerCase() === want;
+      });
     }
   }
 }

@@ -2163,6 +2163,7 @@ export function App() {
         RUNTIME_CLASSES,
         RUNTIME_SPELLS,
         RUNTIME_ARCHETYPES,
+        RUNTIME_FEATS,
       ),
       activatableFeatures,
       activatableGroups: groupActivatables(activatableFeatures),

@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { validateBuild, type CharacterBuild } from "../src/build/character";
+import { computeSheet } from "../src/compute";
+import {
+  buildCharacter,
+  validateBuild,
+  type CharacterBuild,
+} from "../src/build/character";
+import { SAMPLE_CLASSES, type ClassRegistry } from "../src/build/classes";
 
 function baseBuild(): CharacterBuild {
   return {
@@ -22,6 +28,34 @@ function baseBuild(): CharacterBuild {
     equipment: [],
   };
 }
+
+const PRESTIGE_CLASSES: ClassRegistry = {
+  ...SAMPLE_CLASSES,
+  "eldritch knight": {
+    name: "Eldritch Knight",
+    hitDie: 10,
+    bab: "full",
+    goodSaves: ["fort"],
+    skillRanksPerLevel: 2,
+    classSkills: ["climb", "knowledge.arcana", "ride", "spellcraft"],
+    weaponProficiencies: ["simple", "martial"],
+    isPrestigeClass: true,
+    prerequisites: [
+      { type: "bab", min: 5, description: "BAB +5" },
+      {
+        type: "skill-ranks",
+        skill: "knowledge.arcana",
+        min: 5,
+        description: "Knowledge (arcana) 5 ranks",
+      },
+      {
+        type: "feat",
+        featName: "Weapon Focus",
+        description: "Weapon Focus",
+      },
+    ],
+  },
+};
 
 describe("validateBuild inventory diagnostics", () => {
   it("warns when the wishlist costs more than the available coin purse", () => {
@@ -108,5 +142,126 @@ describe("validateBuild inventory diagnostics", () => {
     expect(issues.some((issue) => issue.code === "self-contained-item")).toBe(
       true,
     );
+  });
+
+  it("applies parameterized Weapon Focus and Skill Focus effects", () => {
+    const build: CharacterBuild = {
+      ...baseBuild(),
+      baseAbilityScores: {
+        str: 16,
+        dex: 12,
+        con: 10,
+        int: 10,
+        wis: 10,
+        cha: 10,
+      },
+      levels: [
+        {
+          className: "Fighter",
+          hitPointRoll: 10,
+          skillRanks: { perception: 1 },
+          feats: ["Weapon Focus (Longsword)", "Skill Focus (Perception)"],
+        },
+      ],
+      weapons: [
+        {
+          name: "Longsword",
+          category: "melee",
+          proficiencyGroup: "martial",
+          damageDice: "1d8",
+        },
+        {
+          name: "Battleaxe",
+          category: "melee",
+          proficiencyGroup: "martial",
+          damageDice: "1d8",
+        },
+      ],
+    };
+    const sheet = computeSheet(buildCharacter(build));
+    const longsword = sheet.weapons.find(
+      (weapon) => weapon.name === "Longsword",
+    );
+    const battleaxe = sheet.weapons.find(
+      (weapon) => weapon.name === "Battleaxe",
+    );
+    expect(longsword?.attack.total).toBe((battleaxe?.attack.total ?? 0) + 1);
+    expect(sheet.skills.perception?.total).toBe(4);
+  });
+
+  it("flags missing feat parameters and duplicate non-repeatable feats", () => {
+    const build: CharacterBuild = {
+      ...baseBuild(),
+      levels: [
+        {
+          className: "Fighter",
+          hitPointRoll: 10,
+          feats: ["Weapon Focus", "Toughness", "Toughness"],
+        },
+      ],
+    };
+    const issues = validateBuild(build);
+    expect(
+      issues.some((issue) => issue.code === "feat-parameter-missing"),
+    ).toBe(true);
+    expect(issues.some((issue) => issue.code === "duplicate-feat")).toBe(true);
+  });
+
+  it("flags unmet prestige-class prerequisites on first entry", () => {
+    const build: CharacterBuild = {
+      ...baseBuild(),
+      levels: [{ className: "Eldritch Knight", hitPointRoll: 10 }],
+    };
+    const issues = validateBuild(build, PRESTIGE_CLASSES, undefined);
+    expect(
+      issues.some((issue) => issue.code === "prestige-class-prerequisites"),
+    ).toBe(true);
+  });
+
+  it("allows prestige-class entry once prerequisites are met", () => {
+    const build: CharacterBuild = {
+      ...baseBuild(),
+      baseAbilityScores: {
+        str: 16,
+        dex: 12,
+        con: 10,
+        int: 10,
+        wis: 10,
+        cha: 10,
+      },
+      levels: [
+        {
+          className: "Fighter",
+          hitPointRoll: 10,
+          skillRanks: { "knowledge.arcana": 1 },
+        },
+        {
+          className: "Fighter",
+          hitPointRoll: 10,
+          skillRanks: { "knowledge.arcana": 1 },
+        },
+        {
+          className: "Fighter",
+          hitPointRoll: 10,
+          skillRanks: { "knowledge.arcana": 1 },
+          feats: ["Weapon Focus (Longsword)"],
+        },
+        {
+          className: "Fighter",
+          hitPointRoll: 10,
+          skillRanks: { "knowledge.arcana": 1 },
+        },
+        {
+          className: "Fighter",
+          hitPointRoll: 10,
+          skillRanks: { "knowledge.arcana": 1 },
+        },
+        { className: "Eldritch Knight", hitPointRoll: 10 },
+      ],
+    };
+    const issues = validateBuild(build, PRESTIGE_CLASSES, undefined);
+    expect(
+      issues.some((issue) => issue.code === "prestige-class-prerequisites"),
+    ).toBe(false);
   });
 });

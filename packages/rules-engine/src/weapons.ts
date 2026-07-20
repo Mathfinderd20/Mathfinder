@@ -28,6 +28,10 @@ function critDisplay(weapon: Weapon): string {
   return `${rangeStr}/x${mult}`;
 }
 
+function weaponChoiceKey(weapon: Weapon): string {
+  return weapon.name.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
 /**
  * Derive attack + damage lines for each equipped weapon.
  *
@@ -63,6 +67,15 @@ export function deriveWeapons(args: {
     const isMelee = weapon.category === "melee";
     const baseAttack = isMelee ? meleeAttack : rangedAttack;
     const attackBreakdown = [...baseAttack.breakdown];
+    for (const modifier of resolveModifiers(
+      modifiersFor(modifiers, `weapon.attack.${weaponChoiceKey(weapon)}`),
+    ).contributing) {
+      attackBreakdown.push({
+        source: modifier.source,
+        type: modifier.type,
+        value: modifier.value,
+      });
+    }
     if (weapon.proficient === false) {
       attackBreakdown.push({
         source: "Nonproficient",
@@ -117,6 +130,15 @@ export function deriveWeapons(args: {
     for (const m of resolveModifiers(modifiersFor(modifiers, damageTarget))
       .contributing) {
       breakdown.push({ source: m.source, type: m.type, value: m.value });
+    }
+    for (const modifier of resolveModifiers(
+      modifiersFor(modifiers, `weapon.damage.${weaponChoiceKey(weapon)}`),
+    ).contributing) {
+      breakdown.push({
+        source: modifier.source,
+        type: modifier.type,
+        value: modifier.value,
+      });
     }
 
     const damageBonus = breakdown.reduce((sum, b) => sum + b.value, 0);

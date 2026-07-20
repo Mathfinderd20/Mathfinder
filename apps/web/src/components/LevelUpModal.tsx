@@ -1,11 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   buildCharacter,
-  checkPrerequisites,
   computeSheet,
   featContextFromSheet,
-  featQualifiesForGrant,
-  listFeats,
   planLevelUp,
   createPreLevelBuild,
   validateLevelUpSelection,
@@ -22,6 +19,7 @@ import {
   RUNTIME_CLASSES,
   RUNTIME_FEATS,
   RUNTIME_SPELLS,
+  RUNTIME_WEAPONS,
 } from "../content";
 import {
   buildSuggestions,
@@ -34,7 +32,12 @@ import {
 import { displaySpellName } from "../spellLabels";
 import { featTitle, spellTitle } from "../rulesText";
 import { featSlotTag } from "../featSlots";
-import { CompendiumPicker, type CompendiumOption } from "./CompendiumPicker";
+import {
+  buildFeatPickerOptions,
+  collectFeatWeaponNames,
+  normalizeSelectedFeatSelection,
+} from "../featOptionData";
+import { CompendiumPicker } from "./CompendiumPicker";
 import { Tooltip } from "./Tooltip";
 
 const ABILITIES: AbilityKey[] = ["str", "dex", "con", "int", "wis", "cha"];
@@ -303,44 +306,21 @@ export function LevelUpModal({
         ),
       ),
     );
-    return plan.featSlots.map((slot, slotIndex) => {
-      const currentSelection =
-        selectedFeats[slotIndex]?.trim().toLowerCase() ?? "";
-      const taken = new Set(
-        ctx.featNames
-          .map((name) => name.toLowerCase())
-          .filter((name) => name !== currentSelection),
-      );
-      return listFeats(RUNTIME_FEATS)
-        .filter((feat) => !taken.has(feat.name.toLowerCase()))
-        .filter((feat) => featQualifiesForGrant(feat, slot.kind))
-        .map((feat) => ({
-          feat,
-          prereq: checkPrerequisites(feat, { ...ctx, featNames: [...taken] }),
-        }))
-        .filter(({ prereq }) => prereq.met)
-        .sort((a, b) => {
-          const aSuggested = suggestedFeatNames.has(a.feat.name.toLowerCase())
-            ? 1
-            : 0;
-          const bSuggested = suggestedFeatNames.has(b.feat.name.toLowerCase())
-            ? 1
-            : 0;
-          if (aSuggested !== bSuggested) return bSuggested - aSuggested;
-          return a.feat.name.localeCompare(b.feat.name);
-        })
-        .map(({ feat }) => ({
-          id: feat.id,
-          name: feat.name,
-          searchText: [
-            feat.description,
-            ...feat.prerequisites.map((p) => p.description),
-            ...(feat.tags ?? []),
-          ],
-          tooltip: featTitle(feat.name),
-          tags: [featSlotTag(slot.kind), ...(feat.tags ?? [])],
-        })) satisfies CompendiumOption[];
-    });
+    const availableWeaponNames = collectFeatWeaponNames(
+      preview.build,
+      RUNTIME_WEAPONS,
+    );
+    return plan.featSlots.map((slot, slotIndex) =>
+      buildFeatPickerOptions({
+        featRegistry: RUNTIME_FEATS,
+        featContext: ctx,
+        grantKind: slot.kind,
+        takenSelections: ctx.featNames,
+        currentSelection: selectedFeats[slotIndex],
+        availableWeaponNames,
+        suggestedFeatNames,
+      }),
+    );
   }, [plan.featSlots, preview.build, selectedFeats, suggestedFeatNames]);
 
   const spellSeedGroups: Array<{
@@ -640,7 +620,10 @@ export function LevelUpModal({
                     onChange={(value) =>
                       setSelectedFeats((prev) => {
                         const next = [...prev];
-                        next[slotIndex] = value;
+                        next[slotIndex] = normalizeSelectedFeatSelection(
+                          RUNTIME_FEATS,
+                          value,
+                        );
                         return next;
                       })
                     }
@@ -659,7 +642,10 @@ export function LevelUpModal({
                     onPick={(value) =>
                       setSelectedFeats((prev) => {
                         const next = [...prev];
-                        next[slotIndex] = value;
+                        next[slotIndex] = normalizeSelectedFeatSelection(
+                          RUNTIME_FEATS,
+                          value,
+                        );
                         return next;
                       })
                     }

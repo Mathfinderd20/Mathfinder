@@ -19,6 +19,45 @@ export interface SpellcastingProgression {
   spellsKnown?: Record<number, Partial<Record<number, number>>>;
 }
 
+export type ClassPrerequisite =
+  | {
+      type: "bab" | "character-level";
+      min: number;
+      description: string;
+    }
+  | {
+      type: "ability";
+      ability: AbilityKey;
+      min: number;
+      description: string;
+    }
+  | {
+      type: "feat";
+      featName: string;
+      description: string;
+    }
+  | {
+      type: "skill-ranks";
+      skill: SkillKey;
+      min: number;
+      description: string;
+    }
+  | {
+      type: "class-levels";
+      className: string;
+      min: number;
+      description: string;
+    };
+
+export interface ClassPrerequisiteContext {
+  baseAttackBonus: number;
+  abilityScores: Record<AbilityKey, number>;
+  characterLevel: number;
+  featNames: string[];
+  skillRanks: Partial<Record<SkillKey, number>>;
+  classLevels: Map<string, number>;
+}
+
 export interface ClassDefinition {
   name: string;
   hitDie: number;
@@ -31,6 +70,8 @@ export interface ClassDefinition {
   weaponProficiencies?: WeaponProficiencyGroup[];
   specificWeaponProficiencies?: string[];
   spellcasting?: SpellcastingProgression;
+  isPrestigeClass?: boolean;
+  prerequisites?: ClassPrerequisite[];
 }
 
 /** Base attack bonus contributed by `levels` levels of a given progression. */
@@ -77,6 +118,41 @@ export function spellsByLevel(
     if ((count ?? 0) > 0) out[spellLevel] = count;
   });
   return out;
+}
+
+function normalizeChosenFeatBaseName(name: string): string {
+  const trimmed = name.trim();
+  const match = /^(.*?)\s*\(.+\)\s*$/.exec(trimmed);
+  return (match?.[1] ?? trimmed).trim().toLowerCase();
+}
+
+export function checkClassPrerequisites(
+  classDef: ClassDefinition,
+  ctx: ClassPrerequisiteContext,
+): ClassPrerequisite[] {
+  return (classDef.prerequisites ?? []).filter((prereq) => {
+    switch (prereq.type) {
+      case "bab":
+        return ctx.baseAttackBonus < prereq.min;
+      case "character-level":
+        return ctx.characterLevel < prereq.min;
+      case "ability":
+        return ctx.abilityScores[prereq.ability] < prereq.min;
+      case "feat": {
+        const wanted = prereq.featName.trim().toLowerCase();
+        return !ctx.featNames.some(
+          (name) => normalizeChosenFeatBaseName(name) === wanted,
+        );
+      }
+      case "skill-ranks":
+        return (ctx.skillRanks[prereq.skill] ?? 0) < prereq.min;
+      case "class-levels":
+        return (
+          (ctx.classLevels.get(prereq.className.trim().toLowerCase()) ?? 0) <
+          prereq.min
+        );
+    }
+  });
 }
 
 export type ClassRegistry = Record<string, ClassDefinition>;

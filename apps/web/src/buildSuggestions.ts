@@ -1,5 +1,6 @@
 import {
   buildCharacter,
+  checkClassPrerequisites,
   checkPrerequisites,
   computeSheet,
   featContextFromSheet,
@@ -951,9 +952,55 @@ function scoreClassChoice(
   levelIndex: number,
   profile: BuildProfile,
   archetypes: Record<string, ArchetypeDefinitionLike>,
+  classes: Record<string, ClassDefinition>,
+  feats: FeatRegistry,
+  classFeatures: ClassFeatureRegistry,
 ) {
   let score = 0;
   let reason = "Fits the current direction of the build.";
+  if (classDef.prerequisites?.length) {
+    const prefixBuild = {
+      ...build,
+      levels: build.levels.slice(0, levelIndex),
+    };
+    const prefixSheet = computeSheet(
+      buildCharacter(prefixBuild, classes, feats, classFeatures, archetypes),
+    );
+    const runningSkillRanks = prefixBuild.levels.reduce<
+      Partial<Record<SkillKey, number>>
+    >((acc, level) => {
+      for (const [skill, ranks] of Object.entries(level.skillRanks ?? {}) as [
+        SkillKey,
+        number,
+      ][]) {
+        acc[skill] = (acc[skill] ?? 0) + ranks;
+      }
+      return acc;
+    }, {});
+    const runningClassLevels = prefixBuild.levels.reduce<Map<string, number>>(
+      (acc, level) => {
+        const key = level.className.toLowerCase();
+        acc.set(key, (acc.get(key) ?? 0) + 1);
+        return acc;
+      },
+      new Map<string, number>(),
+    );
+    const unmet = checkClassPrerequisites(classDef, {
+      ...featContextFromSheet(prefixSheet),
+      skillRanks: runningSkillRanks,
+      classLevels: runningClassLevels,
+    });
+    if (unmet.length > 0) {
+      return choiceWithMeta({
+        value: classDef.name,
+        label: classDef.name,
+        reason: `Needs ${unmet.map((entry) => entry.description).join(", ")}.`,
+        score: -100,
+        sourceKind: "system",
+        sourceLabel: "Prerequisites",
+      }) satisfies PlannerSuggestionChoice<string>;
+    }
+  }
   const previousClass = build.levels[levelIndex - 1]?.className;
   if (normalize(previousClass) === normalize(classDef.name)) {
     score += 50;
@@ -1030,6 +1077,9 @@ function suggestClassChoices(
           levelIndex,
           profile,
           args.archetypes,
+          args.classes,
+          args.feats,
+          args.classFeatures,
         ),
       )
       .filter((choice) => choice.score > 0),

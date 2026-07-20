@@ -11,6 +11,7 @@ import { useMemo, useState, type ReactNode } from "react";
 import { featTitle } from "../rulesText";
 import type { SpellCastCounts } from "../runtimeState";
 import { LevelProgressionPlanner } from "./LevelProgressionPlanner";
+import { GuidedBuildWizard } from "./GuidedBuildWizard";
 import type {
   LevelPlannerSuggestions,
   SkillSuggestionChoice,
@@ -212,6 +213,25 @@ export function BuildEditorTab(props: Props) {
 
   return (
     <div className="build-page">
+      <GuidedBuildWizard
+        build={build}
+        currentLevel={currentLevel}
+        abilityOrder={abilityOrder}
+        raceOptions={raceOptions}
+        classOptions={classOptions}
+        plannerSuggestions={plannerSuggestions}
+        currentLevelSkillSuggestions={currentLevelSkillSuggestions}
+        onUpdateName={props.onUpdateName}
+        onUpdateRace={props.onUpdateRace}
+        onUpdateFavoredClassName={props.onUpdateFavoredClassName}
+        onUpdateFirearmRulesMode={props.onUpdateFirearmRulesMode}
+        onSetCurrentLevel={props.onSetCurrentLevel}
+        onUpdateBaseAbilityScore={props.onUpdateBaseAbilityScore}
+        onUpdateRaceFlexibleAbility={props.onUpdateRaceFlexibleAbility}
+        onUpdateLevelField={props.onUpdateLevelField}
+        onUpdateLevelSkillRank={props.onUpdateLevelSkillRank}
+        onApplyPlannerSuggestions={props.onApplyPlannerSuggestions}
+      />
       <section className="panel build-panel">
         <h2>Build Editor</h2>
         <p className="hint">
@@ -503,7 +523,6 @@ export function BuildEditorTab(props: Props) {
               currentLevel={currentLevel}
               abilityOrder={abilityOrder}
               classOptions={classOptions}
-              featOptions={featOptions}
               plannerSuggestions={plannerSuggestions}
               onEnsureLevelCount={props.onEnsureLevelCount}
               onSetCurrentLevel={props.onSetCurrentLevel}
