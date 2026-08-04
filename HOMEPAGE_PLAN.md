@@ -274,50 +274,55 @@ The immediate implementation target is step 1. Local characters and campaigns mu
 
 ## Delivery slices
 
-### Slice 1 — App shell, routes, and persistence foundation
+### Slice 1 — App shell, routes, and persistence foundation — Complete
 
-- Add router and route-aware bootstrap.
-- Extract/wrap the existing sheet experience as `CharacterWorkspace` without changing rules behavior.
-- Add repository types and versioned local adapters.
-- Implement and test legacy character migration.
-- Scope current level and runtime state by character ID.
-- Add a Home link/back affordance to the character workspace.
+- [x] Add router and route-aware bootstrap.
+- [x] Extract/wrap the existing sheet experience as `CharacterWorkspace` without changing rules behavior.
+- [x] Add repository types and versioned local adapters.
+- [x] Implement and test legacy character migration.
+- [x] Scope current level and runtime state by character ID.
+- [x] Add a Home link/back affordance to the character workspace.
 
 **Exit condition:** `/` and character deep links work; existing saved builds remain accessible; refresh and browser history behave correctly.
 
-### Slice 2 — Homepage UI
+### Slice 2 — Homepage UI — Complete
 
-- Build global header, welcome area, and quick actions.
-- Build campaign and character sections with populated and empty states.
-- Derive character card summaries from `CharacterBuild` through a small tested formatter.
-- Add responsive, keyboard, focus, contrast, and reduced-motion behavior.
+- [x] Build global header, welcome area, and quick actions.
+- [x] Build campaign and character sections with populated and empty states.
+- [x] Derive character card summaries from `CharacterBuild` through a small tested formatter.
+- [x] Add responsive, keyboard, focus, contrast, and reduced-motion behavior.
 
 **Exit condition:** users can identify and open any local character from the homepage on desktop or mobile.
 
-### Slice 3 — Character creation and management
+### Slice 3 — Character creation and management — Complete
 
-- Route Create Character into the existing guided build flow using a new record.
-- Save edits to the selected character record rather than the global current-build key.
-- Support character rename and deletion with confirmation.
-- Link directly to sheet and build tabs from each card.
+- [x] Route Create Character into the existing guided build flow using a new record.
+- [x] Save edits to the selected character record rather than the global current-build key.
+- [x] Support character rename and deletion with confirmation.
+- [x] Link directly to sheet and build tabs from each card.
 
 **Exit condition:** create, open, edit, refresh, and return home without losing or crossing character state.
 
-### Slice 4 — Local campaign flows
+### Slice 4 — Local campaign flows — In progress
 
-- Implement Create Campaign with name and description; campaigns may begin empty, with optional character assignment during or after creation.
-- Add campaign overview and local character assignment/removal.
-- Implement Join Campaign form states behind a capability flag/API adapter.
-- Show role, counts, linked character, and timestamps accurately on homepage cards.
+Local creation, overview, cards, and many-to-many character assignment are complete. Online Join Campaign remains intentionally unavailable until authenticated shared persistence exists.
+
+- [x] Implement Create Campaign with name and description; campaigns may begin empty, with optional character assignment during or after creation.
+- [x] Add campaign overview and local character assignment/removal.
+- [~] Implement Join Campaign form states behind a capability flag/API adapter — unavailable-backend state is live; authenticated invite states remain.
+- [~] Show role, counts, linked characters, and timestamps accurately on homepage cards — local role/count/assignment metadata is live; precise activity timestamps remain.
 
 **Exit condition:** local campaign organization is useful; unsupported online joining is honest and non-destructive.
 
-### Slice 5 — Shared campaign backend (separate backend milestone)
+### Slice 5 — Shared campaign backend (separate backend milestone) — Next
 
-- Select auth/database/realtime platform.
-- Implement API repositories, authorization, and invite redemption.
-- Replace local campaign adapter through the existing interfaces.
-- Add sync/conflict/error handling and integration tests.
+Supabase is selected. The next implementation task is project configuration, migrations, generated types, and RLS policies while preserving local mode.
+
+- [x] Select Supabase for PostgreSQL, Auth, RLS, Realtime, and Edge Functions.
+- [ ] Provision projects and commit schema migrations, generated types, and RLS policies.
+- [ ] Implement cloud repositories, authorization, and invite redemption.
+- [ ] Replace local campaign adapters through the existing interfaces while retaining guest mode.
+- [ ] Add sync/conflict/error handling and integration tests.
 
 **Exit condition:** two authenticated users can join the same campaign and see authorized shared state.
 
