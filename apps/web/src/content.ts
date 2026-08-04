@@ -99,12 +99,22 @@ function raceOptionsFromIndex(
   );
 }
 
+export function runtimeContentAssetUrl(origin: string) {
+  return new URL("/usable-content.json", origin).toString();
+}
+
 async function fetchUsableContentAsset(): Promise<UsableContentAsset> {
-  const assetUrl = new URL("usable-content.json", document.baseURI).toString();
+  const assetUrl = runtimeContentAssetUrl(window.location.origin);
   const response = await fetch(assetUrl, { cache: "no-cache" });
   if (!response.ok) {
     throw new Error(
       `Failed to load runtime content from ${assetUrl} (${response.status} ${response.statusText})`,
+    );
+  }
+  const contentType = response.headers.get("content-type") ?? "";
+  if (!contentType.includes("application/json")) {
+    throw new Error(
+      `Runtime content at ${assetUrl} returned ${contentType || "an unknown content type"} instead of JSON`,
     );
   }
   return response.json() as Promise<UsableContentAsset>;
@@ -162,7 +172,10 @@ export async function loadRuntimeContent() {
       rulesData.packs.map((pack) => [pack.id, pack] as const),
     );
     const normalizedSpellById = new Map(
-      (usableContent.normalized?.spells ?? []).map((spell) => [spell.id, spell]),
+      (usableContent.normalized?.spells ?? []).map((spell) => [
+        spell.id,
+        spell,
+      ]),
     );
     const normalizedSpellByName = new Map(
       (usableContent.normalized?.spells ?? []).map((spell) => [
