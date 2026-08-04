@@ -3,6 +3,7 @@
 ## Active feature plans
 
 - [`HOMEPAGE_PLAN.md`](./HOMEPAGE_PLAN.md) — user dashboard, character navigation, campaign entry points, persistence migration, and phased multiplayer boundary
+- [`BACKEND_PLAN.md`](./BACKEND_PLAN.md) — Supabase architecture, authentication, data model, permissions, realtime sync, and delivery phases
 
 ## Unified compendium + runtime systems layer
 

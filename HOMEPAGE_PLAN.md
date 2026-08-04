@@ -339,4 +339,4 @@ Add focused web tests rather than snapshotting whole pages. Giant snapshots are 
 - Players always retain edit control over their characters; campaign GMs cannot lock them.
 - Campaigns may be created empty and populated later.
 - Campaigns appear before characters on the homepage.
-- The authentication provider decision is deferred to the shared-backend milestone; this branch must preserve a provider-neutral repository boundary.
+- Supabase Auth is the selected authentication system, with Google OAuth as the primary login, email magic links as fallback, and local guest mode; the homepage still preserves provider-neutral repository boundaries.
