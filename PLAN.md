@@ -1,5 +1,9 @@
 # Mathfinder Plan
 
+## Active feature plans
+
+- [`HOMEPAGE_PLAN.md`](./HOMEPAGE_PLAN.md) — user dashboard, character navigation, campaign entry points, persistence migration, and phased multiplayer boundary
+
 ## Unified compendium + runtime systems layer
 
 ### Goal
