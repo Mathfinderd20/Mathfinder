@@ -1,0 +1,63 @@
+.character-management-page {
+  padding-top: 56px;
+  padding-bottom: 56px;
+}
+
+.management-stack {
+  display: grid;
+  width: min(680px, 100%);
+  gap: 18px;
+}
+
+.management-stack .form-card {
+  width: 100%;
+}
+
+.danger-zone {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px;
+  border: 1px solid rgba(212, 117, 106, 0.42);
+  border-radius: 16px;
+  background: rgba(80, 32, 28, 0.22);
+}
+
+.danger-zone h2 {
+  margin: 0 0 6px;
+  font-family: Georgia, serif;
+  font-size: 23px;
+  font-weight: 500;
+}
+
+.danger-zone p {
+  max-width: 430px;
+  margin: 0;
+  color: var(--home-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.danger-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
+}
+
+button.danger-button {
+  flex: 0 0 auto;
+  background: #a4473d;
+}
+
+button.danger-button:hover {
+  background: #c65b50;
+}
+
+@media (max-width: 650px) {
+  .danger-zone,
+  .danger-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

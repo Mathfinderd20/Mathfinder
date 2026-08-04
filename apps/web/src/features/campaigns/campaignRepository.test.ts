@@ -5,6 +5,7 @@ import {
   characterIdsForCampaign,
   createCampaign,
   listCampaigns,
+  removeCharacterFromCampaigns,
   setCampaignCharacterAssignment,
 } from "./campaignRepository";
 
@@ -58,6 +59,9 @@ describe("campaign repository", () => {
       "hero-2",
     ]);
     expect(campaignsForCharacter(storage, "hero-2")).toEqual([campaign]);
+
+    removeCharacterFromCampaigns(storage, "hero-1");
+    expect(characterIdsForCampaign(storage, campaign.id)).toEqual(["hero-2"]);
   });
 
   it("adds and removes an assignment independently", () => {

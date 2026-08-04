@@ -177,6 +177,19 @@ export function createCampaign(
   return campaign;
 }
 
+export function removeCharacterFromCampaigns(
+  storage: StorageLike,
+  characterId: string,
+) {
+  const store = initializeStore(storage);
+  writeStore(storage, {
+    ...store,
+    assignments: store.assignments.filter(
+      (assignment) => assignment.characterId !== characterId,
+    ),
+  });
+}
+
 export function setCampaignCharacterAssignment(
   storage: StorageLike,
   campaignId: string,

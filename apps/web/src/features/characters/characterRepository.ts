@@ -261,6 +261,25 @@ export function saveCharacter(
   return updated;
 }
 
+export function renameCharacter(
+  storage: StorageLike,
+  characterId: string,
+  name: string,
+  options: RepositoryOptions = {},
+) {
+  const character = getCharacter(storage, characterId);
+  if (!character) return undefined;
+  const normalizedName = name.trim();
+  if (!normalizedName) throw new Error("Character name is required.");
+  return saveCharacter(
+    storage,
+    characterId,
+    { ...character.build, name: normalizedName },
+    character.currentLevel,
+    options,
+  );
+}
+
 export function deleteCharacter(storage: StorageLike, characterId: string) {
   const store = initializeCharacterStore(storage);
   writeStore(storage, {

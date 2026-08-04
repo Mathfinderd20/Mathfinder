@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { createCharacter } from "./characterRepository";
+import { createFreshCharacterBuild } from "./newCharacterBuild";
 import "../home/home.css";
 import "../home/home-responsive.css";
 
@@ -16,14 +17,15 @@ export function NewCharacterPage() {
     setCreating(true);
     setError(undefined);
     try {
-      const { loadRuntimeContent } = await import("../../content");
+      const { loadRuntimeContent, RUNTIME_RACES } =
+        await import("../../content");
       await loadRuntimeContent();
-      const { initialBuild } = await import("../../data");
-      const build = {
-        ...initialBuild,
-        name: name.trim() || "Unnamed Hero",
-      };
-      const character = createCharacter(window.localStorage, build);
+      const humanRace = RUNTIME_RACES.human;
+      if (!humanRace) throw new Error("Human ancestry content is unavailable.");
+      const character = createCharacter(
+        window.localStorage,
+        createFreshCharacterBuild(name, humanRace),
+      );
       navigate(`/characters/${character.id}/build`, { replace: true });
     } catch (cause) {
       setError(

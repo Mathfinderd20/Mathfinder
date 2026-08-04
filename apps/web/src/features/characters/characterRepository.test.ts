@@ -7,9 +7,11 @@ import {
   LEGACY_RUNTIME_KEY,
   LEGACY_SLOTS_KEY,
   createCharacter,
+  deleteCharacter,
   getCharacter,
   initializeCharacterStore,
   listCharacters,
+  renameCharacter,
   runtimeStorageKey,
   saveCharacter,
   type StorageLike,
@@ -165,5 +167,22 @@ describe("character repository", () => {
       currentLevel: 2,
       updatedAt: "2026-08-04T00:00:00.000Z",
     });
+  });
+
+  it("renames and deletes a character record", () => {
+    const storage = new MemoryStorage();
+    const character = createCharacter(storage, build("Old Name"), {
+      now: () => NOW,
+      createId: sequentialIds(),
+    });
+
+    renameCharacter(storage, character.id, "  New Name  ", {
+      now: () => "2026-08-04T00:00:00.000Z",
+    });
+    expect(getCharacter(storage, character.id)?.name).toBe("New Name");
+    expect(getCharacter(storage, character.id)?.build.name).toBe("New Name");
+
+    deleteCharacter(storage, character.id);
+    expect(getCharacter(storage, character.id)).toBeUndefined();
   });
 });

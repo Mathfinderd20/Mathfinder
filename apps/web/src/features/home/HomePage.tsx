@@ -236,6 +236,12 @@ export function HomePage() {
                       >
                         Edit build
                       </Link>
+                      <Link
+                        className="button-link secondary"
+                        to={`/characters/${character.id}/manage`}
+                      >
+                        Manage
+                      </Link>
                     </div>
                   </article>
                 );

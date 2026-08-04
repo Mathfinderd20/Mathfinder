@@ -72,7 +72,7 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 - [x] Real-time sheet view (live recompute on any change)
 - [x] Interactive buff/aura toggles -> auto-apply to sheet (proves the multiplayer mechanism)
 - [x] Web persistence: current build autosave + saved character slots
-- [x] Homepage/dashboard foundation: routed landing page, migrated first-class local character records, character cards, quick actions, deep links, and character-scoped runtime persistence
+- [x] Homepage/dashboard foundation: routed landing page, migrated first-class local character records, character cards, quick actions, deep links, character-scoped runtime persistence, clean new-character builds, rename, and confirmed deletion
 - [~] Campaign homepage flows — local campaign creation, many-to-many character assignment, cards, overview routes, and honest join state are live; shared Supabase auth/invitations remain
 - [x] Click-to-expand stat breakdowns (the 'why' UX)
 - [x] Level up / undo buttons backed by levelUp/levelDown
