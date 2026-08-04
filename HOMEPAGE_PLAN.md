@@ -248,6 +248,18 @@ apps/web/src/
 
 The homepage should render before runtime compendium content is fetched. Load rules content only for character creation/workspace routes. This improves perceived startup and prevents content-loading failures from blocking campaign/character navigation.
 
+## Implementation status
+
+- [x] Add browser routing and make `/` the default entry point.
+- [x] Render the homepage before loading runtime compendium content.
+- [x] Add versioned local character records and non-destructive legacy migration.
+- [x] Scope runtime persistence by character ID.
+- [x] Add character cards, quick actions, empty states, and responsive homepage styling.
+- [x] Add character sheet/build deep links and a routed creation entry point.
+- [~] Character creation opens the existing guided build tools; richer creation setup and character deletion/management remain.
+- [ ] Replace campaign placeholders with local campaign repositories and flows.
+- [ ] Add Supabase authentication and shared campaign persistence from `BACKEND_PLAN.md`.
+
 ## Delivery slices
 
 ### Slice 1 — App shell, routes, and persistence foundation

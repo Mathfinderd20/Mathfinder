@@ -1,0 +1,102 @@
+@media (max-width: 850px) {
+  .quick-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .quick-action {
+    min-height: 0;
+  }
+
+  .character-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .empty-state {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .empty-actions {
+    width: 100%;
+    margin-left: 72px;
+  }
+}
+
+@media (max-width: 560px) {
+  .home-header {
+    min-height: 66px;
+  }
+
+  .home-brand small,
+  .local-profile small {
+    display: none;
+  }
+
+  .local-profile > span:last-child {
+    font-size: 0;
+  }
+
+  .local-profile > span:last-child::after {
+    font-size: 11px;
+    content: "Local";
+  }
+
+  .home-main {
+    width: min(100% - 28px, 1180px);
+    padding-top: 42px;
+  }
+
+  .welcome-section {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .welcome-section h1 {
+    font-size: 42px;
+  }
+
+  .edition-chip {
+    align-self: flex-start;
+  }
+
+  .section-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .empty-actions,
+  .character-actions {
+    display: grid;
+    width: 100%;
+    grid-template-columns: 1fr;
+    margin-left: 0;
+  }
+
+  .character-card-top {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .level-chip {
+    margin-left: 62px;
+  }
+
+  .home-footer {
+    gap: 8px;
+    flex-direction: column;
+  }
+
+  .form-actions {
+    align-items: stretch;
+    flex-direction: column-reverse;
+    margin-left: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .quick-action,
+  .button-link {
+    transition: none;
+  }
+}
