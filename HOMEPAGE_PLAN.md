@@ -260,6 +260,18 @@ The homepage should render before runtime compendium content is fetched. Load ru
 - [x] Add local campaign records, empty campaign creation, optional character assignment, campaign cards, and overview routes.
 - [~] Join Campaign remains an honest backend placeholder until Supabase authentication and shared persistence from `BACKEND_PLAN.md` are implemented.
 
+## Next active phase — Shared backend
+
+Detailed architecture, schema, security rules, and rollout requirements live in [`BACKEND_PLAN.md`](./BACKEND_PLAN.md). The homepage integration order is:
+
+1. **Supabase foundation** — project configuration, committed migrations, generated TypeScript types, RLS policies, and an optional client that does not break local mode when cloud configuration is absent.
+2. **Authentication UI** — Google OAuth through Supabase Auth, email magic-link fallback, local guest mode, callback/session restoration, and sign-out.
+3. **Explicit local-to-cloud import** — preview and confirm character imports, preserve local rollback data, prevent duplicates, and use revision checks.
+4. **Shared campaigns and invitations** — cloud memberships, secure invite redemption, multi-campaign character assignment, and player-owned character permissions.
+5. **Realtime campaign runtime** — state scoped by campaign and character, authorized subscriptions, GM actions, event history, retries, and conflict handling.
+
+The immediate implementation target is step 1. Local characters and campaigns must remain fully usable throughout this phase.
+
 ## Delivery slices
 
 ### Slice 1 — App shell, routes, and persistence foundation
