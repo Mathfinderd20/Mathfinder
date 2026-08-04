@@ -16,6 +16,18 @@ Use **Supabase** as Mathfinder's shared backend:
 
 Do not build a custom Node API until concrete requirements exceed Supabase's database, RLS, RPC, and Edge Function capabilities. Infrastructure should serve the game, not become the final boss.
 
+## Implementation status
+
+- [x] Supabase CLI configuration is committed under `supabase/`.
+- [x] Initial gameplay schema and RLS policies are committed as a migration.
+- [x] The frontend has an optional PKCE-configured client that leaves local mode untouched when cloud environment variables are absent.
+- [x] A static schema contract verifies all gameplay tables have RLS enabled.
+- [ ] Start the local Supabase stack and execute database lint/policy tests — currently blocked until Docker is running.
+- [ ] Generate database TypeScript types from the running local schema.
+- [ ] Link/provision managed development, staging, and production projects.
+
+Useful commands: `npm run supabase:start`, `npm run supabase:reset`, `npm run supabase:lint`, `npm run supabase:verify`, and `npm run supabase:types`.
+
 ## Goals
 
 The backend must support:

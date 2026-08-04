@@ -319,7 +319,7 @@ Local creation, overview, cards, and many-to-many character assignment are compl
 Supabase is selected. The next implementation task is project configuration, migrations, generated types, and RLS policies while preserving local mode.
 
 - [x] Select Supabase for PostgreSQL, Auth, RLS, Realtime, and Edge Functions.
-- [ ] Provision projects and commit schema migrations, generated types, and RLS policies.
+- [~] Provision projects and commit schema migrations, generated types, and RLS policies — local CLI config, initial schema/RLS migration, contract verification, and optional client are committed; Docker-backed execution, generated types, and managed project provisioning remain.
 - [ ] Implement cloud repositories, authorization, and invite redemption.
 - [ ] Replace local campaign adapters through the existing interfaces while retaining guest mode.
 - [ ] Add sync/conflict/error handling and integration tests.

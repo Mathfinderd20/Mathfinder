@@ -16,7 +16,7 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 - [ ] Lock remaining dependency versions as packages are added
 - [~] Add apps/web, apps/mobile, packages/shared, services/api — apps/web and packages/rules-data/rules-engine live; mobile/shared/api still pending
 - [~] Set up linting, formatting, CI, and pre-commit hooks — ESLint + Prettier + GitHub Actions CI added; pre-commit hooks still pending
-- [~] Pick + provision backend (DB, realtime, auth) — Supabase selected for PostgreSQL, Auth, RLS, Realtime, and Edge Functions; local SQLite remains the content-ingestion DB; provisioning and frontend hosting remain pending (see `BACKEND_PLAN.md`)
+- [~] Pick + provision backend (DB, realtime, auth) — Supabase selected; CLI config, initial gameplay migration/RLS contract, and optional frontend client are committed; Docker-backed execution, generated types, managed project provisioning, and frontend hosting remain (see `BACKEND_PLAN.md`)
 
 ## Phase 1 — Rules Data Foundation
 

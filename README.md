@@ -36,6 +36,20 @@ CI also enforces the content contract:
 
 See [`CONTENT_PIPELINE.md`](./CONTENT_PIPELINE.md) for the real source-of-truth rules and commit policy.
 
+## Shared backend workflow
+
+Supabase configuration and migrations live under `supabase/`. Local characters and campaigns continue to work when Supabase is not configured.
+
+Useful commands:
+
+- `npm run supabase:start` — start the Docker-backed local Supabase stack
+- `npm run supabase:reset` — recreate the local database from committed migrations
+- `npm run supabase:lint` — run database lint against the local stack
+- `npm run supabase:verify` — run the static schema/RLS contract without Docker
+- `npm run supabase:types` — regenerate frontend database types from the local schema
+
+Public frontend configuration belongs in `apps/web/.env.local`, using `apps/web/.env.example` as the template. Never place a service-role key in a `VITE_*` variable. See [`BACKEND_PLAN.md`](./BACKEND_PLAN.md) for architecture and rollout details.
+
 ## Decisions Locked
 
 - **Stack:** TypeScript + React Native / React Native Web (shared web + phone, shared rules engine)
