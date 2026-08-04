@@ -73,7 +73,7 @@ Character cards show:
 - character name
 - ancestry and class summary
 - current level
-- associated campaign, or `No campaign`
+- associated campaigns, or `No campaigns`
 - last edited time
 - **Open Sheet** as the primary card action
 - **Edit Build** as a secondary action
@@ -123,7 +123,6 @@ interface CharacterRecord {
   name: string;
   build: CharacterBuild;
   currentLevel: number;
-  campaignId?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -133,15 +132,20 @@ interface CampaignRecord {
   name: string;
   description?: string;
   role: "gm" | "player";
-  characterIds: string[];
   memberCount?: number;
   inviteCode?: string;
   createdAt: string;
   updatedAt: string;
 }
+
+interface CampaignCharacterAssignment {
+  campaignId: string;
+  characterId: string;
+  assignedAt: string;
+}
 ```
 
-Runtime combat state must be scoped by character ID rather than shared globally. Campaign membership should eventually come from the backend, but the UI should consume repository methods rather than call `localStorage` directly.
+Runtime combat state must be scoped by character ID rather than shared globally. Characters may belong to multiple campaigns, so campaign assignment is a many-to-many relationship represented by explicit `CampaignCharacterAssignment` records rather than duplicated ID arrays that can drift out of sync. Players always retain edit control over their canonical characters; campaign GMs may view assigned characters but do not lock or own them. Campaign membership should eventually come from the backend, but the UI should consume repository methods rather than call `localStorage` directly.
 
 ### Repository boundary
 
@@ -277,7 +281,7 @@ The homepage should render before runtime compendium content is fetched. Load ru
 
 ### Slice 4 — Local campaign flows
 
-- Implement Create Campaign with name, description, and optional initial character assignment.
+- Implement Create Campaign with name and description; campaigns may begin empty, with optional character assignment during or after creation.
 - Add campaign overview and local character assignment/removal.
 - Implement Join Campaign form states behind a capability flag/API adapter.
 - Show role, counts, linked character, and timestamps accurately on homepage cards.
@@ -329,12 +333,10 @@ Add focused web tests rather than snapshotting whole pages. Giant snapshots are 
 - The layout works at 320 px width and with keyboard-only input.
 - Typecheck, tests, lint, formatting check, and web production build pass.
 
-## Decisions to confirm before Slice 4
+## Confirmed product decisions
 
-1. Should a character be allowed in multiple campaigns, or at most one active campaign?
-2. Can players edit a character after assigning it to a campaign, or may a GM lock it?
-3. Should campaign creation require selecting a character, or can campaigns begin empty?
-4. What identity/auth provider should back real invitations?
-5. Should the homepage prioritize campaigns or characters when both lists become large?
-
-Recommended MVP defaults: one active campaign per character, player-owned editing with future GM lock support, empty campaigns allowed, campaigns shown before characters, and no auth-platform decision buried inside the homepage PR.
+- A character may belong to multiple campaigns.
+- Players always retain edit control over their characters; campaign GMs cannot lock them.
+- Campaigns may be created empty and populated later.
+- Campaigns appear before characters on the homepage.
+- The authentication provider decision is deferred to the shared-backend milestone; this branch must preserve a provider-neutral repository boundary.
