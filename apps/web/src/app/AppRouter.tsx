@@ -3,6 +3,8 @@ import { HomePage } from "../features/home/HomePage";
 import { CharacterWorkspace } from "../features/characters/CharacterWorkspace";
 import { NewCharacterPage } from "../features/characters/NewCharacterPage";
 import { CampaignPlaceholderPage } from "../features/campaigns/CampaignPlaceholderPage";
+import { CreateCampaignPage } from "../features/campaigns/CreateCampaignPage";
+import { CampaignPage } from "../features/campaigns/CampaignPage";
 
 export function AppRouter() {
   return (
@@ -18,10 +20,8 @@ export function AppRouter() {
           path="/characters/:characterId/:tab"
           element={<CharacterWorkspace />}
         />
-        <Route
-          path="/campaigns/new"
-          element={<CampaignPlaceholderPage mode="new" />}
-        />
+        <Route path="/campaigns/new" element={<CreateCampaignPage />} />
+        <Route path="/campaigns/:campaignId" element={<CampaignPage />} />
         <Route
           path="/campaigns/join"
           element={<CampaignPlaceholderPage mode="join" />}

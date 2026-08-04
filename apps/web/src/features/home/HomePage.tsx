@@ -1,6 +1,11 @@
 import { Link } from "react-router-dom";
 import { listCharacters } from "../characters/characterRepository";
 import { summarizeCharacter } from "../characters/characterSummary";
+import {
+  campaignsForCharacter,
+  characterIdsForCampaign,
+  listCampaigns,
+} from "../campaigns/campaignRepository";
 import "./home.css";
 import "./home-responsive.css";
 
@@ -35,6 +40,13 @@ const QUICK_ACTIONS = [
 
 export function HomePage() {
   const characters = listCharacters(window.localStorage);
+  const campaigns = listCampaigns(window.localStorage);
+  const characterCampaigns = new Map(
+    characters.map((character) => [
+      character.id,
+      campaignsForCharacter(window.localStorage, character.id),
+    ]),
+  );
 
   return (
     <div className="home-page">
@@ -106,26 +118,66 @@ export function HomePage() {
               Start campaign
             </Link>
           </div>
-          <div className="empty-state campaign-empty">
-            <span className="empty-emblem" aria-hidden="true">
-              ◇
-            </span>
-            <div>
-              <h3>No campaigns on this device yet</h3>
-              <p>
-                Start a campaign as GM or join one when shared invitations come
-                online.
-              </p>
+          {campaigns.length ? (
+            <div className="character-grid">
+              {campaigns.map((campaign) => {
+                const characterCount = characterIdsForCampaign(
+                  window.localStorage,
+                  campaign.id,
+                ).length;
+                return (
+                  <article className="character-card" key={campaign.id}>
+                    <div className="character-card-top">
+                      <span className="character-emblem" aria-hidden="true">
+                        ◇
+                      </span>
+                      <div className="character-identity">
+                        <h3>{campaign.name}</h3>
+                        <p>{campaign.description || "Local campaign"}</p>
+                      </div>
+                      <span className="level-chip">Game Master</span>
+                    </div>
+                    <div className="character-meta">
+                      <span>
+                        {characterCount} character
+                        {characterCount === 1 ? "" : "s"}
+                      </span>
+                      <span>Saved on this device</span>
+                    </div>
+                    <div className="character-actions">
+                      <Link
+                        className="button-link"
+                        to={`/campaigns/${campaign.id}`}
+                      >
+                        Open campaign
+                      </Link>
+                    </div>
+                  </article>
+                );
+              })}
             </div>
-            <div className="empty-actions">
-              <Link className="button-link" to="/campaigns/new">
-                Start campaign
-              </Link>
-              <Link className="button-link secondary" to="/campaigns/join">
-                Join with invite
-              </Link>
+          ) : (
+            <div className="empty-state campaign-empty">
+              <span className="empty-emblem" aria-hidden="true">
+                ◇
+              </span>
+              <div>
+                <h3>No campaigns on this device yet</h3>
+                <p>
+                  Start a campaign as GM or join one when shared invitations
+                  come online.
+                </p>
+              </div>
+              <div className="empty-actions">
+                <Link className="button-link" to="/campaigns/new">
+                  Start campaign
+                </Link>
+                <Link className="button-link secondary" to="/campaigns/join">
+                  Join with invite
+                </Link>
+              </div>
             </div>
-          </div>
+          )}
         </section>
 
         <section
@@ -146,6 +198,9 @@ export function HomePage() {
             <div className="character-grid">
               {characters.map((character) => {
                 const summary = summarizeCharacter(character);
+                const campaignNames = (
+                  characterCampaigns.get(character.id) ?? []
+                ).map((campaign) => campaign.name);
                 return (
                   <article className="character-card" key={character.id}>
                     <div className="character-card-top">
@@ -161,7 +216,11 @@ export function HomePage() {
                       <span className="level-chip">{summary.levelLabel}</span>
                     </div>
                     <div className="character-meta">
-                      <span>No campaigns</span>
+                      <span title={campaignNames.join(", ")}>
+                        {campaignNames.length
+                          ? `${campaignNames.length} campaign${campaignNames.length === 1 ? "" : "s"}`
+                          : "No campaigns"}
+                      </span>
                       <span>{summary.updatedLabel}</span>
                     </div>
                     <div className="character-actions">

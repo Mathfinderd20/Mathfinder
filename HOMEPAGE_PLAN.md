@@ -257,8 +257,8 @@ The homepage should render before runtime compendium content is fetched. Load ru
 - [x] Add character cards, quick actions, empty states, and responsive homepage styling.
 - [x] Add character sheet/build deep links and a routed creation entry point.
 - [~] Character creation opens the existing guided build tools; richer creation setup and character deletion/management remain.
-- [ ] Replace campaign placeholders with local campaign repositories and flows.
-- [ ] Add Supabase authentication and shared campaign persistence from `BACKEND_PLAN.md`.
+- [x] Add local campaign records, empty campaign creation, optional character assignment, campaign cards, and overview routes.
+- [~] Join Campaign remains an honest backend placeholder until Supabase authentication and shared persistence from `BACKEND_PLAN.md` are implemented.
 
 ## Delivery slices
 

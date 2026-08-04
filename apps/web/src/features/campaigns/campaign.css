@@ -1,0 +1,119 @@
+.campaign-form-card textarea {
+  width: 100%;
+  padding: 13px 14px;
+  resize: vertical;
+  border: 1px solid var(--home-line);
+  border-radius: 9px;
+  outline: none;
+  color: var(--home-ink);
+  background: rgba(15, 12, 10, 0.7);
+  font: inherit;
+}
+
+.campaign-form-card textarea:focus {
+  border-color: var(--home-gold);
+  box-shadow: 0 0 0 3px rgba(226, 173, 111, 0.12);
+}
+
+.character-checklist {
+  display: grid;
+  gap: 8px;
+  margin: 10px 0;
+  padding: 14px;
+  border: 1px solid var(--home-line);
+  border-radius: 10px;
+}
+
+.character-checklist legend {
+  padding: 0 6px;
+  color: var(--home-gold);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.character-checklist label {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  color: var(--home-ink);
+}
+
+.character-checklist input {
+  width: auto;
+}
+
+.campaign-page-main {
+  padding-top: 42px;
+}
+
+.campaign-hero {
+  max-width: 760px;
+  padding: 58px 0 34px;
+}
+
+.campaign-hero h1 {
+  margin: 0;
+  font-family: Georgia, serif;
+  font-size: clamp(42px, 7vw, 68px);
+  font-weight: 500;
+  line-height: 1;
+}
+
+.campaign-hero p,
+.backend-notice p {
+  color: var(--home-muted);
+  line-height: 1.6;
+}
+
+.assignment-list {
+  display: grid;
+  gap: 10px;
+}
+
+.assignment-row {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  padding: 16px;
+  border: 1px solid var(--home-line);
+  border-radius: 13px;
+  background: rgba(42, 34, 29, 0.62);
+}
+
+.assignment-row > div {
+  display: grid;
+  gap: 4px;
+}
+
+.assignment-row small {
+  color: var(--home-muted);
+}
+
+.assignment-row button {
+  margin-left: auto;
+}
+
+.backend-notice {
+  padding: 24px;
+  border: 1px solid var(--home-line);
+  border-radius: 16px;
+  background: rgba(42, 34, 29, 0.42);
+}
+
+.backend-notice h2 {
+  margin: 0;
+  font-family: Georgia, serif;
+  font-weight: 500;
+}
+
+@media (max-width: 560px) {
+  .assignment-row {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .assignment-row button {
+    width: 100%;
+    margin-left: 62px;
+  }
+}
