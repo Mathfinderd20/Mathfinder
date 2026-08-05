@@ -72,30 +72,32 @@ function replaceArray<T>(target: T[], source: T[]) {
   target.splice(0, target.length, ...source);
 }
 
-function raceOptionsFromIndex(
-  index: ReturnType<typeof buildRulesDataIndex>,
+export function raceOptionsFromDataSet(
+  data: RulesDataSet,
 ): Record<string, CharacterBuild["race"]> {
   return Object.fromEntries(
-    Object.values(index.races).map((race) => [
-      race.id,
-      {
-        name: race.name,
-        size: race.size,
-        speed: race.speed,
-        abilityModifiers: race.abilityModifiers,
-        traits: race.traits,
-        classSkills: race.classSkills,
-        weaponProficiencies: race.weaponProficiencies,
-        specificWeaponProficiencies: race.specificWeaponProficiencies,
-        grantedWeapons: race.grantedWeapons,
-        choiceOptions: race.choiceOptions,
-        alternateTraits: race.alternateTraits,
-        movementModes: race.movementModes,
-        senses: race.senses,
-        resistances: race.resistances,
-        notes: race.notes,
-      },
-    ]),
+    data.packs
+      .flatMap((pack) => pack.races)
+      .map((race) => [
+        race.id,
+        {
+          name: race.name,
+          size: race.size,
+          speed: race.speed,
+          abilityModifiers: race.abilityModifiers,
+          traits: race.traits,
+          classSkills: race.classSkills,
+          weaponProficiencies: race.weaponProficiencies,
+          specificWeaponProficiencies: race.specificWeaponProficiencies,
+          grantedWeapons: race.grantedWeapons,
+          choiceOptions: race.choiceOptions,
+          alternateTraits: race.alternateTraits,
+          movementModes: race.movementModes,
+          senses: race.senses,
+          resistances: race.resistances,
+          notes: race.notes,
+        },
+      ]),
   );
 }
 
@@ -191,7 +193,7 @@ export async function loadRuntimeContent() {
         )
         .map((cls) => [cls.name.toLowerCase(), cls]),
     ) as Record<string, ClassDefinition>;
-    const races = raceOptionsFromIndex(rulesIndex);
+    const races = raceOptionsFromDataSet(rulesData);
     const archetypes = rulesIndex.archetypes as Record<
       string,
       ArchetypeDefinitionLike
