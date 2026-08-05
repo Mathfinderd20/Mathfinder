@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   activatableResourceMax,
   applyLevelUp,
@@ -80,6 +80,11 @@ import {
 } from "./buildSuggestions";
 import type { RuntimeProfile } from "./runtimeInsights";
 import { normalizeFeatListLength, plannedFeatSlotsForLevel } from "./featSlots";
+import {
+  getCharacter,
+  runtimeStorageKey,
+  saveCharacter,
+} from "./features/characters/characterRepository";
 
 const ABILITY_ORDER: readonly AbilityKey[] = [
   "str",
@@ -378,9 +383,17 @@ function normalizeBuild(build: CharacterBuild): CharacterBuild {
   };
 }
 
-function loadCurrentBuild(): CharacterBuild {
+function loadCurrentBuild(characterId?: string): CharacterBuild {
   if (typeof window === "undefined") return initialBuild;
   try {
+    const character = characterId
+      ? getCharacter(window.localStorage, characterId)
+      : undefined;
+    if (character) {
+      return syncTemplatedWeaponsToCampaignRules(
+        normalizeBuild(character.build),
+      );
+    }
     const raw = window.localStorage.getItem(CURRENT_BUILD_STORAGE_KEY);
     if (!raw) throw new Error("empty");
     return syncTemplatedWeaponsToCampaignRules(
@@ -576,9 +589,13 @@ function syncTemplatedWeaponsToCampaignRules(
   };
 }
 
-function loadCurrentLevel() {
+function loadCurrentLevel(characterId?: string) {
   if (typeof window === "undefined") return initialBuild.levels.length;
   try {
+    const character = characterId
+      ? getCharacter(window.localStorage, characterId)
+      : undefined;
+    if (character) return character.currentLevel;
     const raw = window.localStorage.getItem(CURRENT_LEVEL_STORAGE_KEY);
     const parsed = Number(raw);
     return Number.isFinite(parsed) && parsed >= 1
@@ -608,11 +625,32 @@ function loadBuildSlots(): SavedBuildSlot[] {
   }
 }
 
-export function App() {
-  const [build, setBuild] = useState<CharacterBuild>(loadCurrentBuild);
-  const [currentLevel, setCurrentLevel] = useState(loadCurrentLevel);
+type WorkspaceTab = "sheet" | "gear" | "build";
+
+interface AppProps {
+  characterId?: string;
+  initialTab?: WorkspaceTab;
+  onHome?: () => void;
+  onTabChange?: (tab: WorkspaceTab) => void;
+}
+
+export function App({
+  characterId,
+  initialTab = "sheet",
+  onHome,
+  onTabChange,
+}: AppProps = {}) {
+  const [build, setBuild] = useState<CharacterBuild>(() =>
+    loadCurrentBuild(characterId),
+  );
+  const [currentLevel, setCurrentLevel] = useState(() =>
+    loadCurrentLevel(characterId),
+  );
   const [savedBuildSlots, setSavedBuildSlots] =
     useState<SavedBuildSlot[]>(loadBuildSlots);
+  const persistedCharacterSnapshot = useRef(
+    JSON.stringify({ build, currentLevel }),
+  );
   const {
     activeBuffs,
     resourcesUsed,
@@ -645,15 +683,15 @@ export function App() {
     setWeaponAttackNote,
     setLatestWeaponAttackNote,
     resetWeaponAttackHistory,
-  } = useRuntimeState(RUNTIME_STORAGE_KEY);
-  const [leveling, setLeveling] = useState(false);
-  const [activeTab, setActiveTab] = useState<"sheet" | "gear" | "build">(
-    "sheet",
+  } = useRuntimeState(
+    characterId ? runtimeStorageKey(characterId) : RUNTIME_STORAGE_KEY,
   );
+  const [leveling, setLeveling] = useState(false);
+  const [activeTab, setActiveTab] = useState<WorkspaceTab>(initialTab);
   const [mountedTabs, setMountedTabs] = useState({
-    sheet: true,
-    gear: false,
-    build: false,
+    sheet: initialTab === "sheet",
+    gear: initialTab === "gear",
+    build: initialTab === "build",
   });
   const weaponOptions = useMemo(
     () => runtimeWeaponOptions(build),
@@ -662,6 +700,11 @@ export function App() {
 
   function clampCurrentLevel(level: number, levelCount = build.levels.length) {
     return Math.max(1, Math.min(levelCount, level));
+  }
+
+  function selectTab(tab: WorkspaceTab) {
+    setActiveTab(tab);
+    onTabChange?.(tab);
   }
 
   function confirmLevelUp(
@@ -705,7 +748,7 @@ export function App() {
     setCurrentLevel((prev) =>
       clampCurrentLevel(prev + 1, build.levels.length + 1),
     );
-    setActiveTab("build");
+    selectTab("build");
     setLeveling(false);
   }
 
@@ -2131,26 +2174,33 @@ export function App() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    if (characterId) {
+      const snapshot = JSON.stringify({ build, currentLevel });
+      if (snapshot === persistedCharacterSnapshot.current) return;
+      persistedCharacterSnapshot.current = snapshot;
+      saveCharacter(window.localStorage, characterId, build, currentLevel);
+      return;
+    }
     window.localStorage.setItem(
       CURRENT_BUILD_STORAGE_KEY,
       JSON.stringify(build),
     );
-  }, [build]);
+    window.localStorage.setItem(CURRENT_LEVEL_STORAGE_KEY, `${currentLevel}`);
+  }, [build, characterId, currentLevel]);
 
   useEffect(() => {
     setCurrentLevel((prev) => Math.max(1, Math.min(build.levels.length, prev)));
   }, [build.levels.length]);
 
   useEffect(() => {
+    setActiveTab(initialTab);
+  }, [initialTab]);
+
+  useEffect(() => {
     setMountedTabs((prev) =>
       prev[activeTab] ? prev : { ...prev, [activeTab]: true },
     );
   }, [activeTab]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    window.localStorage.setItem(CURRENT_LEVEL_STORAGE_KEY, `${currentLevel}`);
-  }, [currentLevel]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -2443,6 +2493,11 @@ export function App() {
           <span className="brand-sub">Pathfinder 1e smart sheet</span>
         </div>
         <div className="actions">
+          {onHome ? (
+            <button className="ghost" onClick={onHome}>
+              ← Home
+            </button>
+          ) : null}
           <button onClick={advanceLevel}>⬆ Level Up</button>
           <button
             className="ghost"
@@ -2457,19 +2512,19 @@ export function App() {
       <div className="tab-bar">
         <button
           className={activeTab === "sheet" ? "tab-button active" : "tab-button"}
-          onClick={() => setActiveTab("sheet")}
+          onClick={() => selectTab("sheet")}
         >
           Sheet
         </button>
         <button
           className={activeTab === "gear" ? "tab-button active" : "tab-button"}
-          onClick={() => setActiveTab("gear")}
+          onClick={() => selectTab("gear")}
         >
           Gear
         </button>
         <button
           className={activeTab === "build" ? "tab-button active" : "tab-button"}
-          onClick={() => setActiveTab("build")}
+          onClick={() => selectTab("build")}
         >
           Build
         </button>
@@ -2495,14 +2550,16 @@ export function App() {
               onResetResource={resetResource}
             />
 
-            <BuildSlotsPanel
-              savedBuildSlots={savedBuildSlots}
-              onSaveNewBuildSlot={saveNewBuildSlot}
-              onResetCurrentBuild={resetCurrentBuild}
-              onLoadBuildSlot={loadBuildSlotById}
-              onOverwriteBuildSlot={overwriteBuildSlot}
-              onDeleteBuildSlot={deleteBuildSlot}
-            />
+            {!characterId ? (
+              <BuildSlotsPanel
+                savedBuildSlots={savedBuildSlots}
+                onSaveNewBuildSlot={saveNewBuildSlot}
+                onResetCurrentBuild={resetCurrentBuild}
+                onLoadBuildSlot={loadBuildSlotById}
+                onOverwriteBuildSlot={overwriteBuildSlot}
+                onDeleteBuildSlot={deleteBuildSlot}
+              />
+            ) : null}
 
             <ValidationPanel errors={errors} />
           </aside>

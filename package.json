@@ -22,6 +22,12 @@
     "content:check-contract": "node ./scripts/check-content-contract.mjs",
     "content:refresh:web": "npm run content:export:web && npm run content:verify:web",
     "content:bootstrap": "npm run content:db:init && npm run content:db:seed-local && npm run content:refresh:web",
+    "supabase:start": "supabase start",
+    "supabase:stop": "supabase stop",
+    "supabase:reset": "supabase db reset",
+    "supabase:lint": "supabase db lint --local",
+    "supabase:verify": "node ./scripts/verify-backend-schema.mjs",
+    "supabase:types": "supabase gen types typescript --local --schema public > apps/web/src/lib/database.types.ts",
     "web:forever": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/dev-web-forever.ps1",
     "web:forever:stop": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/stop-web-forever.ps1",
     "web:startup:enable": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/register-startup-task.ps1",
@@ -33,6 +39,7 @@
     "eslint": "^10.4.1",
     "globals": "^17.6.0",
     "prettier": "^3.8.4",
+    "supabase": "^2.111.0",
     "typescript-eslint": "^8.61.0"
   }
 }

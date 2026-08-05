@@ -210,7 +210,9 @@ function mergeArmorDefinitions(
   extras: RuntimeArmorDefinition[],
 ) {
   const seenIds = new Set(base.map((entry) => entry.id.toLowerCase()));
-  const seenNames = new Set(base.map((entry) => entry.name.trim().toLowerCase()));
+  const seenNames = new Set(
+    base.map((entry) => entry.name.trim().toLowerCase()),
+  );
   return [
     ...base,
     ...extras.filter((entry) => {
@@ -244,39 +246,51 @@ function replaceArray<T>(target: T[], source: T[]) {
   target.splice(0, target.length, ...source);
 }
 
-function raceOptionsFromIndex(
-  index: ReturnType<typeof buildRulesDataIndex>,
+export function raceOptionsFromDataSet(
+  data: RulesDataSet,
 ): Record<string, CharacterBuild["race"]> {
   return Object.fromEntries(
-    Object.values(index.races).map((race) => [
-      race.id,
-      {
-        name: race.name,
-        size: race.size,
-        speed: race.speed,
-        abilityModifiers: race.abilityModifiers,
-        traits: race.traits,
-        classSkills: race.classSkills,
-        weaponProficiencies: race.weaponProficiencies,
-        specificWeaponProficiencies: race.specificWeaponProficiencies,
-        grantedWeapons: race.grantedWeapons,
-        choiceOptions: race.choiceOptions,
-        alternateTraits: race.alternateTraits,
-        movementModes: race.movementModes,
-        senses: race.senses,
-        resistances: race.resistances,
-        notes: race.notes,
-      },
-    ]),
+    data.packs
+      .flatMap((pack) => pack.races)
+      .map((race) => [
+        race.id,
+        {
+          name: race.name,
+          size: race.size,
+          speed: race.speed,
+          abilityModifiers: race.abilityModifiers,
+          traits: race.traits,
+          classSkills: race.classSkills,
+          weaponProficiencies: race.weaponProficiencies,
+          specificWeaponProficiencies: race.specificWeaponProficiencies,
+          grantedWeapons: race.grantedWeapons,
+          choiceOptions: race.choiceOptions,
+          alternateTraits: race.alternateTraits,
+          movementModes: race.movementModes,
+          senses: race.senses,
+          resistances: race.resistances,
+          notes: race.notes,
+        },
+      ]),
   );
 }
 
+export function runtimeContentAssetUrl(origin: string) {
+  return new URL("/usable-content.json", origin).toString();
+}
+
 async function fetchUsableContentAsset(): Promise<UsableContentAsset> {
-  const assetUrl = new URL("usable-content.json", document.baseURI).toString();
+  const assetUrl = runtimeContentAssetUrl(window.location.origin);
   const response = await fetch(assetUrl, { cache: "no-cache" });
   if (!response.ok) {
     throw new Error(
       `Failed to load runtime content from ${assetUrl} (${response.status} ${response.statusText})`,
+    );
+  }
+  const contentType = response.headers.get("content-type") ?? "";
+  if (!contentType.includes("application/json")) {
+    throw new Error(
+      `Runtime content at ${assetUrl} returned ${contentType || "an unknown content type"} instead of JSON`,
     );
   }
   return response.json() as Promise<UsableContentAsset>;
@@ -334,7 +348,10 @@ export async function loadRuntimeContent() {
       rulesData.packs.map((pack) => [pack.id, pack] as const),
     );
     const normalizedSpellById = new Map(
-      (usableContent.normalized?.spells ?? []).map((spell) => [spell.id, spell]),
+      (usableContent.normalized?.spells ?? []).map((spell) => [
+        spell.id,
+        spell,
+      ]),
     );
     const normalizedSpellByName = new Map(
       (usableContent.normalized?.spells ?? []).map((spell) => [
@@ -350,7 +367,7 @@ export async function loadRuntimeContent() {
         )
         .map((cls) => [cls.name.toLowerCase(), cls]),
     ) as Record<string, ClassDefinition>;
-    const races = raceOptionsFromIndex(rulesIndex);
+    const races = raceOptionsFromDataSet(rulesData);
     const archetypes = rulesIndex.archetypes as Record<
       string,
       ArchetypeDefinitionLike

@@ -16,7 +16,7 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 - [ ] Lock remaining dependency versions as packages are added
 - [~] Add apps/web, apps/mobile, packages/shared, services/api — apps/web and packages/rules-data/rules-engine live; mobile/shared/api still pending
 - [~] Set up linting, formatting, CI, and pre-commit hooks — ESLint + Prettier + GitHub Actions CI added; pre-commit hooks still pending
-- [~] Pick + provision backend (DB, realtime, auth) — local SQLite content DB + ingestion workspace now exists in `packages/content-db`; broader API/realtime/auth platform decision still pending
+- [~] Pick + provision backend (DB, realtime, auth) — Supabase selected; CLI config, initial gameplay migration/RLS contract, and optional frontend client are committed; Docker-backed execution, generated types, managed project provisioning, and frontend hosting remain (see `BACKEND_PLAN.md`)
 
 ## Phase 1 — Rules Data Foundation
 
@@ -72,6 +72,8 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 - [x] Real-time sheet view (live recompute on any change)
 - [x] Interactive buff/aura toggles -> auto-apply to sheet (proves the multiplayer mechanism)
 - [x] Web persistence: current build autosave + saved character slots
+- [x] Homepage/dashboard foundation: routed landing page, migrated first-class local character records, character cards, quick actions, deep links, character-scoped runtime persistence, clean new-character builds, rename, and confirmed deletion
+- [~] Campaign homepage flows — local campaign creation, many-to-many character assignment, cards, overview routes, and honest join state are live; shared Supabase auth/invitations remain
 - [x] Click-to-expand stat breakdowns (the 'why' UX)
 - [x] Level up / undo buttons backed by levelUp/levelDown
 - [x] Interactive level-up modal: class, HP, skill ranks, feat, ability increase (planLevelUp + validation)

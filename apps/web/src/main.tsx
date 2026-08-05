@@ -1,6 +1,5 @@
 import { Component, StrictMode, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
-import { loadRuntimeContent } from "./content";
 import "./styles.css";
 
 const root = document.getElementById("root");
@@ -22,7 +21,7 @@ function renderShell(
   `;
 }
 
-renderShell("Mathfinder", "Loading runtime content…");
+renderShell("Mathfinder", "Opening your adventure hub…");
 
 class AppErrorBoundary extends Component<
   { children: ReactNode },
@@ -99,12 +98,11 @@ window.addEventListener("unhandledrejection", (event) => {
 });
 
 async function bootstrap() {
-  await loadRuntimeContent();
-  const { App } = await import("./App");
+  const { AppRouter } = await import("./app/AppRouter");
   createRoot(appRoot).render(
     <StrictMode>
       <AppErrorBoundary>
-        <App />
+        <AppRouter />
       </AppErrorBoundary>
     </StrictMode>,
   );
