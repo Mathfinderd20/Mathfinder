@@ -1,7 +1,4 @@
-import {
-  searchCompendiumEntries,
-  type CompendiumEntry,
-} from "@mathfinder/rules-engine";
+import type { CompendiumEntry } from "@mathfinder/rules-engine";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Tooltip } from "./Tooltip";
 
@@ -28,6 +25,7 @@ interface CompendiumPickerProps {
 interface IndexedCompendiumOption extends CompendiumEntry {
   tooltip?: string;
   searchText?: string | string[];
+  searchBlob: string;
 }
 
 const DEFAULT_MAX_RESULTS = 8;
@@ -46,16 +44,32 @@ export function CompendiumPicker({
   const rootRef = useRef<HTMLDivElement | null>(null);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState(value);
+  const [debouncedQuery, setDebouncedQuery] = useState(value);
 
   const indexedOptions = useMemo<IndexedCompendiumOption[]>(
     () =>
-      options.map((option) => ({
-        id: option.id,
-        name: option.name,
-        tooltip: option.tooltip,
-        searchText: option.searchText,
-        tags: option.tags,
-      })),
+      options.map((option) => {
+        const extraSearchText = Array.isArray(option.searchText)
+          ? option.searchText
+          : option.searchText
+            ? [option.searchText]
+            : [];
+        return {
+          id: option.id,
+          name: option.name,
+          tooltip: option.tooltip,
+          searchText: option.searchText,
+          tags: option.tags,
+          searchBlob: [
+            option.name,
+            option.id,
+            ...(option.tags ?? []),
+            ...extraSearchText,
+          ]
+            .join(" ")
+            .toLowerCase(),
+        };
+      }),
     [options],
   );
 
@@ -73,19 +87,37 @@ export function CompendiumPicker({
   );
 
   const results = useMemo(() => {
-    if (!open && !query.trim()) return [] as IndexedCompendiumOption[];
-    if (resolveOptions) return resolveOptions(query).slice(0, maxResults);
-    return searchCompendiumEntries(indexedOptions, query, [
-      (option) => option.searchText,
-    ]).slice(0, maxResults);
-  }, [indexedOptions, maxResults, open, query, resolveOptions]);
+    if (!open && !debouncedQuery.trim()) return [] as IndexedCompendiumOption[];
+    if (resolveOptions)
+      return resolveOptions(debouncedQuery).slice(0, maxResults);
+    const search = debouncedQuery.trim().toLowerCase();
+    return (
+      search
+        ? indexedOptions.filter((option) => option.searchBlob.includes(search))
+        : indexedOptions
+    ).slice(0, maxResults);
+  }, [debouncedQuery, indexedOptions, maxResults, open, resolveOptions]);
 
   const showResults = open;
   const activeTooltip = selectedOption?.tooltip ?? tooltip;
 
   useEffect(() => {
-    if (!open || commitMode === "immediate") setQuery(value);
-  }, [commitMode, open, value]);
+    if (!open) {
+      setQuery(value);
+      setDebouncedQuery(value);
+    }
+  }, [open, value]);
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => setDebouncedQuery(query), 100);
+    return () => window.clearTimeout(timeout);
+  }, [query]);
+
+  useEffect(() => {
+    if (commitMode !== "immediate" || query === value) return;
+    const timeout = window.setTimeout(() => onChange(query), 250);
+    return () => window.clearTimeout(timeout);
+  }, [commitMode, onChange, query, value]);
 
   useEffect(() => {
     function handlePointerDown(event: MouseEvent) {
@@ -111,7 +143,6 @@ export function CompendiumPicker({
           onChange={(event) => {
             const nextQuery = event.target.value;
             setQuery(nextQuery);
-            if (commitMode === "immediate") onChange(nextQuery);
             setOpen(true);
           }}
           onKeyDown={(event) => {
@@ -135,6 +166,7 @@ export function CompendiumPicker({
           }}
           onBlur={() => {
             if (commitMode === "select") setQuery(value);
+            else if (query !== value) onChange(query);
           }}
         />
       </Tooltip>

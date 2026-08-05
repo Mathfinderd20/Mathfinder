@@ -1,6 +1,5 @@
 import {
   getSpellEffectByName,
-  searchCompendiumEntries,
   type SpellDefinition,
 } from "@mathfinder/rules-engine";
 import { getRuntimeSpell } from "./content";
@@ -22,6 +21,8 @@ export interface SpellCompendiumOption extends CompendiumOption {
   supportTag: string;
   supportSummary: string;
   hasTrackedEffect: boolean;
+  classLevels: Record<string, number[]>;
+  searchBlob: string;
 }
 
 function normalize(value: string | undefined) {
@@ -70,6 +71,19 @@ export function buildSpellCompendiumOptions(
     const sourceTag = fullSpell?.source?.trim() || spell.source?.trim() || "";
     const sourceUrl = fullSpell?.sourceUrl?.trim() || spell.sourceUrl?.trim();
     const support = spellSupportMeta(fullSpell);
+    const classLevels: Record<string, number[]> = {};
+    for (const entry of fullSpell?.classes ?? []) {
+      const key = normalize(entry.className);
+      classLevels[key] ??= [];
+      if (!classLevels[key]!.includes(entry.level))
+        classLevels[key]!.push(entry.level);
+    }
+    const searchText =
+      buildSpellSearchText(fullSpell, {
+        sourceTag,
+        supportTag: support.supportTag,
+        supportSummary: support.supportSummary,
+      }) || spell.name;
     return {
       id: spell.id,
       name: spell.name,
@@ -82,17 +96,18 @@ export function buildSpellCompendiumOptions(
       supportTag: support.supportTag,
       supportSummary: support.supportSummary,
       hasTrackedEffect: support.hasTrackedEffect,
+      classLevels,
+      searchBlob: [spell.name, spell.id, searchText, ...tagList]
+        .join(" ")
+        .toLowerCase(),
       tooltip: spellSuggestionTooltip(fullSpell, {
         sourceTag,
         supportSummary: support.supportSummary,
       }),
-      searchText:
-        buildSpellSearchText(fullSpell, {
-          sourceTag,
-          supportTag: support.supportTag,
-          supportSummary: support.supportSummary,
-        }) || spell.name,
-      tags: [metaTag, sourceTag, support.supportTag, ...tagList].filter(Boolean),
+      searchText,
+      tags: [metaTag, sourceTag, support.supportTag, ...tagList].filter(
+        Boolean,
+      ),
     };
   });
 }
@@ -113,13 +128,7 @@ export function spellAvailableLevels(
   option: SpellCompendiumOption,
   classKey: string,
 ) {
-  return [
-    ...new Set(
-      (option.spell?.classes ?? [])
-        .filter((entry) => normalize(entry.className) === normalize(classKey))
-        .map((entry) => entry.level),
-    ),
-  ].sort((a, b) => a - b);
+  return option.classLevels[normalize(classKey)] ?? [];
 }
 
 export function filterSpellCompendiumOptions(
@@ -149,9 +158,10 @@ export function filterSpellCompendiumOptions(
   const schoolFiltered = school
     ? tagFiltered.filter((option) => normalize(option.schoolTag) === school)
     : tagFiltered;
-  return searchCompendiumEntries(schoolFiltered, args.query ?? "", [
-    (option) => option.searchText,
-  ]);
+  const search = normalize(args.query);
+  return search
+    ? schoolFiltered.filter((option) => option.searchBlob.includes(search))
+    : schoolFiltered;
 }
 
 export function collectSpellTags(options: SpellCompendiumOption[]) {

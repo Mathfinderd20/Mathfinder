@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import {
   activatableResourceMax,
   applyLevelUp,
@@ -646,11 +646,14 @@ export function App({
   const [currentLevel, setCurrentLevel] = useState(() =>
     loadCurrentLevel(characterId),
   );
+  const deferredBuild = useDeferredValue(build);
   const [savedBuildSlots, setSavedBuildSlots] =
     useState<SavedBuildSlot[]>(loadBuildSlots);
   const persistedCharacterSnapshot = useRef(
     JSON.stringify({ build, currentLevel }),
   );
+  const pendingPersistence = useRef({ build, currentLevel });
+  pendingPersistence.current = { build, currentLevel };
   const {
     activeBuffs,
     resourcesUsed,
@@ -2174,19 +2177,53 @@ export function App({
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if (characterId) {
-      const snapshot = JSON.stringify({ build, currentLevel });
-      if (snapshot === persistedCharacterSnapshot.current) return;
-      persistedCharacterSnapshot.current = snapshot;
-      saveCharacter(window.localStorage, characterId, build, currentLevel);
-      return;
-    }
-    window.localStorage.setItem(
-      CURRENT_BUILD_STORAGE_KEY,
-      JSON.stringify(build),
-    );
-    window.localStorage.setItem(CURRENT_LEVEL_STORAGE_KEY, `${currentLevel}`);
+    const timeout = window.setTimeout(() => {
+      if (characterId) {
+        const snapshot = JSON.stringify({ build, currentLevel });
+        if (snapshot === persistedCharacterSnapshot.current) return;
+        persistedCharacterSnapshot.current = snapshot;
+        saveCharacter(window.localStorage, characterId, build, currentLevel);
+        return;
+      }
+      window.localStorage.setItem(
+        CURRENT_BUILD_STORAGE_KEY,
+        JSON.stringify(build),
+      );
+      window.localStorage.setItem(CURRENT_LEVEL_STORAGE_KEY, `${currentLevel}`);
+    }, 300);
+    return () => window.clearTimeout(timeout);
   }, [build, characterId, currentLevel]);
+
+  useEffect(() => {
+    function flushPendingPersistence() {
+      const pending = pendingPersistence.current;
+      if (characterId) {
+        const snapshot = JSON.stringify(pending);
+        if (snapshot === persistedCharacterSnapshot.current) return;
+        persistedCharacterSnapshot.current = snapshot;
+        saveCharacter(
+          window.localStorage,
+          characterId,
+          pending.build,
+          pending.currentLevel,
+        );
+        return;
+      }
+      window.localStorage.setItem(
+        CURRENT_BUILD_STORAGE_KEY,
+        JSON.stringify(pending.build),
+      );
+      window.localStorage.setItem(
+        CURRENT_LEVEL_STORAGE_KEY,
+        `${pending.currentLevel}`,
+      );
+    }
+    window.addEventListener("pagehide", flushPendingPersistence);
+    return () => {
+      window.removeEventListener("pagehide", flushPendingPersistence);
+      flushPendingPersistence();
+    };
+  }, [characterId]);
 
   useEffect(() => {
     setCurrentLevel((prev) => Math.max(1, Math.min(build.levels.length, prev)));
@@ -2213,10 +2250,10 @@ export function App({
   const effectiveBuild = useMemo(
     () =>
       applyWeaponLoadoutsToBuild({
-        ...build,
-        levels: build.levels.slice(0, currentLevel),
+        ...deferredBuild,
+        levels: deferredBuild.levels.slice(0, currentLevel),
       }),
-    [build, currentLevel],
+    [currentLevel, deferredBuild],
   );
 
   // The whole app is a pure render of (build + active buffs). Toggle anything
@@ -2364,7 +2401,7 @@ export function App({
     () =>
       shouldComputeSuggestions
         ? buildSuggestions({
-            build,
+            build: deferredBuild,
             currentLevel,
             sheetSpellcasting: sheet.spellcasting,
             classes: RUNTIME_CLASSES,
@@ -2377,8 +2414,8 @@ export function App({
           })
         : EMPTY_SUGGESTION_BUNDLE,
     [
-      build,
       currentLevel,
+      deferredBuild,
       leveling,
       shouldComputeSuggestions,
       sheet.spellcasting,
@@ -2408,7 +2445,10 @@ export function App({
       includeGuides: true,
     });
   }
-  const wealthSummary = useMemo(() => summarizeWealth(build), [build]);
+  const wealthSummary = useMemo(
+    () => summarizeWealth(deferredBuild),
+    [deferredBuild],
+  );
   const runtimeProfile = useMemo<RuntimeProfile>(
     () => ({
       classNames: [
