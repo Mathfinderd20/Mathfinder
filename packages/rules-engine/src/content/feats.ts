@@ -184,6 +184,17 @@ export const CORE_FEATS: FeatDefinition[] = [
     effects: [],
   },
   {
+    id: "selective-channeling",
+    name: "Selective Channeling",
+    pack: "core",
+    description:
+      "When you channel energy, you can choose a number of creatures in the area up to your Charisma modifier; those creatures are not affected by the channel.",
+    prerequisites: [
+      { type: "ability", ability: "cha", min: 13, description: "Cha 13" },
+    ],
+    effects: [],
+  },
+  {
     id: "eschew-materials",
     name: "Eschew Materials",
     pack: "core",
@@ -576,7 +587,10 @@ export function checkPrerequisites(
 ): PrereqResult {
   const featName = feat.name.trim().toLowerCase();
   const unmet = feat.prerequisites.filter((p) => {
-    if (p.type === "feat" && (p.featName ?? "").trim().toLowerCase() === featName)
+    if (
+      p.type === "feat" &&
+      (p.featName ?? "").trim().toLowerCase() === featName
+    )
       return false;
     return !prerequisiteMet(p, ctx);
   });

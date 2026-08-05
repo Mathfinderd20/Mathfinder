@@ -2354,10 +2354,7 @@ export function App({
             feat.prerequisites.map((p) => p.description).join(" "),
             feat.pack,
           ],
-          tags: [
-            ...(feat.tags ?? []).map((tag) => tag.toLowerCase()),
-            ...(feat.pack !== "core" ? [feat.pack] : []),
-          ],
+          tags: (feat.tags ?? []).map((tag) => tag.toLowerCase()),
         }))
         .sort((a, b) => a.name.localeCompare(b.name)),
     [],

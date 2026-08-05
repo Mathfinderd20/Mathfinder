@@ -49,6 +49,18 @@ describe("feat prerequisites", () => {
     );
   });
 
+  it("includes Selective Channeling and enforces its Charisma prerequisite", () => {
+    const feat = getFeat(FEATS, "Selective Channeling");
+    expect(feat?.id).toBe("selective-channeling");
+    expect(checkPrerequisites(feat!, baseCtx).met).toBe(false);
+    expect(
+      checkPrerequisites(feat!, {
+        ...baseCtx,
+        abilityScores: { ...baseCtx.abilityScores, cha: 13 },
+      }).met,
+    ).toBe(true);
+  });
+
   it("lists feats alphabetically", () => {
     const names = listFeats(FEATS).map((f) => f.name);
     expect(names).toEqual([...names].sort());
