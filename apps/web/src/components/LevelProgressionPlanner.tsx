@@ -1,35 +1,26 @@
 import {
-  buildCharacter,
-  computeSheet,
-  featContextFromSheet,
+  featQualifiesForGrant,
+  getFeat,
   type AbilityKey,
   type CharacterBuild,
 } from "@mathfinder/rules-engine";
+import { useMemo, useState } from "react";
 import type {
   LevelPlannerSuggestions,
   PlannerSuggestionChoice,
   PlannerSuggestionNote,
 } from "../buildSuggestions";
 import { featSlotTag, plannedFeatSlotsForLevel } from "../featSlots";
-import {
-  buildFeatPickerOptions,
-  collectFeatWeaponNames,
-  normalizeSelectedFeatSelection,
-} from "../featOptionData";
-import {
-  RUNTIME_ARCHETYPES,
-  RUNTIME_CLASS_FEATURES,
-  RUNTIME_CLASSES,
-  RUNTIME_FEATS,
-  RUNTIME_WEAPONS,
-} from "../content";
-import { CompendiumPicker } from "./CompendiumPicker";
+import { normalizeSelectedFeatSelection } from "../featOptionData";
+import { RUNTIME_FEATS } from "../content";
+import { CompendiumPicker, type CompendiumOption } from "./CompendiumPicker";
 
 interface LevelProgressionPlannerProps {
   build: CharacterBuild;
   currentLevel: number;
   abilityOrder: readonly AbilityKey[];
   classOptions: Array<{ name: string; hitDie: number }>;
+  featOptions: CompendiumOption[];
   plannerSuggestions: LevelPlannerSuggestions[];
   onEnsureLevelCount: (count: number) => void;
   onSetCurrentLevel: (level: number) => void;
@@ -44,61 +35,8 @@ interface LevelProgressionPlannerProps {
     value: string,
   ) => void;
   onApplyPlannerSuggestions: (levelIndex: number) => void;
+  onRequestPlannerSuggestions: (levelIndex: number) => void;
   onClearPlannedLevelChoices: (levelIndex: number) => void;
-}
-
-function suggestionTone(choice: PlannerSuggestionChoice<string>) {
-  return choice.emphasis ?? "ok";
-}
-
-function SuggestionButtons<T extends string>(props: {
-  title: string;
-  choices: PlannerSuggestionChoice<T>[];
-  selectedValue?: string;
-  onApply: (value: T) => void;
-}) {
-  const { title, choices, selectedValue, onApply } = props;
-  if (choices.length === 0) return null;
-  return (
-    <div className="planner-suggestion-stack">
-      <div className="planner-suggestion-stack-title">{title}</div>
-      <div className="planner-suggestions planner-suggestions-rich">
-        {choices.map((choice, index) => {
-          const active =
-            selectedValue?.trim().toLowerCase() ===
-            choice.value.trim().toLowerCase();
-          return (
-            <button
-              key={`${choice.value}-${choice.reason}`}
-              type="button"
-              className={`ghost tiny planner-suggestion-chip planner-suggestion-card ${active ? "active" : ""} tone-${suggestionTone(choice as PlannerSuggestionChoice<string>)}`}
-              onClick={() => onApply(choice.value)}
-            >
-              <span className="planner-suggestion-card-head">
-                <span className="planner-suggestion-rank">#{index + 1}</span>
-                {choice.sourceLabel ? (
-                  <span className="planner-suggestion-source">
-                    {choice.sourceLabel}
-                  </span>
-                ) : null}
-                {choice.sourceKind ? (
-                  <span className="planner-suggestion-kind">
-                    {choice.sourceKind}
-                  </span>
-                ) : null}
-              </span>
-              <span className="planner-suggestion-card-label">
-                {choice.label}
-              </span>
-              <span className="planner-suggestion-card-reason">
-                {choice.reason}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
 }
 
 function SuggestionPreviewList({
@@ -112,34 +50,14 @@ function SuggestionPreviewList({
   return (
     <div className="planner-suggestion-stack">
       <div className="planner-suggestion-stack-title">{title}</div>
-      <div className="planner-suggestions planner-suggestions-rich">
-        {choices.map((choice, index) => (
-          <div
-            key={`${choice.value}-${choice.reason}`}
-            className={`planner-suggestion-card tone-${suggestionTone(choice)}`}
-          >
-            <span className="planner-suggestion-card-head">
-              <span className="planner-suggestion-rank">#{index + 1}</span>
-              {choice.sourceLabel ? (
-                <span className="planner-suggestion-source">
-                  {choice.sourceLabel}
-                </span>
-              ) : null}
-              {choice.sourceKind ? (
-                <span className="planner-suggestion-kind">
-                  {choice.sourceKind}
-                </span>
-              ) : null}
-            </span>
-            <span className="planner-suggestion-card-label">
-              {choice.label}
-            </span>
-            <span className="planner-suggestion-card-reason">
-              {choice.reason}
-            </span>
-          </div>
+      <ul className="planner-compact-summary">
+        {choices.slice(0, 3).map((choice, index) => (
+          <li key={`${choice.value}-${choice.reason}`}>
+            #{index + 1} {choice.label}
+            {choice.reason ? ` — ${choice.reason}` : ""}
+          </li>
         ))}
-      </div>
+      </ul>
     </div>
   );
 }
@@ -165,15 +83,34 @@ export function LevelProgressionPlanner({
   currentLevel,
   abilityOrder,
   classOptions,
+  featOptions,
   plannerSuggestions,
   onEnsureLevelCount,
   onSetCurrentLevel,
   onUpdateLevelField,
   onSetLevelFeat,
   onApplyPlannerSuggestions,
+  onRequestPlannerSuggestions,
   onClearPlannedLevelChoices,
 }: LevelProgressionPlannerProps) {
-  const availableWeaponNames = collectFeatWeaponNames(build, RUNTIME_WEAPONS);
+  const plannerFeatOptionsByKind = useMemo(() => {
+    const cleanedOptions = featOptions.map((option) => ({
+      ...option,
+      tags: undefined,
+    }));
+    const combatOptions = cleanedOptions.filter((option) => {
+      const feat = getFeat(RUNTIME_FEATS, option.name);
+      return feat ? featQualifiesForGrant(feat, "fighter-bonus") : false;
+    });
+    return {
+      general: cleanedOptions,
+      "fighter-bonus":
+        combatOptions.length > 0 ? combatOptions : cleanedOptions,
+    };
+  }, [featOptions]);
+  const [expandedLevels, setExpandedLevels] = useState<Record<number, boolean>>(
+    {},
+  );
 
   return (
     <section className="planner-shell">
@@ -205,8 +142,9 @@ export function LevelProgressionPlanner({
         </div>
       </div>
       <p className="hint">
-        Plan the full progression, but only levels up to the current level are
-        applied to the live sheet. Wild concept, I know.
+        Plan the full progression, but keep each row lean: the controls live in
+        the row, and the suggestions stay off to the side unless you ask for
+        more.
       </p>
       <div className="planner-table-wrap">
         <table className="planner-table">
@@ -224,300 +162,344 @@ export function LevelProgressionPlanner({
             </tr>
           </thead>
           <tbody>
-            {Array.from({ length: PLANNER_LEVEL_CAP }, (_, index) => {
-              const levelNumber = index + 1;
-              const level = build.levels[index];
-              const isActive = !!level;
-              const isApplied = levelNumber <= currentLevel;
-              const featSlots = isActive
-                ? plannedFeatSlotsForLevel(build, index)
-                : [];
-              const grantsFeat = featSlots.length > 0;
-              const grantsAbilityIncrease = levelNumber % 4 === 0;
-              const defaultClass =
-                build.levels[index - 1]?.className ??
-                build.levels[build.levels.length - 1]?.className ??
-                classOptions[0]?.name ??
-                "Fighter";
-              const hitDie =
-                classOptions.find(
-                  (option) =>
-                    option.name === (level?.className ?? defaultClass),
-                )?.hitDie ?? 20;
-              const suggestions = plannerSuggestions[index] ?? {
-                guideChoices: [],
-                classChoices: [],
-                featChoices: [],
-                featChoicesBySlot: [],
-                favoredClassChoices: [],
-                abilityChoices: [],
-                notes: [],
-              };
-              const featContext = isActive
-                ? featContextFromSheet(
-                    computeSheet(
-                      buildCharacter(
-                        { ...build, levels: build.levels.slice(0, index + 1) },
-                        RUNTIME_CLASSES,
-                        RUNTIME_FEATS,
-                        RUNTIME_CLASS_FEATURES,
-                        RUNTIME_ARCHETYPES,
-                      ),
-                    ),
-                  )
-                : undefined;
-              return (
-                <tr
-                  key={`planner-row-${index + 1}`}
-                  className={
-                    isActive ? (isApplied ? "active" : "future") : "future"
-                  }
-                >
-                  <td>{levelNumber}</td>
-                  <td>
-                    {isActive ? (isApplied ? "Current" : "Planned") : "Empty"}
-                  </td>
-                  <td>
-                    {isActive ? (
-                      <>
-                        <select
-                          value={level.className}
-                          onChange={(e) =>
-                            onUpdateLevelField(
-                              index,
-                              "className",
-                              e.target.value,
-                            )
-                          }
-                        >
-                          {classOptions.map((option) => (
-                            <option key={option.name} value={option.name}>
-                              {option.name}
-                            </option>
-                          ))}
-                        </select>
-                        <SuggestionButtons
-                          title="Recommended class picks"
-                          choices={suggestions.classChoices}
-                          selectedValue={level.className}
-                          onApply={(value) =>
-                            onUpdateLevelField(index, "className", value)
-                          }
-                        />
-                      </>
-                    ) : (
-                      <span className="planner-empty">—</span>
-                    )}
-                  </td>
-                  <td>
-                    {isActive ? (
-                      <input
-                        type="number"
-                        min={1}
-                        max={hitDie}
-                        value={level.hitPointRoll}
-                        onChange={(e) =>
-                          onUpdateLevelField(
-                            index,
-                            "hitPointRoll",
-                            Math.max(1, Number(e.target.value) || 1),
-                          )
-                        }
-                      />
-                    ) : (
-                      <span className="planner-empty">—</span>
-                    )}
-                  </td>
-                  <td>
-                    {isActive && grantsFeat ? (
-                      <div className="planner-feat-slots">
-                        {featSlots.map((slot, featIndex) => {
-                          const selectedFeat = level.feats?.[featIndex] ?? "";
-                          const slotOptions = featContext
-                            ? buildFeatPickerOptions({
-                                featRegistry: RUNTIME_FEATS,
-                                featContext,
-                                grantKind: slot.kind,
-                                takenSelections: featContext.featNames,
-                                currentSelection: selectedFeat,
-                                availableWeaponNames,
-                                suggestedFeatNames: new Set(
-                                  suggestions.featChoices.map((choice) =>
-                                    choice.value.trim().toLowerCase(),
-                                  ),
-                                ),
-                              })
-                            : [];
-                          return (
-                            <div
-                              key={`${levelNumber}-${slot.source}-${featIndex}`}
-                              className="planner-feat-slot"
-                            >
-                              <span className="planner-slot-label">
-                                {slot.label}
-                                <span className="planner-slot-meta">
-                                  {featSlotTag(slot.kind)}
-                                </span>
-                              </span>
-                              <CompendiumPicker
-                                value={selectedFeat}
-                                onChange={(value) =>
-                                  onSetLevelFeat(
-                                    index,
-                                    featIndex,
-                                    normalizeSelectedFeatSelection(
-                                      RUNTIME_FEATS,
-                                      value,
-                                    ),
-                                  )
-                                }
-                                options={slotOptions}
-                                placeholder="Search feat"
-                              />
-                              <SuggestionButtons
-                                title={`Recommended ${slot.label.toLowerCase()} picks`}
-                                choices={
-                                  suggestions.featChoicesBySlot.find(
-                                    (entry) => entry.slotIndex === featIndex,
-                                  )?.choices ?? []
-                                }
-                                selectedValue={selectedFeat}
-                                onApply={(value) =>
-                                  onSetLevelFeat(index, featIndex, value)
-                                }
-                              />
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <span className="planner-empty">—</span>
-                    )}
-                  </td>
-                  <td>
-                    {isActive ? (
-                      <>
-                        <select
-                          value={level.favoredClass ?? ""}
-                          onChange={(e) =>
-                            onUpdateLevelField(
-                              index,
-                              "favoredClass",
-                              (e.target.value || undefined) as
-                                | "hp"
-                                | "skill"
-                                | undefined,
-                            )
-                          }
-                        >
-                          <option value="">None</option>
-                          <option value="hp">HP</option>
-                          <option value="skill">Skill</option>
-                        </select>
-                        <SuggestionButtons
-                          title="Recommended favored bonus"
-                          choices={suggestions.favoredClassChoices}
-                          selectedValue={level.favoredClass ?? "none"}
-                          onApply={(value) =>
-                            onUpdateLevelField(
-                              index,
-                              "favoredClass",
-                              value === "none" ? undefined : value,
-                            )
-                          }
-                        />
-                      </>
-                    ) : (
-                      <span className="planner-empty">—</span>
-                    )}
-                  </td>
-                  <td>
-                    {isActive && grantsAbilityIncrease ? (
-                      <>
-                        <select
-                          value={level.abilityIncrease ?? ""}
-                          onChange={(e) =>
-                            onUpdateLevelField(
-                              index,
-                              "abilityIncrease",
-                              (e.target.value || undefined) as
-                                | AbilityKey
-                                | undefined,
-                            )
-                          }
-                        >
-                          <option value="">None</option>
-                          {abilityOrder.map((ability) => (
-                            <option key={ability} value={ability}>
-                              {ability.toUpperCase()}
-                            </option>
-                          ))}
-                        </select>
-                        <SuggestionButtons
-                          title="Recommended ASI picks"
-                          choices={suggestions.abilityChoices}
-                          selectedValue={level.abilityIncrease ?? ""}
-                          onApply={(value) =>
-                            onUpdateLevelField(index, "abilityIncrease", value)
-                          }
-                        />
-                      </>
-                    ) : (
-                      <span className="planner-empty">—</span>
-                    )}
-                  </td>
-                  <td>
-                    {isActive ? (
-                      <div className="planner-row-actions">
-                        {isApplied ? (
-                          <button
-                            className="ghost small"
-                            onClick={() =>
-                              onSetCurrentLevel(Math.max(1, index))
+            {Array.from({ length: PLANNER_LEVEL_CAP }, (_, index) => index).map(
+              (index) => {
+                const levelNumber = index + 1;
+                const level = build.levels[index];
+                const isActive = !!level;
+                const isApplied = levelNumber <= currentLevel;
+                const featSlots = isActive
+                  ? plannedFeatSlotsForLevel(build, index)
+                  : [];
+                const grantsFeat = featSlots.length > 0;
+                const grantsAbilityIncrease = levelNumber % 4 === 0;
+                const defaultClass =
+                  build.levels[index - 1]?.className ??
+                  build.levels[build.levels.length - 1]?.className ??
+                  classOptions[0]?.name ??
+                  "Fighter";
+                const hitDie =
+                  classOptions.find(
+                    (option) =>
+                      option.name === (level?.className ?? defaultClass),
+                  )?.hitDie ?? 20;
+                const suggestions = plannerSuggestions[index] ?? {
+                  guideChoices: [],
+                  classChoices: [],
+                  featChoices: [],
+                  featChoicesBySlot: [],
+                  favoredClassChoices: [],
+                  abilityChoices: [],
+                  notes: [],
+                };
+                const rowExpanded = !!expandedLevels[index];
+                const hasGuidedSuggestions =
+                  suggestions.guideChoices.length > 0;
+                return (
+                  <tr
+                    key={`planner-row-${index + 1}`}
+                    className={
+                      isActive ? (isApplied ? "active" : "future") : "future"
+                    }
+                  >
+                    <td>{levelNumber}</td>
+                    <td>
+                      {isActive ? (isApplied ? "Current" : "Planned") : "Empty"}
+                    </td>
+                    <td>
+                      {isActive ? (
+                        <>
+                          <select
+                            value={level.className}
+                            onChange={(e) =>
+                              onUpdateLevelField(
+                                index,
+                                "className",
+                                e.target.value,
+                              )
                             }
                           >
-                            Set Before
-                          </button>
-                        ) : (
+                            {classOptions.map((option) => (
+                              <option key={option.name} value={option.name}>
+                                {option.name}
+                              </option>
+                            ))}
+                          </select>
+                        </>
+                      ) : (
+                        <span className="planner-empty">—</span>
+                      )}
+                    </td>
+                    <td>
+                      {isActive ? (
+                        <input
+                          className="planner-hp-input"
+                          type="number"
+                          min={1}
+                          max={hitDie}
+                          value={level.hitPointRoll}
+                          onChange={(e) =>
+                            onUpdateLevelField(
+                              index,
+                              "hitPointRoll",
+                              Math.max(1, Number(e.target.value) || 1),
+                            )
+                          }
+                        />
+                      ) : (
+                        <span className="planner-empty">—</span>
+                      )}
+                    </td>
+                    <td>
+                      {isActive && grantsFeat ? (
+                        <div className="planner-feat-slots">
+                          {featSlots.map((slot, featIndex) => {
+                            const selectedFeat = level.feats?.[featIndex] ?? "";
+                            const pickerOptions =
+                              plannerFeatOptionsByKind[slot.kind] ??
+                              featOptions;
+                            const pickerValue = pickerOptions.some(
+                              (option) =>
+                                option.name.toLowerCase() ===
+                                selectedFeat.trim().toLowerCase(),
+                            )
+                              ? selectedFeat
+                              : "";
+                            return (
+                              <div
+                                key={`${levelNumber}-${slot.source}-${featIndex}`}
+                                className="planner-feat-slot"
+                              >
+                                <span className="planner-slot-label">
+                                  {slot.label}
+                                  <span className="planner-slot-meta">
+                                    {featSlotTag(slot.kind)}
+                                  </span>
+                                </span>
+                                <CompendiumPicker
+                                  value={pickerValue}
+                                  onChange={(value) =>
+                                    onSetLevelFeat(
+                                      index,
+                                      featIndex,
+                                      normalizeSelectedFeatSelection(
+                                        RUNTIME_FEATS,
+                                        value,
+                                      ),
+                                    )
+                                  }
+                                  options={[]}
+                                  resolveOptions={(query) => {
+                                    const normalizedQuery = query
+                                      .trim()
+                                      .toLowerCase();
+                                    if (!normalizedQuery) return pickerOptions;
+
+                                    const byNamePrefix = pickerOptions.filter(
+                                      (option) =>
+                                        option.name
+                                          .toLowerCase()
+                                          .startsWith(normalizedQuery),
+                                    );
+                                    if (byNamePrefix.length > 0)
+                                      return byNamePrefix;
+
+                                    const byNameWord = pickerOptions.filter(
+                                      (option) =>
+                                        option.name
+                                          .toLowerCase()
+                                          .split(/\s+/)
+                                          .some((word) =>
+                                            word.startsWith(normalizedQuery),
+                                          ),
+                                    );
+                                    if (byNameWord.length > 0)
+                                      return byNameWord;
+
+                                    const byNameContains = pickerOptions.filter(
+                                      (option) =>
+                                        option.name
+                                          .toLowerCase()
+                                          .includes(normalizedQuery),
+                                    );
+                                    if (byNameContains.length > 0)
+                                      return byNameContains;
+
+                                    return pickerOptions.filter((option) =>
+                                      (Array.isArray(option.searchText)
+                                        ? option.searchText
+                                        : option.searchText
+                                          ? [option.searchText]
+                                          : []
+                                      )
+                                        .join(" ")
+                                        .toLowerCase()
+                                        .includes(normalizedQuery),
+                                    );
+                                  }}
+                                  placeholder="Feat"
+                                  commitMode="select"
+                                  maxResults={24}
+                                />
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <span className="planner-empty">—</span>
+                      )}
+                    </td>
+                    <td>
+                      {isActive ? (
+                        <>
+                          <select
+                            value={level.favoredClass ?? ""}
+                            onChange={(e) =>
+                              onUpdateLevelField(
+                                index,
+                                "favoredClass",
+                                (e.target.value || undefined) as
+                                  | "hp"
+                                  | "skill"
+                                  | undefined,
+                              )
+                            }
+                          >
+                            <option value="">None</option>
+                            <option value="hp">HP</option>
+                            <option value="skill">Skill</option>
+                          </select>
+                        </>
+                      ) : (
+                        <span className="planner-empty">—</span>
+                      )}
+                    </td>
+                    <td>
+                      {isActive && grantsAbilityIncrease ? (
+                        <>
+                          <select
+                            value={level.abilityIncrease ?? ""}
+                            onChange={(e) =>
+                              onUpdateLevelField(
+                                index,
+                                "abilityIncrease",
+                                (e.target.value || undefined) as
+                                  | AbilityKey
+                                  | undefined,
+                              )
+                            }
+                          >
+                            <option value="">None</option>
+                            {abilityOrder.map((ability) => (
+                              <option key={ability} value={ability}>
+                                {ability.toUpperCase()}
+                              </option>
+                            ))}
+                          </select>
+                        </>
+                      ) : (
+                        <span className="planner-empty">—</span>
+                      )}
+                    </td>
+                    <td>
+                      {isActive ? (
+                        <div className="planner-row-actions">
+                          {isApplied ? (
+                            <button
+                              className="ghost small"
+                              onClick={() =>
+                                onSetCurrentLevel(Math.max(1, index))
+                              }
+                            >
+                              Set Before
+                            </button>
+                          ) : (
+                            <button
+                              className="ghost small"
+                              onClick={() => onSetCurrentLevel(index + 1)}
+                            >
+                              Apply to Here
+                            </button>
+                          )}
                           <button
                             className="ghost small"
-                            onClick={() => onSetCurrentLevel(index + 1)}
+                            onClick={() => onApplyPlannerSuggestions(index)}
                           >
-                            Apply to Here
+                            Apply Top Picks
                           </button>
-                        )}
+                          <button
+                            className="ghost small"
+                            type="button"
+                            onClick={() => {
+                              if (!rowExpanded)
+                                onRequestPlannerSuggestions(index);
+                              setExpandedLevels((prev) => ({
+                                ...prev,
+                                [index]: !prev[index],
+                              }));
+                            }}
+                          >
+                            {rowExpanded ? "Hide Tips" : "Show Tips"}
+                          </button>
+                          <button
+                            className="ghost small"
+                            onClick={() => {
+                              onClearPlannedLevelChoices(index);
+                              setExpandedLevels((prev) => ({
+                                ...prev,
+                                [index]: false,
+                              }));
+                            }}
+                          >
+                            Clear Picks
+                          </button>
+                        </div>
+                      ) : (
                         <button
                           className="ghost small"
-                          onClick={() => onApplyPlannerSuggestions(index)}
+                          onClick={() => onEnsureLevelCount(index + 1)}
                         >
-                          Apply Top Picks
+                          Plan to Here
                         </button>
-                        <button
-                          className="ghost small"
-                          onClick={() => onClearPlannedLevelChoices(index)}
-                        >
-                          Clear Picks
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        className="ghost small"
-                        onClick={() => onEnsureLevelCount(index + 1)}
-                      >
-                        Plan to Here
-                      </button>
-                    )}
-                  </td>
-                  <td>
-                    <SuggestionPreviewList
-                      title="Guide read"
-                      choices={suggestions.guideChoices}
-                    />
-                    <SuggestionNotes notes={suggestions.notes} />
-                  </td>
-                </tr>
-              );
-            })}
+                      )}
+                    </td>
+                    <td>
+                      {rowExpanded ? (
+                        <>
+                          <SuggestionPreviewList
+                            title="Guide read"
+                            choices={suggestions.guideChoices}
+                          />
+                          <SuggestionPreviewList
+                            title="Class"
+                            choices={suggestions.classChoices}
+                          />
+                          <SuggestionPreviewList
+                            title="Feats"
+                            choices={suggestions.featChoices}
+                          />
+                          <SuggestionPreviewList
+                            title="Favored bonus"
+                            choices={suggestions.favoredClassChoices}
+                          />
+                          <SuggestionPreviewList
+                            title="Ability increase"
+                            choices={suggestions.abilityChoices}
+                          />
+                          <SuggestionNotes notes={suggestions.notes} />
+                        </>
+                      ) : hasGuidedSuggestions ? (
+                        <div className="planner-compact-note-count">
+                          Guided tips ready
+                        </div>
+                      ) : (
+                        <span className="planner-empty">—</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              },
+            )}
           </tbody>
         </table>
       </div>

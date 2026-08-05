@@ -574,7 +574,12 @@ export function checkPrerequisites(
   feat: FeatDefinition,
   ctx: FeatContext,
 ): PrereqResult {
-  const unmet = feat.prerequisites.filter((p) => !prerequisiteMet(p, ctx));
+  const featName = feat.name.trim().toLowerCase();
+  const unmet = feat.prerequisites.filter((p) => {
+    if (p.type === "feat" && (p.featName ?? "").trim().toLowerCase() === featName)
+      return false;
+    return !prerequisiteMet(p, ctx);
+  });
   return { met: unmet.length === 0, unmet };
 }
 

@@ -6,6 +6,7 @@ import {
   type CharacterBuild,
 } from "../src/build/character";
 import { SAMPLE_CLASSES, type ClassRegistry } from "../src/build/classes";
+import { FEATS, type FeatRegistry } from "../src/content/feats";
 
 function baseBuild(): CharacterBuild {
   return {
@@ -54,6 +55,24 @@ const PRESTIGE_CLASSES: ClassRegistry = {
         description: "Weapon Focus",
       },
     ],
+  },
+};
+
+const SELF_PREREQ_FEATS: FeatRegistry = {
+  ...FEATS,
+  "self-prereq-feat": {
+    id: "self-prereq-feat",
+    name: "Self Prereq Feat",
+    pack: "test",
+    description: "Bad content feat that incorrectly names itself as a prerequisite.",
+    prerequisites: [
+      {
+        type: "feat",
+        featName: "Self Prereq Feat",
+        description: "Self Prereq Feat",
+      },
+    ],
+    effects: [],
   },
 };
 
@@ -205,6 +224,33 @@ describe("validateBuild inventory diagnostics", () => {
       issues.some((issue) => issue.code === "feat-parameter-missing"),
     ).toBe(true);
     expect(issues.some((issue) => issue.code === "duplicate-feat")).toBe(true);
+  });
+
+  it("ignores self-referential feat prerequisites from bad content", () => {
+    const build: CharacterBuild = {
+      ...baseBuild(),
+      levels: [
+        {
+          className: "Fighter",
+          hitPointRoll: 10,
+          feats: ["Self Prereq Feat"],
+        },
+      ],
+    };
+    const issues = validateBuild(
+      build,
+      undefined,
+      undefined,
+      undefined,
+      SELF_PREREQ_FEATS,
+    );
+    expect(
+      issues.some(
+        (issue) =>
+          issue.code === "feat-prerequisites" &&
+          issue.message.includes("Self Prereq Feat"),
+      ),
+    ).toBe(false);
   });
 
   it("flags unmet prestige-class prerequisites on first entry", () => {

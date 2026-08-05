@@ -103,6 +103,22 @@ interface BuildSuggestionArgs {
   classFeatures: ClassFeatureRegistry;
   archetypes: Record<string, ArchetypeDefinitionLike>;
   buildGuides: BuildGuideDefinition[];
+  includeGuides?: boolean;
+}
+
+interface BuildSuggestionSharedData {
+  featList: FeatDefinition[];
+  featByName: Map<string, FeatDefinition>;
+}
+
+interface BuildSuggestionLevelCache {
+  previewSheet: ReturnType<typeof computeSheet>;
+  levelContext: ReturnType<typeof featContextFromSheet>;
+  weakestSave: "fort" | "ref" | "will";
+  classPrerequisiteContext: ReturnType<typeof featContextFromSheet> & {
+    skillRanks: Partial<Record<SkillKey, number>>;
+    classLevels: Map<string, number>;
+  };
 }
 
 interface GuideMatch {
@@ -528,7 +544,10 @@ function buildProfile(
   };
 }
 
-function buildPreviewSheet(args: BuildSuggestionArgs, levelIndex: number) {
+function buildLevelCache(
+  args: BuildSuggestionArgs,
+  levelIndex: number,
+): BuildSuggestionLevelCache {
   const levels = args.build.levels
     .slice(0, levelIndex + 1)
     .map((level, index) =>
@@ -536,7 +555,7 @@ function buildPreviewSheet(args: BuildSuggestionArgs, levelIndex: number) {
         ? { ...level, feats: undefined, abilityIncrease: undefined }
         : level,
     );
-  return computeSheet(
+  const previewSheet = computeSheet(
     buildCharacter(
       { ...args.build, levels },
       args.classes,
@@ -545,6 +564,50 @@ function buildPreviewSheet(args: BuildSuggestionArgs, levelIndex: number) {
       args.archetypes,
     ),
   );
+  const levelContext = featContextFromSheet(previewSheet);
+  const runningSkillRanks = args.build.levels
+    .slice(0, levelIndex)
+    .reduce<Partial<Record<SkillKey, number>>>((acc, level) => {
+      for (const [skill, ranks] of Object.entries(level.skillRanks ?? {}) as [
+        SkillKey,
+        number,
+      ][]) {
+        acc[skill] = (acc[skill] ?? 0) + ranks;
+      }
+      return acc;
+    }, {});
+  const runningClassLevels = args.build.levels
+    .slice(0, levelIndex)
+    .reduce<Map<string, number>>((acc, level) => {
+      const key = level.className.toLowerCase();
+      acc.set(key, (acc.get(key) ?? 0) + 1);
+      return acc;
+    }, new Map<string, number>());
+  const saves: Array<["fort" | "ref" | "will", number]> = [
+    ["fort", previewSheet.saves.fort.total],
+    ["ref", previewSheet.saves.ref.total],
+    ["will", previewSheet.saves.will.total],
+  ];
+  return {
+    previewSheet,
+    levelContext,
+    weakestSave: saves.sort((a, b) => a[1] - b[1])[0]?.[0] ?? "will",
+    classPrerequisiteContext: {
+      ...levelContext,
+      skillRanks: runningSkillRanks,
+      classLevels: runningClassLevels,
+    },
+  };
+}
+
+function buildSharedSuggestionData(
+  feats: FeatRegistry,
+): BuildSuggestionSharedData {
+  const featList = listFeats(feats);
+  return {
+    featList,
+    featByName: new Map(featList.map((feat) => [normalize(feat.name), feat])),
+  };
 }
 
 function priorFeatNames(build: CharacterBuild, upToLevelIndex: number) {
@@ -656,7 +719,7 @@ function bandFeatChoices(
   profile: BuildProfile,
   levelContext: ReturnType<typeof featContextFromSheet>,
   taken: Set<string>,
-  feats: FeatRegistry,
+  featByName: Map<string, FeatDefinition>,
   slotKind: FeatGrantKind,
 ) {
   const picks: PlannerSuggestionChoice<string>[] = [];
@@ -682,9 +745,7 @@ function bandFeatChoices(
   ];
   for (const source of bandSources) {
     source.priorities.forEach((featName, index) => {
-      const feat = Object.values(feats).find(
-        (entry) => normalize(entry.name) === normalize(featName),
-      );
+      const feat = featByName.get(normalize(featName));
       if (
         !feat ||
         taken.has(normalize(feat.name)) ||
@@ -712,16 +773,10 @@ function suggestFeatChoiceSlots(
   args: BuildSuggestionArgs,
   levelIndex: number,
   profile: BuildProfile,
+  shared: BuildSuggestionSharedData,
+  levelCache: BuildSuggestionLevelCache,
 ) {
-  const previewSheet = buildPreviewSheet(args, levelIndex);
-  const levelContext = featContextFromSheet(previewSheet);
   const reserved = new Set(priorFeatNames(args.build, levelIndex));
-  const saves: Array<["fort" | "ref" | "will", number]> = [
-    ["fort", previewSheet.saves.fort.total],
-    ["ref", previewSheet.saves.ref.total],
-    ["will", previewSheet.saves.will.total],
-  ];
-  const weakestSave = saves.sort((a, b) => a[1] - b[1])[0]?.[0] ?? "will";
   const plan = planLevelUp(
     { ...args.build, levels: args.build.levels.slice(0, levelIndex) },
     args.build.levels[levelIndex]?.className ?? "Fighter",
@@ -732,18 +787,18 @@ function suggestFeatChoiceSlots(
     const choices = uniqueTopChoices([
       ...bandFeatChoices(
         profile,
-        levelContext,
+        levelCache.levelContext,
         reserved,
-        args.feats,
+        shared.featByName,
         slot.kind,
       ),
-      ...listFeats(args.feats)
+      ...shared.featList
         .map((feat) =>
           scoreFeat(
             feat,
             profile,
-            levelContext,
-            weakestSave,
+            levelCache.levelContext,
+            levelCache.weakestSave,
             reserved,
             slot.kind,
           ),
@@ -952,44 +1007,15 @@ function scoreClassChoice(
   levelIndex: number,
   profile: BuildProfile,
   archetypes: Record<string, ArchetypeDefinitionLike>,
-  classes: Record<string, ClassDefinition>,
-  feats: FeatRegistry,
-  classFeatures: ClassFeatureRegistry,
+  classPrerequisiteContext: BuildSuggestionLevelCache["classPrerequisiteContext"],
 ) {
   let score = 0;
   let reason = "Fits the current direction of the build.";
   if (classDef.prerequisites?.length) {
-    const prefixBuild = {
-      ...build,
-      levels: build.levels.slice(0, levelIndex),
-    };
-    const prefixSheet = computeSheet(
-      buildCharacter(prefixBuild, classes, feats, classFeatures, archetypes),
+    const unmet = checkClassPrerequisites(
+      classDef,
+      classPrerequisiteContext,
     );
-    const runningSkillRanks = prefixBuild.levels.reduce<
-      Partial<Record<SkillKey, number>>
-    >((acc, level) => {
-      for (const [skill, ranks] of Object.entries(level.skillRanks ?? {}) as [
-        SkillKey,
-        number,
-      ][]) {
-        acc[skill] = (acc[skill] ?? 0) + ranks;
-      }
-      return acc;
-    }, {});
-    const runningClassLevels = prefixBuild.levels.reduce<Map<string, number>>(
-      (acc, level) => {
-        const key = level.className.toLowerCase();
-        acc.set(key, (acc.get(key) ?? 0) + 1);
-        return acc;
-      },
-      new Map<string, number>(),
-    );
-    const unmet = checkClassPrerequisites(classDef, {
-      ...featContextFromSheet(prefixSheet),
-      skillRanks: runningSkillRanks,
-      classLevels: runningClassLevels,
-    });
     if (unmet.length > 0) {
       return choiceWithMeta({
         value: classDef.name,
@@ -1038,6 +1064,7 @@ function suggestClassChoices(
   args: BuildSuggestionArgs,
   levelIndex: number,
   profile: BuildProfile,
+  levelCache: BuildSuggestionLevelCache,
 ) {
   const guideChoices = [
     ...profile.activeBranches.flatMap(({ guide, branch, score }) =>
@@ -1077,9 +1104,7 @@ function suggestClassChoices(
           levelIndex,
           profile,
           args.archetypes,
-          args.classes,
-          args.feats,
-          args.classFeatures,
+          levelCache.classPrerequisiteContext,
         ),
       )
       .filter((choice) => choice.score > 0),
@@ -1267,12 +1292,13 @@ function guideSkillChoices(profile: BuildProfile) {
 function suggestCurrentLevelSkills(args: BuildSuggestionArgs) {
   const currentLevelIndex = Math.max(0, args.currentLevel - 1);
   const level = args.build.levels[currentLevelIndex];
+  const activeBuildGuides = args.includeGuides ? args.buildGuides : [];
   const profile = buildProfile(
     args.build,
     args.currentLevel,
     args.classes,
     args.archetypes,
-    args.buildGuides,
+    activeBuildGuides,
   );
   const classDef = classDefinitionByName(args.classes, level?.className);
   const fallback: SkillSuggestionChoice[] = [];
@@ -1386,12 +1412,13 @@ function suggestSpellsForCaster(
   caster: DerivedSpellcasting,
   args: BuildSuggestionArgs,
 ) {
+  const activeBuildGuides = args.includeGuides ? args.buildGuides : [];
   const profile = buildProfile(
     args.build,
     args.currentLevel,
     args.classes,
     args.archetypes,
-    args.buildGuides,
+    activeBuildGuides,
   );
   const classKey = normalize(caster.className);
   const out: Partial<Record<number, SpellSuggestionChoice[]>> = {};
@@ -1438,13 +1465,18 @@ function suggestSpellsForCaster(
 export function buildSuggestions(
   args: BuildSuggestionArgs,
 ): BuildSuggestionBundle {
+  const shared = buildSharedSuggestionData(args.feats);
+  const activeBuildGuides = args.includeGuides ? args.buildGuides : [];
+  const levelCaches = Array.from({ length: 20 }, (_, levelIndex) =>
+    buildLevelCache(args, levelIndex),
+  );
   const planner = Array.from({ length: 20 }, (_, levelIndex) => {
     const profile = buildProfile(
       args.build,
       levelIndex + 1,
       args.classes,
       args.archetypes,
-      args.buildGuides,
+      activeBuildGuides,
     );
     const levelBuild = {
       ...args.build,
@@ -1459,13 +1491,20 @@ export function buildSuggestions(
       args.archetypes,
     );
     const grantsAbilityIncrease = (levelIndex + 1) % 4 === 0;
+    const levelCache = levelCaches[levelIndex] ?? buildLevelCache(args, levelIndex);
     const featChoicesBySlot =
       plan.featSlots.length > 0
-        ? suggestFeatChoiceSlots(args, levelIndex, profile)
+        ? suggestFeatChoiceSlots(
+            args,
+            levelIndex,
+            profile,
+            shared,
+            levelCache,
+          )
         : [];
     return {
       guideChoices: suggestGuideChoices(profile),
-      classChoices: suggestClassChoices(args, levelIndex, profile),
+      classChoices: suggestClassChoices(args, levelIndex, profile, levelCache),
       featChoices: featChoicesBySlot[0]?.choices ?? [],
       featChoicesBySlot,
       favoredClassChoices: suggestFavoredClassChoices(

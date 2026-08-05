@@ -367,6 +367,11 @@ button:disabled {
   border-radius: 10px;
   padding: 10px;
 }
+.build-core-setup-summary {
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--muted);
+}
 .planner-builder {
   margin-bottom: 16px;
   border-top: 1px dotted var(--line);
@@ -404,6 +409,7 @@ button:disabled {
 }
 .planner-table-wrap {
   overflow-x: auto;
+  overflow-y: visible;
   border: 1px solid var(--line);
   border-radius: 10px;
   background: var(--panel-2);
@@ -417,7 +423,7 @@ button:disabled {
 .planner-table td {
   padding: 8px;
   border-bottom: 1px dotted var(--line);
-  vertical-align: middle;
+  vertical-align: top;
   text-align: left;
   font-size: 12px;
 }
@@ -478,6 +484,11 @@ button:disabled {
   font-weight: 600;
 }
 .searchable-picker-option-meta {
+  font-size: 11px;
+  color: var(--muted);
+}
+.searchable-picker-empty {
+  padding: 8px 10px;
   font-size: 11px;
   color: var(--muted);
 }
@@ -568,6 +579,9 @@ button:disabled {
 .planner-feat-slot {
   display: grid;
   gap: 4px;
+}
+.planner-hp-input {
+  min-width: 72px;
 }
 .planner-slot-label {
   display: flex;
@@ -1052,6 +1066,12 @@ button:disabled {
   border-radius: 8px;
   padding: 10px;
 }
+.equipment-armor-recommendations {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
 .armor-stat-grid {
   grid-template-columns: repeat(3, 1fr);
 }
@@ -1420,6 +1440,18 @@ button:disabled {
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+.planner-compact-summary {
+  margin: 0;
+  padding-left: 16px;
+  display: grid;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.planner-compact-note-count {
+  font-size: 11px;
+  color: var(--muted);
 }
 .skill-rank-table {
   display: flex;
@@ -1820,19 +1852,55 @@ button:disabled {
 }
 .skill {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto auto;
-  gap: 6px 10px;
+  grid-template-columns: minmax(0, 1fr) 46px 54px 38px;
+  gap: 4px 8px;
   align-items: center;
-  padding: 4px 0;
+  padding: 3px 0;
   border-bottom: 1px dotted var(--line);
-  font-size: 13px;
+  font-size: 12px;
 }
 .skill-name {
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
   align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   min-width: 0;
+}
+.skill-name-text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.skill-flags {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  flex-shrink: 0;
+}
+.skill-flag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  padding: 1px 4px;
+  border-radius: 999px;
+  border: 1px solid rgba(217, 154, 91, 0.35);
+  background: rgba(217, 154, 91, 0.08);
+  color: var(--accent-2);
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.skill-flag.warn {
+  border-color: rgba(194, 104, 58, 0.45);
+  background: rgba(194, 104, 58, 0.12);
+  color: #ffb18b;
+}
+.skill-flag.muted {
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--muted);
 }
 .skill-value {
   font-weight: 600;
@@ -1861,12 +1929,12 @@ button:disabled {
   justify-self: end;
 }
 .skill-roll-entry-inline input {
-  width: 54px;
-  padding: 3px 5px;
-  font-size: 12px;
+  width: 50px;
+  padding: 2px 4px;
+  font-size: 11px;
 }
 .sheet-roll-total {
-  min-width: 34px;
+  min-width: 38px;
   text-align: right;
   font-weight: 600;
   color: var(--accent-2);

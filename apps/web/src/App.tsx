@@ -75,6 +75,7 @@ import { BuildSlotsPanel } from "./components/BuildSlotsPanel";
 import { ValidationPanel } from "./components/ValidationPanel";
 import {
   buildSuggestions,
+  type BuildSuggestionBundle,
   type LevelPlannerSuggestions,
 } from "./buildSuggestions";
 import type { RuntimeProfile } from "./runtimeInsights";
@@ -91,6 +92,21 @@ const ABILITY_ORDER: readonly AbilityKey[] = [
 const SKILL_NAME = new Map<string, string>(
   SKILL_DEFINITIONS.map((d) => [d.key, d.name]),
 );
+const EMPTY_PLANNER_SUGGESTIONS: LevelPlannerSuggestions = {
+  guideChoices: [],
+  classChoices: [],
+  featChoices: [],
+  featChoicesBySlot: [],
+  favoredClassChoices: [],
+  abilityChoices: [],
+  notes: [],
+};
+const EMPTY_SUGGESTION_BUNDLE: BuildSuggestionBundle = {
+  planner: Array.from({ length: 20 }, () => EMPTY_PLANNER_SUGGESTIONS),
+  currentLevelSkills: [],
+  currentLevelSkillNotes: [],
+  spellChoices: {},
+};
 const CLASS_OPTIONS = RUNTIME_CLASS_OPTIONS;
 const RACE_OPTIONS = RUNTIME_RACE_OPTIONS;
 const WEAPON_OPTIONS = RUNTIME_WEAPONS;
@@ -98,6 +114,7 @@ const MAGIC_ITEM_OPTIONS = RUNTIME_MAGIC_ITEMS;
 const ARMOR_OPTIONS = RUNTIME_ARMOR;
 const MUNDANE_EQUIPMENT_OPTIONS = RUNTIME_MUNDANE_EQUIPMENT;
 const RUNTIME_STORAGE_KEY = "mathfinder:web-runtime:v1";
+const VALIDATION_DEBOUNCE_MS = 200;
 const SPELL_OPTIONS = RUNTIME_SPELL_OPTIONS;
 const DOMAIN_OPTIONS = RUNTIME_DOMAINS.filter(
   (domain): domain is (typeof RUNTIME_DOMAINS)[number] =>
@@ -383,6 +400,54 @@ function equipmentSlotLimit(
   return slot === "ring" ? 2 : 1;
 }
 
+function defaultEquipmentState(
+  entry: NonNullable<CharacterBuild["equipment"]>[number],
+) {
+  if (entry.ownership === "wishlist" || entry.carryState === "cached") {
+    return { equipped: false, carryState: "cached" as const };
+  }
+  const shouldEquip =
+    entry.slot != null
+      ? entry.slot !== "slotless"
+      : !!entry.armor || !!entry.shield || !!entry.weapon;
+  return {
+    equipped: shouldEquip,
+    carryState: "carried" as const,
+  };
+}
+
+function withDefaultEquipmentState(
+  entry: NonNullable<CharacterBuild["equipment"]>[number],
+) {
+  return {
+    ...defaultEquipmentState(entry),
+    ownership: "owned" as const,
+    ...entry,
+  };
+}
+
+function isGenericUnspecializedEquipment(
+  entry: NonNullable<CharacterBuild["equipment"]>[number],
+) {
+  return (
+    !entry.itemTemplateId &&
+    entry.slot == null &&
+    !entry.armor &&
+    !entry.shield &&
+    !entry.weapon &&
+    !entry.modifiers?.length
+  );
+}
+
+function applyTemplateEquipmentState(
+  previous: NonNullable<CharacterBuild["equipment"]>[number],
+  next: NonNullable<CharacterBuild["equipment"]>[number],
+) {
+  return isGenericUnspecializedEquipment(previous)
+    ? { ...next, ...defaultEquipmentState(next) }
+    : next;
+}
+
 function sanitizeEquippedEquipment(
   equipment: NonNullable<CharacterBuild["equipment"]>,
   priorityIndex?: number,
@@ -585,6 +650,11 @@ export function App() {
   const [activeTab, setActiveTab] = useState<"sheet" | "gear" | "build">(
     "sheet",
   );
+  const [mountedTabs, setMountedTabs] = useState({
+    sheet: true,
+    gear: false,
+    build: false,
+  });
   const weaponOptions = useMemo(
     () => runtimeWeaponOptions(build),
     [build.campaignRules],
@@ -882,7 +952,7 @@ export function App() {
           ...entry,
           ownership: "owned" as const,
           quantity: count,
-          equipped: false,
+          equipped: true,
           carryState: "stowed" as const,
         };
         if (remaining > 0) equipment[index] = { ...entry, quantity: remaining };
@@ -1110,6 +1180,22 @@ export function App() {
     };
   }
 
+  function buildWithLevelCount(build: CharacterBuild, count: number) {
+    const target = Math.max(1, Math.min(20, count));
+    if (build.levels.length === target) return build;
+    if (build.levels.length > target) {
+      return { ...build, levels: build.levels.slice(0, target) };
+    }
+    const nextLevels = [...build.levels];
+    while (nextLevels.length < target) {
+      const lastClassName =
+        nextLevels[nextLevels.length - 1]?.className ??
+        build.levels[build.levels.length - 1]?.className;
+      nextLevels.push(makeDefaultLevelEntry(lastClassName));
+    }
+    return { ...build, levels: nextLevels };
+  }
+
   function clearPlannedLevelChoices(levelIndex: number) {
     setBuild((prev) => ({
       ...prev,
@@ -1125,6 +1211,11 @@ export function App() {
         };
       }),
     }));
+    setGuidedPlannerSuggestions((prev) => {
+      const next = { ...prev };
+      delete next[levelIndex];
+      return next;
+    });
   }
 
   function applyPlannerSuggestions(
@@ -1185,21 +1276,7 @@ export function App() {
   }
 
   function ensureLevelCount(count: number) {
-    const target = Math.max(1, Math.min(20, count));
-    setBuild((prev) => {
-      if (prev.levels.length === target) return prev;
-      if (prev.levels.length > target) {
-        return { ...prev, levels: prev.levels.slice(0, target) };
-      }
-      const nextLevels = [...prev.levels];
-      while (nextLevels.length < target) {
-        const lastClassName =
-          nextLevels[nextLevels.length - 1]?.className ??
-          prev.levels[prev.levels.length - 1]?.className;
-        nextLevels.push(makeDefaultLevelEntry(lastClassName));
-      }
-      return { ...prev, levels: nextLevels };
-    });
+    setBuild((prev) => buildWithLevelCount(prev, count));
   }
 
   function addWeapon() {
@@ -1309,17 +1386,14 @@ export function App() {
     setBuild((prev) => ({
       ...prev,
       equipment: [
-        {
+        withDefaultEquipmentState({
           kind: "mundane",
-          ownership: "owned",
           itemTemplateId: undefined,
           name: "New Item",
           quantity: 1,
           weight: 0,
           costGp: 0,
-          equipped: false,
-          carryState: "stowed",
-        },
+        }),
         ...(prev.equipment ?? []),
       ],
     }));
@@ -1329,17 +1403,14 @@ export function App() {
     setBuild((prev) => ({
       ...prev,
       equipment: [
-        {
+        withDefaultEquipmentState({
           kind: "magic",
-          ownership: "owned",
           itemTemplateId: undefined,
           name: "New Magic Item",
           quantity: 1,
           weight: 0,
           costGp: 0,
-          equipped: false,
-          carryState: "stowed",
-        },
+        }),
         ...(prev.equipment ?? []),
       ],
     }));
@@ -1350,10 +1421,7 @@ export function App() {
   ) {
     setBuild((prev) => ({
       ...prev,
-      equipment: [
-        { ownership: "owned", carryState: "stowed", ...entry },
-        ...(prev.equipment ?? []),
-      ],
+      equipment: [withDefaultEquipmentState(entry), ...(prev.equipment ?? [])],
     }));
   }
 
@@ -1362,25 +1430,25 @@ export function App() {
     setBuild((prev) => {
       const nextEquipment: NonNullable<CharacterBuild["equipment"]> = (
         prev.equipment ?? []
-      ).map((entry, i) =>
-        i === index
-          ? {
-              ...entry,
-              kind: "magic",
-              carryState:
-                entry.carryState ?? (entry.equipped ? "carried" : "stowed"),
-              itemTemplateId: template.itemTemplateId,
-              name: template.name,
-              weight: template.weight,
-              costGp: template.costGp,
-              slot: template.slot,
-              modifiers: template.modifiers,
-              armor: undefined,
-              shield: undefined,
-              weapon: undefined,
-            }
-          : entry,
-      );
+      ).map((entry, i) => {
+        if (i !== index) return entry;
+        const nextEntry: NonNullable<CharacterBuild["equipment"]>[number] = {
+          ...entry,
+          kind: "magic",
+          carryState:
+            entry.carryState ?? (entry.equipped ? "carried" : "stowed"),
+          itemTemplateId: template.itemTemplateId,
+          name: template.name,
+          weight: template.weight,
+          costGp: template.costGp,
+          slot: template.slot,
+          modifiers: template.modifiers,
+          armor: undefined,
+          shield: undefined,
+          weapon: undefined,
+        };
+        return applyTemplateEquipmentState(entry, nextEntry);
+      });
       return {
         ...prev,
         equipment: sanitizeEquippedEquipment(
@@ -1406,26 +1474,52 @@ export function App() {
         prev.equipment ?? []
       ).map((entry, i) => {
         if (i !== index) return entry;
-        if ("categoryNormalized" in item) {
-          return item.categoryNormalized === "shield"
-            ? {
-                ...entry,
-                kind: "mundane",
-                carryState:
-                  entry.carryState ?? (entry.equipped ? "carried" : "stowed"),
-                itemTemplateId: item.id,
-                name: item.name,
-                weight: item.weightLb,
-                costGp: item.costGp,
-                slot: "shield",
-                modifiers: undefined,
-                armor: undefined,
-                shield: {
-                  acBonus: item.armorBonus,
-                  checkPenalty: item.armorCheckPenalty,
-                },
-                weapon: undefined,
-              }
+        const nextEntry: NonNullable<CharacterBuild["equipment"]>[number] =
+          "categoryNormalized" in item
+            ? item.categoryNormalized === "shield"
+              ? {
+                  ...entry,
+                  kind: "mundane",
+                  carryState:
+                    entry.carryState ?? (entry.equipped ? "carried" : "stowed"),
+                  itemTemplateId: item.id,
+                  name: item.name,
+                  weight: item.weightLb,
+                  costGp: item.costGp,
+                  slot: "shield" as const,
+                  modifiers: undefined,
+                  armor: undefined,
+                  shield: {
+                    acBonus: item.armorBonus,
+                    checkPenalty: item.armorCheckPenalty,
+                  },
+                  weapon: undefined,
+                }
+              : {
+                  ...entry,
+                  kind: "mundane",
+                  itemTemplateId: item.id,
+                  name: item.name,
+                  weight: item.weightLb,
+                  costGp: item.costGp,
+                  slot: "armor" as const,
+                  modifiers: undefined,
+                  armor: item.categoryNormalized
+                    ? {
+                        category: item.categoryNormalized,
+                        acBonus: item.armorBonus,
+                        maxDexBonus: item.maxDexBonus,
+                        checkPenalty: item.armorCheckPenalty,
+                        speedPenalty:
+                          typeof item.speed30 === "number" &&
+                          typeof item.speed20 === "number"
+                            ? item.speed30 - item.speed20
+                            : undefined,
+                      }
+                    : undefined,
+                  shield: undefined,
+                  weapon: undefined,
+                }
             : {
                 ...entry,
                 kind: "mundane",
@@ -1433,38 +1527,13 @@ export function App() {
                 name: item.name,
                 weight: item.weightLb,
                 costGp: item.costGp,
-                slot: "armor",
+                slot: undefined,
                 modifiers: undefined,
-                armor: item.categoryNormalized
-                  ? {
-                      category: item.categoryNormalized,
-                      acBonus: item.armorBonus,
-                      maxDexBonus: item.maxDexBonus,
-                      checkPenalty: item.armorCheckPenalty,
-                      speedPenalty:
-                        typeof item.speed30 === "number" &&
-                        typeof item.speed20 === "number"
-                          ? item.speed30 - item.speed20
-                          : undefined,
-                    }
-                  : undefined,
+                armor: undefined,
                 shield: undefined,
                 weapon: undefined,
               };
-        }
-        return {
-          ...entry,
-          kind: "mundane",
-          itemTemplateId: item.id,
-          name: item.name,
-          weight: item.weightLb,
-          costGp: item.costGp,
-          slot: undefined,
-          modifiers: undefined,
-          armor: undefined,
-          shield: undefined,
-          weapon: undefined,
-        };
+        return applyTemplateEquipmentState(entry, nextEntry);
       });
       return {
         ...prev,
@@ -1495,7 +1564,6 @@ export function App() {
       quantity: 1,
       weight: template.weight,
       costGp: template.costGp,
-      equipped: false,
       slot: template.slot,
       modifiers: template.modifiers,
     });
@@ -1513,7 +1581,6 @@ export function App() {
       quantity: 1,
       weight: item.weightLb,
       costGp: item.costGp,
-      equipped: false,
     });
   }
 
@@ -1530,7 +1597,6 @@ export function App() {
       quantity: 1,
       weight: item.weightLb,
       costGp: item.costGp,
-      equipped: false,
       slot: "armor",
       armor:
         item.categoryNormalized && item.categoryNormalized !== "shield"
@@ -1562,7 +1628,6 @@ export function App() {
       quantity: 1,
       weight: item.weightLb,
       costGp: item.costGp,
-      equipped: false,
       slot: "shield",
       shield: {
         acBonus: item.armorBonus,
@@ -1826,19 +1891,28 @@ export function App() {
     level: number,
     spells: string[],
   ) {
-    setBuild((prev) => ({
-      ...prev,
-      spellSelections: {
-        ...(prev.spellSelections ?? {}),
-        [classKey]: {
-          ...((prev.spellSelections ?? {})[classKey] ?? {}),
-          [mode]: {
-            ...((prev.spellSelections ?? {})[classKey]?.[mode] ?? {}),
-            [level]: spells,
-          },
-        },
-      },
-    }));
+    setBuild((prev) => {
+      const spellSelections = { ...(prev.spellSelections ?? {}) };
+      const classSelections = { ...(spellSelections[classKey] ?? {}) };
+      const levelSelections = { ...(classSelections[mode] ?? {}) };
+
+      if (spells.length > 0) levelSelections[level] = spells;
+      else delete levelSelections[level];
+
+      if (Object.keys(levelSelections).length > 0)
+        classSelections[mode] = levelSelections;
+      else delete classSelections[mode];
+
+      if (Object.keys(classSelections).length > 0)
+        spellSelections[classKey] = classSelections;
+      else delete spellSelections[classKey];
+
+      return {
+        ...prev,
+        spellSelections:
+          Object.keys(spellSelections).length > 0 ? spellSelections : undefined,
+      };
+    });
   }
 
   function addSpellSelection(
@@ -1903,18 +1977,23 @@ export function App() {
   function resetSpellSelectionsForClass(
     classKey: string,
     mode: "prepared" | "known",
-    levels: number[],
+    _levels: number[],
   ) {
-    setBuild((prev) => ({
-      ...prev,
-      spellSelections: {
-        ...(prev.spellSelections ?? {}),
-        [classKey]: {
-          ...((prev.spellSelections ?? {})[classKey] ?? {}),
-          [mode]: Object.fromEntries(levels.map((level) => [level, []])),
-        },
-      },
-    }));
+    setBuild((prev) => {
+      const spellSelections = { ...(prev.spellSelections ?? {}) };
+      const classSelections = { ...(spellSelections[classKey] ?? {}) };
+      delete classSelections[mode];
+
+      if (Object.keys(classSelections).length > 0)
+        spellSelections[classKey] = classSelections;
+      else delete spellSelections[classKey];
+
+      return {
+        ...prev,
+        spellSelections:
+          Object.keys(spellSelections).length > 0 ? spellSelections : undefined,
+      };
+    });
   }
 
   function updateSpellSpecialization(classKey: string, value: string) {
@@ -2063,6 +2142,12 @@ export function App() {
   }, [build.levels.length]);
 
   useEffect(() => {
+    setMountedTabs((prev) =>
+      prev[activeTab] ? prev : { ...prev, [activeTab]: true },
+    );
+  }, [activeTab]);
+
+  useEffect(() => {
     if (typeof window === "undefined") return;
     window.localStorage.setItem(CURRENT_LEVEL_STORAGE_KEY, `${currentLevel}`);
   }, [currentLevel]);
@@ -2088,7 +2173,6 @@ export function App() {
   // and every derived number recomputes instantly — the engine is fast & local.
   const {
     sheet,
-    issues,
     activatableGroups,
     activatableConflicts,
     resourceMaxes,
@@ -2158,13 +2242,6 @@ export function App() {
     };
     return {
       sheet: computeSheet(withBuffs),
-      issues: validateBuild(
-        effectiveBuild,
-        RUNTIME_CLASSES,
-        RUNTIME_SPELLS,
-        RUNTIME_ARCHETYPES,
-        RUNTIME_FEATS,
-      ),
       activatableFeatures,
       activatableGroups: groupActivatables(activatableFeatures),
       activatableConflicts: resolvedActivatables.conflicts,
@@ -2174,6 +2251,31 @@ export function App() {
       spellEffectContext,
     };
   }, [effectiveBuild, activeBuffs, fatigued, spellSlotUsage]);
+
+  const [issues, setIssues] = useState<ReturnType<typeof validateBuild>>(() =>
+    validateBuild(
+      effectiveBuild,
+      RUNTIME_CLASSES,
+      RUNTIME_SPELLS,
+      RUNTIME_ARCHETYPES,
+      RUNTIME_FEATS,
+    ),
+  );
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      setIssues(
+        validateBuild(
+          effectiveBuild,
+          RUNTIME_CLASSES,
+          RUNTIME_SPELLS,
+          RUNTIME_ARCHETYPES,
+          RUNTIME_FEATS,
+        ),
+      );
+    }, VALIDATION_DEBOUNCE_MS);
+    return () => window.clearTimeout(timeout);
+  }, [effectiveBuild]);
 
   const errors = issues.filter((i) => i.severity === "error");
   const featOptions = useMemo(
@@ -2202,26 +2304,63 @@ export function App() {
             feat.prerequisites.map((p) => p.description).join(" "),
             feat.pack,
           ],
-          tags: feat.pack !== "core" ? [feat.pack] : undefined,
+          tags: [
+            ...(feat.tags ?? []).map((tag) => tag.toLowerCase()),
+            ...(feat.pack !== "core" ? [feat.pack] : []),
+          ],
         }))
         .sort((a, b) => a.name.localeCompare(b.name)),
     [],
   );
+  const shouldComputeSuggestions = activeTab === "build" || leveling;
   const suggestionBundle = useMemo(
     () =>
-      buildSuggestions({
-        build,
-        currentLevel,
-        sheetSpellcasting: sheet.spellcasting,
-        classes: RUNTIME_CLASSES,
-        feats: RUNTIME_FEATS,
-        spells: RUNTIME_SPELLS,
-        classFeatures: RUNTIME_CLASS_FEATURES,
-        archetypes: RUNTIME_ARCHETYPES,
-        buildGuides: RUNTIME_BUILD_GUIDES,
-      }),
-    [build, currentLevel, sheet.spellcasting],
+      shouldComputeSuggestions
+        ? buildSuggestions({
+            build,
+            currentLevel,
+            sheetSpellcasting: sheet.spellcasting,
+            classes: RUNTIME_CLASSES,
+            feats: RUNTIME_FEATS,
+            spells: RUNTIME_SPELLS,
+            classFeatures: RUNTIME_CLASS_FEATURES,
+            archetypes: RUNTIME_ARCHETYPES,
+            buildGuides: RUNTIME_BUILD_GUIDES,
+            includeGuides: false,
+          })
+        : EMPTY_SUGGESTION_BUNDLE,
+    [
+      build,
+      currentLevel,
+      leveling,
+      shouldComputeSuggestions,
+      sheet.spellcasting,
+    ],
   );
+  const [guidedPlannerSuggestions, setGuidedPlannerSuggestions] = useState<
+    Partial<Record<number, LevelPlannerSuggestions>>
+  >({});
+  const plannerSuggestions = useMemo(
+    () =>
+      suggestionBundle.planner.map(
+        (suggestions, index) => guidedPlannerSuggestions[index] ?? suggestions,
+      ),
+    [guidedPlannerSuggestions, suggestionBundle.planner],
+  );
+  function computeGuidedSuggestionBundle(targetBuild: CharacterBuild) {
+    return buildSuggestions({
+      build: targetBuild,
+      currentLevel,
+      sheetSpellcasting: sheet.spellcasting,
+      classes: RUNTIME_CLASSES,
+      feats: RUNTIME_FEATS,
+      spells: RUNTIME_SPELLS,
+      classFeatures: RUNTIME_CLASS_FEATURES,
+      archetypes: RUNTIME_ARCHETYPES,
+      buildGuides: RUNTIME_BUILD_GUIDES,
+      includeGuides: true,
+    });
+  }
   const wealthSummary = useMemo(() => summarizeWealth(build), [build]);
   const runtimeProfile = useMemo<RuntimeProfile>(
     () => ({
@@ -2336,111 +2475,7 @@ export function App() {
         </button>
       </div>
 
-      {activeTab === "build" ? (
-        <BuildEditorTab
-          build={build}
-          currentLevel={currentLevel}
-          sheetSpellcasting={sheet.spellcasting}
-          abilityOrder={ABILITY_ORDER}
-          raceOptions={RACE_OPTIONS}
-          classOptions={CLASS_OPTIONS}
-          archetypeOptionsByClass={
-            RUNTIME_ARCHETYPES_BY_CLASS as Record<
-              string,
-              ArchetypeDefinitionLike[]
-            >
-          }
-          featOptions={featOptions}
-          plannerSuggestions={suggestionBundle.planner}
-          currentLevelSkillSuggestions={suggestionBundle.currentLevelSkills}
-          currentLevelSkillNotes={suggestionBundle.currentLevelSkillNotes}
-          spellSuggestions={suggestionBundle.spellChoices}
-          skillName={SKILL_NAME}
-          spellOptions={SPELL_OPTIONS}
-          domainOptions={DOMAIN_OPTIONS}
-          schoolOptions={SCHOOL_OPTIONS}
-          spellCastCounts={spellCastCounts}
-          onUpdateName={(name) => setBuild((prev) => ({ ...prev, name }))}
-          onUpdateBaseAbilityScore={updateBaseAbilityScore}
-          onUpdateRace={updateRace}
-          onUpdateRaceFlexibleAbility={updateRaceFlexibleAbility}
-          onUpdateRaceBonusFeat={updateRaceBonusFeat}
-          onToggleRaceAlternateTrait={toggleRaceAlternateTrait}
-          onUpdateFavoredClassName={updateFavoredClassName}
-          onUpdateFirearmRulesMode={updateFirearmRulesMode}
-          onUpdateClassArchetypes={updateClassArchetypes}
-          onAddStructureLevel={addStructureLevel}
-          onEnsureLevelCount={ensureLevelCount}
-          onSetCurrentLevel={(level) =>
-            setCurrentLevel(clampCurrentLevel(level))
-          }
-          onUpdateLevelField={updateLevelField}
-          onUpdateLevelSkillRank={updateLevelSkillRank}
-          onSetLevelFeat={setLevelFeat}
-          onApplyPlannerSuggestions={(levelIndex) => {
-            const suggestions = suggestionBundle.planner[levelIndex];
-            if (!suggestions) return;
-            applyPlannerSuggestions(levelIndex, suggestions);
-          }}
-          onClearPlannedLevelChoices={clearPlannedLevelChoices}
-          onAddSelection={addSpellSelection}
-          onAppendSelection={appendSpellSelection}
-          onUpdateSelectionName={updateSpellSelectionName}
-          onRemoveSelection={removeSpellSelection}
-          onResetSelectionsForLevel={resetSpellSelectionsForLevel}
-          onResetSelectionsForClass={resetSpellSelectionsForClass}
-          onAddLibraryEntry={addSpellLibraryEntry}
-          onAppendLibraryEntry={appendSpellLibraryEntry}
-          onUpdateLibraryName={updateSpellLibraryName}
-          onRemoveLibraryEntry={removeSpellLibraryEntry}
-          onResetLibraryLevel={resetSpellLibraryLevel}
-          onResetLibraryForClass={resetSpellLibraryForClass}
-          onFillSelectionsFromLibrary={fillSelectionsFromLibrary}
-          onUpdateDomains={updateSpellDomains}
-          onUpdateSpecialization={updateSpellSpecialization}
-          onAdjustExtraSpellSlots={adjustSpellExtraSlots}
-          onAdjustSpellSlot={adjustSpellSlot}
-          onCastSpell={castSpell}
-          onResetSpellSlotLevel={resetSpellSlotLevel}
-          onResetSpellRuntimeClass={resetSpellClassRuntime}
-        />
-      ) : activeTab === "gear" ? (
-        <GearTab
-          build={build}
-          onUpdateCarriedWeight={updateCarriedWeight}
-          onUpdateCoinPurse={updateCoinPurse}
-          onUpdateCoinWeightCountsTowardEncumbrance={
-            updateCoinWeightCountsTowardEncumbrance
-          }
-          onBuyEquipment={buyEquipment}
-          onSellEquipment={sellEquipment}
-          weaponOptions={weaponOptions}
-          magicItemOptions={MAGIC_ITEM_OPTIONS}
-          mundaneEquipmentOptions={MUNDANE_EQUIPMENT_OPTIONS}
-          armorOptions={ARMOR_OPTIONS}
-          onAddWeapon={addWeapon}
-          onUpdateWeapon={updateWeapon}
-          onApplyWeaponTemplate={applyWeaponTemplate}
-          onRemoveWeapon={removeWeapon}
-          onAddEquipment={addEquipment}
-          onAddEquipmentFromTemplate={addEquipmentFromTemplate}
-          onAddArmorFromTemplate={addArmorFromTemplate}
-          onAddShieldFromTemplate={addShieldFromTemplate}
-          onAddMagicItem={addMagicItem}
-          onAddMagicItemFromTemplate={addMagicItemFromTemplate}
-          onUpdateEquipment={updateEquipment}
-          onUpdateEquipmentArmor={updateEquipmentArmor}
-          onUpdateEquipmentShield={updateEquipmentShield}
-          onUpdateEquipmentWeapon={updateEquipmentWeapon}
-          onApplyEquipmentWeaponTemplate={applyEquipmentWeaponTemplate}
-          onApplyMagicItemTemplate={applyMagicItemTemplate}
-          onApplyMundaneEquipmentTemplate={applyMundaneEquipmentTemplate}
-          onApplyArmorTemplate={applyArmorTemplate}
-          onApplyShieldTemplate={applyShieldTemplate}
-          onStepMagicItemTier={stepMagicItemTier}
-          onRemoveEquipment={removeEquipment}
-        />
-      ) : (
+      <div hidden={activeTab !== "sheet"}>
         <div className="layout sheet-layout">
           <aside className="controls sheet-sidebar">
             <RuntimeControlsPanel
@@ -2535,7 +2570,146 @@ export function App() {
             </div>
           </main>
         </div>
-      )}
+      </div>
+
+      {mountedTabs.gear ? (
+        <div hidden={activeTab !== "gear"}>
+          <GearTab
+            build={build}
+            onUpdateCarriedWeight={updateCarriedWeight}
+            onUpdateCoinPurse={updateCoinPurse}
+            onUpdateCoinWeightCountsTowardEncumbrance={
+              updateCoinWeightCountsTowardEncumbrance
+            }
+            onBuyEquipment={buyEquipment}
+            onSellEquipment={sellEquipment}
+            weaponOptions={weaponOptions}
+            magicItemOptions={MAGIC_ITEM_OPTIONS}
+            mundaneEquipmentOptions={MUNDANE_EQUIPMENT_OPTIONS}
+            armorOptions={ARMOR_OPTIONS}
+            onAddWeapon={addWeapon}
+            onUpdateWeapon={updateWeapon}
+            onApplyWeaponTemplate={applyWeaponTemplate}
+            onRemoveWeapon={removeWeapon}
+            onAddEquipment={addEquipment}
+            onAddEquipmentFromTemplate={addEquipmentFromTemplate}
+            onAddArmorFromTemplate={addArmorFromTemplate}
+            onAddShieldFromTemplate={addShieldFromTemplate}
+            onAddMagicItem={addMagicItem}
+            onAddMagicItemFromTemplate={addMagicItemFromTemplate}
+            onUpdateEquipment={updateEquipment}
+            onUpdateEquipmentArmor={updateEquipmentArmor}
+            onUpdateEquipmentShield={updateEquipmentShield}
+            onUpdateEquipmentWeapon={updateEquipmentWeapon}
+            onApplyEquipmentWeaponTemplate={applyEquipmentWeaponTemplate}
+            onApplyMagicItemTemplate={applyMagicItemTemplate}
+            onApplyMundaneEquipmentTemplate={applyMundaneEquipmentTemplate}
+            onApplyArmorTemplate={applyArmorTemplate}
+            onApplyShieldTemplate={applyShieldTemplate}
+            onStepMagicItemTier={stepMagicItemTier}
+            onRemoveEquipment={removeEquipment}
+          />
+        </div>
+      ) : null}
+
+      {mountedTabs.build ? (
+        <div hidden={activeTab !== "build"}>
+          <BuildEditorTab
+            build={build}
+            currentLevel={currentLevel}
+            sheetSpellcasting={sheet.spellcasting}
+            abilityOrder={ABILITY_ORDER}
+            raceOptions={RACE_OPTIONS}
+            classOptions={CLASS_OPTIONS}
+            archetypeOptionsByClass={
+              RUNTIME_ARCHETYPES_BY_CLASS as Record<
+                string,
+                ArchetypeDefinitionLike[]
+              >
+            }
+            featOptions={featOptions}
+            plannerSuggestions={plannerSuggestions}
+            currentLevelSkillSuggestions={suggestionBundle.currentLevelSkills}
+            currentLevelSkillNotes={suggestionBundle.currentLevelSkillNotes}
+            spellSuggestions={suggestionBundle.spellChoices}
+            skillName={SKILL_NAME}
+            spellOptions={SPELL_OPTIONS}
+            domainOptions={DOMAIN_OPTIONS}
+            schoolOptions={SCHOOL_OPTIONS}
+            spellCastCounts={spellCastCounts}
+            onUpdateName={(name) => setBuild((prev) => ({ ...prev, name }))}
+            onUpdateBaseAbilityScore={updateBaseAbilityScore}
+            onUpdateRace={updateRace}
+            onUpdateRaceFlexibleAbility={updateRaceFlexibleAbility}
+            onUpdateRaceBonusFeat={updateRaceBonusFeat}
+            onToggleRaceAlternateTrait={toggleRaceAlternateTrait}
+            onUpdateFavoredClassName={updateFavoredClassName}
+            onUpdateFirearmRulesMode={updateFirearmRulesMode}
+            onUpdateClassArchetypes={updateClassArchetypes}
+            onAddStructureLevel={addStructureLevel}
+            onEnsureLevelCount={(count) => {
+              const nextBuild = buildWithLevelCount(build, count);
+              ensureLevelCount(count);
+              const guided = computeGuidedSuggestionBundle(nextBuild).planner;
+              setGuidedPlannerSuggestions(
+                Object.fromEntries(
+                  guided
+                    .map((suggestions, index) => [index, suggestions] as const)
+                    .filter(
+                      ([, suggestions]) => suggestions.guideChoices.length > 0,
+                    ),
+                ),
+              );
+            }}
+            onSetCurrentLevel={(level) =>
+              setCurrentLevel(clampCurrentLevel(level))
+            }
+            onUpdateLevelField={updateLevelField}
+            onUpdateLevelSkillRank={updateLevelSkillRank}
+            onSetLevelFeat={setLevelFeat}
+            onApplyPlannerSuggestions={(levelIndex) => {
+              const guidedBundle = computeGuidedSuggestionBundle(build);
+              const suggestions = guidedBundle.planner[levelIndex];
+              if (!suggestions) return;
+              setGuidedPlannerSuggestions((prev) => ({
+                ...prev,
+                [levelIndex]: suggestions,
+              }));
+              applyPlannerSuggestions(levelIndex, suggestions);
+            }}
+            onRequestPlannerSuggestions={(levelIndex) => {
+              const suggestions =
+                computeGuidedSuggestionBundle(build).planner[levelIndex];
+              if (!suggestions) return;
+              setGuidedPlannerSuggestions((prev) => ({
+                ...prev,
+                [levelIndex]: suggestions,
+              }));
+            }}
+            onClearPlannedLevelChoices={clearPlannedLevelChoices}
+            onAddSelection={addSpellSelection}
+            onAppendSelection={appendSpellSelection}
+            onUpdateSelectionName={updateSpellSelectionName}
+            onRemoveSelection={removeSpellSelection}
+            onResetSelectionsForLevel={resetSpellSelectionsForLevel}
+            onResetSelectionsForClass={resetSpellSelectionsForClass}
+            onAddLibraryEntry={addSpellLibraryEntry}
+            onAppendLibraryEntry={appendSpellLibraryEntry}
+            onUpdateLibraryName={updateSpellLibraryName}
+            onRemoveLibraryEntry={removeSpellLibraryEntry}
+            onResetLibraryLevel={resetSpellLibraryLevel}
+            onResetLibraryForClass={resetSpellLibraryForClass}
+            onFillSelectionsFromLibrary={fillSelectionsFromLibrary}
+            onUpdateDomains={updateSpellDomains}
+            onUpdateSpecialization={updateSpellSpecialization}
+            onAdjustExtraSpellSlots={adjustSpellExtraSlots}
+            onAdjustSpellSlot={adjustSpellSlot}
+            onCastSpell={castSpell}
+            onResetSpellSlotLevel={resetSpellSlotLevel}
+            onResetSpellRuntimeClass={resetSpellClassRuntime}
+          />
+        </div>
+      ) : null}
 
       {leveling ? (
         <LevelUpModal
@@ -2543,15 +2717,7 @@ export function App() {
           plannerSuggestions={
             suggestionBundle.planner[
               Math.max(0, effectiveBuild.levels.length)
-            ] ?? {
-              guideChoices: [],
-              classChoices: [],
-              featChoices: [],
-              featChoicesBySlot: [],
-              favoredClassChoices: [],
-              abilityChoices: [],
-              notes: [],
-            }
+            ] ?? EMPTY_PLANNER_SUGGESTIONS
           }
           skillSuggestions={suggestionBundle.currentLevelSkills}
           skillSuggestionNotes={suggestionBundle.currentLevelSkillNotes}

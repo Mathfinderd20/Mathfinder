@@ -52,6 +52,178 @@ export interface RuntimeArmorDefinition {
   description?: string;
 }
 
+const SUPPLEMENTAL_ARMOR: RuntimeArmorDefinition[] = [
+  {
+    id: "ring-mail",
+    name: "Ring mail",
+    source: "Core Rulebook",
+    categoryRaw: "Heavy armor",
+    categoryNormalized: "heavy",
+    armorBonus: 4,
+    maxDexBonus: 0,
+    armorCheckPenalty: -7,
+    arcaneSpellFailure: 35,
+    speed30: 20,
+    speed20: 15,
+    costGp: 30,
+    weightLb: 40,
+  },
+  {
+    id: "stone-coat",
+    name: "Stone coat",
+    source: "Armor Master's Handbook",
+    categoryRaw: "Medium armor",
+    categoryNormalized: "medium",
+    armorBonus: 4,
+    maxDexBonus: 3,
+    armorCheckPenalty: -3,
+    arcaneSpellFailure: 25,
+    speed30: 20,
+    speed20: 15,
+    costGp: 50,
+    weightLb: 30,
+  },
+  {
+    id: "lamellar-leather",
+    name: "Lamellar leather",
+    source: "Ultimate Equipment",
+    categoryRaw: "Light armor",
+    categoryNormalized: "light",
+    armorBonus: 4,
+    maxDexBonus: 3,
+    armorCheckPenalty: -2,
+    arcaneSpellFailure: 15,
+    speed30: 30,
+    speed20: 20,
+    costGp: 60,
+    weightLb: 25,
+  },
+  {
+    id: "lamellar-horn",
+    name: "Lamellar horn",
+    source: "Ultimate Equipment",
+    categoryRaw: "Medium armor",
+    categoryNormalized: "medium",
+    armorBonus: 5,
+    maxDexBonus: 3,
+    armorCheckPenalty: -4,
+    arcaneSpellFailure: 25,
+    speed30: 20,
+    speed20: 15,
+    costGp: 150,
+    weightLb: 30,
+  },
+  {
+    id: "lamellar-steel",
+    name: "Lamellar steel",
+    source: "Ultimate Equipment",
+    categoryRaw: "Heavy armor",
+    categoryNormalized: "heavy",
+    armorBonus: 7,
+    maxDexBonus: 0,
+    armorCheckPenalty: -7,
+    arcaneSpellFailure: 35,
+    speed30: 20,
+    speed20: 15,
+    costGp: 200,
+    weightLb: 50,
+  },
+  {
+    id: "mwangi-hide",
+    name: "Mwangi hide",
+    source: "Heroes from the Fringe",
+    categoryRaw: "Light armor",
+    categoryNormalized: "light",
+    armorBonus: 3,
+    maxDexBonus: 4,
+    armorCheckPenalty: -2,
+    arcaneSpellFailure: 15,
+    speed30: 30,
+    speed20: 20,
+    costGp: 25,
+    weightLb: 20,
+  },
+  {
+    id: "light-wooden-shield",
+    name: "Light wooden shield",
+    source: "Core Rulebook",
+    categoryRaw: "Shield",
+    categoryNormalized: "shield",
+    armorBonus: 1,
+    armorCheckPenalty: -1,
+    arcaneSpellFailure: 5,
+    costGp: 3,
+    weightLb: 5,
+  },
+  {
+    id: "heavy-wooden-shield",
+    name: "Heavy wooden shield",
+    source: "Core Rulebook",
+    categoryRaw: "Shield",
+    categoryNormalized: "shield",
+    armorBonus: 2,
+    armorCheckPenalty: -2,
+    arcaneSpellFailure: 15,
+    costGp: 7,
+    weightLb: 10,
+  },
+  {
+    id: "light-steel-shield",
+    name: "Light steel shield",
+    source: "Core Rulebook",
+    categoryRaw: "Shield",
+    categoryNormalized: "shield",
+    armorBonus: 1,
+    armorCheckPenalty: -1,
+    arcaneSpellFailure: 5,
+    costGp: 9,
+    weightLb: 6,
+  },
+  {
+    id: "heavy-steel-shield",
+    name: "Heavy steel shield",
+    source: "Core Rulebook",
+    categoryRaw: "Shield",
+    categoryNormalized: "shield",
+    armorBonus: 2,
+    armorCheckPenalty: -2,
+    arcaneSpellFailure: 15,
+    costGp: 20,
+    weightLb: 15,
+  },
+  {
+    id: "tower-shield",
+    name: "Tower shield",
+    source: "Core Rulebook",
+    categoryRaw: "Shield",
+    categoryNormalized: "shield",
+    armorBonus: 4,
+    armorCheckPenalty: -10,
+    arcaneSpellFailure: 50,
+    costGp: 30,
+    weightLb: 45,
+  },
+];
+
+function mergeArmorDefinitions(
+  base: RuntimeArmorDefinition[],
+  extras: RuntimeArmorDefinition[],
+) {
+  const seenIds = new Set(base.map((entry) => entry.id.toLowerCase()));
+  const seenNames = new Set(base.map((entry) => entry.name.trim().toLowerCase()));
+  return [
+    ...base,
+    ...extras.filter((entry) => {
+      const id = entry.id.toLowerCase();
+      const name = entry.name.trim().toLowerCase();
+      if (seenIds.has(id) || seenNames.has(name)) return false;
+      seenIds.add(id);
+      seenNames.add(name);
+      return true;
+    }),
+  ];
+}
+
 interface UsableContentAsset {
   rulesDataSet: RulesDataSet;
   normalized?: {
@@ -250,9 +422,12 @@ export async function loadRuntimeContent() {
     );
     replaceArray(
       RUNTIME_ARMOR,
-      [...(usableContent.normalized?.armor ?? [])]
-        .filter((entry) => !!safeName(entry))
-        .sort(bySafeName),
+      mergeArmorDefinitions(
+        [...(usableContent.normalized?.armor ?? [])].filter(
+          (entry) => !!safeName(entry),
+        ),
+        SUPPLEMENTAL_ARMOR,
+      ).sort(bySafeName),
     );
     replaceArray(
       RUNTIME_MUNDANE_EQUIPMENT,

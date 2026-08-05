@@ -407,6 +407,9 @@ export function Sheet({
 
   const { race, classes, archetypes, feats, features, suppressedFeatures } =
     sheet.descriptor;
+  const displayedFeatures = features.filter(
+    (feature) => !/^bonus feats?$/i.test(feature.name.trim()),
+  );
   const classLine = classes.map((c) => `${c.name} ${c.level}`).join(" / ");
   const archetypeLine = archetypes.map((a) => a.name).join(", ");
   const identity = [race, classLine, archetypeLine].filter(Boolean).join(" · ");
@@ -1436,7 +1439,7 @@ export function Sheet({
       <div className="sheet-sections sheet-sections-wide-right">
         <section className="panel paper-panel">
           <h2>Skills</h2>
-          <div className="skills paper-skill-grid">
+          <div className="skills single-column-skills paper-skill-grid">
             {rankedSkills.map((s) => (
               <Tooltip
                 key={s.key}
@@ -1445,11 +1448,33 @@ export function Sheet({
               >
                 <div className="skill">
                   <span className="skill-name">
-                    {s.name}
-                    {s.isClassSkill ? <span className="tag">class</span> : null}
-                    {s.trainedOnly && !s.usable ? (
-                      <span className="tag warn">untrained</span>
-                    ) : null}
+                    <span className="skill-name-text">{s.name}</span>
+                    <span className="skill-flags">
+                      {s.isClassSkill ? (
+                        <span className="skill-flag" title="Class skill">
+                          C
+                        </span>
+                      ) : null}
+                      {s.trainedOnly ? (
+                        <span
+                          className={`skill-flag ${s.usable ? "" : "warn"}`.trim()}
+                          title={
+                            s.usable
+                              ? "Trained-only skill"
+                              : "Trained-only skill; currently unusable untrained"
+                          }
+                        >
+                          {s.usable ? "T" : "TU"}
+                        </span>
+                      ) : (
+                        <span
+                          className="skill-flag muted"
+                          title="Usable untrained"
+                        >
+                          U
+                        </span>
+                      )}
+                    </span>
                   </span>
                   <span className="skill-value">{sign(s.total)}</span>
                   <label className="sheet-roll-entry skill-roll-entry-inline">
@@ -1481,7 +1506,7 @@ export function Sheet({
         <div className="sheet-stack">
           {archetypes.length > 0 ||
           feats.length > 0 ||
-          features.length > 0 ||
+          displayedFeatures.length > 0 ||
           suppressedFeatures.length > 0 ? (
             <section className="panel paper-panel">
               <h2>Feats & Special Abilities</h2>
@@ -1492,7 +1517,7 @@ export function Sheet({
                     <span className="chip-lvl">L{a.level}</span>
                   </span>
                 ))}
-                {features.map((f, i) => (
+                {displayedFeatures.map((f, i) => (
                   <span className="chip feature" key={`feat-${i}`}>
                     {f.name}
                     <span className="chip-lvl">L{f.level}</span>

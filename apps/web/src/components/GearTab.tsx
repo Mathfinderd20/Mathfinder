@@ -1,5 +1,6 @@
 import {
   EQUIPMENT_SLOTS,
+  abilityModifier,
   type CharacterBuild,
   type MagicItemDefinition,
   type WeaponDefinition,
@@ -224,6 +225,8 @@ export function GearTab(props: Props) {
       ),
     [weaponAvailabilityFilter, weaponOptions],
   );
+  const dexScore = useMemo(() => effectiveDexScore(build), [build]);
+  const dexMod = abilityModifier(dexScore);
   const armorOnlyOptions = useMemo(
     () =>
       armorOptions.filter(
@@ -236,9 +239,21 @@ export function GearTab(props: Props) {
     () => armorOptions.filter((item) => item.categoryNormalized === "shield"),
     [armorOptions],
   );
+  const recommendedArmorByCategory = useMemo(
+    () => recommendArmorByCategory(armorOnlyOptions, dexMod),
+    [armorOnlyOptions, dexMod],
+  );
+  const recommendedArmorIds = useMemo(
+    () => new Set(recommendedArmorByCategory.map((item) => item.id)),
+    [recommendedArmorByCategory],
+  );
   const armorTemplateOptions = useMemo<CompendiumOption[]>(
-    () => buildArmorCompendiumOptions(armorOnlyOptions),
-    [armorOnlyOptions],
+    () =>
+      buildArmorCompendiumOptions(armorOnlyOptions, {
+        dexMod,
+        recommendedIds: recommendedArmorIds,
+      }),
+    [armorOnlyOptions, dexMod, recommendedArmorIds],
   );
   const shieldTemplateOptions = useMemo<CompendiumOption[]>(
     () => buildArmorCompendiumOptions(shieldOnlyOptions),
@@ -998,6 +1013,8 @@ export function GearTab(props: Props) {
                   unifiedEquipmentTemplateOptions,
                   armorTemplateOptions,
                   shieldTemplateOptions,
+                  dexMod,
+                  recommendedArmorByCategory,
                   weaponOptions: filteredWeaponOptions,
                   containerOptions,
                   magicItemDraft: magicItemDraftByIndex[index],
@@ -1104,6 +1121,8 @@ export function GearTab(props: Props) {
                   unifiedEquipmentTemplateOptions,
                   armorTemplateOptions,
                   shieldTemplateOptions,
+                  dexMod,
+                  recommendedArmorByCategory,
                   weaponOptions: filteredWeaponOptions,
                   containerOptions,
                   magicItemDraft: undefined,
@@ -1167,6 +1186,8 @@ function renderEquipmentCard({
   unifiedEquipmentTemplateOptions,
   armorTemplateOptions,
   shieldTemplateOptions,
+  dexMod,
+  recommendedArmorByCategory,
   weaponOptions,
   containerOptions,
   magicItemDraft,
@@ -1193,6 +1214,8 @@ function renderEquipmentCard({
   unifiedEquipmentTemplateOptions: CompendiumOption[];
   armorTemplateOptions: CompendiumOption[];
   shieldTemplateOptions: CompendiumOption[];
+  dexMod: number;
+  recommendedArmorByCategory: RuntimeArmorDefinition[];
   weaponOptions: WeaponDefinition[];
   containerOptions: string[];
   magicItemDraft?: string;
@@ -1890,7 +1913,14 @@ function renderEquipmentCard({
                   placeholder="Search armor: chainmail, breastplate..."
                 />
                 <div className="field-help">
-                  {describeArmorTemplate(currentArmorTemplate)}
+                  {describeArmorTemplate(currentArmorTemplate, dexMod)}
+                </div>
+                <div className="equipment-armor-recommendations">
+                  {recommendedArmorByCategory.map((option) => (
+                    <span key={`armor-rec-${option.id}`} className="chip feature">
+                      {option.categoryNormalized}: {option.name}
+                    </span>
+                  ))}
                 </div>
               </div>
             </div>
@@ -2397,41 +2427,125 @@ function buildMundaneEquipmentCompendiumOptions(
   }));
 }
 
+function sign(value: number) {
+  return value >= 0 ? `+${value}` : String(value);
+}
+
+function effectiveDexScore(build: CharacterBuild) {
+  let score = build.baseAbilityScores.dex ?? 10;
+  const selectedAlternateTraitIds = new Set(
+    (build.race.choiceSelection?.alternateTraits ?? []).map((id) =>
+      id.toLowerCase(),
+    ),
+  );
+  const activeAlternateTraits = (build.race.alternateTraits ?? []).filter((trait) =>
+    selectedAlternateTraitIds.has(trait.id.toLowerCase()),
+  );
+  for (const mod of [
+    ...(build.race.abilityModifiers ?? []),
+    ...activeAlternateTraits.flatMap((trait) => trait.abilityModifiers ?? []),
+  ]) {
+    if (mod.target === "dex") score += mod.value;
+  }
+  const flexibleBonus = build.race.choiceOptions?.flexibleAbilityBonus;
+  if (build.race.choiceSelection?.flexibleAbility === "dex" && flexibleBonus?.value)
+    score += flexibleBonus.value;
+  for (const level of build.levels) {
+    if (level.abilityIncrease === "dex") score += 1;
+  }
+  return score;
+}
+
+function effectiveArmorAc(item: RuntimeArmorDefinition, dexMod: number) {
+  const armorBonus = item.armorBonus ?? 0;
+  const appliedDex =
+    typeof item.maxDexBonus === "number"
+      ? Math.min(dexMod, item.maxDexBonus)
+      : dexMod;
+  return armorBonus + appliedDex;
+}
+
+function recommendArmorByCategory(
+  items: RuntimeArmorDefinition[],
+  dexMod: number,
+) {
+  const byCategory = new Map<string, RuntimeArmorDefinition[]>();
+  for (const item of items) {
+    const category = item.categoryNormalized;
+    if (!category || category === "shield") continue;
+    byCategory.set(category, [...(byCategory.get(category) ?? []), item]);
+  }
+  return [...byCategory.entries()]
+    .map(([, entries]) =>
+      [...entries].sort((a, b) => {
+        const effectiveDiff = effectiveArmorAc(b, dexMod) - effectiveArmorAc(a, dexMod);
+        if (effectiveDiff !== 0) return effectiveDiff;
+        const penaltyDiff = (b.armorCheckPenalty ?? -99) - (a.armorCheckPenalty ?? -99);
+        if (penaltyDiff !== 0) return penaltyDiff;
+        const costDiff = (a.costGp ?? Number.MAX_SAFE_INTEGER) - (b.costGp ?? Number.MAX_SAFE_INTEGER);
+        if (costDiff !== 0) return costDiff;
+        return (a.weightLb ?? Number.MAX_SAFE_INTEGER) - (b.weightLb ?? Number.MAX_SAFE_INTEGER);
+      })[0],
+    )
+    .filter((item): item is RuntimeArmorDefinition => !!item);
+}
+
 function buildArmorCompendiumOptions(
   items: RuntimeArmorDefinition[],
+  options?: { dexMod?: number; recommendedIds?: Set<string> },
 ): CompendiumOption[] {
-  return items.map((item) => ({
-    id: item.id,
-    name: item.name,
-    tooltip: [
-      item.name,
-      item.categoryRaw ? `Category: ${item.categoryRaw}` : "",
-      typeof item.armorBonus === "number" ? `AC Bonus: ${item.armorBonus}` : "",
-      typeof item.maxDexBonus === "number"
-        ? `Max Dex: ${item.maxDexBonus}`
-        : "",
-      typeof item.armorCheckPenalty === "number"
-        ? `Check Penalty: ${item.armorCheckPenalty}`
-        : "",
-      typeof item.costGp === "number"
-        ? `Cost: ${formatCompactNumber(item.costGp)} gp`
-        : "",
-      typeof item.weightLb === "number"
-        ? `Weight: ${formatCompactNumber(item.weightLb)} lb`
-        : "",
-      item.source ? `Source: ${item.source}` : "",
-      item.description ?? "",
-    ]
-      .filter(Boolean)
-      .join("\n\n"),
-    searchText: [
-      item.id,
-      item.categoryRaw ?? "",
-      item.source ?? "",
-      item.description ?? "",
-    ],
-    tags: [item.categoryNormalized ?? "armor"],
-  }));
+  return items.map((item) => {
+    const effectiveAc = effectiveArmorAc(item, options?.dexMod ?? 0);
+    const dexTags: string[] = [];
+    if (
+      options?.recommendedIds?.has(item.id) &&
+      item.categoryNormalized !== "shield"
+    ) {
+      dexTags.push(`best @ Dex ${sign(options.dexMod ?? 0)}`);
+    } else if (
+      typeof options?.dexMod === "number" &&
+      item.categoryNormalized !== "shield" &&
+      typeof item.maxDexBonus === "number" &&
+      item.maxDexBonus >= options.dexMod
+    ) {
+      dexTags.push("fits Dex");
+    }
+    return {
+      id: item.id,
+      name: item.name,
+      tooltip: [
+        item.name,
+        item.categoryRaw ? `Category: ${item.categoryRaw}` : "",
+        typeof item.armorBonus === "number" ? `AC Bonus: ${item.armorBonus}` : "",
+        typeof item.maxDexBonus === "number"
+          ? `Max Dex: ${item.maxDexBonus}`
+          : "",
+        typeof options?.dexMod === "number" && item.categoryNormalized !== "shield"
+          ? `Effective AC @ Dex ${sign(options.dexMod)}: ${sign(effectiveAc)}`
+          : "",
+        typeof item.armorCheckPenalty === "number"
+          ? `Check Penalty: ${item.armorCheckPenalty}`
+          : "",
+        typeof item.costGp === "number"
+          ? `Cost: ${formatCompactNumber(item.costGp)} gp`
+          : "",
+        typeof item.weightLb === "number"
+          ? `Weight: ${formatCompactNumber(item.weightLb)} lb`
+          : "",
+        item.source ? `Source: ${item.source}` : "",
+        item.description ?? "",
+      ]
+        .filter(Boolean)
+        .join("\n\n"),
+      searchText: [
+        item.id,
+        item.categoryRaw ?? "",
+        item.source ?? "",
+        item.description ?? "",
+      ],
+      tags: [item.categoryNormalized ?? "armor", ...dexTags],
+    };
+  });
 }
 
 function describeSelectedEquipmentTemplate(
@@ -2455,7 +2569,10 @@ function describeSelectedEquipmentTemplate(
   ].join(" · ");
 }
 
-function describeArmorTemplate(item: RuntimeArmorDefinition | undefined) {
+function describeArmorTemplate(
+  item: RuntimeArmorDefinition | undefined,
+  dexMod?: number,
+) {
   if (!item) return "No armor template selected";
   return [
     `${item.categoryNormalized ?? "armor"}`,
@@ -2463,10 +2580,15 @@ function describeArmorTemplate(item: RuntimeArmorDefinition | undefined) {
     typeof item.maxDexBonus === "number"
       ? `Max Dex ${item.maxDexBonus}`
       : "Max Dex n/a",
+    typeof dexMod === "number"
+      ? `Effective @ Dex ${sign(dexMod)}: ${sign(effectiveArmorAc(item, dexMod))}`
+      : "",
     typeof item.costGp === "number"
       ? `${formatCompactNumber(item.costGp)} gp`
       : "cost n/a",
-  ].join(" · ");
+  ]
+    .filter(Boolean)
+    .join(" · ");
 }
 
 function describeShieldTemplate(item: RuntimeArmorDefinition | undefined) {

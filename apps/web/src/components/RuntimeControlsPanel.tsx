@@ -89,12 +89,6 @@ const TACTICAL_CATEGORIES: RuntimeTacticalCategory[] = [
   "casting",
   "utility",
 ];
-type RuntimePresetId =
-  | "nova-melee"
-  | "defense"
-  | "opening-volley"
-  | "caster-setup";
-
 export function RuntimeControlsPanel({
   activatableGroups,
   activatableConflicts,
@@ -116,9 +110,6 @@ export function RuntimeControlsPanel({
   const [categoryFilter, setCategoryFilter] = useState<
     RuntimeTacticalCategory | "all"
   >("all");
-  const [previewPreset, setPreviewPreset] = useState<RuntimePresetId | null>(
-    null,
-  );
   const activeEffectIds = new Set(
     Object.entries(activeBuffs)
       .filter(([, value]) => value)
@@ -245,64 +236,6 @@ export function RuntimeControlsPanel({
       onSetToggle(id, activatableIds.includes(id));
   }
 
-  const selectTopEffects = (category: RuntimeTacticalCategory, limit: number) =>
-    buffCards
-      .filter((card) => card.insight.categories.includes(category))
-      .sort(
-        (a, b) =>
-          b.insight.score - a.insight.score ||
-          a.buff.name.localeCompare(b.buff.name),
-      )
-      .slice(0, limit)
-      .map((card) => card.buff.id);
-
-  function buildPresetPlan(preset: RuntimePresetId) {
-    if (preset === "nova-melee") {
-      return {
-        effectIds: selectTopEffects("offense", 3),
-        activatableIds:
-          availableActivatableIds.has("rage") && !fatigued ? ["rage"] : [],
-      };
-    }
-    if (preset === "defense") {
-      return { effectIds: selectTopEffects("defense", 3), activatableIds: [] };
-    }
-    if (preset === "opening-volley") {
-      return {
-        effectIds: [
-          ...selectTopEffects("offense", 2),
-          ...selectTopEffects("mobility", 1),
-        ],
-        activatableIds: [],
-      };
-    }
-    return {
-      effectIds: [
-        ...selectTopEffects("casting", 2),
-        ...selectTopEffects("defense", 1),
-      ],
-      activatableIds: [],
-    };
-  }
-
-  const presetPreview = useMemo(() => {
-    if (!previewPreset) return null;
-    const plan = buildPresetPlan(previewPreset);
-    return {
-      effects: plan.effectIds.map(
-        (id) => buffCards.find((card) => card.buff.id === id)?.buff.name ?? id,
-      ),
-      abilities: plan.activatableIds.map(
-        (id) => activatableById.get(id)?.name ?? id,
-      ),
-    };
-  }, [activatableById, buffCards, previewPreset]);
-
-  function applyPreset(preset: RuntimePresetId) {
-    const plan = buildPresetPlan(preset);
-    applyTogglePreset(plan.effectIds, plan.activatableIds);
-  }
-
   function clearAllRuntimeEffects() {
     applyTogglePreset([]);
     if (fatigued) onSetFlag("fatigued", false);
@@ -379,79 +312,6 @@ export function RuntimeControlsPanel({
           </div>
         </div>
       ) : null}
-      <div className="mode-group">
-        <div className="mode-title">tactical presets</div>
-        <div className="planner-actions">
-          <button
-            type="button"
-            className="ghost small"
-            onMouseEnter={() => setPreviewPreset("nova-melee")}
-            onFocus={() => setPreviewPreset("nova-melee")}
-            onMouseLeave={() => setPreviewPreset(null)}
-            onBlur={() => setPreviewPreset(null)}
-            onClick={() => applyPreset("nova-melee")}
-          >
-            Nova Melee
-          </button>
-          <button
-            type="button"
-            className="ghost small"
-            onMouseEnter={() => setPreviewPreset("defense")}
-            onFocus={() => setPreviewPreset("defense")}
-            onMouseLeave={() => setPreviewPreset(null)}
-            onBlur={() => setPreviewPreset(null)}
-            onClick={() => applyPreset("defense")}
-          >
-            Defense
-          </button>
-          <button
-            type="button"
-            className="ghost small"
-            onMouseEnter={() => setPreviewPreset("opening-volley")}
-            onFocus={() => setPreviewPreset("opening-volley")}
-            onMouseLeave={() => setPreviewPreset(null)}
-            onBlur={() => setPreviewPreset(null)}
-            onClick={() => applyPreset("opening-volley")}
-          >
-            Opening Volley
-          </button>
-          <button
-            type="button"
-            className="ghost small"
-            onMouseEnter={() => setPreviewPreset("caster-setup")}
-            onFocus={() => setPreviewPreset("caster-setup")}
-            onMouseLeave={() => setPreviewPreset(null)}
-            onBlur={() => setPreviewPreset(null)}
-            onClick={() => applyPreset("caster-setup")}
-          >
-            Caster Setup
-          </button>
-        </div>
-        {presetPreview ? (
-          <div className="runtime-preset-preview">
-            <div className="buff-desc">
-              Preview effects:{" "}
-              {presetPreview.effects.length > 0
-                ? presetPreview.effects.join(", ")
-                : "none"}
-            </div>
-            <div className="buff-desc">
-              Preview abilities:{" "}
-              {presetPreview.abilities.length > 0
-                ? presetPreview.abilities.join(", ")
-                : "none"}
-            </div>
-          </div>
-        ) : (
-          <p className="hint">
-            Hover or focus a preset to preview what it will toggle.
-          </p>
-        )}
-        <p className="hint">
-          Presets replace current toggled effects in this panel with a sensible
-          quick stack.
-        </p>
-      </div>
       {resourceActivatables.length > 0 ? (
         <div className="mode-group">
           <div className="mode-title">limited-use abilities</div>
@@ -622,7 +482,7 @@ export function RuntimeControlsPanel({
           suggestion reasons.
         </p>
       </div>
-      {TACTICAL_CATEGORIES.map((category) =>
+      {TACTICAL_CATEGORIES.filter((category) => category !== "offense").map((category) =>
         tacticalSections[category].length > 0 ? (
           <div className="mode-group" key={`tactical-${category}`}>
             <div className="mode-title">{tacticalCategoryLabel(category)}</div>
