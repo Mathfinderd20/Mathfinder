@@ -61,6 +61,43 @@ describe("feat prerequisites", () => {
     ).toBe(true);
   });
 
+  it("covers the conservative core character-creation feat checklist", () => {
+    const expected = [
+      "Acrobatic",
+      "Alignment Channel",
+      "Athletic",
+      "Augment Summoning",
+      "Combat Casting",
+      "Deceitful",
+      "Deft Hands",
+      "Extra Channel",
+      "Greater Spell Focus",
+      "Greater Spell Penetration",
+      "Improved Channel",
+      "Improved Counterspell",
+      "Improved Familiar",
+      "Improved Iron Will",
+      "Improved Lightning Reflexes",
+      "Magical Aptitude",
+      "Natural Spell",
+      "Nimble Moves",
+      "Run",
+      "Selective Channeling",
+      "Self-Sufficient",
+      "Spell Mastery",
+    ];
+    const actual = new Set(listFeats(FEATS).map((feat) => feat.name));
+    expect(expected.filter((name) => !actual.has(name))).toEqual([]);
+  });
+
+  it("has unique canonical feat ids and names", () => {
+    const feats = listFeats(FEATS);
+    expect(new Set(feats.map((feat) => feat.id)).size).toBe(feats.length);
+    expect(new Set(feats.map((feat) => feat.name.toLowerCase())).size).toBe(
+      feats.length,
+    );
+  });
+
   it("lists feats alphabetically", () => {
     const names = listFeats(FEATS).map((f) => f.name);
     expect(names).toEqual([...names].sort());

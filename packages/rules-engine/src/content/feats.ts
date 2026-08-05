@@ -2,6 +2,7 @@ import { buildCompendiumIndex, getCompendiumEntryByName } from "../compendium";
 import { SKILL_DEFINITIONS } from "../skills";
 import type { AbilityKey, DerivedSheet, Modifier, SkillKey } from "../types";
 import { babStep, type ActivatableEffect } from "./activatables";
+import { ADDITIONAL_CORE_FEATS } from "./core-feats-additional";
 
 /** A single feat prerequisite, with a human-readable label for the UI. */
 export interface Prerequisite {
@@ -334,6 +335,7 @@ export const CORE_FEATS: FeatDefinition[] = [
       },
     },
   },
+  ...ADDITIONAL_CORE_FEATS,
   {
     id: "deadly-aim",
     name: "Deadly Aim",

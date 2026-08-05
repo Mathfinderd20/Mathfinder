@@ -11,14 +11,41 @@ const humanRace = {
 };
 
 describe("createFreshCharacterBuild", () => {
-  it("creates a clean level-one build without sample gear", () => {
-    const build = createFreshCharacterBuild("  Merisiel  ", humanRace);
+  it("creates a clean level-one build from creation decisions", () => {
+    const build = createFreshCharacterBuild("  Merisiel  ", humanRace, {
+      className: "Rogue",
+      hitPointRoll: 8,
+      baseAbilityScores: {
+        str: 10,
+        dex: 16,
+        con: 12,
+        int: 14,
+        wis: 10,
+        cha: 10,
+      },
+      flexibleAbility: "dex",
+      raceBonusFeat: "Dodge",
+      skillRanks: { acrobatics: 1, stealth: 1 },
+      feats: ["Weapon Finesse"],
+      favoredClass: "skill",
+    });
 
     expect(build.name).toBe("Merisiel");
     expect(build.race.name).toBe("Human");
-    expect(build.levels).toHaveLength(1);
-    expect(build.levels[0]?.className).toBe("Fighter");
-    expect(build.levels[0]?.feats).toEqual([]);
+    expect(build.race.choiceSelection).toMatchObject({
+      flexibleAbility: "dex",
+      bonusFeat: "Dodge",
+    });
+    expect(build.favoredClassName).toBe("Rogue");
+    expect(build.levels).toEqual([
+      expect.objectContaining({
+        className: "Rogue",
+        hitPointRoll: 8,
+        skillRanks: { acrobatics: 1, stealth: 1 },
+        feats: ["Weapon Finesse"],
+        favoredClass: "skill",
+      }),
+    ]);
     expect(build.weapons).toEqual([]);
     expect(build.equipment).toEqual([]);
     expect(build.coinPurse).toEqual({ pp: 0, gp: 0, sp: 0, cp: 0 });

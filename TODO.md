@@ -21,7 +21,7 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 ## Phase 1 — Rules Data Foundation
 
 - [~] Define canonical rules-data schema/package for core entities (sources, packs, races, classes, class features, feats, skills, spells) — starter TS schema + validation + index/registry done; JSON serialization/items/archetypes still pending
-- [~] Build/ingest 1st-party (Core, APG, ACG, ARG, UM, UC, etc.) dataset under proper licensing (OGL/PRD) — local canonical content is now seedable into SQLite and AoN spell scraping pipeline exists; broad-book ingestion coverage is still pending
+- [~] Build/ingest 1st-party (Core, APG, ACG, ARG, UM, UC, etc.) dataset under proper licensing (OGL/PRD) — local canonical content is seedable into SQLite, AoN ingestion exists, and a conservative core character-creation feat checklist now guards obvious omissions; exhaustive book coverage is still pending
 - [ ] Ingest **Savage Company (SHM Publishing)** content (cross-check d20pfsrd.com against original manuscript as source of truth)
 - [~] Add `source` tag + provenance fields to every entity (enables content-pack toggles) — rules-data sources/packs scaffolded; entity-by-entity provenance expansion still pending
 - [ ] Validate dataset against schema (CI gate)
@@ -64,7 +64,7 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 - [ ] Broaden conditional legality (more armor/load restrictions, class-feature gates, etc.)
 - [x] Equipment/inventory engine: item quantities, costs, auto weight, equipped flags, armor metadata, slots, containers, coin/ammo/component tracking, purchase validation, and sheet itemization are all live
 - [~] Prerequisite validation for prestige classes, archetypes — archetype legality/conflict validation is live; prestige-class prerequisites still pending
-- [ ] Parameterized feats (Weapon Focus weapon choice, Skill Focus skill choice)
+- [x] Parameterized feats (Weapon Focus weapon choice, Skill Focus skill choice)
 
 ## Phase 3 — Character Builder UX
 
@@ -78,7 +78,7 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 - [x] Level up / undo buttons backed by levelUp/levelDown
 - [x] Interactive level-up modal: class, HP, skill ranks, feat, ability increase (planLevelUp + validation)
 - [x] Inline validation surfacing
-- [ ] Guided build wizard (race → class → abilities → skills → feats → gear)
+- [~] Guided build wizard (race → class → abilities → skills → feats → gear) — homepage character creation now opens a dedicated level-1 decision modal for ancestry, class, abilities, skills, feats, favored-class bonus, and live preview; gear and deeper guided branches remain
 - [x] Build planner page for future levels / preselected advancement choices
 - [~] Editable core build fields in UI are substantial (name, base abilities, carried weight, sample race presets, race choice selections, class archetypes, per-level class/HP/favored-class/ASI, weapons, full inventory/equipment editing with slots/containers/coins/ammo/components/purchase flows, improved equipment/armor cards with running totals, per-level feats, compact/collapsible per-level skill rank builder, and spell library/selection management); broader compendium-backed content editing is still incremental
 - [ ] Port presentational components to React Native for the phone build
@@ -102,9 +102,9 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 
 ## Next Bulldoze Order
 
-- [ ] Parameterized feats (Weapon Focus weapon choice, Skill Focus skill choice)
+- [x] Parameterized feats (Weapon Focus weapon choice, Skill Focus skill choice)
 - [ ] Prestige-class prerequisite validation
-- [ ] Guided build wizard / broader smart-default flows
+- [~] Guided build wizard / broader smart-default flows
 - [ ] Shared compendium/runtime normalization work from `PLAN.md`
 - [ ] Savage Company content ingestion breadth
 

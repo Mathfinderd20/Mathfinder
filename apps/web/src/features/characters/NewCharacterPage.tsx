@@ -1,7 +1,7 @@
-import { useState, type FormEvent } from "react";
+import { useState, type ComponentType, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import type { CharacterBuild } from "@mathfinder/rules-engine";
 import { createCharacter } from "./characterRepository";
-import { createFreshCharacterBuild } from "./newCharacterBuild";
 import "../home/home.css";
 import "../home/home-responsive.css";
 
@@ -9,6 +9,14 @@ export function NewCharacterPage() {
   const navigate = useNavigate();
   const [name, setName] = useState("");
   const [creating, setCreating] = useState(false);
+  const [creationName, setCreationName] = useState<string>();
+  const [CreationModal, setCreationModal] = useState<
+    ComponentType<{
+      characterName: string;
+      onConfirm: (build: CharacterBuild) => void;
+      onClose: () => void;
+    }>
+  >();
   const [error, setError] = useState<string>();
 
   async function submit(event: FormEvent) {
@@ -17,22 +25,24 @@ export function NewCharacterPage() {
     setCreating(true);
     setError(undefined);
     try {
-      const { loadRuntimeContent, RUNTIME_RACES } =
-        await import("../../content");
+      const [{ loadRuntimeContent }, creationModule] = await Promise.all([
+        import("../../content"),
+        import("../../components/CharacterCreationModal"),
+      ]);
       await loadRuntimeContent();
-      const humanRace = RUNTIME_RACES.human;
-      if (!humanRace) throw new Error("Human ancestry content is unavailable.");
-      const character = createCharacter(
-        window.localStorage,
-        createFreshCharacterBuild(name, humanRace),
-      );
-      navigate(`/characters/${character.id}/build`, { replace: true });
+      setCreationModal(() => creationModule.CharacterCreationModal);
+      setCreationName(name.trim() || "Unnamed Hero");
     } catch (cause) {
       setError(
         cause instanceof Error ? cause.message : "Character creation failed.",
       );
       setCreating(false);
     }
+  }
+
+  function finishCreation(build: CharacterBuild) {
+    const character = createCharacter(window.localStorage, build);
+    navigate(`/characters/${character.id}/build`, { replace: true });
   }
 
   return (
@@ -73,6 +83,16 @@ export function NewCharacterPage() {
           </form>
         </section>
       </main>
+      {creationName && CreationModal ? (
+        <CreationModal
+          characterName={creationName}
+          onConfirm={finishCreation}
+          onClose={() => {
+            setCreationName(undefined);
+            setCreating(false);
+          }}
+        />
+      ) : null}
     </div>
   );
 }
