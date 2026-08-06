@@ -1,11 +1,13 @@
 import { useState } from "react";
-import type {
-  AbilityKey,
-  BreakdownEntry,
-  DerivedSheet,
-  DerivedStat,
-  InventoryEquipmentSlot,
+import {
+  SKILL_DEFINITIONS,
+  type AbilityKey,
+  type BreakdownEntry,
+  type DerivedSheet,
+  type DerivedStat,
+  type InventoryEquipmentSlot,
 } from "@mathfinder/rules-engine";
+import { skillMetadataTooltip, skillTrainingFlag } from "../skillPresentation";
 import type {
   AttackOutcome,
   SpellCastCounts,
@@ -22,6 +24,10 @@ import { sign } from "../util";
 import { compatibleAmmoEntries } from "../ammoCatalog";
 import { weaponAmmoUxLabel } from "../weaponUx";
 import { Tooltip } from "./Tooltip";
+
+const SKILL_DEFINITION_BY_KEY = new Map(
+  SKILL_DEFINITIONS.map((skill) => [skill.key, skill] as const),
+);
 
 const ABILITY_ORDER: readonly AbilityKey[] = [
   "str",
@@ -1440,66 +1446,71 @@ export function Sheet({
         <section className="panel paper-panel">
           <h2>Skills</h2>
           <div className="skills single-column-skills paper-skill-grid">
-            {rankedSkills.map((s) => (
-              <Tooltip
-                key={s.key}
-                content={breakdownTooltip(sign(s.total), s.breakdown)}
-                className="mf-tooltip-anchor-block"
-              >
-                <div className="skill">
-                  <span className="skill-name">
-                    <span className="skill-name-text">{s.name}</span>
-                    <span className="skill-flags">
-                      {s.isClassSkill ? (
-                        <span className="skill-flag" title="Class skill">
-                          C
-                        </span>
-                      ) : null}
-                      {s.trainedOnly ? (
+            {rankedSkills.map((skill) => {
+              const definition = SKILL_DEFINITION_BY_KEY.get(skill.key);
+              const metadata = skillMetadataTooltip({
+                ability: skill.ability,
+                isClassSkill: skill.isClassSkill,
+                trainedOnly: skill.trainedOnly,
+                usable: skill.usable,
+                armorCheckPenalty: definition?.armorCheckPenalty ?? false,
+              });
+              return (
+                <div className="skill" key={skill.key}>
+                  <Tooltip content={metadata} className="skill-name-tooltip">
+                    <span className="skill-name">
+                      <span className="skill-name-text">{skill.name}</span>
+                      <span className="skill-flags">
+                        {skill.isClassSkill ? (
+                          <span className="skill-flag">C</span>
+                        ) : null}
                         <span
-                          className={`skill-flag ${s.usable ? "" : "warn"}`.trim()}
-                          title={
-                            s.usable
-                              ? "Trained-only skill"
-                              : "Trained-only skill; currently unusable untrained"
-                          }
+                          className={`skill-flag ${skill.usable ? (skill.trainedOnly ? "" : "muted") : "warn"}`}
                         >
-                          {s.usable ? "T" : "TU"}
+                          {skillTrainingFlag(skill.trainedOnly, skill.usable)}
                         </span>
-                      ) : (
-                        <span
-                          className="skill-flag muted"
-                          title="Usable untrained"
-                        >
-                          U
-                        </span>
-                      )}
+                        {definition?.armorCheckPenalty ? (
+                          <span className="skill-flag">A</span>
+                        ) : null}
+                      </span>
                     </span>
-                  </span>
-                  <span className="skill-value">{sign(s.total)}</span>
+                  </Tooltip>
+                  <Tooltip
+                    content={breakdownTooltip(
+                      sign(skill.total),
+                      skill.breakdown,
+                    )}
+                    className="skill-value-tooltip"
+                  >
+                    <span className="skill-value">{sign(skill.total)}</span>
+                  </Tooltip>
                   <label className="sheet-roll-entry skill-roll-entry-inline">
                     <input
                       type="number"
                       inputMode="numeric"
                       placeholder="d20"
-                      aria-label={`${s.name} d20 roll`}
-                      value={skillRollDrafts[s.key] ?? ""}
+                      aria-label={`${skill.name} d20 roll`}
+                      value={skillRollDrafts[skill.key] ?? ""}
                       onChange={(event) =>
                         setSkillRollDrafts((prev) => ({
                           ...prev,
-                          [s.key]: event.target.value,
+                          [skill.key]: event.target.value,
                         }))
                       }
                     />
                   </label>
                   <span className="sheet-roll-total">
-                    {checkTotal(skillRollDrafts[s.key], s.total) === undefined
+                    {checkTotal(skillRollDrafts[skill.key], skill.total) ===
+                    undefined
                       ? "—"
-                      : sign(checkTotal(skillRollDrafts[s.key], s.total) ?? 0)}
+                      : sign(
+                          checkTotal(skillRollDrafts[skill.key], skill.total) ??
+                            0,
+                        )}
                   </span>
                 </div>
-              </Tooltip>
-            ))}
+              );
+            })}
           </div>
         </section>
 

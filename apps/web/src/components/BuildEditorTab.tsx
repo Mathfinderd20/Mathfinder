@@ -10,6 +10,7 @@ import {
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { featTitle } from "../rulesText";
 import type { SpellCastCounts } from "../runtimeState";
+import { skillMetadataTooltip, skillTrainingFlag } from "../skillPresentation";
 import { LevelProgressionPlanner } from "./LevelProgressionPlanner";
 import type {
   LevelPlannerSuggestions,
@@ -53,6 +54,7 @@ interface Props {
     name: string;
     hitDie: number;
     skillRanksPerLevel: number;
+    classSkills: SkillKey[];
   }>;
   archetypeOptionsByClass: Record<string, ArchetypeDefinitionLike[]>;
   featOptions: CompendiumOption[];
@@ -203,6 +205,10 @@ export function BuildEditorTab(props: Props) {
   const [coreSetupAutoCollapsed, setCoreSetupAutoCollapsed] = useState(false);
   const currentLevelIndex = Math.max(0, currentLevel - 1);
   const currentLevelEntry = build.levels[currentLevelIndex];
+  const currentClassSkills = new Set(
+    classOptions.find((option) => option.name === currentLevelEntry?.className)
+      ?.classSkills ?? [],
+  );
   const raceChoiceOptions = effectiveRaceChoiceOptions(build.race);
   const raceBonusFeatOptions = useMemo(() => {
     const allowed = raceChoiceOptions.bonusFeat?.featOptions;
@@ -657,26 +663,51 @@ export function BuildEditorTab(props: Props) {
                       skill.key,
                       currentLevelIndex,
                     );
+                    const isClassSkill = currentClassSkills.has(skill.key);
+                    const usable =
+                      !skill.trainedOnly ||
+                      totalSkillRanks(build, skill.key) > 0;
+                    const metadata = skillMetadataTooltip({
+                      ability: skill.ability,
+                      isClassSkill,
+                      trainedOnly: skill.trainedOnly,
+                      usable,
+                      armorCheckPenalty: skill.armorCheckPenalty,
+                      className: currentLevelEntry.className,
+                    });
                     return (
                       <div
                         className="skill-rank-row skill-rank-table-row"
                         key={`rank-${currentLevelIndex}-${skill.key}`}
                       >
-                        <span className="skill-rank-label">
-                          {skillName.get(skill.key) ?? skill.key}
-                        </span>
-                        <span className="skill-rank-meta" title="Ability">
+                        <Tooltip
+                          content={metadata}
+                          className="skill-rank-label-tooltip"
+                        >
+                          <span className="skill-rank-label skill-metadata-anchor">
+                            {skillName.get(skill.key) ?? skill.key}
+                          </span>
+                        </Tooltip>
+                        <span className="skill-rank-meta">
                           {skill.ability.toUpperCase()}
                         </span>
-                        <span className="skill-rank-flag" title="Trained only">
-                          {skill.trainedOnly ? "T" : ""}
-                        </span>
-                        <span
-                          className="skill-rank-flag"
-                          title="Armor check penalty applies"
-                        >
-                          {skill.armorCheckPenalty ? "A" : ""}
-                        </span>
+                        <Tooltip content={metadata}>
+                          <span className="skill-flags skill-rank-flags">
+                            <span
+                              className={`skill-flag ${isClassSkill ? "" : "muted"}`}
+                            >
+                              {isClassSkill ? "C" : "—"}
+                            </span>
+                            <span
+                              className={`skill-flag ${usable ? (skill.trainedOnly ? "" : "muted") : "warn"}`}
+                            >
+                              {skillTrainingFlag(skill.trainedOnly, usable)}
+                            </span>
+                            {skill.armorCheckPenalty ? (
+                              <span className="skill-flag">A</span>
+                            ) : null}
+                          </span>
+                        </Tooltip>
                         <input
                           aria-label={`${skillName.get(skill.key) ?? skill.key} ranks`}
                           title={`Max here: ${maxRanks}`}

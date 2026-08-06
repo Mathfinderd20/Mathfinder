@@ -1462,7 +1462,7 @@ button:disabled {
 }
 .skill-rank-table-row {
   display: grid;
-  grid-template-columns: minmax(160px, 1fr) 42px 18px 18px 56px;
+  grid-template-columns: minmax(160px, 1fr) 42px 78px 56px;
   gap: 6px;
   align-items: center;
 }
@@ -1497,6 +1497,17 @@ button:disabled {
   color: var(--muted);
   text-transform: uppercase;
   text-align: center;
+}
+.skill-rank-label-tooltip {
+  width: 100%;
+  min-width: 0;
+}
+.skill-metadata-anchor,
+.skill-rank-flags {
+  cursor: help;
+}
+.skill-rank-flags {
+  justify-content: flex-start;
 }
 .skill-builder {
   margin-top: 8px;
@@ -1869,6 +1880,18 @@ button:disabled {
 .skill-name-text {
   min-width: 0;
   overflow-wrap: anywhere;
+}
+.skill-name-tooltip {
+  width: 100%;
+  min-width: 0;
+  cursor: help;
+}
+.skill-name-tooltip .skill-name {
+  width: 100%;
+}
+.skill-value-tooltip {
+  justify-self: end;
+  cursor: help;
 }
 .skill-flags {
   display: inline-flex;
