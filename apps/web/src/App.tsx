@@ -80,6 +80,7 @@ import {
 } from "./buildSuggestions";
 import type { RuntimeProfile } from "./runtimeInsights";
 import { normalizeFeatListLength, plannedFeatSlotsForLevel } from "./featSlots";
+import { plannerRollbackCount, type PlannerExpansion } from "./plannerState";
 import {
   getCharacter,
   runtimeStorageKey,
@@ -653,6 +654,7 @@ export function App({
     JSON.stringify({ build, currentLevel }),
   );
   const pendingPersistence = useRef({ build, currentLevel });
+  const plannerExpansion = useRef<PlannerExpansion | null>(null);
   pendingPersistence.current = { build, currentLevel };
   const {
     activeBuffs,
@@ -1243,19 +1245,43 @@ export function App({
   }
 
   function clearPlannedLevelChoices(levelIndex: number) {
+    const isFutureLevel = levelIndex >= currentLevel;
+    if (isFutureLevel) {
+      const expansion = plannerExpansion.current;
+      const rollbackCount = plannerRollbackCount(
+        currentLevel,
+        levelIndex,
+        expansion,
+      );
+      plannerExpansion.current = null;
+      setBuild((prev) => ({
+        ...prev,
+        levels: prev.levels.slice(0, rollbackCount),
+      }));
+      setGuidedPlannerSuggestions((prev) =>
+        Object.fromEntries(
+          Object.entries(prev).filter(
+            ([index]) => Number(index) < rollbackCount,
+          ),
+        ),
+      );
+      return;
+    }
+
     setBuild((prev) => ({
       ...prev,
-      levels: prev.levels.map((level, i) => {
-        if (i !== levelIndex) return level;
-        return {
-          ...level,
-          feats: undefined,
-          favoredClass: undefined,
-          abilityIncrease: undefined,
-          skillRanks: {},
-          modifiers: [],
-        };
-      }),
+      levels: prev.levels.map((level, i) =>
+        i === levelIndex
+          ? {
+              ...level,
+              feats: undefined,
+              favoredClass: undefined,
+              abilityIncrease: undefined,
+              skillRanks: {},
+              modifiers: [],
+            }
+          : level,
+      ),
     }));
     setGuidedPlannerSuggestions((prev) => {
       const next = { ...prev };
@@ -2743,6 +2769,12 @@ export function App({
             onAddStructureLevel={addStructureLevel}
             onEnsureLevelCount={(count) => {
               const nextBuild = buildWithLevelCount(build, count);
+              if (count > build.levels.length) {
+                plannerExpansion.current = {
+                  previousCount: build.levels.length,
+                  targetCount: Math.min(20, count),
+                };
+              }
               ensureLevelCount(count);
               const guided = computeGuidedSuggestionBundle(nextBuild).planner;
               setGuidedPlannerSuggestions(
