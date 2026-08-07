@@ -9,6 +9,7 @@ export type HealthCondition =
   | "staggered"
   | "unconscious"
   | "disabled"
+  | "fighting-on"
   | "dying"
   | "stable"
   | "dead";
@@ -35,16 +36,23 @@ export function deriveHealthStatus(args: {
   constitutionScore: number;
   nonlethalDamage?: number;
   stable?: boolean;
+  fightOn?: boolean;
+  deathThresholdBonus?: number;
 }): HealthStatus {
-  const deathThreshold = -Math.max(1, args.constitutionScore);
+  const deathThreshold = -Math.max(
+    1,
+    args.constitutionScore + Math.max(0, args.deathThresholdBonus ?? 0),
+  );
   const nonlethalDamage = Math.max(0, args.nonlethalDamage ?? 0);
   const condition: HealthCondition =
     args.currentHp <= deathThreshold
       ? "dead"
       : args.currentHp < 0
-        ? args.stable
-          ? "stable"
-          : "dying"
+        ? args.fightOn
+          ? "fighting-on"
+          : args.stable
+            ? "stable"
+            : "dying"
         : nonlethalDamage > args.currentHp
           ? "unconscious"
           : args.currentHp === 0

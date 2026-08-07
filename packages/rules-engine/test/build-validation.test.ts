@@ -64,7 +64,8 @@ const SELF_PREREQ_FEATS: FeatRegistry = {
     id: "self-prereq-feat",
     name: "Self Prereq Feat",
     pack: "test",
-    description: "Bad content feat that incorrectly names itself as a prerequisite.",
+    description:
+      "Bad content feat that incorrectly names itself as a prerequisite.",
     prerequisites: [
       {
         type: "feat",
@@ -261,6 +262,45 @@ describe("validateBuild inventory diagnostics", () => {
     const issues = validateBuild(build, PRESTIGE_CLASSES, undefined);
     expect(
       issues.some((issue) => issue.code === "prestige-class-prerequisites"),
+    ).toBe(true);
+  });
+
+  it("accepts an ancestry-specific favored-class bonus and rejects unknown ones", () => {
+    const valid: CharacterBuild = {
+      ...baseBuild(),
+      race: {
+        name: "Half-Orc",
+        size: "medium",
+        favoredClassBonuses: [
+          {
+            id: "orc-fighter-death-threshold",
+            className: "Fighter",
+            label: "Orc resilience",
+            description: "Death threshold",
+            deathThresholdBonus: 2,
+          },
+        ],
+      },
+      favoredClassName: "Fighter",
+      levels: [
+        {
+          className: "Fighter",
+          hitPointRoll: 10,
+          favoredClass: "orc-fighter-death-threshold",
+        },
+      ],
+    };
+    expect(
+      validateBuild(valid, PRESTIGE_CLASSES).some(
+        (issue) => issue.code === "unknown-favored-class-bonus",
+      ),
+    ).toBe(false);
+
+    valid.levels[0]!.favoredClass = "invented-bonus";
+    expect(
+      validateBuild(valid, PRESTIGE_CLASSES).some(
+        (issue) => issue.code === "unknown-favored-class-bonus",
+      ),
     ).toBe(true);
   });
 

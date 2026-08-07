@@ -5,6 +5,7 @@ import {
   type AbilityKey,
   type BreakdownEntry,
   type DerivedSheet,
+  type DeathRules,
   type DerivedStat,
   type InventoryEquipmentSlot,
 } from "@mathfinder/rules-engine";
@@ -286,6 +287,10 @@ export function Sheet({
   tempHp,
   nonlethalDamage,
   stable,
+  deathRules,
+  fightOnSource,
+  diehardActive,
+  ferocityUsed,
   onApplyDamage,
   onApplyHealing,
   onApplyHpLoss,
@@ -293,6 +298,9 @@ export function Sheet({
   onApplyNonlethal,
   onHealNonlethal,
   onSetStable,
+  onSetDiehardActive,
+  onSetFerocityActive,
+  onSetFerocityUsed,
   onResetHp,
   spellCastCounts,
   onCastSpell,
@@ -315,6 +323,10 @@ export function Sheet({
   tempHp: number;
   nonlethalDamage: number;
   stable: boolean;
+  deathRules: DeathRules;
+  fightOnSource?: "diehard" | "orc" | "half-orc";
+  diehardActive: boolean;
+  ferocityUsed: boolean;
   onApplyDamage?: (amount: number, damageType?: string) => void;
   onApplyHealing?: (amount: number) => void;
   onApplyHpLoss?: (amount: number) => void;
@@ -322,6 +334,9 @@ export function Sheet({
   onApplyNonlethal?: (amount: number) => void;
   onHealNonlethal?: (amount: number) => void;
   onSetStable?: (value: boolean) => void;
+  onSetDiehardActive?: (value: boolean) => void;
+  onSetFerocityActive?: (value: boolean) => void;
+  onSetFerocityUsed?: (value: boolean) => void;
   onResetHp?: () => void;
   spellCastCounts?: SpellCastCounts;
   onCastSpell?: (
@@ -440,6 +455,8 @@ export function Sheet({
     constitutionScore: sheet.abilities.con.score,
     nonlethalDamage,
     stable,
+    fightOn: !!fightOnSource,
+    deathThresholdBonus: deathRules.deathThresholdBonus,
   });
 
   return (
@@ -661,6 +678,10 @@ export function Sheet({
               nonlethalDamage={nonlethalDamage}
               constitutionScore={sheet.abilities.con.score}
               stable={stable}
+              deathRules={deathRules}
+              fightOnSource={fightOnSource}
+              diehardActive={diehardActive}
+              ferocityUsed={ferocityUsed}
               onApplyDamage={(amount, damageType) =>
                 onApplyDamage?.(amount, damageType)
               }
@@ -670,6 +691,9 @@ export function Sheet({
               onApplyNonlethal={(amount) => onApplyNonlethal?.(amount)}
               onHealNonlethal={(amount) => onHealNonlethal?.(amount)}
               onSetStable={(value) => onSetStable?.(value)}
+              onSetDiehardActive={(value) => onSetDiehardActive?.(value)}
+              onSetFerocityActive={(value) => onSetFerocityActive?.(value)}
+              onSetFerocityUsed={(value) => onSetFerocityUsed?.(value)}
               onReset={() => onResetHp?.()}
             />
           </section>

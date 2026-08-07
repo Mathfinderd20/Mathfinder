@@ -12,7 +12,7 @@ interface FreshCharacterChoices {
   raceBonusFeat?: string;
   skillRanks?: Partial<Record<SkillKey, number>>;
   feats?: string[];
-  favoredClass?: "hp" | "skill";
+  favoredClass?: string;
 }
 
 export function createFreshCharacterBuild(

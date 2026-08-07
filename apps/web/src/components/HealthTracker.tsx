@@ -1,6 +1,7 @@
 import {
   deriveHealthStatus,
   stabilizationCheck,
+  type DeathRules,
   type HealthCondition,
   type StabilizationCheckResult,
 } from "@mathfinder/rules-engine";
@@ -15,6 +16,10 @@ interface HealthTrackerProps {
   nonlethalDamage: number;
   constitutionScore: number;
   stable: boolean;
+  deathRules: DeathRules;
+  fightOnSource?: "diehard" | "orc" | "half-orc";
+  diehardActive: boolean;
+  ferocityUsed: boolean;
   onApplyDamage: (amount: number, damageType?: string) => void;
   onApplyHealing: (amount: number) => void;
   onApplyHpLoss: (amount: number) => void;
@@ -22,6 +27,9 @@ interface HealthTrackerProps {
   onApplyNonlethal: (amount: number) => void;
   onHealNonlethal: (amount: number) => void;
   onSetStable: (value: boolean) => void;
+  onSetDiehardActive: (value: boolean) => void;
+  onSetFerocityActive: (value: boolean) => void;
+  onSetFerocityUsed: (value: boolean) => void;
   onReset: () => void;
 }
 
@@ -31,6 +39,7 @@ const STATUS_LABEL: Record<HealthCondition, string> = {
   staggered: "Staggered",
   unconscious: "Unconscious",
   disabled: "Disabled",
+  "fighting-on": "Fighting On",
   dying: "Dying",
   stable: "Stable",
   dead: "Dead",
@@ -42,6 +51,7 @@ const STATUS_TONE: Record<HealthCondition, string> = {
   staggered: "warn",
   unconscious: "dead",
   disabled: "warn",
+  "fighting-on": "warn",
   dying: "dead",
   stable: "warn",
   dead: "dead",
@@ -67,6 +77,8 @@ function conditionRules(condition: HealthCondition, deathThreshold: number) {
       return "Nonlethal damage exceeds current HP. Unconscious, but not dying from lethal damage.";
     case "disabled":
       return "At exactly 0 HP. Staggered; taking a strenuous standard action causes 1 HP loss and begins dying.";
+    case "fighting-on":
+      return "Below 0 HP but conscious and staggered because a survival ability is active.";
     case "dying":
       return `Below 0 HP and unconscious. Attempt a stabilization check each round; death occurs at ${deathThreshold} HP.`;
     case "stable":
@@ -84,6 +96,10 @@ export function HealthTracker({
   nonlethalDamage,
   constitutionScore,
   stable,
+  deathRules,
+  fightOnSource,
+  diehardActive,
+  ferocityUsed,
   onApplyDamage,
   onApplyHealing,
   onApplyHpLoss,
@@ -91,6 +107,9 @@ export function HealthTracker({
   onApplyNonlethal,
   onHealNonlethal,
   onSetStable,
+  onSetDiehardActive,
+  onSetFerocityActive,
+  onSetFerocityUsed,
   onReset,
 }: HealthTrackerProps) {
   const [damageInput, setDamageInput] = useState("");
@@ -109,10 +128,15 @@ export function HealthTracker({
     constitutionScore,
     nonlethalDamage,
     stable,
+    fightOn: !!fightOnSource,
+    deathThresholdBonus: deathRules.deathThresholdBonus,
   });
   const hpPercent = Math.max(0, Math.min(100, (currentHp / maxHp) * 100));
   const constitutionModifier = Math.floor((constitutionScore - 10) / 2);
   const stabilizationModifier = constitutionModifier + Math.min(0, currentHp);
+  const belowZeroAndAlive = currentHp < 0 && currentHp > health.deathThreshold;
+  const canActivateHalfOrcFerocity =
+    belowZeroAndAlive && deathRules.ferocity === "half-orc" && !ferocityUsed;
 
   function positiveAmount(raw: string) {
     return Math.max(0, Number(raw) || 0);
@@ -165,7 +189,7 @@ export function HealthTracker({
           </div>
         </div>
         <Tooltip
-          content={`${conditionRules(health.condition, health.deathThreshold)}\n\nDeath threshold: ${health.deathThreshold} HP (negative Constitution).`}
+          content={`${conditionRules(health.condition, health.deathThreshold)}\n\nDeath threshold: ${health.deathThreshold} HP${deathRules.deathThresholdBonus > 0 ? ` (Constitution + ${deathRules.deathThresholdBonus} favored-class bonus)` : " (negative Constitution)"}.`}
         >
           <span
             className={`tag hp-status ${healthConditionTone(health.condition)}`}
@@ -200,6 +224,22 @@ export function HealthTracker({
           <strong>{health.deathThreshold}</strong>
         </div>
       </div>
+
+      {deathRules.ferocity === "half-orc" && ferocityUsed ? (
+        <div className="health-daily-resource">
+          <span>Orc Ferocity: expended</span>
+          <button
+            type="button"
+            className="ghost small"
+            onClick={() => {
+              onSetFerocityActive(false);
+              onSetFerocityUsed(false);
+            }}
+          >
+            Reset Daily Use
+          </button>
+        </div>
+      ) : null}
 
       <div className="health-action-grid">
         <div className="health-action-card">
@@ -326,7 +366,9 @@ export function HealthTracker({
         </div>
       </div>
 
-      {["disabled", "dying", "stable", "dead"].includes(health.condition) ? (
+      {["disabled", "fighting-on", "dying", "stable", "dead"].includes(
+        health.condition,
+      ) ? (
         <div className="death-mechanics-panel">
           <div>
             <strong>{healthConditionLabel(health.condition)}</strong>
@@ -377,7 +419,7 @@ export function HealthTracker({
               Resume Dying
             </button>
           ) : null}
-          {health.condition === "disabled" ? (
+          {health.condition === "disabled" && !fightOnSource ? (
             <button
               type="button"
               onClick={() => {
@@ -386,6 +428,51 @@ export function HealthTracker({
               }}
             >
               Take Strenuous Action (−1 HP)
+            </button>
+          ) : null}
+          {belowZeroAndAlive &&
+          deathRules.hasDiehard &&
+          fightOnSource !== "half-orc" ? (
+            <button
+              type="button"
+              className={diehardActive ? "active-template-choice" : "ghost"}
+              onClick={() => onSetDiehardActive(!diehardActive)}
+            >
+              {diehardActive ? "Fall Unconscious" : "Fight On with Diehard"}
+            </button>
+          ) : null}
+          {canActivateHalfOrcFerocity ? (
+            <button
+              type="button"
+              onClick={() => {
+                onSetStable(false);
+                onSetFerocityUsed(true);
+                onSetFerocityActive(true);
+              }}
+            >
+              Activate Orc Ferocity
+            </button>
+          ) : null}
+          {fightOnSource === "diehard" || fightOnSource === "half-orc" ? (
+            <button type="button" onClick={() => onApplyHpLoss(1)}>
+              Take Strenuous Action (−1 HP)
+            </button>
+          ) : null}
+          {fightOnSource === "half-orc" ? (
+            <button
+              type="button"
+              className="ghost"
+              onClick={() => {
+                onSetStable(false);
+                onSetFerocityActive(false);
+              }}
+            >
+              End Ferocity Turn
+            </button>
+          ) : null}
+          {fightOnSource === "orc" ? (
+            <button type="button" onClick={() => onApplyHpLoss(1)}>
+              End Ferocity Round (−1 HP)
             </button>
           ) : null}
           {lastStabilization ? (

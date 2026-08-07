@@ -5,6 +5,7 @@ import {
   buildCharacter,
   collectActivatableEffects,
   computeSheet,
+  deriveDeathRules,
   deriveHealthStatus,
   getSpellEffectByName,
   groupActivatables,
@@ -146,6 +147,9 @@ const HP_DAMAGE_RESOURCE_ID = "hp-damage";
 const TEMP_HP_RESOURCE_ID = "temp-hp";
 const NONLETHAL_DAMAGE_RESOURCE_ID = "nonlethal-damage";
 const STABLE_FLAG_ID = "stable";
+const DIEHARD_ACTIVE_FLAG_ID = "diehard-active";
+const FEROCITY_ACTIVE_FLAG_ID = "ferocity-active";
+const FEROCITY_USED_FLAG_ID = "ferocity-used";
 
 interface SavedBuildSlot {
   id: string;
@@ -252,7 +256,12 @@ function materializeRaceChoice(
 }
 
 function normalizeBuild(build: CharacterBuild): CharacterBuild {
-  const normalizedRace = materializeRaceChoice(build.race, build, build.race);
+  const runtimeRace =
+    RACE_OPTIONS.find(
+      ([, race]) =>
+        race.name.trim().toLowerCase() === build.race.name.trim().toLowerCase(),
+    )?.[1] ?? build.race;
+  const normalizedRace = materializeRaceChoice(runtimeRace, build, build.race);
   const normalizedArchetypes = Object.fromEntries(
     Object.entries(build.classArchetypes ?? {})
       .map(([classKey, archetypeIds]) => {
@@ -666,6 +675,9 @@ export function App({
     combatEventLog,
     fatigued,
     stable,
+    diehardActive,
+    ferocityActive,
+    ferocityUsed,
     resetAll: resetRuntimeState,
     setToggle,
     setExclusiveToggleGroup,
@@ -2506,13 +2518,47 @@ export function App({
     resourcesUsed[NONLETHAL_DAMAGE_RESOURCE_ID] ?? 0,
   );
   const currentHp = sheet.hitPoints.total - hpDamageTaken;
+  const deathRules = deriveDeathRules(effectiveBuild);
+  const fightOnSource =
+    currentHp < 0 && deathRules.hasDiehard && diehardActive
+      ? "diehard"
+      : currentHp <= 0 && deathRules.ferocity === "half-orc" && ferocityActive
+        ? "half-orc"
+        : currentHp <= 0 && deathRules.ferocity === "orc"
+          ? "orc"
+          : undefined;
   const healthStatus = deriveHealthStatus({
     maxHp: sheet.hitPoints.total,
     currentHp,
     constitutionScore: sheet.abilities.con.score,
     nonlethalDamage,
     stable,
+    fightOn: !!fightOnSource,
+    deathThresholdBonus: deathRules.deathThresholdBonus,
   });
+
+  useEffect(() => {
+    const belowZeroAndAlive =
+      currentHp < 0 && currentHp > healthStatus.deathThreshold;
+    const ferocityCanContinue =
+      currentHp <= 0 && currentHp > healthStatus.deathThreshold;
+    if (belowZeroAndAlive && deathRules.automaticallyStabilizes && !stable)
+      setFlag(STABLE_FLAG_ID, true);
+    if ((!belowZeroAndAlive || !deathRules.hasDiehard) && diehardActive)
+      setFlag(DIEHARD_ACTIVE_FLAG_ID, false);
+    if ((!ferocityCanContinue || !deathRules.ferocity) && ferocityActive)
+      setFlag(FEROCITY_ACTIVE_FLAG_ID, false);
+  }, [
+    currentHp,
+    deathRules.automaticallyStabilizes,
+    deathRules.ferocity,
+    deathRules.hasDiehard,
+    diehardActive,
+    ferocityActive,
+    healthStatus.deathThreshold,
+    stable,
+    setFlag,
+  ]);
 
   function applyIncomingDamage(amount: number, damageType?: string) {
     const normalized = Math.max(0, amount);
@@ -2669,6 +2715,10 @@ export function App({
                 tempHp={tempHp}
                 nonlethalDamage={nonlethalDamage}
                 stable={stable}
+                deathRules={deathRules}
+                fightOnSource={fightOnSource}
+                diehardActive={diehardActive}
+                ferocityUsed={ferocityUsed}
                 onApplyDamage={applyIncomingDamage}
                 onApplyHealing={applyHealing}
                 onApplyHpLoss={applyDirectHpLoss}
@@ -2686,11 +2736,23 @@ export function App({
                   )
                 }
                 onSetStable={(value) => setFlag(STABLE_FLAG_ID, value)}
+                onSetDiehardActive={(value) =>
+                  setFlag(DIEHARD_ACTIVE_FLAG_ID, value)
+                }
+                onSetFerocityActive={(value) =>
+                  setFlag(FEROCITY_ACTIVE_FLAG_ID, value)
+                }
+                onSetFerocityUsed={(value) =>
+                  setFlag(FEROCITY_USED_FLAG_ID, value)
+                }
                 onResetHp={() => {
                   resetResource(HP_DAMAGE_RESOURCE_ID);
                   resetResource(TEMP_HP_RESOURCE_ID);
                   resetResource(NONLETHAL_DAMAGE_RESOURCE_ID);
                   setFlag(STABLE_FLAG_ID, false);
+                  setFlag(DIEHARD_ACTIVE_FLAG_ID, false);
+                  setFlag(FEROCITY_ACTIVE_FLAG_ID, false);
+                  setFlag(FEROCITY_USED_FLAG_ID, false);
                 }}
                 spellCastCounts={spellCastCounts}
                 onCastSpell={castSpell}

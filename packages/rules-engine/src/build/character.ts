@@ -60,6 +60,7 @@ import {
   CLASS_FEATURES,
   type ClassFeatureRegistry,
 } from "../content/class-features";
+import { favoredClassBonusOptions } from "../death-rules";
 import { deriveEncumbrance } from "../encumbrance";
 import {
   applyArchetypeClassOverrides,
@@ -1363,6 +1364,8 @@ export function buildCharacter(
       movementModes: activeRace.movementModes,
       senses: activeRace.senses,
       resistances: activeRace.resistances,
+      ferocity: activeRace.ferocity,
+      favoredClassBonuses: activeRace.favoredClassBonuses,
       notes: [...(activeRace.notes ?? []), ...raceChoiceNotes(activeRace)],
     },
     descriptor,
@@ -1656,6 +1659,34 @@ export function validateBuild(
         level: levelNum,
         message: `Ability score increase at level ${levelNum}; allowed only at levels 4, 8, 12, ...`,
       });
+    }
+
+    if (lvl.favoredClass) {
+      const isFavoredClassLevel =
+        !!build.favoredClassName &&
+        lvl.className.toLowerCase() === build.favoredClassName.toLowerCase();
+      if (!isFavoredClassLevel) {
+        issues.push({
+          severity: "warning",
+          code: "favored-class-bonus-ineligible",
+          level: levelNum,
+          message: `Level ${levelNum}: ${lvl.className} is not the selected favored class, so its favored-class bonus does not apply.`,
+        });
+      }
+      if (
+        lvl.favoredClass !== "hp" &&
+        lvl.favoredClass !== "skill" &&
+        !favoredClassBonusOptions(activeRace, lvl.className).some(
+          (bonus) => bonus.id === lvl.favoredClass,
+        )
+      ) {
+        issues.push({
+          severity: "error",
+          code: "unknown-favored-class-bonus",
+          level: levelNum,
+          message: `Level ${levelNum}: favored-class bonus "${lvl.favoredClass}" is not available to ${activeRace.name} ${lvl.className}.`,
+        });
+      }
     }
 
     // Per-level skill-point budget (soft check).

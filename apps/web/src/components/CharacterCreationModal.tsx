@@ -23,6 +23,7 @@ import {
   normalizeSelectedFeatSelection,
 } from "../featOptionData";
 import { plannedFeatSlotsForLevel } from "../featSlots";
+import { buildFavoredClassBonusOptions } from "../favoredClassBonusData";
 import { featTitle } from "../rulesText";
 import { createFreshCharacterBuild } from "../features/characters/newCharacterBuild";
 import { CompendiumPicker } from "./CompendiumPicker";
@@ -85,15 +86,17 @@ export function CharacterCreationModal({
   );
   const [selectedFeats, setSelectedFeats] = useState<string[]>([]);
   const [raceBonusFeat, setRaceBonusFeat] = useState("");
-  const [favoredClass, setFavoredClass] = useState<"hp" | "skill" | undefined>(
-    "hp",
-  );
+  const [favoredClass, setFavoredClass] = useState<string | undefined>("hp");
 
   const race =
     RUNTIME_RACE_OPTIONS.find(([key]) => key === raceKey)?.[1] ??
     raceOptions[0]?.[1];
   const classKey = classKeyForName(className);
   const classDefinition = RUNTIME_CLASSES[classKey];
+  const creationFavoredClassBonusOptions = buildFavoredClassBonusOptions(
+    race ?? RUNTIME_RACE_OPTIONS[0]![1],
+    className,
+  );
   const hasFlexibleAbility = !!race?.choiceOptions?.flexibleAbilityBonus;
   const hasRaceBonusFeat = !!race?.choiceOptions?.bonusFeat;
 
@@ -390,20 +393,24 @@ export function CharacterCreationModal({
         <div className="field">
           <span>Favored class bonus</span>
           <div className="ability-picker">
-            {([undefined, "hp", "skill"] as const).map((value) => (
-              <label
-                className={`pick ${favoredClass === value ? "on" : ""}`}
-                key={value ?? "none"}
-              >
-                <input
-                  type="radio"
-                  name="creation-favored-class"
-                  checked={favoredClass === value}
-                  onChange={() => setFavoredClass(value)}
-                />
-                {value?.toUpperCase() ?? "None"}
-              </label>
-            ))}
+            {creationFavoredClassBonusOptions.map((option) => {
+              const value = option.value || undefined;
+              return (
+                <label
+                  className={`pick ${favoredClass === value ? "on" : ""}`}
+                  key={option.value || "none"}
+                  title={option.description}
+                >
+                  <input
+                    type="radio"
+                    name="creation-favored-class"
+                    checked={favoredClass === value}
+                    onChange={() => setFavoredClass(value)}
+                  />
+                  {option.label}
+                </label>
+              );
+            })}
           </div>
         </div>
 

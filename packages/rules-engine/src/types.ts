@@ -216,10 +216,22 @@ export interface SenseProfile {
   lowLightVision?: boolean;
 }
 
+export type FerocityMode = "orc" | "half-orc";
+
+export interface FavoredClassBonusDefinition {
+  id: string;
+  className: string;
+  label: string;
+  description: string;
+  deathThresholdBonus?: number;
+}
+
 export interface RaceMetadata {
   movementModes?: Partial<Record<MovementMode, number>>;
   senses?: SenseProfile;
   resistances?: Partial<Record<EnergyType, number>>;
+  ferocity?: FerocityMode;
+  favoredClassBonuses?: FavoredClassBonusDefinition[];
   notes?: string[];
 }
 

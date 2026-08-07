@@ -269,6 +269,8 @@ export function raceOptionsFromDataSet(
           movementModes: race.movementModes,
           senses: race.senses,
           resistances: race.resistances,
+          ferocity: race.ferocity,
+          favoredClassBonuses: race.favoredClassBonuses,
           notes: race.notes,
         },
       ]),

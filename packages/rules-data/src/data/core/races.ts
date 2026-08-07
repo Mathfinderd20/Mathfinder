@@ -242,6 +242,17 @@ export const CORE_RACES: RaceDefinition[] = [
     size: "medium",
     speed: 30,
     abilityModifiers: [],
+    ferocity: "half-orc",
+    favoredClassBonuses: [
+      {
+        id: "orc-fighter-death-threshold",
+        className: "Fighter",
+        label: "Orc resilience",
+        description:
+          "Add +2 to Constitution for determining death from negative hit points.",
+        deathThresholdBonus: 2,
+      },
+    ],
     choiceOptions: {
       flexibleAbilityBonus: { value: 2 },
     },
@@ -278,8 +289,57 @@ export const CORE_RACES: RaceDefinition[] = [
         ],
       },
     ],
+    notes: ["Intimidating and weapon familiarity are not automated yet."],
+  },
+  {
+    id: "orc",
+    name: "Orc",
+    pack: "core",
+    size: "medium",
+    speed: 30,
+    abilityModifiers: [
+      {
+        target: "str",
+        type: "racial",
+        value: 4,
+        source: "Orc",
+        pack: "core",
+      },
+      {
+        target: "int",
+        type: "racial",
+        value: -2,
+        source: "Orc",
+        pack: "core",
+      },
+      {
+        target: "wis",
+        type: "racial",
+        value: -2,
+        source: "Orc",
+        pack: "core",
+      },
+      {
+        target: "cha",
+        type: "racial",
+        value: -2,
+        source: "Orc",
+        pack: "core",
+      },
+    ],
+    ferocity: "orc",
+    favoredClassBonuses: [
+      {
+        id: "orc-fighter-death-threshold",
+        className: "Fighter",
+        label: "Orc resilience",
+        description:
+          "Add +2 to Constitution for determining death from negative hit points.",
+        deathThresholdBonus: 2,
+      },
+    ],
     notes: [
-      "Orc Ferocity, Intimidating, and weapon familiarity are not automated yet.",
+      "Ferocity is automated; light sensitivity and weapon familiarity are not automated yet.",
     ],
   },
   {

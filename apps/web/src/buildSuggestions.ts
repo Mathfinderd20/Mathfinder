@@ -4,6 +4,7 @@ import {
   checkPrerequisites,
   computeSheet,
   featContextFromSheet,
+  favoredClassBonusOptions,
   listFeats,
   planLevelUp,
   type AbilityKey,
@@ -65,7 +66,7 @@ export interface LevelPlannerSuggestions {
   classChoices: PlannerSuggestionChoice<string>[];
   featChoices: PlannerSuggestionChoice<string>[];
   featChoicesBySlot: PlannerFeatSlotSuggestions[];
-  favoredClassChoices: PlannerSuggestionChoice<"hp" | "skill" | "none">[];
+  favoredClassChoices: PlannerSuggestionChoice<string>[];
   abilityChoices: PlannerSuggestionChoice<AbilityKey>[];
   notes: PlannerSuggestionNote[];
 }
@@ -977,9 +978,20 @@ function suggestFavoredClassChoices(
         }),
       ),
     ),
-  ] as PlannerSuggestionChoice<"hp" | "skill">[];
-  return uniqueTopChoices<"hp" | "skill" | "none">([
+  ] as PlannerSuggestionChoice<string>[];
+  const racialChoices = favoredClassBonusOptions(build.race, className).map(
+    (bonus) => ({
+      value: bonus.id,
+      label: bonus.label,
+      reason: bonus.description,
+      score: profile.frontliner ? 66 : 36,
+      sourceKind: "system" as const,
+      sourceLabel: build.race.name,
+    }),
+  );
+  return uniqueTopChoices<string>([
     ...guideChoices,
+    ...racialChoices,
     {
       value: "hp",
       label: "HP",
@@ -1012,10 +1024,7 @@ function scoreClassChoice(
   let score = 0;
   let reason = "Fits the current direction of the build.";
   if (classDef.prerequisites?.length) {
-    const unmet = checkClassPrerequisites(
-      classDef,
-      classPrerequisiteContext,
-    );
+    const unmet = checkClassPrerequisites(classDef, classPrerequisiteContext);
     if (unmet.length > 0) {
       return choiceWithMeta({
         value: classDef.name,
@@ -1491,16 +1500,11 @@ export function buildSuggestions(
       args.archetypes,
     );
     const grantsAbilityIncrease = (levelIndex + 1) % 4 === 0;
-    const levelCache = levelCaches[levelIndex] ?? buildLevelCache(args, levelIndex);
+    const levelCache =
+      levelCaches[levelIndex] ?? buildLevelCache(args, levelIndex);
     const featChoicesBySlot =
       plan.featSlots.length > 0
-        ? suggestFeatChoiceSlots(
-            args,
-            levelIndex,
-            profile,
-            shared,
-            levelCache,
-          )
+        ? suggestFeatChoiceSlots(args, levelIndex, profile, shared, levelCache)
         : [];
     return {
       guideChoices: suggestGuideChoices(profile),

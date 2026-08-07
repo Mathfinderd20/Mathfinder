@@ -11,6 +11,7 @@ import type {
   PlannerSuggestionNote,
 } from "../buildSuggestions";
 import { featSlotTag, plannedFeatSlotsForLevel } from "../featSlots";
+import { buildFavoredClassBonusOptions } from "../favoredClassBonusData";
 import { normalizeSelectedFeatSelection } from "../featOptionData";
 import { RUNTIME_FEATS } from "../content";
 import { CompendiumPicker, type CompendiumOption } from "./CompendiumPicker";
@@ -178,6 +179,10 @@ export function LevelProgressionPlanner({
                   build.levels[build.levels.length - 1]?.className ??
                   classOptions[0]?.name ??
                   "Fighter";
+                const favoredClassBonusOptions = buildFavoredClassBonusOptions(
+                  build.race,
+                  level?.className ?? defaultClass,
+                );
                 const hitDie =
                   classOptions.find(
                     (option) =>
@@ -358,16 +363,18 @@ export function LevelProgressionPlanner({
                               onUpdateLevelField(
                                 index,
                                 "favoredClass",
-                                (e.target.value || undefined) as
-                                  | "hp"
-                                  | "skill"
-                                  | undefined,
+                                e.target.value || undefined,
                               )
                             }
                           >
-                            <option value="">None</option>
-                            <option value="hp">HP</option>
-                            <option value="skill">Skill</option>
+                            {favoredClassBonusOptions.map((option) => (
+                              <option
+                                key={option.value || "none"}
+                                value={option.value}
+                              >
+                                {option.label}
+                              </option>
+                            ))}
                           </select>
                         </>
                       ) : (

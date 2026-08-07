@@ -46,7 +46,7 @@ export interface LevelEntry {
   feats?: string[];
   features?: string[];
   abilityIncrease?: AbilityKey;
-  favoredClass?: "hp" | "skill";
+  favoredClass?: string;
   modifiers?: Modifier[];
 }
 
@@ -208,7 +208,7 @@ export interface LevelUpSelection {
   skillRanks: Partial<Record<SkillKey, number>>;
   feats?: string[];
   abilityIncrease?: AbilityKey;
-  favoredClass?: "hp" | "skill";
+  favoredClass?: string;
 }
 
 export interface PreLevelBuildSelection {
@@ -217,7 +217,7 @@ export interface PreLevelBuildSelection {
   skillRanks?: Partial<Record<SkillKey, number>>;
   feats?: string[];
   abilityIncrease?: AbilityKey;
-  favoredClass?: "hp" | "skill";
+  favoredClass?: string;
 }
 
 export interface PreLevelBuildResult {

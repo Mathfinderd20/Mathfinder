@@ -45,6 +45,11 @@ export {
 export { deriveAbilities } from "./abilities";
 export { deriveSkills, SKILL_DEFINITIONS, CLASS_SKILL_BONUS } from "./skills";
 export {
+  deriveDeathRules,
+  favoredClassBonusOptions,
+  type DeathRules,
+} from "./death-rules";
+export {
   deriveHealthStatus,
   deriveHitPoints,
   deriveSpeed,

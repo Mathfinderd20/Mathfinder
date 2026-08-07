@@ -21,6 +21,23 @@ describe("PF1e health conditions", () => {
     expect(status(-11).condition).toBe("dying");
   });
 
+  it("applies death-threshold bonuses and below-zero fight-on states", () => {
+    expect(
+      deriveHealthStatus({
+        maxHp: 20,
+        currentHp: -16,
+        constitutionScore: 12,
+        deathThresholdBonus: 6,
+        fightOn: true,
+      }),
+    ).toMatchObject({
+      condition: "fighting-on",
+      deathThreshold: -18,
+      conscious: true,
+      canAct: true,
+    });
+  });
+
   it("tracks nonlethal staggered and unconscious states", () => {
     expect(status(8, { nonlethalDamage: 8 }).condition).toBe("staggered");
     expect(status(8, { nonlethalDamage: 9 }).condition).toBe("unconscious");
