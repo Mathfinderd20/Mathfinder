@@ -5,6 +5,7 @@ import {
   buildCharacter,
   collectActivatableEffects,
   computeSheet,
+  deriveHealthStatus,
   getSpellEffectByName,
   groupActivatables,
   levelDown,
@@ -145,7 +146,6 @@ const HP_DAMAGE_RESOURCE_ID = "hp-damage";
 const TEMP_HP_RESOURCE_ID = "temp-hp";
 const NONLETHAL_DAMAGE_RESOURCE_ID = "nonlethal-damage";
 const STABLE_FLAG_ID = "stable";
-const BLEEDING_FLAG_ID = "bleeding";
 
 interface SavedBuildSlot {
   id: string;
@@ -666,7 +666,6 @@ export function App({
     combatEventLog,
     fatigued,
     stable,
-    bleeding,
     resetAll: resetRuntimeState,
     setToggle,
     setExclusiveToggleGroup,
@@ -2507,6 +2506,13 @@ export function App({
     resourcesUsed[NONLETHAL_DAMAGE_RESOURCE_ID] ?? 0,
   );
   const currentHp = sheet.hitPoints.total - hpDamageTaken;
+  const healthStatus = deriveHealthStatus({
+    maxHp: sheet.hitPoints.total,
+    currentHp,
+    constitutionScore: sheet.abilities.con.score,
+    nonlethalDamage,
+    stable,
+  });
 
   function applyIncomingDamage(amount: number, damageType?: string) {
     const normalized = Math.max(0, amount);
@@ -2546,6 +2552,32 @@ export function App({
       TEMP_HP_RESOURCE_ID,
       spellAbsorptions,
     );
+    setFlag(STABLE_FLAG_ID, false);
+  }
+
+  function applyHealing(amount: number) {
+    const normalized = Math.max(0, amount);
+    if (normalized <= 0 || healthStatus.condition === "dead") return;
+    adjustResource(HP_DAMAGE_RESOURCE_ID, -normalized);
+    const nextHp = Math.min(sheet.hitPoints.total, currentHp + normalized);
+    setFlag(STABLE_FLAG_ID, nextHp < 0);
+  }
+
+  function applyDirectHpLoss(amount: number) {
+    const normalized = Math.max(0, amount);
+    if (normalized <= 0) return;
+    adjustResource(HP_DAMAGE_RESOURCE_ID, normalized);
+    setFlag(STABLE_FLAG_ID, false);
+  }
+
+  function applyNonlethalDamage(amount: number) {
+    const normalized = Math.max(0, amount);
+    if (normalized <= 0) return;
+    if (currentHp < 0) {
+      applyDirectHpLoss(normalized);
+      return;
+    }
+    adjustResource(NONLETHAL_DAMAGE_RESOURCE_ID, normalized);
   }
 
   return (
@@ -2637,23 +2669,16 @@ export function App({
                 tempHp={tempHp}
                 nonlethalDamage={nonlethalDamage}
                 stable={stable}
-                bleeding={bleeding}
                 onApplyDamage={applyIncomingDamage}
-                onApplyHealing={(amount) =>
-                  adjustResource(HP_DAMAGE_RESOURCE_ID, -Math.max(0, amount))
-                }
+                onApplyHealing={applyHealing}
+                onApplyHpLoss={applyDirectHpLoss}
                 onSetTempHp={(amount) =>
                   adjustResource(
                     TEMP_HP_RESOURCE_ID,
                     Math.max(0, amount) - tempHp,
                   )
                 }
-                onApplyNonlethal={(amount) =>
-                  adjustResource(
-                    NONLETHAL_DAMAGE_RESOURCE_ID,
-                    Math.max(0, amount),
-                  )
-                }
+                onApplyNonlethal={applyNonlethalDamage}
                 onHealNonlethal={(amount) =>
                   adjustResource(
                     NONLETHAL_DAMAGE_RESOURCE_ID,
@@ -2661,13 +2686,11 @@ export function App({
                   )
                 }
                 onSetStable={(value) => setFlag(STABLE_FLAG_ID, value)}
-                onSetBleeding={(value) => setFlag(BLEEDING_FLAG_ID, value)}
                 onResetHp={() => {
                   resetResource(HP_DAMAGE_RESOURCE_ID);
                   resetResource(TEMP_HP_RESOURCE_ID);
                   resetResource(NONLETHAL_DAMAGE_RESOURCE_ID);
                   setFlag(STABLE_FLAG_ID, false);
-                  setFlag(BLEEDING_FLAG_ID, false);
                 }}
                 spellCastCounts={spellCastCounts}
                 onCastSpell={castSpell}

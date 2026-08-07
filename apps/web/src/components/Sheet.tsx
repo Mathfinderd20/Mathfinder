@@ -1,5 +1,6 @@
 import { useState } from "react";
 import {
+  deriveHealthStatus,
   SKILL_DEFINITIONS,
   type AbilityKey,
   type BreakdownEntry,
@@ -23,6 +24,11 @@ import { featTitle, spellTitle } from "../rulesText";
 import { sign } from "../util";
 import { compatibleAmmoEntries } from "../ammoCatalog";
 import { weaponAmmoUxLabel } from "../weaponUx";
+import {
+  HealthTracker,
+  healthConditionLabel,
+  healthConditionTone,
+} from "./HealthTracker";
 import { Tooltip } from "./Tooltip";
 
 const SKILL_DEFINITION_BY_KEY = new Map(
@@ -202,26 +208,6 @@ function hitPointTooltip(sheet: DerivedSheet) {
   return parts.join(" • ");
 }
 
-function hpStatusTooltip(
-  currentHp: number,
-  hpDamageTaken: number,
-  tempHp: number,
-  nonlethalDamage: number,
-  deathThreshold: number,
-  stable: boolean,
-  bleeding: boolean,
-) {
-  return [
-    `Current HP ${currentHp}`,
-    `Damage taken ${hpDamageTaken}`,
-    `Temp HP ${tempHp}`,
-    `Nonlethal ${nonlethalDamage}`,
-    `Death at ${deathThreshold}`,
-    `Stable ${stable ? "yes" : "no"}`,
-    `Bleeding ${bleeding ? "yes" : "no"}`,
-  ].join(" • ");
-}
-
 function wealthTooltip(
   wealthSummary: WealthSummary,
   inventory: DerivedSheet["inventory"],
@@ -300,14 +286,13 @@ export function Sheet({
   tempHp,
   nonlethalDamage,
   stable,
-  bleeding,
   onApplyDamage,
   onApplyHealing,
+  onApplyHpLoss,
   onSetTempHp,
   onApplyNonlethal,
   onHealNonlethal,
   onSetStable,
-  onSetBleeding,
   onResetHp,
   spellCastCounts,
   onCastSpell,
@@ -330,14 +315,13 @@ export function Sheet({
   tempHp: number;
   nonlethalDamage: number;
   stable: boolean;
-  bleeding: boolean;
   onApplyDamage?: (amount: number, damageType?: string) => void;
   onApplyHealing?: (amount: number) => void;
+  onApplyHpLoss?: (amount: number) => void;
   onSetTempHp?: (amount: number) => void;
   onApplyNonlethal?: (amount: number) => void;
   onHealNonlethal?: (amount: number) => void;
   onSetStable?: (value: boolean) => void;
-  onSetBleeding?: (value: boolean) => void;
   onResetHp?: () => void;
   spellCastCounts?: SpellCastCounts;
   onCastSpell?: (
@@ -393,9 +377,6 @@ export function Sheet({
   const [damageRollDrafts, setDamageRollDrafts] = useState<
     Record<string, string>
   >({});
-  const [damageInput, setDamageInput] = useState("");
-  const [damageTypeInput, setDamageTypeInput] = useState<string>("untyped");
-  const [healingInput, setHealingInput] = useState("");
   const [saveRollDrafts, setSaveRollDrafts] = useState<Record<string, string>>(
     {},
   );
@@ -404,9 +385,6 @@ export function Sheet({
   >({});
   const [initiativeRollDraft, setInitiativeRollDraft] = useState("");
   const [cmbRollDraft, setCmbRollDraft] = useState("");
-  const [tempHpInput, setTempHpInput] = useState("");
-  const [nonlethalInput, setNonlethalInput] = useState("");
-  const [nonlethalHealingInput, setNonlethalHealingInput] = useState("");
   const rankedSkills = Object.values(sheet.skills)
     .filter((s) => s.ranks > 0 || s.isClassSkill)
     .sort((a, b) => a.name.localeCompare(b.name));
@@ -451,66 +429,18 @@ export function Sheet({
     return Number.isFinite(value) ? value : undefined;
   }
 
-  function applyDamage() {
-    const amount = Math.max(0, Number(damageInput) || 0);
-    if (amount <= 0) return;
-    onApplyDamage?.(
-      amount,
-      damageTypeInput === "untyped" ? undefined : damageTypeInput,
-    );
-    setDamageInput("");
-  }
-
-  function applyHealing() {
-    const amount = Math.max(0, Number(healingInput) || 0);
-    if (amount <= 0) return;
-    onApplyHealing?.(amount);
-    setHealingInput("");
-  }
-
-  function setTempHp() {
-    const amount = Math.max(0, Number(tempHpInput) || 0);
-    onSetTempHp?.(amount);
-    setTempHpInput("");
-  }
-
-  function applyNonlethal() {
-    const amount = Math.max(0, Number(nonlethalInput) || 0);
-    if (amount <= 0) return;
-    onApplyNonlethal?.(amount);
-    setNonlethalInput("");
-  }
-
-  function healNonlethal() {
-    const amount = Math.max(0, Number(nonlethalHealingInput) || 0);
-    if (amount <= 0) return;
-    onHealNonlethal?.(amount);
-    setNonlethalHealingInput("");
-  }
-
   function checkTotal(raw: string | undefined, modifier: number) {
     const roll = parsedRollTotal(raw);
     return roll === undefined ? undefined : roll + modifier;
   }
 
-  const deathThreshold = -sheet.abilities.con.score;
-  const status =
-    currentHp <= deathThreshold
-      ? { label: "Dead", tone: "dead" }
-      : currentHp < 0
-        ? {
-            label: stable ? "Stable" : bleeding ? "Dying · Bleeding" : "Dying",
-            tone: stable ? "warn" : "dead",
-          }
-        : nonlethalDamage > currentHp
-          ? { label: "Unconscious", tone: "warn" }
-          : currentHp === 0
-            ? { label: "Disabled", tone: "warn" }
-            : nonlethalDamage === currentHp && nonlethalDamage > 0
-              ? { label: "Staggered", tone: "warn" }
-              : bleeding
-                ? { label: "Bleeding", tone: "warn" }
-                : { label: "Okay-ish", tone: "ok" };
+  const healthStatus = deriveHealthStatus({
+    maxHp: sheet.hitPoints.total,
+    currentHp,
+    constitutionScore: sheet.abilities.con.score,
+    nonlethalDamage,
+    stable,
+  });
 
   return (
     <div className="sheet paper-sheet">
@@ -527,18 +457,12 @@ export function Sheet({
               <span>Load: {sheet.encumbrance.band}</span>
             </Tooltip>
             <Tooltip
-              content={hpStatusTooltip(
-                currentHp,
-                hpDamageTaken,
-                tempHp,
-                nonlethalDamage,
-                deathThreshold,
-                stable,
-                bleeding,
-              )}
+              content={`Current HP ${currentHp} / ${sheet.hitPoints.total}\n\nDeath threshold ${healthStatus.deathThreshold} HP`}
             >
-              <span className={`tag hp-status ${status.tone}`}>
-                {status.label}
+              <span
+                className={`tag hp-status ${healthConditionTone(healthStatus.condition)}`}
+              >
+                {healthConditionLabel(healthStatus.condition)}
               </span>
             </Tooltip>
           </div>
@@ -729,122 +653,25 @@ export function Sheet({
                 </div>
               </Tooltip>
             </div>
-            <div className="weapon-history-note-row">
-              <label className="weapon-note-editor">
-                <span>Damage</span>
-                <input
-                  type="number"
-                  min={0}
-                  inputMode="numeric"
-                  placeholder="0"
-                  value={damageInput}
-                  onChange={(event) => setDamageInput(event.target.value)}
-                />
-              </label>
-              <label className="weapon-note-editor">
-                <span>Type</span>
-                <select
-                  value={damageTypeInput}
-                  onChange={(event) => setDamageTypeInput(event.target.value)}
-                >
-                  <option value="untyped">Untyped</option>
-                  <option value="physical">Physical</option>
-                  <option value="acid">Acid</option>
-                  <option value="cold">Cold</option>
-                  <option value="electricity">Electricity</option>
-                  <option value="fire">Fire</option>
-                  <option value="sonic">Sonic</option>
-                </select>
-              </label>
-              <button className="ghost small" onClick={applyDamage}>
-                Apply Damage
-              </button>
-              <label className="weapon-note-editor">
-                <span>Healing</span>
-                <input
-                  type="number"
-                  min={0}
-                  inputMode="numeric"
-                  placeholder="0"
-                  value={healingInput}
-                  onChange={(event) => setHealingInput(event.target.value)}
-                />
-              </label>
-              <button className="ghost small" onClick={applyHealing}>
-                Apply Healing
-              </button>
-              <label className="weapon-note-editor">
-                <span>Temp HP</span>
-                <input
-                  type="number"
-                  min={0}
-                  inputMode="numeric"
-                  placeholder="0"
-                  value={tempHpInput}
-                  onChange={(event) => setTempHpInput(event.target.value)}
-                />
-              </label>
-              <button className="ghost small" onClick={setTempHp}>
-                Set Temp
-              </button>
-              <label className="weapon-note-editor">
-                <span>Nonlethal</span>
-                <input
-                  type="number"
-                  min={0}
-                  inputMode="numeric"
-                  placeholder="0"
-                  value={nonlethalInput}
-                  onChange={(event) => setNonlethalInput(event.target.value)}
-                />
-              </label>
-              <button className="ghost small" onClick={applyNonlethal}>
-                Apply Nonlethal
-              </button>
-              <label className="weapon-note-editor">
-                <span>NL Heal</span>
-                <input
-                  type="number"
-                  min={0}
-                  inputMode="numeric"
-                  placeholder="0"
-                  value={nonlethalHealingInput}
-                  onChange={(event) =>
-                    setNonlethalHealingInput(event.target.value)
-                  }
-                />
-              </label>
-              <button className="ghost small" onClick={healNonlethal}>
-                Heal NL
-              </button>
-              <button
-                className={
-                  stable ? "ghost small active-template-choice" : "ghost small"
-                }
-                onClick={() => onSetStable?.(!stable)}
-              >
-                {stable ? "Stable " : "Stable"}
-              </button>
-              <button
-                className={
-                  bleeding
-                    ? "ghost small active-template-choice"
-                    : "ghost small"
-                }
-                onClick={() => onSetBleeding?.(!bleeding)}
-              >
-                {bleeding ? "Bleeding " : "Bleeding"}
-              </button>
-              <button className="ghost small" onClick={() => onResetHp?.()}>
-                Full Heal
-              </button>
-              <span className="weapon-crit">Damage Taken {hpDamageTaken}</span>
-              <span className="weapon-crit">Temp HP {tempHp}</span>
-              <span className="weapon-crit">Nonlethal {nonlethalDamage}</span>
-              <span className={`tag hp-status ${status.tone}`}>
-                {status.label}
-              </span>
-            </div>
+            <HealthTracker
+              maxHp={sheet.hitPoints.total}
+              currentHp={currentHp}
+              hpDamageTaken={hpDamageTaken}
+              tempHp={tempHp}
+              nonlethalDamage={nonlethalDamage}
+              constitutionScore={sheet.abilities.con.score}
+              stable={stable}
+              onApplyDamage={(amount, damageType) =>
+                onApplyDamage?.(amount, damageType)
+              }
+              onApplyHealing={(amount) => onApplyHealing?.(amount)}
+              onApplyHpLoss={(amount) => onApplyHpLoss?.(amount)}
+              onSetTempHp={(amount) => onSetTempHp?.(amount)}
+              onApplyNonlethal={(amount) => onApplyNonlethal?.(amount)}
+              onHealNonlethal={(amount) => onHealNonlethal?.(amount)}
+              onSetStable={(value) => onSetStable?.(value)}
+              onReset={() => onResetHp?.()}
+            />
           </section>
 
           <section className="panel paper-panel">

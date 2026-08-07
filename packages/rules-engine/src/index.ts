@@ -44,7 +44,15 @@ export {
 } from "./runtime";
 export { deriveAbilities } from "./abilities";
 export { deriveSkills, SKILL_DEFINITIONS, CLASS_SKILL_BONUS } from "./skills";
-export { deriveHitPoints, deriveSpeed } from "./vitals";
+export {
+  deriveHealthStatus,
+  deriveHitPoints,
+  deriveSpeed,
+  stabilizationCheck,
+  type HealthCondition,
+  type HealthStatus,
+  type StabilizationCheckResult,
+} from "./vitals";
 export { deriveWeapons } from "./weapons";
 export { deriveEncumbrance, loadThresholds, loadBand } from "./encumbrance";
 export {

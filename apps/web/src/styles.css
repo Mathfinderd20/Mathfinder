@@ -1696,6 +1696,155 @@ button:disabled {
   color: #ff8f8f;
   background: rgba(160, 40, 40, 0.2);
 }
+.health-tracker {
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.025),
+    rgba(0, 0, 0, 0.08)
+  );
+}
+.health-tracker-head,
+.health-current-line,
+.health-input-row,
+.death-mechanics-panel,
+.stabilization-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.health-tracker-head {
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.health-current-line strong {
+  font-size: 30px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.health-current-line > span {
+  color: var(--muted);
+}
+.health-current-line .health-temp {
+  color: #7dc7ff;
+  font-size: 12px;
+}
+.health-meter {
+  height: 12px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.22);
+}
+.health-meter > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #4b9c62, #77bd79);
+  transition: width 180ms ease;
+}
+.health-wounded .health-meter > span,
+.health-staggered .health-meter > span,
+.health-disabled .health-meter > span,
+.health-stable .health-meter > span {
+  background: linear-gradient(90deg, #a85e32, #d99a5b);
+}
+.health-unconscious .health-meter > span,
+.health-dying .health-meter > span,
+.health-dead .health-meter > span {
+  background: linear-gradient(90deg, #7d2828, #d45f5f);
+}
+.health-stat-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin: 10px 0 12px;
+}
+.health-stat-strip > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 9px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.1);
+  font-size: 11px;
+}
+.health-stat-strip span {
+  color: var(--muted);
+}
+.health-action-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+.health-action-card {
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.1);
+}
+.health-action-card h3 {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: var(--accent-2);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.health-input-row {
+  flex-wrap: wrap;
+}
+.health-input-row + .health-input-row {
+  margin-top: 7px;
+}
+.health-input-row input,
+.health-input-row select {
+  min-width: 72px;
+  flex: 1 1 82px;
+}
+.health-input-row button {
+  flex: 0 0 auto;
+}
+.death-mechanics-panel {
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid rgba(212, 95, 95, 0.4);
+  border-radius: 10px;
+  background: rgba(125, 40, 40, 0.12);
+}
+.death-mechanics-panel p {
+  max-width: 560px;
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+.stabilization-controls {
+  align-items: flex-start;
+  flex-direction: column;
+}
+.stabilization-result {
+  width: 100%;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 12px;
+}
+.stabilization-result.success {
+  color: var(--ok);
+}
+.stabilization-result.failure {
+  color: #ff9c91;
+}
+@media (max-width: 720px) {
+  .health-stat-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
 .sheet-top-grid {
   display: grid;
   grid-template-columns: minmax(280px, 0.78fr) minmax(0, 1.22fr);
