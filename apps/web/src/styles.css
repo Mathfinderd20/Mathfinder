@@ -1753,6 +1753,7 @@ button:disabled {
 .health-stable .health-meter > span {
   background: linear-gradient(90deg, #a85e32, #d99a5b);
 }
+.health-critical .health-meter > span,
 .health-unconscious .health-meter > span,
 .health-dying .health-meter > span,
 .health-dead .health-meter > span {

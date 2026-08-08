@@ -9,7 +9,11 @@ import {
   type DerivedStat,
   type InventoryEquipmentSlot,
 } from "@mathfinder/rules-engine";
-import { skillMetadataTooltip, skillTrainingFlag } from "../skillPresentation";
+import {
+  shouldDisplaySheetSkill,
+  skillMetadataTooltip,
+  skillTrainingFlag,
+} from "../skillPresentation";
 import type {
   AttackOutcome,
   SpellCastCounts,
@@ -401,7 +405,7 @@ export function Sheet({
   const [initiativeRollDraft, setInitiativeRollDraft] = useState("");
   const [cmbRollDraft, setCmbRollDraft] = useState("");
   const rankedSkills = Object.values(sheet.skills)
-    .filter((s) => s.ranks > 0 || s.isClassSkill)
+    .filter(shouldDisplaySheetSkill)
     .sort((a, b) => a.name.localeCompare(b.name));
 
   const { race, classes, archetypes, feats, features, suppressedFeatures } =

@@ -9,6 +9,13 @@ interface SkillMetadata {
   className?: string;
 }
 
+export function shouldDisplaySheetSkill(skill: {
+  ranks: number;
+  trainedOnly: boolean;
+}) {
+  return skill.ranks > 0 || !skill.trainedOnly;
+}
+
 export function skillTrainingFlag(trainedOnly: boolean, usable: boolean) {
   if (!trainedOnly) return "U";
   return usable ? "T" : "TU";

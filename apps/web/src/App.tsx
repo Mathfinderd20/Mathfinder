@@ -80,7 +80,7 @@ import {
   type BuildSuggestionBundle,
   type LevelPlannerSuggestions,
 } from "./buildSuggestions";
-import type { RuntimeProfile } from "./runtimeInsights";
+import { collectOwnedSpellNames, type RuntimeProfile } from "./runtimeInsights";
 import { normalizeFeatListLength, plannedFeatSlotsForLevel } from "./featSlots";
 import { plannerRollbackCount, type PlannerExpansion } from "./plannerState";
 import {
@@ -2315,7 +2315,7 @@ export function App({
       RUNTIME_CLASS_FEATURES,
       RUNTIME_ARCHETYPES,
     );
-    const baseSheet = computeSheet(input);
+    const baseSheet = computeSheet(input, { spellRegistry: RUNTIME_SPELLS });
     const activatableFeatures = collectActivatableEffects({
       descriptor: baseSheet.descriptor,
       classFeatureRegistry: RUNTIME_CLASS_FEATURES,
@@ -2365,7 +2365,7 @@ export function App({
       modifiers: [...input.modifiers, ...classAbilityMods, ...buffMods],
     };
     return {
-      sheet: computeSheet(withBuffs),
+      sheet: computeSheet(withBuffs, { spellRegistry: RUNTIME_SPELLS }),
       activatableFeatures,
       activatableGroups: groupActivatables(activatableFeatures),
       activatableConflicts: resolvedActivatables.conflicts,
@@ -2485,6 +2485,10 @@ export function App({
   const wealthSummary = useMemo(
     () => summarizeWealth(deferredBuild),
     [deferredBuild],
+  );
+  const ownedSpellNames = useMemo(
+    () => collectOwnedSpellNames(sheet.spellcasting),
+    [sheet.spellcasting],
   );
   const runtimeProfile = useMemo<RuntimeProfile>(
     () => ({
@@ -2683,6 +2687,7 @@ export function App({
               resourceLabels={resourceLabels}
               fatigued={fatigued}
               buffs={runtimeBuffs}
+              ownedSpellNames={ownedSpellNames}
               profile={runtimeProfile}
               onSetToggle={setToggle}
               onSetExclusiveToggleGroup={setExclusiveToggleGroup}

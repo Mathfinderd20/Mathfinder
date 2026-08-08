@@ -116,7 +116,13 @@ export const ADDITIONAL_CORE_FEATS: FeatDefinition[] = [
     pack: "core",
     description:
       "Choose a school of magic; the save DC of spells from that school increases by 1.",
-    prerequisites: [],
+    prerequisites: [
+      {
+        type: "feat",
+        featName: "Spell Focus",
+        description: "Spell Focus",
+      },
+    ],
     effects: [],
   },
   {

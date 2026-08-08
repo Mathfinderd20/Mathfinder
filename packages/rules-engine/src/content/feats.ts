@@ -393,13 +393,24 @@ export const CORE_FEATS: FeatDefinition[] = [
  */
 export const SAVAGE_COMPANY_FEATS: FeatDefinition[] = [];
 
+function withoutSelfPrerequisite(feat: FeatDefinition): FeatDefinition {
+  const normalizedName = feat.name.trim().toLowerCase();
+  const prerequisites = feat.prerequisites.filter(
+    (prerequisite) =>
+      prerequisite.type !== "feat" ||
+      prerequisite.featName?.trim().toLowerCase() !== normalizedName,
+  );
+  return prerequisites.length === feat.prerequisites.length
+    ? feat
+    : { ...feat, prerequisites };
+}
+
 /** Merge one or more feat packs into a lookup keyed by lowercased name. */
 export function buildFeatRegistry(...packs: FeatDefinition[][]): FeatRegistry {
   return Object.fromEntries(
-    buildCompendiumIndex(packs.flat()).all.map((feat) => [
-      feat.name.toLowerCase(),
-      feat,
-    ]),
+    buildCompendiumIndex(packs.flat().map(withoutSelfPrerequisite)).all.map(
+      (feat) => [feat.name.toLowerCase(), feat],
+    ),
   );
 }
 

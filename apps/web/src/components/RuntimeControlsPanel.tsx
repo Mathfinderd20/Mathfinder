@@ -25,6 +25,7 @@ interface RuntimeControlsPanelProps {
   resourceLabels: Record<string, string>;
   fatigued: boolean;
   buffs: RuntimeBuffView[];
+  ownedSpellNames: string[];
   profile: RuntimeProfile;
   onSetToggle: (id: string, value: boolean) => void;
   onSetExclusiveToggleGroup: (ids: string[], activeId?: string) => void;
@@ -98,6 +99,7 @@ export function RuntimeControlsPanel({
   resourceLabels,
   fatigued,
   buffs,
+  ownedSpellNames,
   profile,
   onSetToggle,
   onSetExclusiveToggleGroup,
@@ -116,14 +118,19 @@ export function RuntimeControlsPanel({
       .map(([id]) => id),
   );
   const normalizedSearch = effectSearch.trim().toLowerCase();
+  const ownedSpellNameSet = useMemo(
+    () => new Set(ownedSpellNames.map((name) => name.trim().toLowerCase())),
+    [ownedSpellNames],
+  );
   const searchTerms = normalizedSearch.split(/\s+/).filter(Boolean);
   const buffCards = useMemo(
     () =>
       buffs.map((buff) => ({
         buff,
         insight: analyzeRuntimeBuff(buff, profile),
+        ownedSpell: ownedSpellNameSet.has(buff.name.trim().toLowerCase()),
       })),
-    [buffs, profile],
+    [buffs, ownedSpellNameSet, profile],
   );
   const matchingBuffCards = useMemo(
     () =>
@@ -142,6 +149,9 @@ export function RuntimeControlsPanel({
     const activeCards = matchingBuffCards.filter(({ buff }) =>
       activeEffectIds.has(buff.id),
     );
+    const ownedSpellCards = matchingBuffCards.filter(
+      ({ buff, ownedSpell }) => ownedSpell && !activeEffectIds.has(buff.id),
+    );
     const topSuggestedByCategory = TACTICAL_CATEGORIES.flatMap((category) =>
       matchingBuffCards
         .filter(
@@ -158,7 +168,11 @@ export function RuntimeControlsPanel({
         .slice(0, searchTerms.length > 0 || categoryFilter !== "all" ? 4 : 2),
     );
     const seen = new Set<string>();
-    return [...activeCards, ...topSuggestedByCategory].filter(({ buff }) => {
+    return [
+      ...activeCards,
+      ...ownedSpellCards,
+      ...topSuggestedByCategory,
+    ].filter(({ buff }) => {
       if (seen.has(buff.id)) return false;
       seen.add(buff.id);
       return true;
@@ -207,13 +221,14 @@ export function RuntimeControlsPanel({
     [activeBuffs, activatableById, availableActivatableIds],
   );
   const tacticalSections = useMemo(() => {
-    const sections: Record<RuntimeTacticalCategory, typeof featuredBuffCards> = {
-      offense: [],
-      defense: [],
-      mobility: [],
-      casting: [],
-      utility: [],
-    };
+    const sections: Record<RuntimeTacticalCategory, typeof featuredBuffCards> =
+      {
+        offense: [],
+        defense: [],
+        mobility: [],
+        casting: [],
+        utility: [],
+      };
     for (const card of featuredBuffCards)
       sections[card.insight.primaryCategory].push(card);
     return sections;
@@ -482,11 +497,11 @@ export function RuntimeControlsPanel({
           suggestion reasons.
         </p>
       </div>
-      {TACTICAL_CATEGORIES.filter((category) => category !== "offense").map((category) =>
+      {TACTICAL_CATEGORIES.map((category) =>
         tacticalSections[category].length > 0 ? (
           <div className="mode-group" key={`tactical-${category}`}>
             <div className="mode-title">{tacticalCategoryLabel(category)}</div>
-            {tacticalSections[category].map(({ buff, insight }) => (
+            {tacticalSections[category].map(({ buff, insight, ownedSpell }) => (
               <div className="buff-block" key={buff.id}>
                 <label className="buff">
                   <input
@@ -503,7 +518,9 @@ export function RuntimeControlsPanel({
                       </span>
                     ) : null}
                     <span className="buff-desc">
-                      Why suggested: {insight.reasons.join(", ")}
+                      {ownedSpell
+                        ? "Available because your character knows this spell."
+                        : `Why suggested: ${insight.reasons.join(", ")}`}
                     </span>
                   </span>
                 </label>

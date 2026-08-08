@@ -8,7 +8,12 @@ import type {
   SpellcastingEntry,
 } from "./types";
 import type { DerivedAbility } from "./types";
-import { SPELLS, classSpellLevel, getSpell } from "./content/spells";
+import {
+  SPELLS,
+  classSpellLevel,
+  getSpell,
+  type SpellRegistry,
+} from "./content/spells";
 
 function stat(total: number): DerivedStat {
   return {
@@ -83,6 +88,7 @@ export function spellSaveDc(
 export function deriveSpellcasting(
   input: CharacterInput,
   abilities: Record<AbilityKey, DerivedAbility>,
+  spellRegistry: SpellRegistry = SPELLS,
 ): DerivedSpellcasting[] {
   const entries = input.spellcasting ?? [];
   return entries.map((entry: SpellcastingEntry) => {
@@ -146,7 +152,7 @@ export function deriveSpellcasting(
 
     for (let level = 0; level <= highestTrackedLevel; level += 1) {
       const selected = selectionSource[level] ?? [];
-      const availableSpellNames = Object.values(SPELLS)
+      const availableSpellNames = Object.values(spellRegistry)
         .filter((spell) => classSpellLevel(spell, entry.className) === level)
         .map((spell) => spell.name)
         .sort((a, b) => a.localeCompare(b));
@@ -160,7 +166,7 @@ export function deriveSpellcasting(
       const wrongLevelSpells: { name: string; actualLevel: number }[] = [];
       const missingFromLibrary: string[] = [];
       for (const name of selected) {
-        const spell = getSpell(SPELLS, name);
+        const spell = getSpell(spellRegistry, name);
         if (!spell) {
           unknownSpells.push(name);
           continue;

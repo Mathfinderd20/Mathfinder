@@ -15,6 +15,7 @@ import {
   RUNTIME_CLASS_OPTIONS,
   RUNTIME_FEATS,
   RUNTIME_RACE_OPTIONS,
+  RUNTIME_SPELLS,
   RUNTIME_WEAPONS,
 } from "../content";
 import {
@@ -139,6 +140,7 @@ export function CharacterCreationModal({
               RUNTIME_CLASS_FEATURES,
               RUNTIME_ARCHETYPES,
             ),
+            { spellRegistry: RUNTIME_SPELLS },
           )
         : undefined,
     [draftBuild],

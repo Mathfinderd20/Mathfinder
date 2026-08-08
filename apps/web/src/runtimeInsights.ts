@@ -1,3 +1,5 @@
+import type { DerivedSpellcasting } from "@mathfinder/rules-engine";
+
 export interface RuntimeBuffView {
   id: string;
   name: string;
@@ -21,6 +23,27 @@ export interface RuntimeProfile {
   strengthScore: number;
   dexScore: number;
   conScore: number;
+}
+
+export function collectOwnedSpellNames(entries: DerivedSpellcasting[]) {
+  const names = new Map<string, string>();
+  for (const entry of entries) {
+    const collections = [
+      entry.grantedSpells,
+      entry.librarySpells,
+      entry.selectedPreparedSpells,
+      entry.selectedKnownSpells,
+    ];
+    for (const collection of collections) {
+      for (const levelNames of Object.values(collection)) {
+        for (const name of levelNames ?? []) {
+          const trimmed = name.trim();
+          if (trimmed) names.set(trimmed.toLowerCase(), trimmed);
+        }
+      }
+    }
+  }
+  return [...names.values()].sort((a, b) => a.localeCompare(b));
 }
 
 export type RuntimeTacticalCategory =

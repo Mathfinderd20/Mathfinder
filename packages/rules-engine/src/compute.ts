@@ -12,6 +12,7 @@ import { deriveHitPoints, deriveSpeed } from "./vitals";
 import { deriveWeapons } from "./weapons";
 import { deriveEncumbrance } from "./encumbrance";
 import { deriveSpellcasting } from "./spellcasting";
+import type { SpellRegistry } from "./content/spells";
 import type {
   BonusType,
   BreakdownEntry,
@@ -61,7 +62,14 @@ function stat(breakdown: BreakdownEntry[]): DerivedStat {
  * stream. Deterministic and side-effect free: identical inputs always yield
  * identical output, so it can run on device AND on the server.
  */
-export function computeSheet(input: CharacterInput): DerivedSheet {
+export interface ComputeSheetOptions {
+  spellRegistry?: SpellRegistry;
+}
+
+export function computeSheet(
+  input: CharacterInput,
+  options: ComputeSheetOptions = {},
+): DerivedSheet {
   const abilities = deriveAbilities(input);
   const strScore = abilities.str.score;
   const strMod = abilities.str.mod;
@@ -277,7 +285,11 @@ export function computeSheet(input: CharacterInput): DerivedSheet {
     modifiers: input.modifiers,
     weaponDamageAbilityOverrides: input.weaponDamageAbilityOverrides,
   });
-  const spellcasting = deriveSpellcasting(input, abilities);
+  const spellcasting = deriveSpellcasting(
+    input,
+    abilities,
+    options.spellRegistry,
+  );
 
   return {
     raceMetadata: input.raceMetadata,
