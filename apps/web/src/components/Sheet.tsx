@@ -102,8 +102,7 @@ function weaponRuntimeKey(
 
 function compactAttackHistory(
   entries:
-    | Array<{ at: string; outcome?: AttackOutcome; note?: string }>
-    | undefined,
+    Array<{ at: string; outcome?: AttackOutcome; note?: string }> | undefined,
 ) {
   return (
     (entries ?? [])

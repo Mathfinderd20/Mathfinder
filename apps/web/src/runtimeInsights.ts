@@ -24,11 +24,7 @@ export interface RuntimeProfile {
 }
 
 export type RuntimeTacticalCategory =
-  | "offense"
-  | "defense"
-  | "mobility"
-  | "casting"
-  | "utility";
+  "offense" | "defense" | "mobility" | "casting" | "utility";
 
 export interface RuntimeBuffInsight {
   categories: RuntimeTacticalCategory[];

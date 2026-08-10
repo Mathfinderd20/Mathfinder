@@ -17,6 +17,22 @@ describe("runtimeState migration helpers", () => {
     expect(state.ledgers.arrow).toBe(3);
   });
 
+  it("recovers from malformed and structurally invalid stored snapshots", () => {
+    expect(loadAppRuntimeState("{broken")).toEqual(createAppRuntimeState());
+    const state = loadAppRuntimeState(
+      JSON.stringify({
+        toggles: ["not", "a", "record"],
+        flags: { stable: true, invalid: "yes" },
+        resources: { hp: 4, poisoned: null },
+        events: "not-an-array",
+      }),
+    );
+    expect(state.toggles).toEqual({});
+    expect(state.flags).toEqual({ stable: true });
+    expect(state.resources).toEqual({ hp: 4 });
+    expect(state.events).toEqual([]);
+  });
+
   it("creates empty app runtime state by default", () => {
     const state = createAppRuntimeState();
     expect(state.toggles).toEqual({});

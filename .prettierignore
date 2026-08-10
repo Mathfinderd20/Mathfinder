@@ -2,6 +2,7 @@ node_modules/
 dist/
 coverage/
 package-lock.json
+apps/web/public/usable-content.json
 .tmp-pydeps/
 tmp-*
 tmp_*.txt

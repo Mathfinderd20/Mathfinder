@@ -77,6 +77,16 @@ const SELF_PREREQ_FEATS: FeatRegistry = {
   },
 };
 
+describe("validateBuild level diagnostics", () => {
+  it("rejects hit-point rolls outside the class hit die", () => {
+    const build = baseBuild();
+    build.levels[0]!.hitPointRoll = 11;
+    expect(validateBuild(build).map((issue) => issue.code)).toContain(
+      "invalid-hit-point-roll",
+    );
+  });
+});
+
 describe("validateBuild inventory diagnostics", () => {
   it("warns when the wishlist costs more than the available coin purse", () => {
     const build = baseBuild();

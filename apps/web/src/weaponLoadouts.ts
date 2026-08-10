@@ -43,7 +43,10 @@ function applyLoadedAmmo(weapon: Weapon): Weapon {
       typeof weapon.rangeIncrementFeet === "number"
         ? weapon.rangeIncrementFeet + (ammo.rangeIncrementBonusFeet ?? 0)
         : weapon.rangeIncrementFeet,
-    extraDamageDice: mergeUnique([weapon.extraDamageDice, ammo.extraDamageDice]),
+    extraDamageDice: mergeUnique([
+      weapon.extraDamageDice,
+      ammo.extraDamageDice,
+    ]),
     ammoNotes: mergeUnique([weapon.ammoNotes, ammo.notes]),
     ordnanceProfile: ammo.ordnanceProfile ?? weapon.ordnanceProfile,
   };
@@ -54,7 +57,9 @@ function applyWeaponLoadout(weapon: EmbeddedWeapon | undefined) {
   return applyLoadedAmmo({ ...weapon, name: "embedded-weapon" });
 }
 
-export function applyWeaponLoadoutsToBuild(build: CharacterBuild): CharacterBuild {
+export function applyWeaponLoadoutsToBuild(
+  build: CharacterBuild,
+): CharacterBuild {
   return {
     ...build,
     weapons: build.weapons?.map((weapon) => applyLoadedAmmo(weapon)),

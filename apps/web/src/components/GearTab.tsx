@@ -157,7 +157,7 @@ export function GearTab(props: Props) {
     mundaneEquipmentOptions,
     armorOptions,
   } = props;
-  const equipment = build.equipment ?? [];
+  const equipment = useMemo(() => build.equipment ?? [], [build.equipment]);
   const wealthSummary = summarizeWealth(build);
   const [magicItemDraftByIndex, setMagicItemDraftByIndex] = useState<
     Record<number, string>
@@ -183,10 +183,16 @@ export function GearTab(props: Props) {
     | "all"
   >("all");
   const [gearOwnershipFilter, setGearOwnershipFilter] = useState<
-    NonNullable<NonNullable<CharacterBuild["equipment"]>[number]["ownership"]> | "all"
+    | NonNullable<NonNullable<CharacterBuild["equipment"]>[number]["ownership"]>
+    | "all"
   >("all");
   const [gearComponentFilter, setGearComponentFilter] = useState<
-    NonNullable<NonNullable<CharacterBuild["equipment"]>[number]["componentCategory"]> | "ammo" | "any" | "none"
+    | NonNullable<
+        NonNullable<CharacterBuild["equipment"]>[number]["componentCategory"]
+      >
+    | "ammo"
+    | "any"
+    | "none"
   >("any");
   const [gearSortMode, setGearSortMode] = useState<GearSortMode>("manual");
   const [gearGroupMode, setGearGroupMode] = useState<GearGroupMode>("none");
@@ -331,7 +337,8 @@ export function GearTab(props: Props) {
     const matchesCarry =
       gearCarryFilter === "all" || defaultCarryState(item) === gearCarryFilter;
     const matchesOwnership =
-      gearOwnershipFilter === "all" || defaultOwnership(item) === gearOwnershipFilter;
+      gearOwnershipFilter === "all" ||
+      defaultOwnership(item) === gearOwnershipFilter;
     const matchesComponent =
       gearComponentFilter === "any"
         ? true
@@ -340,7 +347,13 @@ export function GearTab(props: Props) {
           : gearComponentFilter === "ammo"
             ? !!item.ammoType
             : item.componentCategory === gearComponentFilter;
-    return matchesSearch && matchesSlot && matchesCarry && matchesOwnership && matchesComponent;
+    return (
+      matchesSearch &&
+      matchesSlot &&
+      matchesCarry &&
+      matchesOwnership &&
+      matchesComponent
+    );
   };
   const wishlistAffordable =
     spendCoinPurse(build.coinPurse, wealthSummary.wishlistCostGp) !== null;
@@ -623,15 +636,32 @@ export function GearTab(props: Props) {
           </div>
           <div className="resource-buttons wrap">
             {[
-              { label: "Owned", onClick: () => setGearOwnershipFilter("owned") },
-              { label: "Wishlist", onClick: () => setGearOwnershipFilter("wishlist") },
-              { label: "Carried", onClick: () => setGearCarryFilter("carried") },
+              {
+                label: "Owned",
+                onClick: () => setGearOwnershipFilter("owned"),
+              },
+              {
+                label: "Wishlist",
+                onClick: () => setGearOwnershipFilter("wishlist"),
+              },
+              {
+                label: "Carried",
+                onClick: () => setGearCarryFilter("carried"),
+              },
               { label: "Cached", onClick: () => setGearCarryFilter("cached") },
               { label: "Ammo", onClick: () => setGearComponentFilter("ammo") },
-              { label: "Material", onClick: () => setGearComponentFilter("material") },
+              {
+                label: "Material",
+                onClick: () => setGearComponentFilter("material"),
+              },
               { label: "Loose", onClick: () => setGearGroupMode("container") },
             ].map((chip) => (
-              <button key={chip.label} type="button" className="ghost small" onClick={chip.onClick}>
+              <button
+                key={chip.label}
+                type="button"
+                className="ghost small"
+                onClick={chip.onClick}
+              >
                 {chip.label}
               </button>
             ))}
@@ -670,7 +700,9 @@ export function GearTab(props: Props) {
                 .filter((entry) => entry.overloaded)
                 .map((entry) => (
                   <span className="spell-issue-badge" key={entry.name}>
-                    {entry.name} overloaded: {formatCompactNumber(entry.contentsWeightLb)} / {formatCompactNumber(entry.capacityLb ?? 0)} lb
+                    {entry.name} overloaded:{" "}
+                    {formatCompactNumber(entry.contentsWeightLb)} /{" "}
+                    {formatCompactNumber(entry.capacityLb ?? 0)} lb
                   </span>
                 ))}
             </div>
@@ -678,7 +710,11 @@ export function GearTab(props: Props) {
           {!wishlistAffordable && wealthSummary.wishlistCostGp > 0 ? (
             <div className="equipment-warning-list">
               <span className="spell-issue-badge">
-                Wishlist exceeds coinpurse by {formatCompactNumber(wealthSummary.wishlistCostGp - wealthSummary.liquidWealthGp)} gp. Shopping spree denied.
+                Wishlist exceeds coinpurse by{" "}
+                {formatCompactNumber(
+                  wealthSummary.wishlistCostGp - wealthSummary.liquidWealthGp,
+                )}{" "}
+                gp. Shopping spree denied.
               </span>
             </div>
           ) : null}
@@ -727,7 +763,11 @@ export function GearTab(props: Props) {
             <p className="hint">
               Containers:{" "}
               {containerSummary.entries
-                .filter((entry) => entry.contentsCount > 0 || typeof entry.capacityLb === "number")
+                .filter(
+                  (entry) =>
+                    entry.contentsCount > 0 ||
+                    typeof entry.capacityLb === "number",
+                )
                 .map(
                   (entry) =>
                     `${entry.name} ${formatCompactNumber(entry.contentsWeightLb)}${typeof entry.capacityLb === "number" ? `/${formatCompactNumber(entry.capacityLb)} lb` : " lb"}`,
@@ -780,7 +820,8 @@ export function GearTab(props: Props) {
             </label>
             <div className="hint">
               Showing {filteredWeaponOptions.length} template
-              {filteredWeaponOptions.length === 1 ? "" : "s"}. Tiny arsenal, huge consequences.
+              {filteredWeaponOptions.length === 1 ? "" : "s"}. Tiny arsenal,
+              huge consequences.
             </div>
           </div>
           {(build.weapons ?? []).map((weapon, index) => (
@@ -838,9 +879,7 @@ export function GearTab(props: Props) {
                     onChange={(e) =>
                       props.onUpdateWeapon(index, {
                         proficiencyGroup: e.target.value as
-                          | "simple"
-                          | "martial"
-                          | "exotic",
+                          "simple" | "martial" | "exotic",
                       })
                     }
                   >
@@ -868,10 +907,7 @@ export function GearTab(props: Props) {
                     onChange={(e) =>
                       props.onUpdateWeapon(index, {
                         handedness: e.target.value as
-                          | "one"
-                          | "two"
-                          | "off"
-                          | "light",
+                          "one" | "two" | "off" | "light",
                       })
                     }
                   >
@@ -1615,7 +1651,9 @@ function renderEquipmentCard({
               onChange={(e) =>
                 props.onUpdateEquipment(index, {
                   ownership: e.target.value as NonNullable<
-                    NonNullable<CharacterBuild["equipment"]>[number]["ownership"]
+                    NonNullable<
+                      CharacterBuild["equipment"]
+                    >[number]["ownership"]
                   >,
                 })
               }
@@ -1691,7 +1729,9 @@ function renderEquipmentCard({
                     e.target.value === "none"
                       ? undefined
                       : (e.target.value as NonNullable<
-                          NonNullable<CharacterBuild["equipment"]>[number]["componentCategory"]
+                          NonNullable<
+                            CharacterBuild["equipment"]
+                          >[number]["componentCategory"]
                         >),
                 })
               }
@@ -1812,20 +1852,20 @@ function renderEquipmentCard({
         </div>
         <div className="equipment-preset-row">
           {EQUIPMENT_USE_PRESETS.map((preset) => (
-             <button
-               key={`${item.name}-${preset.id}`}
-               type="button"
-               className="ghost small"
-               onClick={() =>
-                 props.onUpdateEquipment(
-                   index,
-                   applyEquipmentUsePreset(item, preset.id),
-                 )
-               }
-             >
-               {preset.label}
-             </button>
-           ))}
+            <button
+              key={`${item.name}-${preset.id}`}
+              type="button"
+              className="ghost small"
+              onClick={() =>
+                props.onUpdateEquipment(
+                  index,
+                  applyEquipmentUsePreset(item, preset.id),
+                )
+              }
+            >
+              {preset.label}
+            </button>
+          ))}
           {EQUIPMENT_COMPONENT_PRESETS.map((preset) => (
             <button
               key={`${item.name}-${preset.id}`}
@@ -1917,7 +1957,10 @@ function renderEquipmentCard({
                 </div>
                 <div className="equipment-armor-recommendations">
                   {recommendedArmorByCategory.map((option) => (
-                    <span key={`armor-rec-${option.id}`} className="chip feature">
+                    <span
+                      key={`armor-rec-${option.id}`}
+                      className="chip feature"
+                    >
                       {option.categoryNormalized}: {option.name}
                     </span>
                   ))}
@@ -2245,15 +2288,27 @@ function renderEquipmentCard({
           </button>
           <button
             className="ghost small"
-            disabled={spendCoinPurse(props.build.coinPurse, costEach * Math.min(5, Math.max(1, item.quantity ?? 1))) === null}
-            onClick={() => props.onBuyEquipment(index, Math.min(5, Math.max(1, item.quantity ?? 1)))}
+            disabled={
+              spendCoinPurse(
+                props.build.coinPurse,
+                costEach * Math.min(5, Math.max(1, item.quantity ?? 1)),
+              ) === null
+            }
+            onClick={() =>
+              props.onBuyEquipment(
+                index,
+                Math.min(5, Math.max(1, item.quantity ?? 1)),
+              )
+            }
           >
             Buy {Math.min(5, Math.max(1, item.quantity ?? 1))}
           </button>
           {ownership === "wishlist" && (item.quantity ?? 1) > 1 ? (
             <button
               className="ghost small"
-              disabled={spendCoinPurse(props.build.coinPurse, totalCost) === null}
+              disabled={
+                spendCoinPurse(props.build.coinPurse, totalCost) === null
+              }
               onClick={() => props.onBuyEquipment(index, item.quantity ?? 1)}
             >
               Buy All
@@ -2270,7 +2325,9 @@ function renderEquipmentCard({
           {ownership === "owned" && (item.quantity ?? 1) > 1 ? (
             <button
               className="ghost small"
-              onClick={() => props.onSellEquipment(index, Math.min(5, item.quantity ?? 1))}
+              onClick={() =>
+                props.onSellEquipment(index, Math.min(5, item.quantity ?? 1))
+              }
             >
               Sell {Math.min(5, item.quantity ?? 1)}
             </button>
@@ -2438,8 +2495,8 @@ function effectiveDexScore(build: CharacterBuild) {
       id.toLowerCase(),
     ),
   );
-  const activeAlternateTraits = (build.race.alternateTraits ?? []).filter((trait) =>
-    selectedAlternateTraitIds.has(trait.id.toLowerCase()),
+  const activeAlternateTraits = (build.race.alternateTraits ?? []).filter(
+    (trait) => selectedAlternateTraitIds.has(trait.id.toLowerCase()),
   );
   for (const mod of [
     ...(build.race.abilityModifiers ?? []),
@@ -2448,7 +2505,10 @@ function effectiveDexScore(build: CharacterBuild) {
     if (mod.target === "dex") score += mod.value;
   }
   const flexibleBonus = build.race.choiceOptions?.flexibleAbilityBonus;
-  if (build.race.choiceSelection?.flexibleAbility === "dex" && flexibleBonus?.value)
+  if (
+    build.race.choiceSelection?.flexibleAbility === "dex" &&
+    flexibleBonus?.value
+  )
     score += flexibleBonus.value;
   for (const level of build.levels) {
     if (level.abilityIncrease === "dex") score += 1;
@@ -2476,16 +2536,24 @@ function recommendArmorByCategory(
     byCategory.set(category, [...(byCategory.get(category) ?? []), item]);
   }
   return [...byCategory.entries()]
-    .map(([, entries]) =>
-      [...entries].sort((a, b) => {
-        const effectiveDiff = effectiveArmorAc(b, dexMod) - effectiveArmorAc(a, dexMod);
-        if (effectiveDiff !== 0) return effectiveDiff;
-        const penaltyDiff = (b.armorCheckPenalty ?? -99) - (a.armorCheckPenalty ?? -99);
-        if (penaltyDiff !== 0) return penaltyDiff;
-        const costDiff = (a.costGp ?? Number.MAX_SAFE_INTEGER) - (b.costGp ?? Number.MAX_SAFE_INTEGER);
-        if (costDiff !== 0) return costDiff;
-        return (a.weightLb ?? Number.MAX_SAFE_INTEGER) - (b.weightLb ?? Number.MAX_SAFE_INTEGER);
-      })[0],
+    .map(
+      ([, entries]) =>
+        [...entries].sort((a, b) => {
+          const effectiveDiff =
+            effectiveArmorAc(b, dexMod) - effectiveArmorAc(a, dexMod);
+          if (effectiveDiff !== 0) return effectiveDiff;
+          const penaltyDiff =
+            (b.armorCheckPenalty ?? -99) - (a.armorCheckPenalty ?? -99);
+          if (penaltyDiff !== 0) return penaltyDiff;
+          const costDiff =
+            (a.costGp ?? Number.MAX_SAFE_INTEGER) -
+            (b.costGp ?? Number.MAX_SAFE_INTEGER);
+          if (costDiff !== 0) return costDiff;
+          return (
+            (a.weightLb ?? Number.MAX_SAFE_INTEGER) -
+            (b.weightLb ?? Number.MAX_SAFE_INTEGER)
+          );
+        })[0],
     )
     .filter((item): item is RuntimeArmorDefinition => !!item);
 }
@@ -2516,11 +2584,14 @@ function buildArmorCompendiumOptions(
       tooltip: [
         item.name,
         item.categoryRaw ? `Category: ${item.categoryRaw}` : "",
-        typeof item.armorBonus === "number" ? `AC Bonus: ${item.armorBonus}` : "",
+        typeof item.armorBonus === "number"
+          ? `AC Bonus: ${item.armorBonus}`
+          : "",
         typeof item.maxDexBonus === "number"
           ? `Max Dex: ${item.maxDexBonus}`
           : "",
-        typeof options?.dexMod === "number" && item.categoryNormalized !== "shield"
+        typeof options?.dexMod === "number" &&
+        item.categoryNormalized !== "shield"
           ? `Effective AC @ Dex ${sign(options.dexMod)}: ${sign(effectiveAc)}`
           : "",
         typeof item.armorCheckPenalty === "number"

@@ -105,11 +105,7 @@ export const EQUIPMENT_SLOTS: EquipmentSlot[] = [
 
 export type EquipmentOwnership = "owned" | "wishlist";
 export type EquipmentComponentCategory =
-  | "material"
-  | "focus"
-  | "divine-focus"
-  | "spellbook"
-  | "kit";
+  "material" | "focus" | "divine-focus" | "spellbook" | "kit";
 
 export interface EquipmentEntry {
   kind?: "magic" | "mundane";

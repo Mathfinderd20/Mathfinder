@@ -110,13 +110,20 @@ export function RuntimeControlsPanel({
   const [categoryFilter, setCategoryFilter] = useState<
     RuntimeTacticalCategory | "all"
   >("all");
-  const activeEffectIds = new Set(
-    Object.entries(activeBuffs)
-      .filter(([, value]) => value)
-      .map(([id]) => id),
+  const activeEffectIds = useMemo(
+    () =>
+      new Set(
+        Object.entries(activeBuffs)
+          .filter(([, value]) => value)
+          .map(([id]) => id),
+      ),
+    [activeBuffs],
   );
   const normalizedSearch = effectSearch.trim().toLowerCase();
-  const searchTerms = normalizedSearch.split(/\s+/).filter(Boolean);
+  const searchTerms = useMemo(
+    () => normalizedSearch.split(/\s+/).filter(Boolean),
+    [normalizedSearch],
+  );
   const buffCards = useMemo(
     () =>
       buffs.map((buff) => ({
@@ -207,13 +214,14 @@ export function RuntimeControlsPanel({
     [activeBuffs, activatableById, availableActivatableIds],
   );
   const tacticalSections = useMemo(() => {
-    const sections: Record<RuntimeTacticalCategory, typeof featuredBuffCards> = {
-      offense: [],
-      defense: [],
-      mobility: [],
-      casting: [],
-      utility: [],
-    };
+    const sections: Record<RuntimeTacticalCategory, typeof featuredBuffCards> =
+      {
+        offense: [],
+        defense: [],
+        mobility: [],
+        casting: [],
+        utility: [],
+      };
     for (const card of featuredBuffCards)
       sections[card.insight.primaryCategory].push(card);
     return sections;
@@ -482,45 +490,48 @@ export function RuntimeControlsPanel({
           suggestion reasons.
         </p>
       </div>
-      {TACTICAL_CATEGORIES.filter((category) => category !== "offense").map((category) =>
-        tacticalSections[category].length > 0 ? (
-          <div className="mode-group" key={`tactical-${category}`}>
-            <div className="mode-title">{tacticalCategoryLabel(category)}</div>
-            {tacticalSections[category].map(({ buff, insight }) => (
-              <div className="buff-block" key={buff.id}>
-                <label className="buff">
-                  <input
-                    type="checkbox"
-                    checked={!!activeBuffs[buff.id]}
-                    onChange={(e) => onSetToggle(buff.id, e.target.checked)}
-                  />
-                  <span>
-                    <strong>{buff.name}</strong>
-                    <span className="buff-desc">{buff.description}</span>
-                    {buff.limitations?.length ? (
-                      <span className="buff-desc">
-                        Manual: {buff.limitations.join(" ")}
-                      </span>
-                    ) : null}
-                    <span className="buff-desc">
-                      Why suggested: {insight.reasons.join(", ")}
-                    </span>
-                  </span>
-                </label>
-                {buff.trackerMax !== undefined ? (
-                  <ResourceControls
-                    featureId={buff.id}
-                    resourceMaxes={resourceMaxes}
-                    resourceLabels={resourceLabels}
-                    resourcesUsed={resourcesUsed}
-                    onAdjustResource={onAdjustResource}
-                    onResetResource={onResetResource}
-                  />
-                ) : null}
+      {TACTICAL_CATEGORIES.filter((category) => category !== "offense").map(
+        (category) =>
+          tacticalSections[category].length > 0 ? (
+            <div className="mode-group" key={`tactical-${category}`}>
+              <div className="mode-title">
+                {tacticalCategoryLabel(category)}
               </div>
-            ))}
-          </div>
-        ) : null,
+              {tacticalSections[category].map(({ buff, insight }) => (
+                <div className="buff-block" key={buff.id}>
+                  <label className="buff">
+                    <input
+                      type="checkbox"
+                      checked={!!activeBuffs[buff.id]}
+                      onChange={(e) => onSetToggle(buff.id, e.target.checked)}
+                    />
+                    <span>
+                      <strong>{buff.name}</strong>
+                      <span className="buff-desc">{buff.description}</span>
+                      {buff.limitations?.length ? (
+                        <span className="buff-desc">
+                          Manual: {buff.limitations.join(" ")}
+                        </span>
+                      ) : null}
+                      <span className="buff-desc">
+                        Why suggested: {insight.reasons.join(", ")}
+                      </span>
+                    </span>
+                  </label>
+                  {buff.trackerMax !== undefined ? (
+                    <ResourceControls
+                      featureId={buff.id}
+                      resourceMaxes={resourceMaxes}
+                      resourceLabels={resourceLabels}
+                      resourcesUsed={resourcesUsed}
+                      onAdjustResource={onAdjustResource}
+                      onResetResource={onResetResource}
+                    />
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          ) : null,
       )}
       {matchingBuffCards.length === 0 ? (
         <p className="hint warn-text">

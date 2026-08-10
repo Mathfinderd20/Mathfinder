@@ -430,11 +430,7 @@ export interface InventoryWeaponDetails {
 
 export type InventoryOwnership = "owned" | "wishlist";
 export type InventoryComponentCategory =
-  | "material"
-  | "focus"
-  | "divine-focus"
-  | "spellbook"
-  | "kit";
+  "material" | "focus" | "divine-focus" | "spellbook" | "kit";
 
 export interface DerivedInventoryItem {
   name: string;

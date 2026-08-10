@@ -1622,6 +1622,17 @@ export function validateBuild(
         level: levelNum,
         message: `Unknown class "${lvl.className}" at level ${levelNum}.`,
       });
+    } else if (
+      !Number.isInteger(lvl.hitPointRoll) ||
+      lvl.hitPointRoll < 1 ||
+      lvl.hitPointRoll > def.hitDie
+    ) {
+      issues.push({
+        severity: "error",
+        code: "invalid-hit-point-roll",
+        level: levelNum,
+        message: `Level ${levelNum}: HP roll ${lvl.hitPointRoll} must be a whole number from 1 to d${def.hitDie} for ${def.name}.`,
+      });
     }
 
     const priorClassLevels =

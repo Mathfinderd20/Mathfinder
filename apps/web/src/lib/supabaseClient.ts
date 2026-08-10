@@ -18,9 +18,13 @@ export function readSupabaseConfig(
   if (!normalizedUrl || !normalizedKey) return undefined;
   try {
     const parsed = new URL(normalizedUrl);
-    if (parsed.protocol !== "https:" && parsed.hostname !== "127.0.0.1") {
-      return undefined;
-    }
+    const isLoopback =
+      parsed.hostname === "127.0.0.1" ||
+      parsed.hostname === "localhost" ||
+      parsed.hostname === "[::1]";
+    const isSecureRemote = parsed.protocol === "https:";
+    const isLocalDevelopment = isLoopback && parsed.protocol === "http:";
+    if (!isSecureRemote && !isLocalDevelopment) return undefined;
   } catch {
     return undefined;
   }

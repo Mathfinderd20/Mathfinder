@@ -179,10 +179,15 @@ export function LevelProgressionPlanner({
                   build.levels[build.levels.length - 1]?.className ??
                   classOptions[0]?.name ??
                   "Fighter";
+                const levelClassName = level?.className ?? defaultClass;
+                const favoredClassEligible =
+                  !!build.favoredClassName &&
+                  build.favoredClassName.toLowerCase() ===
+                    levelClassName.toLowerCase();
                 const favoredClassBonusOptions = buildFavoredClassBonusOptions(
                   build.race,
-                  level?.className ?? defaultClass,
-                );
+                  levelClassName,
+                ).filter((option) => favoredClassEligible || !option.value);
                 const hitDie =
                   classOptions.find(
                     (option) =>
@@ -358,7 +363,17 @@ export function LevelProgressionPlanner({
                       {isActive ? (
                         <>
                           <select
-                            value={level.favoredClass ?? ""}
+                            value={
+                              favoredClassEligible
+                                ? (level.favoredClass ?? "")
+                                : ""
+                            }
+                            disabled={!favoredClassEligible}
+                            title={
+                              favoredClassEligible
+                                ? "Favored-class bonus"
+                                : `${level.className} is not the build's favored class.`
+                            }
                             onChange={(e) =>
                               onUpdateLevelField(
                                 index,
@@ -391,8 +406,7 @@ export function LevelProgressionPlanner({
                                 index,
                                 "abilityIncrease",
                                 (e.target.value || undefined) as
-                                  | AbilityKey
-                                  | undefined,
+                                  AbilityKey | undefined,
                               )
                             }
                           >

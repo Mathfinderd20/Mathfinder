@@ -62,7 +62,8 @@ function eventDetail(event: CombatEventRecord) {
   const note = event.note ? ` · Note: ${event.note}` : "";
   if (event.kind === "cast-spell") {
     const spellName = event.spellName ?? "spell";
-    const spellLevel = typeof event.spellLevel === "number" ? ` L${event.spellLevel}` : "";
+    const spellLevel =
+      typeof event.spellLevel === "number" ? ` L${event.spellLevel}` : "";
     const classKey = event.classKey ? ` · ${event.classKey}` : "";
     return `cast ${spellName}${spellLevel}${classKey}${note}`;
   }

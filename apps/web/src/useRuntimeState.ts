@@ -94,6 +94,7 @@ export function useRuntimeState(storageKey: string) {
           effectId: string;
           effectName?: string;
           max: number;
+          perHitMaximum?: number;
         }>,
       ) =>
         dispatch({

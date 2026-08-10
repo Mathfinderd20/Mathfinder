@@ -484,7 +484,12 @@ export async function loadRuntimeContent() {
         .filter((entry) => !!safeName(entry))
         .sort(bySafeName),
     );
-  })();
+  })().catch((error: unknown) => {
+    // A transient network or deployment error should not poison every future
+    // load attempt for the lifetime of the tab.
+    loadPromise = null;
+    throw error;
+  });
   return loadPromise;
 }
 

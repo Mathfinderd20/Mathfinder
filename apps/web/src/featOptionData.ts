@@ -212,7 +212,11 @@ export function buildLooseFeatSearchOptions({
         parameterValue,
       ].filter((value): value is string => Boolean(value)),
       tooltip: featTitle(selectionName),
-      tags: [grantKind, ...(feat.tags ?? []), ...(parameterValue ? [parameterValue] : [])],
+      tags: [
+        grantKind,
+        ...(feat.tags ?? []),
+        ...(parameterValue ? [parameterValue] : []),
+      ],
     })) satisfies CompendiumOption[];
 }
 

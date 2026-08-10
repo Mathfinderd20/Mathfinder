@@ -38,7 +38,10 @@ export interface ResolvedSpellEffect {
 const CORE_PACK = "core";
 
 function effectId(spellName: string) {
-  return `spell-${spellName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`;
+  return `spell-${spellName
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")}`;
 }
 
 function modifier(
@@ -165,7 +168,10 @@ export const SPELL_EFFECTS: SpellEffectDefinition[] = [
         "Barkskin",
         "ac",
         "natural-armor",
-        Math.min(5, 2 + Math.floor(Math.max(0, context.highestCasterLevel - 3) / 3)),
+        Math.min(
+          5,
+          2 + Math.floor(Math.max(0, context.highestCasterLevel - 3) / 3),
+        ),
       ),
     ],
     limitations: ["Scaling uses highest active caster level."],
@@ -198,7 +204,10 @@ export const SPELL_EFFECTS: SpellEffectDefinition[] = [
     tier: 2,
     description: "Scaling luck bonus to attack and weapon damage",
     modifiers: (context) => {
-      const value = Math.min(3, Math.max(1, Math.floor((context.highestCasterLevel + 2) / 3)));
+      const value = Math.min(
+        3,
+        Math.max(1, Math.floor((context.highestCasterLevel + 2) / 3)),
+      );
       return [
         modifier("Divine Favor", "attack", "luck", value),
         modifier("Divine Favor", "damage", "luck", value),
@@ -270,9 +279,7 @@ export const SPELL_EFFECTS: SpellEffectDefinition[] = [
     spellName: "Fly",
     tier: 3,
     description: "Tracked active state for Fly",
-    limitations: [
-      "Flight speed and maneuverability are resolved manually.",
-    ],
+    limitations: ["Flight speed and maneuverability are resolved manually."],
     tracker: {
       label: "minutes remaining",
       max: (context) => Math.max(1, context.highestCasterLevel),
@@ -413,7 +420,12 @@ export const SPELL_EFFECTS: SpellEffectDefinition[] = [
     tier: 2,
     description: "Enhancement bonus to attack and damage",
     modifiers: (context) => {
-      const value = context.highestCasterLevel >= 12 ? 3 : context.highestCasterLevel >= 9 ? 2 : 1;
+      const value =
+        context.highestCasterLevel >= 12
+          ? 3
+          : context.highestCasterLevel >= 9
+            ? 2
+            : 1;
       return [
         modifier("Magic Fang", "attack", "enhancement", value),
         modifier("Magic Fang", "damage", "enhancement", value),
@@ -429,7 +441,12 @@ export const SPELL_EFFECTS: SpellEffectDefinition[] = [
     tier: 2,
     description: "Enhancement bonus to attack and damage",
     modifiers: (context) => {
-      const value = context.highestCasterLevel >= 12 ? 3 : context.highestCasterLevel >= 9 ? 2 : 1;
+      const value =
+        context.highestCasterLevel >= 12
+          ? 3
+          : context.highestCasterLevel >= 9
+            ? 2
+            : 1;
       return [
         modifier("Magic Weapon", "attack", "enhancement", value),
         modifier("Magic Weapon", "damage", "enhancement", value),
@@ -450,7 +467,8 @@ export const SPELL_EFFECTS: SpellEffectDefinition[] = [
     ],
     tracker: {
       label: "images remaining",
-      max: (context) => Math.min(8, 4 + Math.floor(context.highestCasterLevel / 3)),
+      max: (context) =>
+        Math.min(8, 4 + Math.floor(context.highestCasterLevel / 3)),
       seedMode: "manual-cap",
     },
   }),
@@ -512,7 +530,9 @@ export const SPELL_EFFECTS: SpellEffectDefinition[] = [
     spellName: "Resist Energy",
     tier: 3,
     description: "Tracked active resistance state for Resist Energy",
-    limitations: ["Choose the energy type manually; resistance amount is tracked conceptually."],
+    limitations: [
+      "Choose the energy type manually; resistance amount is tracked conceptually.",
+    ],
     tracker: {
       label: "minutes remaining",
       max: (context) => Math.max(1, context.highestCasterLevel * 10),
@@ -568,7 +588,10 @@ export const SPELL_EFFECTS: SpellEffectDefinition[] = [
         "Shield of Faith",
         "ac",
         "deflection",
-        Math.min(5, 2 + Math.floor(Math.max(0, context.highestCasterLevel - 6) / 6)),
+        Math.min(
+          5,
+          2 + Math.floor(Math.max(0, context.highestCasterLevel - 6) / 6),
+        ),
       ),
     ],
     limitations: ["Scaling uses highest active caster level."],
@@ -706,7 +729,9 @@ export function spellEffectResourceMax(
   effect: SpellEffectDefinition,
   context: SpellEffectRuntimeContext,
 ): number | undefined {
-  return effect.tracker ? resolveSpellEffect(effect, context).tracker?.max : undefined;
+  return effect.tracker
+    ? resolveSpellEffect(effect, context).tracker?.max
+    : undefined;
 }
 
 export function spellEffectResourceLabel(

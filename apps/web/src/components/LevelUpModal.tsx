@@ -237,6 +237,7 @@ export function LevelUpModal({
           RUNTIME_CLASS_FEATURES,
           RUNTIME_ARCHETYPES,
         ),
+        RUNTIME_SPELLS,
       ),
     [build],
   );
@@ -250,16 +251,21 @@ export function LevelUpModal({
           RUNTIME_CLASS_FEATURES,
           RUNTIME_ARCHETYPES,
         ),
+        RUNTIME_SPELLS,
       ),
     [preview.build],
   );
   const selectedSkillNames = [...skills]
     .map((key) => SKILL_NAME.get(key) ?? key)
     .sort((a, b) => a.localeCompare(b));
-  const suggestedFeatNames = new Set(
-    plannerSuggestions.featChoicesBySlot.flatMap((slot) =>
-      slot.choices.map((choice) => choice.value.toLowerCase()),
-    ),
+  const suggestedFeatNames = useMemo(
+    () =>
+      new Set(
+        plannerSuggestions.featChoicesBySlot.flatMap((slot) =>
+          slot.choices.map((choice) => choice.value.toLowerCase()),
+        ),
+      ),
+    [plannerSuggestions.featChoicesBySlot],
   );
   const suggestedAbilities = new Set(
     plannerSuggestions.abilityChoices.map((choice) => choice.value),
@@ -310,6 +316,7 @@ export function LevelUpModal({
           RUNTIME_CLASS_FEATURES,
           RUNTIME_ARCHETYPES,
         ),
+        RUNTIME_SPELLS,
       ),
     );
     const availableWeaponNames = collectFeatWeaponNames(

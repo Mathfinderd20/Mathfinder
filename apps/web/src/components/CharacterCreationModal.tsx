@@ -15,6 +15,7 @@ import {
   RUNTIME_CLASS_OPTIONS,
   RUNTIME_FEATS,
   RUNTIME_RACE_OPTIONS,
+  RUNTIME_SPELLS,
   RUNTIME_WEAPONS,
 } from "../content";
 import {
@@ -93,9 +94,13 @@ export function CharacterCreationModal({
     raceOptions[0]?.[1];
   const classKey = classKeyForName(className);
   const classDefinition = RUNTIME_CLASSES[classKey];
-  const creationFavoredClassBonusOptions = buildFavoredClassBonusOptions(
-    race ?? RUNTIME_RACE_OPTIONS[0]![1],
-    className,
+  const creationFavoredClassBonusOptions = useMemo(
+    () =>
+      buildFavoredClassBonusOptions(
+        race ?? RUNTIME_RACE_OPTIONS[0]![1],
+        className,
+      ),
+    [className, race],
   );
   const hasFlexibleAbility = !!race?.choiceOptions?.flexibleAbilityBonus;
   const hasRaceBonusFeat = !!race?.choiceOptions?.bonusFeat;
@@ -139,6 +144,7 @@ export function CharacterCreationModal({
               RUNTIME_CLASS_FEATURES,
               RUNTIME_ARCHETYPES,
             ),
+            RUNTIME_SPELLS,
           )
         : undefined,
     [draftBuild],
@@ -173,6 +179,13 @@ export function CharacterCreationModal({
   useEffect(() => {
     if (!hasRaceBonusFeat) setRaceBonusFeat("");
   }, [hasRaceBonusFeat]);
+
+  useEffect(() => {
+    const selectionIsAvailable = creationFavoredClassBonusOptions.some(
+      (option) => (option.value || undefined) === favoredClass,
+    );
+    if (!selectionIsAvailable) setFavoredClass("hp");
+  }, [creationFavoredClassBonusOptions, favoredClass]);
 
   const featContext = useMemo(
     () => (previewSheet ? featContextFromSheet(previewSheet) : undefined),

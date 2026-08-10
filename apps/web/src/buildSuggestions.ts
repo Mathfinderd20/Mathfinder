@@ -31,11 +31,7 @@ import {
 } from "./spellSuggestions";
 
 export type SuggestionSourceKind =
-  | "guide"
-  | "branch"
-  | "band"
-  | "heuristic"
-  | "system";
+  "guide" | "branch" | "band" | "heuristic" | "system";
 
 export interface PlannerSuggestionChoice<T extends string> {
   value: T;
@@ -564,6 +560,7 @@ function buildLevelCache(
       args.classFeatures,
       args.archetypes,
     ),
+    args.spells,
   );
   const levelContext = featContextFromSheet(previewSheet);
   const runningSkillRanks = args.build.levels

@@ -5,7 +5,7 @@ import {
   type CharacterBuild,
   validateBuild,
 } from "../src/build/character";
-import { bonusSpellSlots, spellSaveDc, spellsByLevel } from "../src";
+import { bonusSpellSlots, SPELLS, spellSaveDc, spellsByLevel } from "../src";
 
 describe("spellcasting helpers", () => {
   it("computes spell save DCs from spell level and casting modifier", () => {
@@ -27,6 +27,40 @@ describe("spellcasting helpers", () => {
 });
 
 describe("wizard spellcasting", () => {
+  it("uses the supplied runtime spell registry for selection diagnostics", () => {
+    const build: CharacterBuild = {
+      name: "Runtime Librarian",
+      race: { name: "Human", size: "medium", speed: 30 },
+      baseAbilityScores: {
+        str: 8,
+        dex: 14,
+        con: 12,
+        int: 18,
+        wis: 10,
+        cha: 10,
+      },
+      levels: [{ className: "Wizard", hitPointRoll: 6 }],
+      spellLibrary: { wizard: { 1: ["Audit Spell"] } },
+      spellSelections: { wizard: { prepared: { 1: ["Audit Spell"] } } },
+    };
+    const runtimeSpells = {
+      ...SPELLS,
+      "audit-spell": {
+        id: "audit-spell",
+        name: "Audit Spell",
+        pack: "audit",
+        classes: [{ className: "Wizard", level: 1 }],
+      },
+    };
+
+    const diagnostics = computeSheet(buildCharacter(build), runtimeSpells)
+      .spellcasting[0]!.selectionDiagnostics[1]!;
+
+    expect(diagnostics.availableSpellNames).toContain("Audit Spell");
+    expect(diagnostics.unknownSpells).toEqual([]);
+    expect(diagnostics.offListSpells).toEqual([]);
+  });
+
   it("derives prepared casting with prep capacity", () => {
     const build: CharacterBuild = {
       name: "Merisiel But Nerdier",

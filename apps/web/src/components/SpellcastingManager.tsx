@@ -1110,7 +1110,8 @@ export function SpellcastingManager({
                               );
                               const meta = spellMetaSummary(option);
                               const badges = spellBadgesSummary(option);
-                              const supportSummary = option?.supportSummary ?? "";
+                              const supportSummary =
+                                option?.supportSummary ?? "";
                               const sourceTag = option?.sourceTag ?? "";
                               return (
                                 <div
@@ -1147,7 +1148,9 @@ export function SpellcastingManager({
                                       </div>
                                     ) : null}
                                     {supportSummary ? (
-                                      <div className="hint">{supportSummary}</div>
+                                      <div className="hint">
+                                        {supportSummary}
+                                      </div>
                                     ) : null}
                                   </div>
                                   <div className="resource-buttons">
@@ -1156,7 +1159,8 @@ export function SpellcastingManager({
                                       title={
                                         spellEffect
                                           ? `Casts ${spellName} and enables its tracked sheet effect.`
-                                          : supportSummary || `Casts ${spellName}.`
+                                          : supportSummary ||
+                                            `Casts ${spellName}.`
                                       }
                                       disabled={
                                         !isAtWill && runtimeRemaining <= 0

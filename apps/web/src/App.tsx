@@ -82,6 +82,7 @@ import {
 } from "./buildSuggestions";
 import type { RuntimeProfile } from "./runtimeInsights";
 import { normalizeFeatListLength, plannedFeatSlotsForLevel } from "./featSlots";
+import { buildFavoredClassBonusOptions } from "./favoredClassBonusData";
 import { plannerRollbackCount, type PlannerExpansion } from "./plannerState";
 import {
   getCharacter,
@@ -534,9 +535,9 @@ function withAmmoAutofill(build: CharacterBuild, ammoType: string | undefined) {
   };
 }
 
-function runtimeWeaponOptions(build: CharacterBuild) {
+function runtimeWeaponOptions(campaignRules: CharacterBuild["campaignRules"]) {
   return WEAPON_OPTIONS.map((weapon) =>
-    applyCampaignRulesToWeapon(weapon, build.campaignRules),
+    applyCampaignRulesToWeapon(weapon, campaignRules),
   );
 }
 
@@ -544,7 +545,9 @@ function syncTemplatedWeaponsToCampaignRules(
   build: CharacterBuild,
 ): CharacterBuild {
   const weaponById = new Map(
-    runtimeWeaponOptions(build).map((weapon) => [weapon.id, weapon] as const),
+    runtimeWeaponOptions(build.campaignRules).map(
+      (weapon) => [weapon.id, weapon] as const,
+    ),
   );
   return {
     ...build,
@@ -710,7 +713,7 @@ export function App({
     build: initialTab === "build",
   });
   const weaponOptions = useMemo(
-    () => runtimeWeaponOptions(build),
+    () => runtimeWeaponOptions(build.campaignRules),
     [build.campaignRules],
   );
 
@@ -1211,9 +1214,51 @@ export function App({
   ) {
     setBuild((prev) => ({
       ...prev,
-      levels: prev.levels.map((level, i) =>
-        i === levelIndex ? { ...level, [key]: value } : level,
-      ),
+      levels: prev.levels.map((level, i) => {
+        if (i !== levelIndex) return level;
+        if (key === "className" && typeof value === "string") {
+          const classDefinition = RUNTIME_CLASSES[value.toLowerCase()];
+          const favoredClassEligible =
+            !!prev.favoredClassName &&
+            prev.favoredClassName.toLowerCase() === value.toLowerCase();
+          const availableBonuses = new Set(
+            buildFavoredClassBonusOptions(prev.race, value).map(
+              (option) => option.value,
+            ),
+          );
+          return {
+            ...level,
+            className: value,
+            hitPointRoll: classDefinition
+              ? Math.min(level.hitPointRoll, classDefinition.hitDie)
+              : level.hitPointRoll,
+            favoredClass:
+              favoredClassEligible &&
+              level.favoredClass !== undefined &&
+              availableBonuses.has(level.favoredClass)
+                ? level.favoredClass
+                : undefined,
+          };
+        }
+        if (key === "hitPointRoll" && typeof value === "number") {
+          const classDefinition =
+            RUNTIME_CLASSES[level.className.toLowerCase()];
+          const normalizedValue = Number.isFinite(value)
+            ? Math.floor(value)
+            : 1;
+          return {
+            ...level,
+            hitPointRoll: Math.max(
+              1,
+              Math.min(
+                classDefinition?.hitDie ?? normalizedValue,
+                normalizedValue,
+              ),
+            ),
+          };
+        }
+        return { ...level, [key]: value };
+      }),
     }));
   }
 
@@ -2315,7 +2360,7 @@ export function App({
       RUNTIME_CLASS_FEATURES,
       RUNTIME_ARCHETYPES,
     );
-    const baseSheet = computeSheet(input);
+    const baseSheet = computeSheet(input, RUNTIME_SPELLS);
     const activatableFeatures = collectActivatableEffects({
       descriptor: baseSheet.descriptor,
       classFeatureRegistry: RUNTIME_CLASS_FEATURES,
@@ -2365,7 +2410,7 @@ export function App({
       modifiers: [...input.modifiers, ...classAbilityMods, ...buffMods],
     };
     return {
-      sheet: computeSheet(withBuffs),
+      sheet: computeSheet(withBuffs, RUNTIME_SPELLS),
       activatableFeatures,
       activatableGroups: groupActivatables(activatableFeatures),
       activatableConflicts: resolvedActivatables.conflicts,
@@ -2450,13 +2495,7 @@ export function App({
             includeGuides: false,
           })
         : EMPTY_SUGGESTION_BUNDLE,
-    [
-      currentLevel,
-      deferredBuild,
-      leveling,
-      shouldComputeSuggestions,
-      sheet.spellcasting,
-    ],
+    [currentLevel, deferredBuild, shouldComputeSuggestions, sheet.spellcasting],
   );
   const [guidedPlannerSuggestions, setGuidedPlannerSuggestions] = useState<
     Partial<Record<number, LevelPlannerSuggestions>>
@@ -2567,6 +2606,7 @@ export function App({
       effectId: string;
       effectName?: string;
       max: number;
+      perHitMaximum?: number;
     }> = [];
     if (damageType === "physical" && activeBuffs["spell-stoneskin"]) {
       const max = resourceMaxes["spell-stoneskin"];
@@ -2575,6 +2615,7 @@ export function App({
           effectId: "spell-stoneskin",
           effectName: "Stoneskin",
           max,
+          perHitMaximum: 10,
         });
     }
     if (
@@ -2598,7 +2639,6 @@ export function App({
       TEMP_HP_RESOURCE_ID,
       spellAbsorptions,
     );
-    setFlag(STABLE_FLAG_ID, false);
   }
 
   function applyHealing(amount: number) {

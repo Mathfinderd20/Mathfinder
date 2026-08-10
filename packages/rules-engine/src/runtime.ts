@@ -159,6 +159,7 @@ export type RuntimeAction =
         effectId: string;
         effectName?: string;
         max: number;
+        perHitMaximum?: number;
       }>;
     }
   | {
@@ -192,8 +193,25 @@ export function appendRuntimeEvent<T extends RuntimeEventRecord>(
   return [...events, event].slice(-maxEntries);
 }
 
+const PLURAL_AMMO_WORDS: Readonly<Record<string, string>> = {
+  arrows: "arrow",
+  bolts: "bolt",
+  bullets: "bullet",
+  cartridges: "cartridge",
+  charges: "charge",
+  grenades: "grenade",
+  rockets: "rocket",
+  rounds: "round",
+  shells: "shell",
+};
+
 export function normalizeAmmoType(name: string) {
-  return name.trim().toLowerCase().replace(/s$/, "");
+  const normalized = name.trim().toLowerCase().replace(/\s+/g, " ");
+  const words = normalized.split(" ");
+  const lastIndex = words.length - 1;
+  const singular = PLURAL_AMMO_WORDS[words[lastIndex] ?? ""];
+  if (singular) words[lastIndex] = singular;
+  return words.join(" ");
 }
 
 export function weaponTargetsDefense(args: {
@@ -256,45 +274,44 @@ export function recordWeaponAttack(args: {
 } {
   const attackId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   const attackedAt = new Date().toISOString();
-  const normalizedAmmoEntries =
-    args.ammoEntries?.length
-      ? args.ammoEntries
-          .map((entry) => ({
-            ammoType: normalizeAmmoType(entry.ammoType),
-            amount: Math.max(0, entry.amount),
-          }))
-          .filter((entry) => entry.ammoType && entry.amount > 0)
-      : args.ammoType && (args.ammoSpentForAttack ?? 0) > 0
-        ? [
-            {
-              ammoType: normalizeAmmoType(args.ammoType),
-              amount: args.ammoSpentForAttack ?? 0,
-            },
-          ]
-        : [];
+  const normalizedAmmoEntries = args.ammoEntries?.length
+    ? args.ammoEntries
+        .map((entry) => ({
+          ammoType: normalizeAmmoType(entry.ammoType),
+          amount: Math.max(0, entry.amount),
+        }))
+        .filter((entry) => entry.ammoType && entry.amount > 0)
+    : args.ammoType && (args.ammoSpentForAttack ?? 0) > 0
+      ? [
+          {
+            ammoType: normalizeAmmoType(args.ammoType),
+            amount: args.ammoSpentForAttack ?? 0,
+          },
+        ]
+      : [];
   const normalizedAmmoType = normalizedAmmoEntries[0]?.ammoType;
   const spent = normalizedAmmoEntries.reduce(
     (ledger, entry) => updateLedger(ledger, entry.ammoType, entry.amount),
     args.ammoLedger,
   );
+  const attack: WeaponAttackRecord = {
+    id: attackId,
+    at: attackedAt,
+    kind: "attack",
+    ammoType: normalizedAmmoType,
+    ammoSpent: normalizedAmmoEntries.reduce(
+      (sum, entry) => sum + entry.amount,
+      0,
+    ),
+    ammoEntries: normalizedAmmoEntries,
+  };
   return {
     ammoLedger: spent,
     history: {
       ...args.history,
-      [args.weaponKey]: [
-        ...(args.history[args.weaponKey] ?? []),
-        {
-          id: attackId,
-          at: attackedAt,
-          kind: "attack",
-          ammoType: normalizedAmmoType,
-          ammoSpent: normalizedAmmoEntries.reduce(
-            (sum, entry) => sum + entry.amount,
-            0,
-          ),
-          ammoEntries: normalizedAmmoEntries,
-        },
-      ],
+      [args.weaponKey]: [...(args.history[args.weaponKey] ?? []), attack].slice(
+        -(args.eventHistoryLimit ?? DEFAULT_RUNTIME_EVENT_HISTORY_LIMIT),
+      ),
     },
     events: appendCombatEvent(
       args.events,
@@ -331,7 +348,9 @@ export function undoWeaponAttack(args: {
   if (!last) return null;
   const ammoLedger = (last.ammoEntries ?? []).reduce(
     (ledger, entry) =>
-      entry.amount > 0 ? updateLedger(ledger, entry.ammoType, -entry.amount) : ledger,
+      entry.amount > 0
+        ? updateLedger(ledger, entry.ammoType, -entry.amount)
+        : ledger,
     args.ammoLedger,
   );
   return {
@@ -434,7 +453,10 @@ function consumeSpellEffectResource(args: {
   eventHistoryLimit: number;
 }) {
   const amount = Math.max(1, args.amount ?? 1);
-  const nextUsed = Math.max(0, (args.state.resources[args.effectId] ?? 0) + amount);
+  const nextUsed = Math.max(
+    0,
+    (args.state.resources[args.effectId] ?? 0) + amount,
+  );
   const nextToggles = { ...args.state.toggles };
   if (args.deactivateWhenEmpty) nextToggles[args.effectId] = false;
   return {
@@ -528,7 +550,18 @@ export function reduceRuntimeState(
       };
     }
     case "cast-spell": {
-      if (action.level !== 0 && action.remaining <= 0) return state;
+      const slotMaximum = Math.max(0, Math.floor(action.max));
+      const slotsAlreadyUsed = Math.max(
+        0,
+        (state.slotUsage[action.classKey] ?? {})[action.level] ?? 0,
+      );
+      // Derive capacity from reducer state. The UI's `remaining` value can be
+      // stale when rapid clicks dispatch more than once before React rerenders.
+      if (
+        action.level !== 0 &&
+        (!Number.isFinite(slotMaximum) || slotsAlreadyUsed >= slotMaximum)
+      )
+        return state;
       const slotUsage =
         action.level === 0
           ? state.slotUsage
@@ -536,14 +569,7 @@ export function reduceRuntimeState(
               ...state.slotUsage,
               [action.classKey]: {
                 ...(state.slotUsage[action.classKey] ?? {}),
-                [action.level]: Math.min(
-                  action.max,
-                  Math.max(
-                    0,
-                    ((state.slotUsage[action.classKey] ?? {})[action.level] ??
-                      0) + 1,
-                  ),
-                ),
+                [action.level]: slotsAlreadyUsed + 1,
               },
             };
       return {
@@ -576,7 +602,9 @@ export function reduceRuntimeState(
             classKey: action.classKey,
             spellLevel: action.level,
             spellName: action.spellName,
-            note: action.spellEffectId ? "enabled tracked spell effect" : undefined,
+            note: action.spellEffectId
+              ? "enabled tracked spell effect"
+              : undefined,
           },
           eventHistoryLimit,
         ),
@@ -644,13 +672,23 @@ export function reduceRuntimeState(
         const used = nextResources[absorption.effectId] ?? 0;
         const capacity = Math.max(0, absorption.max - used);
         if (capacity <= 0) continue;
-        const absorbed = Math.min(remaining, capacity);
+        const perHitMaximum = Math.max(
+          0,
+          absorption.perHitMaximum ?? Number.POSITIVE_INFINITY,
+        );
+        const absorbed = Math.min(remaining, capacity, perHitMaximum);
         const nextUsed = used + absorbed;
         nextResources[absorption.effectId] = nextUsed;
         remaining -= absorbed;
-        absorbedBits.push(`${absorption.effectName ?? absorption.effectId} ${absorbed}`);
-        if (nextUsed >= absorption.max) nextToggles[absorption.effectId] = false;
+        absorbedBits.push(
+          `${absorption.effectName ?? absorption.effectId} ${absorbed}`,
+        );
+        if (nextUsed >= absorption.max)
+          nextToggles[absorption.effectId] = false;
       }
+      // Damage negated by a spell never reaches the character. Damage absorbed
+      // by temporary HP still counts as taking damage and breaks stabilization.
+      const damageReachedCharacter = remaining > 0;
       const tempHpResourceId = action.tempHpResourceId;
       if (tempHpResourceId && remaining > 0) {
         const tempHp = Math.max(0, state.resources[tempHpResourceId] ?? 0);
@@ -663,10 +701,15 @@ export function reduceRuntimeState(
       }
       if (remaining > 0)
         nextResources[action.hpDamageResourceId] =
-          Math.max(0, nextResources[action.hpDamageResourceId] ?? 0) + remaining;
+          Math.max(0, nextResources[action.hpDamageResourceId] ?? 0) +
+          remaining;
       return {
         ...state,
         toggles: nextToggles,
+        flags:
+          damageReachedCharacter && state.flags.stable
+            ? { ...state.flags, stable: false }
+            : state.flags,
         resources: nextResources,
         events: appendCombatEvent(
           state.events,
