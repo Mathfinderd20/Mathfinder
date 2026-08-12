@@ -94,8 +94,9 @@ export function CharacterCreationModal({
     raceOptions[0]?.[1];
   const classKey = classKeyForName(className);
   const classDefinition = RUNTIME_CLASSES[classKey];
+  const resolvedRace = race ?? RUNTIME_RACE_OPTIONS[0]![1];
   const creationFavoredClassBonusOptions = buildFavoredClassBonusOptions(
-    race ?? RUNTIME_RACE_OPTIONS[0]![1],
+    resolvedRace,
     className,
   );
   const hasFlexibleAbility = !!race?.choiceOptions?.flexibleAbilityBonus;

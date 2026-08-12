@@ -125,6 +125,7 @@ export function useBuildAnalysis(args: {
             archetypes: RUNTIME_ARCHETYPES,
             buildGuides: RUNTIME_BUILD_GUIDES,
             includeGuides: false,
+            plannerLevelIndexes: [Math.max(0, currentLevel - 1)],
           })
         : EMPTY_SUGGESTION_BUNDLE,
     [currentLevel, deferredBuild, shouldComputeSuggestions, sheet.spellcasting],
@@ -140,7 +141,10 @@ export function useBuildAnalysis(args: {
     [guidedPlannerSuggestions, suggestionBundle.planner],
   );
 
-  function computeGuidedSuggestionBundle(targetBuild: CharacterBuild) {
+  function computeGuidedSuggestionBundle(
+    targetBuild: CharacterBuild,
+    plannerLevelIndexes: readonly number[],
+  ) {
     return buildSuggestions({
       build: targetBuild,
       currentLevel,
@@ -152,6 +156,7 @@ export function useBuildAnalysis(args: {
       archetypes: RUNTIME_ARCHETYPES,
       buildGuides: RUNTIME_BUILD_GUIDES,
       includeGuides: true,
+      plannerLevelIndexes,
     });
   }
 

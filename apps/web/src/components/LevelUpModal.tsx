@@ -286,6 +286,7 @@ export function LevelUpModal({
         classFeatures: RUNTIME_CLASS_FEATURES,
         archetypes: RUNTIME_ARCHETYPES,
         buildGuides: RUNTIME_BUILD_GUIDES,
+        plannerLevelIndexes: [],
       }),
     [preview.build, previewSheet.spellcasting],
   );

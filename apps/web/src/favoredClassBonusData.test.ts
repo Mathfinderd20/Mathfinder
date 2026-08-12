@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { buildFavoredClassBonusOptions } from "./favoredClassBonusData";
+import {
+  buildFavoredClassBonusOptions,
+  favoredClassBonusCoverage,
+} from "./favoredClassBonusData";
 
 const race = {
   name: "Half-Orc",
@@ -27,5 +30,16 @@ describe("favored-class bonus options", () => {
         (option) => option.value,
       ),
     ).not.toContain("orc-fighter-death-threshold");
+  });
+
+  it("reports ancestry-specific coverage honestly", () => {
+    expect(favoredClassBonusCoverage(race, "Fighter")).toMatchObject({
+      hasAncestrySpecificOptions: true,
+    });
+    expect(favoredClassBonusCoverage(race, "Rogue")).toEqual({
+      hasAncestrySpecificOptions: false,
+      message:
+        "Universal +1 HP and +1 skill rank are available. No ancestry-specific Half-Orc Rogue bonus is loaded yet.",
+    });
   });
 });

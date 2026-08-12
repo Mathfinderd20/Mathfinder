@@ -698,7 +698,14 @@ export function App({
                 };
               }
               ensureLevelCount(count);
-              const guided = computeGuidedSuggestionBundle(nextBuild).planner;
+              const requestedLevels = Array.from(
+                { length: Math.max(0, count - build.levels.length) },
+                (_, offset) => build.levels.length + offset,
+              );
+              const guided = computeGuidedSuggestionBundle(
+                nextBuild,
+                requestedLevels,
+              ).planner;
               setGuidedPlannerSuggestions(
                 Object.fromEntries(
                   guided
@@ -716,7 +723,9 @@ export function App({
             onUpdateLevelSkillRank={updateLevelSkillRank}
             onSetLevelFeat={setLevelFeat}
             onApplyPlannerSuggestions={(levelIndex) => {
-              const guidedBundle = computeGuidedSuggestionBundle(build);
+              const guidedBundle = computeGuidedSuggestionBundle(build, [
+                levelIndex,
+              ]);
               const suggestions = guidedBundle.planner[levelIndex];
               if (!suggestions) return;
               setGuidedPlannerSuggestions((prev) => ({
@@ -726,8 +735,9 @@ export function App({
               applyPlannerSuggestions(levelIndex, suggestions);
             }}
             onRequestPlannerSuggestions={(levelIndex) => {
-              const suggestions =
-                computeGuidedSuggestionBundle(build).planner[levelIndex];
+              const suggestions = computeGuidedSuggestionBundle(build, [
+                levelIndex,
+              ]).planner[levelIndex];
               if (!suggestions) return;
               setGuidedPlannerSuggestions((prev) => ({
                 ...prev,
