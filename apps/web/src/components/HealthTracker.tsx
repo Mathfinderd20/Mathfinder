@@ -57,6 +57,10 @@ const STATUS_TONE: Record<HealthCondition, string> = {
   dead: "dead",
 };
 
+export function isCriticalHealth(currentHp: number, maxHp: number) {
+  return maxHp > 0 && currentHp > 0 && currentHp / maxHp < 0.2;
+}
+
 export function healthConditionLabel(condition: HealthCondition) {
   return STATUS_LABEL[condition];
 }
@@ -132,6 +136,7 @@ export function HealthTracker({
     deathThresholdBonus: deathRules.deathThresholdBonus,
   });
   const hpPercent = Math.max(0, Math.min(100, (currentHp / maxHp) * 100));
+  const criticalHealth = isCriticalHealth(currentHp, maxHp);
   const constitutionModifier = Math.floor((constitutionScore - 10) / 2);
   const stabilizationModifier = constitutionModifier + Math.min(0, currentHp);
   const belowZeroAndAlive = currentHp < 0 && currentHp > health.deathThreshold;
@@ -176,7 +181,9 @@ export function HealthTracker({
   }
 
   return (
-    <section className={`health-tracker health-${health.condition}`}>
+    <section
+      className={`health-tracker health-${health.condition}${criticalHealth ? " health-critical" : ""}`}
+    >
       <div className="health-tracker-head">
         <div>
           <span className="summary-label">Combat Health</span>

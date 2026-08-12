@@ -8,7 +8,12 @@ import type {
   SpellcastingEntry,
 } from "./types";
 import type { DerivedAbility } from "./types";
-import { SPELLS, classSpellLevel, getSpell } from "./content/spells";
+import {
+  SPELLS,
+  classSpellLevel,
+  getSpell,
+  type SpellRegistry,
+} from "./content/spells";
 
 function stat(total: number): DerivedStat {
   return {
@@ -83,7 +88,7 @@ export function spellSaveDc(
 export function deriveSpellcasting(
   input: CharacterInput,
   abilities: Record<AbilityKey, DerivedAbility>,
-  spellRegistry = SPELLS,
+  spellRegistry: SpellRegistry = SPELLS,
 ): DerivedSpellcasting[] {
   const entries = input.spellcasting ?? [];
   return entries.map((entry: SpellcastingEntry) => {

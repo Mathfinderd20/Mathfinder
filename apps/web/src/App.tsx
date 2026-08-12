@@ -32,6 +32,7 @@ import { RuntimeControlsPanel } from "./components/RuntimeControlsPanel";
 import { BuildSlotsPanel } from "./components/BuildSlotsPanel";
 import { ValidationPanel } from "./components/ValidationPanel";
 import type { LevelPlannerSuggestions } from "./buildSuggestions";
+import { collectOwnedSpellNames } from "./runtimeInsights";
 import { normalizeFeatListLength, plannedFeatSlotsForLevel } from "./featSlots";
 import { plannerRollbackCount, type PlannerExpansion } from "./plannerState";
 import { runtimeStorageKey } from "./features/characters/characterRepository";
@@ -458,6 +459,10 @@ export function App({
     sheet,
     shouldComputeSuggestions,
   });
+  const ownedSpellNames = useMemo(
+    () => collectOwnedSpellNames(sheet.spellcasting),
+    [sheet.spellcasting],
+  );
   const {
     applyDirectHpLoss,
     applyHealing,
@@ -538,6 +543,7 @@ export function App({
               resourceLabels={resourceLabels}
               fatigued={fatigued}
               buffs={runtimeBuffs}
+              ownedSpellNames={ownedSpellNames}
               profile={runtimeProfile}
               onSetToggle={setToggle}
               onSetExclusiveToggleGroup={setExclusiveToggleGroup}

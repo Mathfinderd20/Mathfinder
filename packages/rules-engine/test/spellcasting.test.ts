@@ -26,6 +26,40 @@ describe("spellcasting helpers", () => {
   });
 });
 
+describe("runtime spell registries", () => {
+  it("validates selected spells against the supplied runtime catalog", () => {
+    const build: CharacterBuild = {
+      name: "Catalog Caster",
+      race: { name: "Human", size: "medium", speed: 30 },
+      baseAbilityScores: {
+        str: 8,
+        dex: 12,
+        con: 12,
+        int: 10,
+        wis: 10,
+        cha: 18,
+      },
+      levels: [{ className: "Sorcerer", hitPointRoll: 6, feats: [] }],
+      spellSelections: {
+        sorcerer: { known: { 1: ["Runtime-Only Spell"] } },
+      },
+    };
+    const sheet = computeSheet(buildCharacter(build), {
+      spellRegistry: {
+        "runtime-only spell": {
+          id: "runtime-only-spell",
+          name: "Runtime-Only Spell",
+          pack: "test",
+          classes: [{ className: "sorcerer", level: 1 }],
+        },
+      },
+    });
+    expect(
+      sheet.spellcasting[0]?.selectionDiagnostics[1]?.unknownSpells,
+    ).toEqual([]);
+  });
+});
+
 describe("wizard spellcasting", () => {
   it("uses the supplied runtime spell registry for selection diagnostics", () => {
     const build: CharacterBuild = {
@@ -53,8 +87,9 @@ describe("wizard spellcasting", () => {
       },
     };
 
-    const diagnostics = computeSheet(buildCharacter(build), runtimeSpells)
-      .spellcasting[0]!.selectionDiagnostics[1]!;
+    const diagnostics = computeSheet(buildCharacter(build), {
+      spellRegistry: runtimeSpells,
+    }).spellcasting[0]!.selectionDiagnostics[1]!;
 
     expect(diagnostics.availableSpellNames).toContain("Audit Spell");
     expect(diagnostics.unknownSpells).toEqual([]);

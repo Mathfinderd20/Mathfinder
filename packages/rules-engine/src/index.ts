@@ -7,7 +7,11 @@
  */
 
 export * from "./types";
-export { computeSheet, abilityModifier } from "./compute";
+export {
+  computeSheet,
+  abilityModifier,
+  type ComputeSheetOptions,
+} from "./compute";
 export {
   buildCompendiumIndex,
   getCompendiumEntryById,

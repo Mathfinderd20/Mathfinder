@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildFeatRegistry,
   checkPrerequisites,
   featContextFromSheet,
   FEATS,
@@ -47,6 +48,40 @@ describe("feat prerequisites", () => {
     expect(checkPrerequisites(getFeat(FEATS, "Power Attack")!, ctx).met).toBe(
       true,
     );
+  });
+
+  it("requires Spell Focus before Greater Spell Focus", () => {
+    const feat = getFeat(FEATS, "Greater Spell Focus")!;
+    expect(feat.prerequisites.map((entry) => entry.description)).toEqual([
+      "Spell Focus",
+    ]);
+    expect(checkPrerequisites(feat, baseCtx).met).toBe(false);
+    expect(
+      checkPrerequisites(feat, {
+        ...baseCtx,
+        featNames: ["Spell Focus (Evocation)"],
+      }).met,
+    ).toBe(true);
+  });
+
+  it("removes impossible self-prerequisites from imported feats", () => {
+    const registry = buildFeatRegistry([
+      {
+        id: "point-blank-shot",
+        name: "Point-Blank Shot",
+        pack: "test",
+        description: "Ranged attacks are more accurate within 30 feet.",
+        prerequisites: [
+          {
+            type: "feat",
+            featName: "Point-Blank Shot",
+            description: "Point-Blank Shot",
+          },
+        ],
+        effects: [],
+      },
+    ]);
+    expect(getFeat(registry, "Point-Blank Shot")?.prerequisites).toEqual([]);
   });
 
   it("includes Selective Channeling and enforces its Charisma prerequisite", () => {

@@ -40,7 +40,7 @@ export function useDerivedSheet(args: {
       RUNTIME_CLASS_FEATURES,
       RUNTIME_ARCHETYPES,
     );
-    const baseSheet = computeSheet(input, RUNTIME_SPELLS);
+    const baseSheet = computeSheet(input, { spellRegistry: RUNTIME_SPELLS });
     const activatableFeatures = collectActivatableEffects({
       descriptor: baseSheet.descriptor,
       classFeatureRegistry: RUNTIME_CLASS_FEATURES,
@@ -93,7 +93,7 @@ export function useDerivedSheet(args: {
       ],
     };
     return {
-      sheet: computeSheet(withBuffs, RUNTIME_SPELLS),
+      sheet: computeSheet(withBuffs, { spellRegistry: RUNTIME_SPELLS }),
       activatableGroups: groupActivatables(activatableFeatures),
       activatableConflicts: resolvedActivatables.conflicts,
       resourceMaxes,

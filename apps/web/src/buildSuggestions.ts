@@ -560,7 +560,7 @@ function buildLevelCache(
       args.classFeatures,
       args.archetypes,
     ),
-    args.spells,
+    { spellRegistry: args.spells },
   );
   const levelContext = featContextFromSheet(previewSheet);
   const runningSkillRanks = args.build.levels

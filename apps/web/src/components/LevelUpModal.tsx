@@ -237,7 +237,7 @@ export function LevelUpModal({
           RUNTIME_CLASS_FEATURES,
           RUNTIME_ARCHETYPES,
         ),
-        RUNTIME_SPELLS,
+        { spellRegistry: RUNTIME_SPELLS },
       ),
     [build],
   );
@@ -251,7 +251,7 @@ export function LevelUpModal({
           RUNTIME_CLASS_FEATURES,
           RUNTIME_ARCHETYPES,
         ),
-        RUNTIME_SPELLS,
+        { spellRegistry: RUNTIME_SPELLS },
       ),
     [preview.build],
   );
@@ -316,7 +316,7 @@ export function LevelUpModal({
           RUNTIME_CLASS_FEATURES,
           RUNTIME_ARCHETYPES,
         ),
-        RUNTIME_SPELLS,
+        { spellRegistry: RUNTIME_SPELLS },
       ),
     );
     const availableWeaponNames = collectFeatWeaponNames(

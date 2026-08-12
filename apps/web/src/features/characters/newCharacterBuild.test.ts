@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { buildCharacter, computeSheet } from "@mathfinder/rules-engine";
 import { createFreshCharacterBuild } from "./newCharacterBuild";
 
 const humanRace = {
@@ -49,5 +50,12 @@ describe("createFreshCharacterBuild", () => {
     expect(build.weapons).toEqual([]);
     expect(build.equipment).toEqual([]);
     expect(build.coinPurse).toEqual({ pp: 0, gp: 0, sp: 0, cp: 0 });
+
+    const sheet = computeSheet(buildCharacter(build));
+    expect(sheet.skills.acrobatics.ranks).toBe(1);
+    expect(sheet.skills.stealth.ranks).toBe(1);
+    expect(sheet.skills.acrobatics.total).toBeGreaterThan(
+      sheet.abilities.dex.mod,
+    );
   });
 });
