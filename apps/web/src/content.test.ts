@@ -12,17 +12,27 @@ describe("runtimeContentAssetUrl", () => {
 
 describe("raceOptionsFromDataSet", () => {
   it("preserves stable race ids when multiple packs use the same display name", () => {
-    const race = (id: string) => ({
+    const race = (id: string, withFavoredBonus = false) => ({
       id,
       name: "Human",
       size: "medium" as const,
       speed: 30,
       abilityModifiers: [],
+      favoredClassBonuses: withFavoredBonus
+        ? [
+            {
+              id: "human-fighter",
+              className: "Fighter",
+              label: "Training",
+              description: "Training bonus",
+            },
+          ]
+        : undefined,
     });
     const data = {
       packs: [
         { races: [race("human")] },
-        { races: [race("scrape-aon-human")] },
+        { races: [race("scrape-aon-human", true)] },
       ],
     } as unknown as RulesDataSet;
 
@@ -30,5 +40,6 @@ describe("raceOptionsFromDataSet", () => {
 
     expect(races.human?.name).toBe("Human");
     expect(races["scrape-aon-human"]?.name).toBe("Human");
+    expect(races.human?.favoredClassBonuses?.[0]?.id).toBe("human-fighter");
   });
 });

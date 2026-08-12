@@ -755,14 +755,29 @@ function buildScrapedRaces(rows: EntityExportRow[]) {
     const name = cleanText(urlName || payload.name || row.name);
     const size = parseRaceSize(payload.size);
     const speed = parseRaceSpeed(payload.speedText);
-    if (!name || !size || !speed) continue;
+    const favoredClassBonuses = (payload.favoredClassBonuses ?? []).map(
+      (bonus, index) => ({
+        id: `aon-${slug(name)}-${slug(bonus.className)}-${index + 1}`,
+        className: bonus.className,
+        label:
+          bonus.description.length <= 90
+            ? bonus.description
+            : `${bonus.description.slice(0, 87).trimEnd()}…`,
+        description: bonus.description,
+        source: bonus.sources?.join("; "),
+        sourceUrl: payload.sourceUrl,
+        automationStatus: "manual" as const,
+      }),
+    );
+    if (!name || ((!size || !speed) && favoredClassBonuses.length === 0))
+      continue;
     const mapped = parseRaceTraitsAndClassSkills(name, payload);
     items.push({
       id: row.entityId || slug(name),
       name,
       pack: "aon-scraped-races",
-      size,
-      speed,
+      size: size ?? "medium",
+      speed: speed ?? 30,
       abilityModifiers: parseRaceAbilityModifiers(
         payload.abilityScoreText,
         name,
@@ -781,6 +796,7 @@ function buildScrapedRaces(rows: EntityExportRow[]) {
         Object.keys(mapped.resistances).length > 0
           ? mapped.resistances
           : undefined,
+      favoredClassBonuses,
       notes: mapped.notes.length > 0 ? mapped.notes : undefined,
     });
   }

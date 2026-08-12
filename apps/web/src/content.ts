@@ -249,32 +249,63 @@ function replaceArray<T>(target: T[], source: T[]) {
 export function raceOptionsFromDataSet(
   data: RulesDataSet,
 ): Record<string, CharacterBuild["race"]> {
-  return Object.fromEntries(
-    data.packs
-      .flatMap((pack) => pack.races)
-      .map((race) => [
-        race.id,
-        {
-          name: race.name,
-          size: race.size,
-          speed: race.speed,
-          abilityModifiers: race.abilityModifiers,
-          traits: race.traits,
-          classSkills: race.classSkills,
-          weaponProficiencies: race.weaponProficiencies,
-          specificWeaponProficiencies: race.specificWeaponProficiencies,
-          grantedWeapons: race.grantedWeapons,
-          choiceOptions: race.choiceOptions,
-          alternateTraits: race.alternateTraits,
-          movementModes: race.movementModes,
-          senses: race.senses,
-          resistances: race.resistances,
-          ferocity: race.ferocity,
-          favoredClassBonuses: race.favoredClassBonuses,
-          notes: race.notes,
-        },
-      ]),
-  );
+  const sourceRaces = data.packs.flatMap((pack) => pack.races);
+  const favoredBonusesByName = new Map<
+    string,
+    NonNullable<CharacterBuild["race"]["favoredClassBonuses"]>
+  >();
+  for (const race of sourceRaces) {
+    const nameKey = race.name.trim().toLowerCase();
+    const combined = [
+      ...(favoredBonusesByName.get(nameKey) ?? []),
+      ...(race.favoredClassBonuses ?? []),
+    ].filter(
+      (bonus, index, all) =>
+        all.findIndex((candidate) => candidate.id === bonus.id) === index,
+    );
+    favoredBonusesByName.set(nameKey, combined);
+  }
+  const races = new Map<string, CharacterBuild["race"]>();
+  for (const race of sourceRaces) {
+    const key = race.id.trim().toLowerCase();
+    const existing = races.get(key);
+    const mapped: CharacterBuild["race"] = {
+      name: race.name,
+      size: race.size,
+      speed: race.speed,
+      abilityModifiers: race.abilityModifiers,
+      traits: race.traits,
+      classSkills: race.classSkills,
+      weaponProficiencies: race.weaponProficiencies,
+      specificWeaponProficiencies: race.specificWeaponProficiencies,
+      grantedWeapons: race.grantedWeapons,
+      choiceOptions: race.choiceOptions,
+      alternateTraits: race.alternateTraits,
+      movementModes: race.movementModes,
+      senses: race.senses,
+      resistances: race.resistances,
+      ferocity: race.ferocity,
+      favoredClassBonuses: favoredBonusesByName.get(
+        race.name.trim().toLowerCase(),
+      ),
+      notes: race.notes,
+    };
+    if (!existing) {
+      races.set(key, mapped);
+      continue;
+    }
+    races.set(key, {
+      ...existing,
+      favoredClassBonuses: [
+        ...(existing.favoredClassBonuses ?? []),
+        ...(mapped.favoredClassBonuses ?? []),
+      ].filter(
+        (bonus, index, all) =>
+          all.findIndex((candidate) => candidate.id === bonus.id) === index,
+      ),
+    });
+  }
+  return Object.fromEntries(races);
 }
 
 export function runtimeContentAssetUrl(origin: string) {

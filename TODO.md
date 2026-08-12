@@ -21,7 +21,7 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 ## Phase 1 — Rules Data Foundation
 
 - [~] Define canonical rules-data schema/package for core entities (sources, packs, races, classes, class features, feats, skills, spells) — starter TS schema + validation + index/registry done; JSON serialization/items/archetypes still pending
-- [~] Build/ingest 1st-party (Core, APG, ACG, ARG, UM, UC, etc.) dataset under proper licensing (OGL/PRD) — local canonical content is seedable into SQLite, AoN ingestion exists, and a conservative core character-creation feat checklist now guards obvious omissions; exhaustive book coverage is still pending
+- [~] Build/ingest 1st-party (Core, APG, ACG, ARG, UM, UC, etc.) dataset under proper licensing (OGL/PRD) — local canonical content is seedable into SQLite and AoN ingestion exists; exhaustive book coverage and source-by-source audit remain pending
 - [ ] Ingest **Savage Company (SHM Publishing)** content (cross-check d20pfsrd.com against original manuscript as source of truth)
 - [~] Add `source` tag + provenance fields to every entity (enables content-pack toggles) — rules-data sources/packs scaffolded; entity-by-entity provenance expansion still pending
 - [ ] Validate dataset against schema (CI gate)
@@ -82,7 +82,7 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 - [x] Build planner page for future levels / preselected advancement choices
 - [~] Editable core build fields in UI are substantial (name, base abilities, carried weight, sample race presets, race choice selections, class archetypes, per-level class/HP/favored-class/ASI, weapons, full inventory/equipment editing with slots/containers/coins/ammo/components/purchase flows, improved equipment/armor cards with running totals, per-level feats, compact/collapsible per-level skill rank builder, and spell library/selection management); broader compendium-backed content editing is still incremental
 - [ ] Port presentational components to React Native for the phone build
-- [~] Smart defaults + recommendations — planner/level-up suggestions for classes, feats, favored-class bonuses, ability increases, and spell picks are live; broader guided defaults/wizard flows are still pending
+- [~] Smart defaults + recommendations — planner/level-up suggestions use current abilities, projected BAB/saves, feats, weapons, shields, classes, archetypes, and spellcasting; recommendation quality still needs substantial tuning, richer feat-chain/party-role awareness, and real-character playtesting
 
 ## Phase 4 — Multiplayer / Group Layer
 
@@ -104,7 +104,8 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 
 - [x] Parameterized feats (Weapon Focus weapon choice, Skill Focus skill choice)
 - [ ] Prestige-class prerequisite validation
-- [~] Guided build wizard / broader smart-default flows
+- [~] Guided build wizard / smarter character-aware recommendation tuning
+- [~] Complete ancestry-specific favored-class bonuses — 731 AoN options across 49 scraped races are ingested with source URLs and available as manual selections; automate common effect families and ingest owner-authored Savage Company FCBs from the manuscript
 - [ ] Shared compendium/runtime normalization work from `PLAN.md`
 - [ ] Savage Company content ingestion breadth
 

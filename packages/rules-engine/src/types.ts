@@ -223,6 +223,9 @@ export interface FavoredClassBonusDefinition {
   className: string;
   label: string;
   description: string;
+  source?: string;
+  sourceUrl?: string;
+  automationStatus?: "automated" | "manual";
   deathThresholdBonus?: number;
 }
 

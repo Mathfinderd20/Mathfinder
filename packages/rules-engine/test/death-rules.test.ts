@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { CharacterBuild } from "../src/build/types";
-import { deriveDeathRules } from "../src/death-rules";
+import { deriveDeathRules, favoredClassBonusOptions } from "../src/death-rules";
 
 function build(partial: Partial<CharacterBuild> = {}): CharacterBuild {
   return {
@@ -58,6 +58,22 @@ describe("death rules", () => {
     expect(rules.automaticallyStabilizes).toBe(true);
     expect(rules.ferocity).toBe("half-orc");
     expect(rules.deathThresholdBonus).toBe(4);
+  });
+
+  it("offers class-agnostic ancestry bonuses for every favored class", () => {
+    const race = {
+      ...build().race,
+      favoredClassBonuses: [
+        {
+          id: "kitsune-magical-tail",
+          className: "All",
+          label: "Magical Tail",
+          description: "Gain 1/6 of a Magical Tail feat.",
+        },
+      ],
+    };
+
+    expect(favoredClassBonusOptions(race, "Wizard")).toHaveLength(1);
   });
 
   it("removes Half-Orc ferocity when an alternate trait replaces it", () => {

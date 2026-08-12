@@ -134,6 +134,25 @@ describe("content-db", () => {
     expect(
       parsed.traitEntries?.find((entry) => entry.name === "Skilled")?.text,
     ).toContain("Diplomacy and Perception checks");
+
+    const favoredClassHtml = `<table id="MainContent_DataListTypes"><tr><td><h1 class="title">Goblin</h1><b>Source</b> Advanced Race Guide pg. 115<br/><b>Small</b><br/><b>Fast Speed</b> 30 feet<br/><h1 class="title">Goblin Favored Class Options</h1>Instead of the universal bonus.<br/><br/>The following options are available.<br/><br/><b>Alchemist</b> (<a>Advanced Race Guide pg. 115</a>): The alchemist gains fire resistance 1.<br/><b>Barbarian</b> (<a>Advanced Race Guide pg. 115</a>): Add +1/2 on critical hit confirmation rolls.</td></tr></table>`;
+    const favored = parseAonRaceDetail(
+      favoredClassHtml,
+      "https://www.aonprd.com/RacesDisplay.aspx?ItemName=Goblin",
+      "NonCore",
+    );
+    expect(favored.favoredClassBonuses).toEqual([
+      {
+        className: "Alchemist",
+        description: "The alchemist gains fire resistance 1.",
+        sources: ["Advanced Race Guide pg. 115"],
+      },
+      {
+        className: "Barbarian",
+        description: "Add +1/2 on critical hit confirmation rolls.",
+        sources: ["Advanced Race Guide pg. 115"],
+      },
+    ]);
   });
 
   it("normalizes scraped race traits into engine modifiers and class skills", () => {

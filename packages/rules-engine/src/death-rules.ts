@@ -46,9 +46,10 @@ export function favoredClassBonusOptions(
   className: string,
 ): FavoredClassBonusDefinition[] {
   const normalizedClass = className.trim().toLowerCase();
-  return (race.favoredClassBonuses ?? []).filter(
-    (bonus) => bonus.className.trim().toLowerCase() === normalizedClass,
-  );
+  return (race.favoredClassBonuses ?? []).filter((bonus) => {
+    const bonusClass = bonus.className.trim().toLowerCase();
+    return bonusClass === normalizedClass || bonusClass === "all";
+  });
 }
 
 export function deriveDeathRules(build: CharacterBuild): DeathRules {

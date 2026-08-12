@@ -17,6 +17,16 @@ import {
 } from "./overrides";
 
 const AON_BASE = "https://www.aonprd.com/";
+const AON_USER_AGENT =
+  "MathfinderContentBot/0.1 (+https://github.com/adammartin2500-ship-it/Mathfinder; cached rules-data ingestion)";
+const AON_REQUEST_TIMEOUT_MS = 20_000;
+const AON_MIN_REQUEST_INTERVAL_MS = 250;
+const AON_MAX_FETCH_ATTEMPTS = 3;
+let lastAonRequestAt = 0;
+
+function wait(milliseconds: number) {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
 
 export const AON_BASE_CLASSES = [
   "Alchemist",
@@ -351,13 +361,44 @@ export async function fetchCachedPage(
   const cached = db
     .prepare("SELECT html, status_code FROM page_cache WHERE url = ?")
     .get(url) as { html: string; status_code: number } | undefined;
-  if (cached) return cached;
-  const response = await fetch(url);
-  const html = await response.text();
-  db.prepare(
-    "INSERT OR REPLACE INTO page_cache (url, source, status_code, fetched_at, html) VALUES (?, ?, ?, ?, ?)",
-  ).run(url, source, response.status, new Date().toISOString(), html);
-  return { html, status_code: response.status };
+  if (
+    cached?.status_code &&
+    cached.status_code >= 200 &&
+    cached.status_code < 300
+  )
+    return cached;
+
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= AON_MAX_FETCH_ATTEMPTS; attempt += 1) {
+    const throttleDelay = Math.max(
+      0,
+      AON_MIN_REQUEST_INTERVAL_MS - (Date.now() - lastAonRequestAt),
+    );
+    if (throttleDelay > 0) await wait(throttleDelay);
+    lastAonRequestAt = Date.now();
+    try {
+      const response = await fetch(url, {
+        headers: { "user-agent": AON_USER_AGENT, accept: "text/html" },
+        signal: AbortSignal.timeout(AON_REQUEST_TIMEOUT_MS),
+      });
+      const html = await response.text();
+      db.prepare(
+        "INSERT OR REPLACE INTO page_cache (url, source, status_code, fetched_at, html) VALUES (?, ?, ?, ?, ?)",
+      ).run(url, source, response.status, new Date().toISOString(), html);
+      if (response.status >= 200 && response.status < 300)
+        return { html, status_code: response.status };
+      lastError = new Error(
+        `AoN request failed (${response.status}) for ${url}`,
+      );
+      if (response.status < 500 && response.status !== 429) break;
+    } catch (error) {
+      lastError = error;
+    }
+    if (attempt < AON_MAX_FETCH_ATTEMPTS) await wait(500 * 2 ** (attempt - 1));
+  }
+  throw lastError instanceof Error
+    ? lastError
+    : new Error(`AoN request failed for ${url}`);
 }
 
 function parseLinksByPrefix(html: string, hrefPrefix: string) {
@@ -741,6 +782,49 @@ function raceLabelValue(
   return normalizeFieldText(bits.join(" "))?.replace(/^:\s*/, "");
 }
 
+function parseAonFavoredClassBonuses(
+  $: ReturnType<typeof load>,
+  block: ReturnType<typeof detailBlock>["block"],
+) {
+  const heading = block
+    .find("h1.title")
+    .filter((_, element) => /Favored Class Options/i.test($(element).text()))
+    .first();
+  if (!heading.length) return [];
+  const bonuses: NonNullable<ParsedScrapedRace["favoredClassBonuses"]> = [];
+  let node = heading.get(0)?.nextSibling ?? null;
+  let currentClass: string | undefined;
+  let descriptionParts: string[] = [];
+  let sources: string[] = [];
+  const flush = () => {
+    const description = cleanText(descriptionParts.join(" ")).replace(
+      /^\W*:\s*/,
+      "",
+    );
+    if (currentClass && description)
+      bonuses.push({ className: currentClass, description, sources });
+    descriptionParts = [];
+    sources = [];
+  };
+  while (node) {
+    if (nodeTagName(node) === "h1") break;
+    if (nodeTagName(node) === "b") {
+      flush();
+      const parsedClass = cleanText($(node).text());
+      currentClass = parsedClass === "Kinetcist" ? "Kineticist" : parsedClass;
+    } else if (currentClass && nodeTagName(node) === "a") {
+      const source = cleanText($(node).text());
+      if (source) sources.push(source);
+    } else if (currentClass && nodeTagName(node) !== "br") {
+      const text = cleanText($(node).text());
+      if (text && !/^\s*[,()]\s*$/.test(text)) descriptionParts.push(text);
+    }
+    node = node.nextSibling;
+  }
+  flush();
+  return bonuses;
+}
+
 export function parseAonRaceDetail(
   html: string,
   sourceUrl: string,
@@ -794,6 +878,7 @@ export function parseAonRaceDetail(
       ? `${speedLabel}${speedValue ? `: ${speedValue}` : ""}`
       : undefined,
     languages: raceLabelValue($, block, "Languages"),
+    favoredClassBonuses: parseAonFavoredClassBonuses($, block),
     traitEntries: coreTraitLabels
       .filter(
         (label) =>
@@ -1666,7 +1751,12 @@ export async function scrapeAonRaces(
       const detail = await fetchCachedPage(db, "aonprd", link.url);
       const parsed = parseAonRaceDetail(detail.html, link.url, category);
       const merged = { ...parsed, name: link.name || parsed.name, category };
-      if (!merged.name || !merged.size || !merged.speedText) continue;
+      if (
+        !merged.name ||
+        ((!merged.size || !merged.speedText) &&
+          !merged.favoredClassBonuses?.length)
+      )
+        continue;
       insertScrapedEntity(db, "race", merged.name, merged.sourceUrl, merged);
     }
     finishIngestionRun(db, run.lastInsertRowid, "completed", {

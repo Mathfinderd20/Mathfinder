@@ -102,6 +102,12 @@ export interface ParsedScrapedRaceTrait {
   text?: string;
 }
 
+export interface ParsedScrapedFavoredClassBonus {
+  className: string;
+  description: string;
+  sources?: string[];
+}
+
 export interface ParsedScrapedRace {
   name: string;
   source?: string;
@@ -112,6 +118,7 @@ export interface ParsedScrapedRace {
   speedText?: string;
   languages?: string;
   traitEntries?: ParsedScrapedRaceTrait[];
+  favoredClassBonuses?: ParsedScrapedFavoredClassBonus[];
   description: string;
   sourceUrl: string;
 }
