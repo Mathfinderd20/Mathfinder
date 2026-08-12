@@ -193,3 +193,5 @@ export function useRuntimeState(storageKey: string) {
     ...actions,
   };
 }
+
+export type RuntimeStateController = ReturnType<typeof useRuntimeState>;
