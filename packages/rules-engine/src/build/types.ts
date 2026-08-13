@@ -16,6 +16,7 @@ import type {
 } from "../types";
 import type { FeatGrantKind } from "../content/feats";
 import type { CampaignRules } from "../campaign-rules";
+import type { Alignment } from "../alignment";
 
 export interface RaceChoiceSelection {
   flexibleAbility?: AbilityKey;
@@ -142,6 +143,8 @@ export interface EquipmentEntry {
 
 export interface CharacterBuild {
   name: string;
+  /** Optional only for backward compatibility with persisted pre-alignment builds. */
+  alignment?: Alignment;
   race: RaceChoice;
   classArchetypes?: Partial<Record<string, string[]>>;
   favoredClassName?: string;

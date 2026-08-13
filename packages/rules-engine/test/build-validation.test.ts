@@ -78,6 +78,53 @@ const SELF_PREREQ_FEATS: FeatRegistry = {
 };
 
 describe("validateBuild level diagnostics", () => {
+  it("enforces class alignment restrictions and carries alignment to the sheet", () => {
+    const lawfulBarbarian = baseBuild();
+    lawfulBarbarian.alignment = "lawful-neutral";
+    lawfulBarbarian.levels = [{ className: "Barbarian", hitPointRoll: 12 }];
+
+    expect(validateBuild(lawfulBarbarian)).toContainEqual(
+      expect.objectContaining({
+        code: "class-alignment-restriction",
+        severity: "error",
+        level: 1,
+      }),
+    );
+
+    lawfulBarbarian.alignment = "chaotic-neutral";
+    expect(
+      validateBuild(lawfulBarbarian).some(
+        (issue) => issue.code === "class-alignment-restriction",
+      ),
+    ).toBe(false);
+    expect(
+      computeSheet(buildCharacter(lawfulBarbarian)).descriptor.alignment,
+    ).toBe("chaotic-neutral");
+  });
+
+  it("enforces paladin and druid alignment restrictions", () => {
+    const build = baseBuild();
+    build.alignment = "neutral-good";
+    build.levels = [{ className: "Paladin", hitPointRoll: 10 }];
+    expect(validateBuild(build).map((issue) => issue.code)).toContain(
+      "class-alignment-restriction",
+    );
+
+    build.alignment = "lawful-good";
+    expect(validateBuild(build).map((issue) => issue.code)).not.toContain(
+      "class-alignment-restriction",
+    );
+
+    build.levels = [{ className: "Druid", hitPointRoll: 8 }];
+    expect(validateBuild(build).map((issue) => issue.code)).toContain(
+      "class-alignment-restriction",
+    );
+    build.alignment = "true-neutral";
+    expect(validateBuild(build).map((issue) => issue.code)).not.toContain(
+      "class-alignment-restriction",
+    );
+  });
+
   it("rejects hit-point rolls outside the class hit die", () => {
     const build = baseBuild();
     build.levels[0]!.hitPointRoll = 11;

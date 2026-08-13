@@ -1,10 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import {
+  ALIGNMENTS,
+  ALIGNMENT_LABELS,
   buildCharacter,
+  classAllowsAlignment,
   computeSheet,
   featContextFromSheet,
   SKILL_DEFINITIONS,
   type AbilityKey,
+  type Alignment,
   type CharacterBuild,
   type SkillKey,
 } from "@mathfinder/rules-engine";
@@ -78,6 +82,7 @@ export function CharacterCreationModal({
     RUNTIME_CLASS_OPTIONS[0]?.name ??
     "Fighter";
   const [raceKey, setRaceKey] = useState(defaultRaceKey);
+  const [alignment, setAlignment] = useState<Alignment>("true-neutral");
   const [className, setClassName] = useState(defaultClassName);
   const [abilityScores, setAbilityScores] =
     useState<Record<AbilityKey, number>>(DEFAULT_SCORES);
@@ -106,6 +111,7 @@ export function CharacterCreationModal({
     if (!race || !classDefinition) return undefined;
     return createFreshCharacterBuild(characterName, race, {
       className: classDefinition.name,
+      alignment,
       hitPointRoll: classDefinition.hitDie,
       baseAbilityScores: abilityScores,
       flexibleAbility: hasFlexibleAbility ? flexibleAbility : undefined,
@@ -118,6 +124,7 @@ export function CharacterCreationModal({
     });
   }, [
     abilityScores,
+    alignment,
     characterName,
     classDefinition,
     favoredClass,
@@ -225,11 +232,16 @@ export function CharacterCreationModal({
     [availableWeaponNames, featContext, raceBonusFeat, selectedFeats],
   );
 
+  const classAlignmentAllowed =
+    !!classDefinition && classAllowsAlignment(classDefinition, alignment);
   const missingRequiredFeat =
     selectedFeats.filter(Boolean).length < featSlots.length ||
     (hasRaceBonusFeat && !raceBonusFeat);
   const canConfirm =
-    !!draftBuild && remainingSkills >= 0 && !missingRequiredFeat;
+    !!draftBuild &&
+    classAlignmentAllowed &&
+    remainingSkills >= 0 &&
+    !missingRequiredFeat;
 
   function updateAbility(ability: AbilityKey, rawValue: string) {
     const value = Math.max(7, Math.min(18, Number(rawValue) || 10));
@@ -269,16 +281,41 @@ export function CharacterCreationModal({
         </div>
 
         <div className="field">
+          <span>Alignment</span>
+          <select
+            value={alignment}
+            onChange={(event) => setAlignment(event.target.value as Alignment)}
+          >
+            {ALIGNMENTS.map((option) => (
+              <option key={option} value={option}>
+                {ALIGNMENT_LABELS[option]}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="field">
           <span>Class</span>
           <select
             value={className}
             onChange={(event) => setClassName(event.target.value)}
           >
-            {RUNTIME_CLASS_OPTIONS.map((option) => (
-              <option key={option.name} value={option.name}>
-                {option.name} · d{option.hitDie}
-              </option>
-            ))}
+            {RUNTIME_CLASS_OPTIONS.map((option) => {
+              const allowed = classAllowsAlignment(
+                RUNTIME_CLASSES[classKeyForName(option.name)]!,
+                alignment,
+              );
+              return (
+                <option
+                  key={option.name}
+                  value={option.name}
+                  disabled={!allowed}
+                >
+                  {option.name} · d{option.hitDie}
+                  {allowed ? "" : " · alignment restricted"}
+                </option>
+              );
+            })}
           </select>
         </div>
 
@@ -457,6 +494,11 @@ export function CharacterCreationModal({
           </section>
         ) : null}
 
+        {!classAlignmentAllowed ? (
+          <p className="form-error">
+            {classDefinition?.alignmentRestriction?.description}
+          </p>
+        ) : null}
         {missingRequiredFeat ? (
           <p className="form-error">
             Choose every granted feat before continuing.

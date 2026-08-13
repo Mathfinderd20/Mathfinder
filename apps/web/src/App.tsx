@@ -136,6 +136,7 @@ export function App({
   } = useSpellbookEditor(build, setBuild);
   const {
     toggleRaceAlternateTrait,
+    updateAlignment,
     updateBaseAbilityScore,
     updateClassArchetypes,
     updateFavoredClassName,
@@ -680,6 +681,7 @@ export function App({
             schoolOptions={SCHOOL_OPTIONS}
             spellCastCounts={spellCastCounts}
             onUpdateName={(name) => setBuild((prev) => ({ ...prev, name }))}
+            onUpdateAlignment={updateAlignment}
             onUpdateBaseAbilityScore={updateBaseAbilityScore}
             onUpdateRace={updateRace}
             onUpdateRaceFlexibleAbility={updateRaceFlexibleAbility}

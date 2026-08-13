@@ -1,11 +1,13 @@
 import type {
   AbilityKey,
+  Alignment,
   CharacterBuild,
   SkillKey,
 } from "@mathfinder/rules-engine";
 
 interface FreshCharacterChoices {
   className: string;
+  alignment: Alignment;
   hitPointRoll: number;
   baseAbilityScores: Record<AbilityKey, number>;
   flexibleAbility?: AbilityKey;
@@ -23,6 +25,7 @@ export function createFreshCharacterBuild(
   const className = choices.className.trim();
   return {
     name: name.trim() || "Unnamed Hero",
+    alignment: choices.alignment,
     race: {
       ...race,
       choiceSelection: {

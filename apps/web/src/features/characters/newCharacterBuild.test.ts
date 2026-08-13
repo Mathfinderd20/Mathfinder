@@ -15,6 +15,7 @@ describe("createFreshCharacterBuild", () => {
   it("creates a clean level-one build from creation decisions", () => {
     const build = createFreshCharacterBuild("  Merisiel  ", humanRace, {
       className: "Rogue",
+      alignment: "chaotic-neutral",
       hitPointRoll: 8,
       baseAbilityScores: {
         str: 10,
@@ -32,6 +33,7 @@ describe("createFreshCharacterBuild", () => {
     });
 
     expect(build.name).toBe("Merisiel");
+    expect(build.alignment).toBe("chaotic-neutral");
     expect(build.race.name).toBe("Human");
     expect(build.race.choiceSelection).toMatchObject({
       flexibleAbility: "dex",

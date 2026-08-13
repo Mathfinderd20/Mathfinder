@@ -1,5 +1,6 @@
 import { useState } from "react";
 import {
+  ALIGNMENT_LABELS,
   deriveHealthStatus,
   SKILL_DEFINITIONS,
   type AbilityKey,
@@ -472,6 +473,9 @@ export function Sheet({
           </div>
           <div className="sheet-meta-line">
             <span>{identity || "Unspecified heroics"}</span>
+            {sheet.descriptor.alignment ? (
+              <span>{ALIGNMENT_LABELS[sheet.descriptor.alignment]}</span>
+            ) : null}
             <span>Size: {sheet.size}</span>
             <Tooltip content={encumbranceTooltip(sheet.encumbrance)}>
               <span>Load: {sheet.encumbrance.band}</span>

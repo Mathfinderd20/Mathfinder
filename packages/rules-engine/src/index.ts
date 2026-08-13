@@ -8,6 +8,17 @@
 
 export * from "./types";
 export {
+  ALIGNMENTS,
+  ALIGNMENT_LABELS,
+  alignmentEthic,
+  alignmentMorality,
+  alignmentHasNeutralComponent,
+  isAlignment,
+  type Alignment,
+  type AlignmentEthic,
+  type AlignmentMorality,
+} from "./alignment";
+export {
   computeSheet,
   abilityModifier,
   type ComputeSheetOptions,
@@ -244,7 +255,9 @@ export {
   poorSaveBase,
   spellsByLevel,
   checkClassPrerequisites,
+  classAllowsAlignment,
   type ClassDefinition,
+  type ClassAlignmentRestriction,
   type ClassPrerequisite,
   type ClassPrerequisiteContext,
   type ClassRegistry,

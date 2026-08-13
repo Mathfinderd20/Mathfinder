@@ -1,6 +1,7 @@
 import type { Dispatch, SetStateAction } from "react";
 import type {
   AbilityKey,
+  Alignment,
   CharacterBuild,
   FirearmRulesMode,
 } from "@mathfinder/rules-engine";
@@ -90,6 +91,10 @@ export function useBuildBasicsEditor(
     });
   }
 
+  function updateAlignment(value: Alignment) {
+    setBuild((previous) => ({ ...previous, alignment: value }));
+  }
+
   function updateFavoredClassName(value: string) {
     setBuild((previous) => ({
       ...previous,
@@ -134,6 +139,7 @@ export function useBuildBasicsEditor(
 
   return {
     toggleRaceAlternateTrait,
+    updateAlignment,
     updateBaseAbilityScore,
     updateClassArchetypes,
     updateFavoredClassName,

@@ -22,6 +22,7 @@ import type {
 import {
   babForLevels,
   checkClassPrerequisites,
+  classAllowsAlignment,
   getClassDefinition,
   saveBaseForClass,
   SAMPLE_CLASSES,
@@ -1352,6 +1353,7 @@ export function buildCharacter(
   };
   const descriptor: SheetDescriptor = {
     race: activeRace.name,
+    alignment: build.alignment,
     classes,
     archetypes: dedupeAcquisitions(archetypes),
     feats: dedupeAcquisitions(feats),
@@ -1621,6 +1623,13 @@ export function validateBuild(
         code: "unknown-class",
         level: levelNum,
         message: `Unknown class "${lvl.className}" at level ${levelNum}.`,
+      });
+    } else if (!classAllowsAlignment(def, build.alignment)) {
+      issues.push({
+        severity: "error",
+        code: "class-alignment-restriction",
+        level: levelNum,
+        message: `Level ${levelNum}: ${def.alignmentRestriction?.description ?? `${def.name} does not allow this alignment.`}`,
       });
     } else if (
       !Number.isInteger(lvl.hitPointRoll) ||

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   buildCharacter,
+  classAllowsAlignment,
   computeSheet,
   featContextFromSheet,
   planLevelUp,
@@ -193,6 +194,9 @@ export function LevelUpModal({
     Math.min(plan.hitDie, hpValue || plan.averageHitPoints),
   );
   const resolvedClassName = RUNTIME_CLASSES[className]?.name ?? className;
+  const selectedClass = RUNTIME_CLASSES[className];
+  const classAlignmentAllowed =
+    !!selectedClass && classAllowsAlignment(selectedClass, build.alignment);
   const favoredClassEligible =
     !!build.favoredClassName &&
     build.favoredClassName.toLowerCase() === resolvedClassName.toLowerCase();
@@ -393,6 +397,15 @@ export function LevelUpModal({
     .filter((entry): entry is LevelUpSpellSeedPlan => !!entry);
 
   const issues = validateLevelUpSelection(preview.plan, preview.selection);
+  if (!classAlignmentAllowed) {
+    issues.unshift({
+      severity: "error",
+      code: "class-alignment-restriction",
+      message:
+        selectedClass?.alignmentRestriction?.description ??
+        "This class does not allow the character's alignment.",
+    });
+  }
   const hasError = issues.some((i) => i.severity === "error");
 
   function commitHpInput(nextInput = hpInput) {
@@ -514,11 +527,17 @@ export function LevelUpModal({
             value={className}
             onChange={(e) => setClassName(e.target.value)}
           >
-            {CLASS_KEYS.map((key) => (
-              <option key={key} value={key}>
-                {RUNTIME_CLASSES[key]?.name ?? key}
-              </option>
-            ))}
+            {CLASS_KEYS.map((key) => {
+              const classDef = RUNTIME_CLASSES[key];
+              const allowed =
+                !!classDef && classAllowsAlignment(classDef, build.alignment);
+              return (
+                <option key={key} value={key} disabled={!allowed}>
+                  {classDef?.name ?? key}
+                  {allowed ? "" : " · alignment restricted"}
+                </option>
+              );
+            })}
           </select>
           <SuggestionCardRow
             title="Why these class picks"

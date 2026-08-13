@@ -1,6 +1,9 @@
 import {
+  ALIGNMENTS,
+  ALIGNMENT_LABELS,
   SKILL_DEFINITIONS,
   type AbilityKey,
+  type Alignment,
   type ArchetypeDefinitionLike,
   type CharacterBuild,
   type DerivedSpellcasting,
@@ -71,6 +74,7 @@ interface Props {
   schoolOptions: Array<{ id: string; name: string }>;
   spellCastCounts: SpellCastCounts;
   onUpdateName: (name: string) => void;
+  onUpdateAlignment: (alignment: Alignment) => void;
   onUpdateBaseAbilityScore: (ability: AbilityKey, value: number) => void;
   onUpdateRace: (raceKey: string) => void;
   onUpdateRaceFlexibleAbility: (ability: AbilityKey) => void;
@@ -220,6 +224,7 @@ export function BuildEditorTab(props: Props) {
   }, [featOptions, raceChoiceOptions.bonusFeat?.featOptions]);
   const coreSetupLooksConfigured =
     abilityOrder.some((ability) => build.baseAbilityScores[ability] !== 10) ||
+    !!build.alignment ||
     build.race.name.trim().toLowerCase() !== "human" ||
     (build.levels[0]?.className.trim().toLowerCase() ?? "") !== "fighter" ||
     !!build.favoredClassName ||
@@ -228,6 +233,7 @@ export function BuildEditorTab(props: Props) {
     (build.race.choiceSelection?.alternateTraits?.length ?? 0) > 0;
   const coreSetupSummary = [
     build.race.name,
+    build.alignment ? ALIGNMENT_LABELS[build.alignment] : "Alignment unset",
     `L1 ${build.levels[0]?.className ?? "Fighter"}`,
     build.favoredClassName ? `Favored ${build.favoredClassName}` : null,
     abilityOrder
@@ -288,6 +294,25 @@ export function BuildEditorTab(props: Props) {
                     props.onUpdateName(e.target.value || "Unnamed Hero")
                   }
                 />
+              </label>
+
+              <label className="field compact">
+                <span>Alignment</span>
+                <select
+                  value={build.alignment ?? ""}
+                  onChange={(event) =>
+                    props.onUpdateAlignment(event.target.value as Alignment)
+                  }
+                >
+                  <option value="" disabled>
+                    Choose alignment
+                  </option>
+                  {ALIGNMENTS.map((alignment) => (
+                    <option key={alignment} value={alignment}>
+                      {ALIGNMENT_LABELS[alignment]}
+                    </option>
+                  ))}
+                </select>
               </label>
 
               <div className="editor-grid">

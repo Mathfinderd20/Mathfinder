@@ -189,6 +189,7 @@ export interface SuppressedAcquisition extends NamedAcquisition {
 /** Non-mechanical identity carried through to the sheet (race/class/feats/etc.). */
 export interface SheetDescriptor {
   race?: string;
+  alignment?: import("./alignment").Alignment;
   classes: NamedAcquisition[];
   archetypes: NamedAcquisition[];
   feats: NamedAcquisition[];
