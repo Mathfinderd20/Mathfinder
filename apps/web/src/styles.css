@@ -1285,9 +1285,13 @@ button:disabled {
   margin: 8px 0;
 }
 .spell-tab-bar {
+  position: static;
+  z-index: auto;
   padding: 0;
   margin: 10px 0 0;
   max-width: none;
+  background: transparent;
+  backdrop-filter: none;
 }
 .spell-level-tab-panel {
   margin-top: 10px;
