@@ -1,7 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  ALIGNMENTS,
-  ALIGNMENT_LABELS,
   buildCharacter,
   classAllowsAlignment,
   computeSheet,
@@ -31,6 +29,7 @@ import { plannedFeatSlotsForLevel } from "../featSlots";
 import { buildFavoredClassBonusOptions } from "../favoredClassBonusData";
 import { featTitle } from "../rulesText";
 import { createFreshCharacterBuild } from "../features/characters/newCharacterBuild";
+import { AlignmentPicker } from "./AlignmentPicker";
 import { CompendiumPicker } from "./CompendiumPicker";
 
 const ABILITIES: AbilityKey[] = ["str", "dex", "con", "int", "wis", "cha"];
@@ -280,18 +279,9 @@ export function CharacterCreationModal({
           </select>
         </div>
 
-        <div className="field">
+        <div className="field compact alignment-field">
           <span>Alignment</span>
-          <select
-            value={alignment}
-            onChange={(event) => setAlignment(event.target.value as Alignment)}
-          >
-            {ALIGNMENTS.map((option) => (
-              <option key={option} value={option}>
-                {ALIGNMENT_LABELS[option]}
-              </option>
-            ))}
-          </select>
+          <AlignmentPicker value={alignment} onChange={setAlignment} />
         </div>
 
         <div className="field">

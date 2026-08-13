@@ -1,5 +1,4 @@
 import {
-  ALIGNMENTS,
   ALIGNMENT_LABELS,
   SKILL_DEFINITIONS,
   type AbilityKey,
@@ -20,6 +19,7 @@ import type {
   SkillSuggestionChoice,
   SpellSuggestionChoice,
 } from "../buildSuggestions";
+import { AlignmentPicker } from "./AlignmentPicker";
 import { CompendiumPicker, type CompendiumOption } from "./CompendiumPicker";
 import { SpellcastingManager } from "./SpellcastingManager";
 import { Tooltip } from "./Tooltip";
@@ -296,24 +296,13 @@ export function BuildEditorTab(props: Props) {
                 />
               </label>
 
-              <label className="field compact">
+              <div className="field compact alignment-field">
                 <span>Alignment</span>
-                <select
-                  value={build.alignment ?? ""}
-                  onChange={(event) =>
-                    props.onUpdateAlignment(event.target.value as Alignment)
-                  }
-                >
-                  <option value="" disabled>
-                    Choose alignment
-                  </option>
-                  {ALIGNMENTS.map((alignment) => (
-                    <option key={alignment} value={alignment}>
-                      {ALIGNMENT_LABELS[alignment]}
-                    </option>
-                  ))}
-                </select>
-              </label>
+                <AlignmentPicker
+                  value={build.alignment}
+                  onChange={props.onUpdateAlignment}
+                />
+              </div>
 
               <div className="editor-grid">
                 {abilityOrder.map((ability) => (

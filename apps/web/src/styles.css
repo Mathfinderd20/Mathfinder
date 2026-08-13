@@ -492,6 +492,51 @@ button:disabled {
   font-size: 11px;
   color: var(--muted);
 }
+.alignment-field {
+  width: fit-content;
+  max-width: 100%;
+}
+.alignment-picker {
+  display: grid;
+  grid-template-columns: repeat(3, 34px);
+  gap: 3px;
+  width: fit-content;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.12);
+}
+.alignment-picker-option {
+  min-width: 0;
+  height: 28px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1;
+}
+.alignment-picker-option:hover {
+  border-color: rgba(217, 154, 91, 0.45);
+  background: rgba(217, 154, 91, 0.08);
+  color: var(--ink);
+}
+.alignment-picker-option.selected {
+  border-color: var(--accent);
+  background: rgba(194, 104, 58, 0.24);
+  color: var(--ink);
+}
+.spell-source-link {
+  color: var(--muted) !important;
+  border-color: rgba(168, 153, 138, 0.4) !important;
+  text-decoration: none;
+}
+.spell-source-link:hover {
+  color: var(--ink) !important;
+  border-color: var(--muted) !important;
+  background: rgba(168, 153, 138, 0.08) !important;
+}
 .spell-filter-strip {
   display: flex;
   flex-wrap: wrap;

@@ -391,7 +391,7 @@ export function SpellCompendiumBrowser({
               <div className="resource-buttons wrap">
                 {option.sourceUrl ? (
                   <a
-                    className="ghost small"
+                    className="ghost small spell-source-link"
                     href={option.sourceUrl}
                     target="_blank"
                     rel="noreferrer"
