@@ -159,21 +159,24 @@ export function RuntimeControlsPanel({
     const ownedSpellCards = matchingBuffCards.filter(
       ({ buff, ownedSpell }) => ownedSpell && !activeEffectIds.has(buff.id),
     );
-    const topSuggestedByCategory = TACTICAL_CATEGORIES.flatMap((category) =>
-      matchingBuffCards
-        .filter(
-          ({ buff, insight }) =>
-            !activeEffectIds.has(buff.id) &&
-            insight.categories.includes(category) &&
-            insight.score >= 3,
+    const browsingEffects = searchTerms.length > 0 || categoryFilter !== "all";
+    const topSuggestedByCategory = browsingEffects
+      ? TACTICAL_CATEGORIES.flatMap((category) =>
+          matchingBuffCards
+            .filter(
+              ({ buff, insight }) =>
+                !activeEffectIds.has(buff.id) &&
+                insight.categories.includes(category) &&
+                insight.score >= 3,
+            )
+            .sort(
+              (a, b) =>
+                b.insight.score - a.insight.score ||
+                a.buff.name.localeCompare(b.buff.name),
+            )
+            .slice(0, 4),
         )
-        .sort(
-          (a, b) =>
-            b.insight.score - a.insight.score ||
-            a.buff.name.localeCompare(b.buff.name),
-        )
-        .slice(0, searchTerms.length > 0 || categoryFilter !== "all" ? 4 : 2),
-    );
+      : [];
     const seen = new Set<string>();
     return [
       ...activeCards,
@@ -267,8 +270,8 @@ export function RuntimeControlsPanel({
     <section className="panel">
       <h2>Abilities, Buffs &amp; Auras</h2>
       <p className="hint">
-        Context-aware runtime controls. Defaults stay focused on relevant stuff,
-        and the rest is still searchable/addable when you want to get weird.
+        Your abilities, owned spells, and active effects stay up front. Browse
+        the effect catalog when an ally, item, or encounter adds something else.
       </p>
       <div className="runtime-smart-summary">
         <span className="chip">

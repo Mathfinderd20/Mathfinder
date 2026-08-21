@@ -117,7 +117,17 @@ function normalizeEquipmentItem(
     ownership: item.ownership ?? ("owned" as const),
     spellTriggerNames: normalizedSpellTriggerNames(item.spellTriggerNames),
   };
-  if (!item.itemTemplateId) {
+  const normalizedName = item.name.trim().toLowerCase();
+  const inferredArmor = RUNTIME_ARMOR.find(
+    (entry) => entry.name.trim().toLowerCase() === normalizedName,
+  );
+  const inferredTemplateId =
+    inferredArmor?.id ??
+    RUNTIME_MUNDANE_EQUIPMENT.find(
+      (entry) => entry.name.trim().toLowerCase() === normalizedName,
+    )?.id;
+  const templateId = item.itemTemplateId ?? inferredTemplateId;
+  if (!templateId) {
     return {
       ...item,
       ...defaults,
@@ -126,7 +136,9 @@ function normalizeEquipmentItem(
     };
   }
 
-  const magicItem = getRuntimeMagicItem(item.itemTemplateId);
+  const magicItem = item.itemTemplateId
+    ? getRuntimeMagicItem(templateId)
+    : undefined;
   if (magicItem) {
     const template = equipmentMagicItemTemplate(magicItem);
     return {
@@ -142,9 +154,7 @@ function normalizeEquipmentItem(
     };
   }
 
-  const armorItem = RUNTIME_ARMOR.find(
-    (entry) => entry.id === item.itemTemplateId,
-  );
+  const armorItem = RUNTIME_ARMOR.find((entry) => entry.id === templateId);
   if (armorItem) {
     if (armorItem.categoryNormalized === "shield") {
       return {
@@ -200,7 +210,7 @@ function normalizeEquipmentItem(
   }
 
   const mundaneItem = RUNTIME_MUNDANE_EQUIPMENT.find(
-    (entry) => entry.id === item.itemTemplateId,
+    (entry) => entry.id === templateId,
   );
   if (mundaneItem) {
     return {

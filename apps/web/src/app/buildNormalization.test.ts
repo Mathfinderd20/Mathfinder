@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { CharacterBuild } from "@mathfinder/rules-engine";
-import { materializeRaceChoice } from "./buildNormalization";
+import { RUNTIME_ARMOR } from "../content";
+import { materializeRaceChoice, normalizeBuild } from "./buildNormalization";
 
 function build(): CharacterBuild {
   return {
@@ -17,6 +18,37 @@ function build(): CharacterBuild {
     levels: [{ className: "Fighter", hitPointRoll: 10 }],
   };
 }
+
+describe("equipment normalization", () => {
+  it("upgrades manually named catalog armor so saved builds gain new mechanics", () => {
+    RUNTIME_ARMOR.push({
+      id: "sc-savage-plate",
+      name: "Savage Plate",
+      categoryNormalized: "heavy",
+      armorBonus: 6,
+      maxDexBonus: 4,
+      armorCheckPenalty: -6,
+      rangedTouchArmorFraction: 0.5,
+    });
+    try {
+      const source = build();
+      source.equipment = [
+        { name: "savage plate", equipped: true, slot: "armor" },
+      ];
+      expect(normalizeBuild(source).equipment?.[0]).toMatchObject({
+        itemTemplateId: "sc-savage-plate",
+        name: "Savage Plate",
+        armor: {
+          acBonus: 6,
+          checkPenalty: 6,
+          rangedTouchArmorFraction: 0.5,
+        },
+      });
+    } finally {
+      RUNTIME_ARMOR.pop();
+    }
+  });
+});
 
 describe("race choice materialization", () => {
   it("removes stale trait and feat selections while preserving legal choices", () => {

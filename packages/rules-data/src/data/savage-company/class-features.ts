@@ -25,6 +25,56 @@ export const SAVAGE_COMPANY_CLASS_FEATURES: ClassFeatureDefinition[] = [
     effects: [],
   },
   {
+    id: "infantryman-dodge-step-l1",
+    name: "Infantryman's Dodge — Step",
+    className: CLASS,
+    level: 1,
+    pack: PACK,
+    description:
+      "Spend 1 grit as an immediate action to move 5 feet and gain +2 AC against the triggering ranged attack. Medium-or-lighter armor/load restrictions are currently manual.",
+    effects: [],
+    activatable: {
+      id: "infantryman-dodge-step",
+      name: "Infantryman's Dodge — Step",
+      description:
+        "+2 dodge AC against the triggering ranged attack; costs 1 grit.",
+      group: "infantryman-dodge",
+      effects: [
+        {
+          target: "ac.vs.ranged",
+          type: "dodge",
+          value: 2,
+          source: "Infantryman's Dodge — Step",
+        },
+      ],
+    },
+  },
+  {
+    id: "infantryman-dodge-prone-l1",
+    name: "Infantryman's Dodge — Drop Prone",
+    className: CLASS,
+    level: 1,
+    pack: PACK,
+    description:
+      "Spend 1 grit as an immediate action to drop prone and gain +4 AC against the triggering ranged attack. Medium-or-lighter armor/load restrictions are currently manual.",
+    effects: [],
+    activatable: {
+      id: "infantryman-dodge-prone",
+      name: "Infantryman's Dodge — Drop Prone",
+      description:
+        "+4 dodge AC against the triggering ranged attack; costs 1 grit.",
+      group: "infantryman-dodge",
+      effects: [
+        {
+          target: "ac.vs.ranged",
+          type: "dodge",
+          value: 4,
+          source: "Infantryman's Dodge — Drop Prone",
+        },
+      ],
+    },
+  },
+  {
     id: "infantryman-gunsmith-l1",
     name: "Gunsmith",
     className: CLASS,
