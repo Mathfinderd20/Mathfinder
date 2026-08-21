@@ -60,6 +60,9 @@ export type BonusType =
 export type ModifierTarget =
   | AbilityKey
   | "ac"
+  | "ac.vs.firearms"
+  | "ac.vs.ranged"
+  | "ac.vs.melee"
   | "save.fort"
   | "save.ref"
   | "save.will"
@@ -105,6 +108,16 @@ export interface BreakdownEntry {
 export interface DerivedStat {
   total: number;
   breakdown: BreakdownEntry[];
+}
+
+export type ArmorClassContext = "firearms" | "ranged" | "melee";
+
+export interface ContextualArmorClass {
+  context: ArmorClassContext;
+  label: string;
+  normal: DerivedStat;
+  touch: DerivedStat;
+  flatFooted: DerivedStat;
 }
 
 export interface DerivedAbility {
@@ -611,7 +624,12 @@ export interface DerivedSheet {
   level: number;
   size: Size;
   abilities: Record<AbilityKey, DerivedAbility>;
-  ac: { normal: DerivedStat; touch: DerivedStat; flatFooted: DerivedStat };
+  ac: {
+    normal: DerivedStat;
+    touch: DerivedStat;
+    flatFooted: DerivedStat;
+    contextual: ContextualArmorClass[];
+  };
   saves: { fort: DerivedStat; ref: DerivedStat; will: DerivedStat };
   initiative: DerivedStat;
   baseAttackBonus: number;

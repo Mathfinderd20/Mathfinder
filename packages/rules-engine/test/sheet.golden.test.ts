@@ -31,6 +31,55 @@ describe("computeSheet — Savage Company Berserker (L1) golden sheet", () => {
     expect(sheet.ac.flatFooted.total).toBe(17);
   });
 
+  it("derives contextual AC profiles only when matching modifiers exist", () => {
+    const contextualSheet = computeSheet({
+      ...savageBerserkerL1,
+      modifiers: [
+        ...savageBerserkerL1.modifiers,
+        {
+          target: "ac.vs.ranged",
+          type: "dodge",
+          value: 2,
+          source: "Arrow-Catching Gear",
+        },
+        {
+          target: "ac.vs.firearms",
+          type: "circumstance",
+          value: 1,
+          source: "Bullet Ward",
+        },
+        {
+          target: "ac.vs.ranged",
+          type: "armor",
+          value: 2,
+          source: "Nonstacking Armor Test",
+        },
+      ],
+    });
+
+    expect(sheet.ac.contextual).toEqual([]);
+    expect(
+      contextualSheet.ac.contextual.map((profile) => profile.label),
+    ).toEqual(["vs Firearms", "vs Ranged"]);
+    expect(contextualSheet.ac.contextual[0]).toMatchObject({
+      context: "firearms",
+      normal: { total: 23 },
+      touch: { total: 16 },
+      flatFooted: { total: 18 },
+    });
+    expect(contextualSheet.ac.contextual[1]).toMatchObject({
+      context: "ranged",
+      normal: { total: 22 },
+      touch: { total: 15 },
+      flatFooted: { total: 17 },
+    });
+    expect(
+      contextualSheet.ac.contextual[0]?.normal.breakdown.map(
+        (entry) => entry.source,
+      ),
+    ).not.toContain("Nonstacking Armor Test");
+  });
+
   it("applies the Heroism morale bonus to all saves", () => {
     // Fort: base 2 + con 2 + morale 2 = 6
     expect(sheet.saves.fort.total).toBe(6);

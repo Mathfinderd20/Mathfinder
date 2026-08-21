@@ -220,6 +220,47 @@ describe("inventory math", () => {
     expect(sheet.skills.climb.total).toBe(5);
   });
 
+  it("derives unique AC profiles from equipped conditional-defense gear", () => {
+    const build = grukkLevel1();
+    build.equipment = [
+      {
+        name: "Bullet Ward",
+        equipped: true,
+        modifiers: [
+          {
+            target: "ac.vs.firearms",
+            type: "dodge",
+            value: 2,
+            source: "Bullet Ward",
+          },
+        ],
+      },
+      {
+        name: "Stowed Arrow Ward",
+        equipped: false,
+        modifiers: [
+          {
+            target: "ac.vs.ranged",
+            type: "dodge",
+            value: 4,
+            source: "Stowed Arrow Ward",
+          },
+        ],
+      },
+    ];
+
+    const sheet = computeSheet(buildCharacter(build));
+    expect(sheet.ac.normal.total).toBe(11);
+    expect(sheet.ac.contextual).toHaveLength(1);
+    expect(sheet.ac.contextual[0]).toMatchObject({
+      context: "firearms",
+      label: "vs Firearms",
+      normal: { total: 13 },
+      touch: { total: 13 },
+      flatFooted: { total: 10 },
+    });
+  });
+
   it("applies equipped shield bonuses and penalties without acting like armor", () => {
     const build = grukkLevel1();
     build.equipment = [

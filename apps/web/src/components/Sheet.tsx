@@ -143,6 +143,17 @@ function statTooltip(stat: DerivedStat, raw?: boolean) {
   );
 }
 
+function contextualAcTooltip(
+  profile: DerivedSheet["ac"]["contextual"][number],
+) {
+  return [
+    `${profile.label} AC`,
+    `Normal\n${statTooltip(profile.normal, true)}`,
+    `Touch\n${statTooltip(profile.touch, true)}`,
+    `Flat-Footed\n${statTooltip(profile.flatFooted, true)}`,
+  ].join("\n\n");
+}
+
 function weaponDamageTooltip(weapon: DerivedSheet["weapons"][number]) {
   return breakdownTooltip(weapon.damageDisplay, weapon.damageBreakdown);
 }
@@ -554,6 +565,20 @@ export function Sheet({
                   </span>
                 </div>
               </Tooltip>
+              {sheet.ac.contextual.map((profile) => (
+                <Tooltip
+                  key={profile.context}
+                  content={contextualAcTooltip(profile)}
+                  className="mf-tooltip-anchor-block"
+                >
+                  <div className="summary-box ac-contextual">
+                    <span className="summary-label">AC {profile.label}</span>
+                    <span className="summary-value">
+                      {profile.normal.total}
+                    </span>
+                  </div>
+                </Tooltip>
+              ))}
               <Tooltip
                 content={hitPointTooltip(sheet)}
                 className="mf-tooltip-anchor-block"

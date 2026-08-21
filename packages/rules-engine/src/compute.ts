@@ -17,6 +17,7 @@ import type { SpellRegistry } from "./content/spells";
 import type {
   BonusType,
   BreakdownEntry,
+  ArmorClassContext,
   CharacterInput,
   DerivedSheet,
   DerivedStat,
@@ -83,12 +84,16 @@ export function computeSheet(
   const dexToAc = dexMod < 0 ? dexMod : Math.min(dexMod, maxDex);
 
   // ---- Armor Class -------------------------------------------------------
-  const acMods = resolveModifiers(modifiersFor(input.modifiers, "ac"));
+  const baseAcModifiers = modifiersFor(input.modifiers, "ac");
+  const acMods = resolveModifiers(baseAcModifiers);
 
-  const buildAc = (opts: {
-    includeDex: boolean;
-    excludeTypes: ReadonlySet<BonusType>;
-  }): DerivedStat => {
+  const buildAc = (
+    opts: {
+      includeDex: boolean;
+      excludeTypes: ReadonlySet<BonusType>;
+    },
+    modifiers = baseAcModifiers,
+  ): DerivedStat => {
     const breakdown: BreakdownEntry[] = [
       { source: "base", type: "base", value: 10 },
     ];
@@ -102,12 +107,59 @@ export function computeSheet(
     if (opts.includeDex && dexToAc !== 0) {
       breakdown.push({ source: "Dexterity", type: "dex", value: dexToAc });
     }
-    for (const m of acMods.contributing) {
+    for (const m of resolveModifiers(modifiers).contributing) {
       if (opts.excludeTypes.has(m.type)) continue;
       breakdown.push({ source: m.source, type: m.type, value: m.value });
     }
     return stat(breakdown);
   };
+
+  const acContextDefinitions: Array<{
+    context: ArmorClassContext;
+    label: string;
+    targets: string[];
+  }> = [
+    {
+      context: "firearms",
+      label: "vs Firearms",
+      targets: ["ac.vs.ranged", "ac.vs.firearms"],
+    },
+    { context: "ranged", label: "vs Ranged", targets: ["ac.vs.ranged"] },
+    { context: "melee", label: "vs Melee", targets: ["ac.vs.melee"] },
+  ];
+  const contextual = acContextDefinitions.flatMap((definition) => {
+    const contextualModifiers = input.modifiers.filter(
+      (modifier) =>
+        modifier.enabled !== false &&
+        definition.targets.includes(modifier.target),
+    );
+    const hasSpecificModifier = contextualModifiers.some(
+      (modifier) => modifier.target === `ac.vs.${definition.context}`,
+    );
+    if (!hasSpecificModifier) return [];
+    const combinedModifiers = [...baseAcModifiers, ...contextualModifiers];
+    return [
+      {
+        context: definition.context,
+        label: definition.label,
+        normal: buildAc(
+          { includeDex: true, excludeTypes: new Set() },
+          combinedModifiers,
+        ),
+        touch: buildAc(
+          { includeDex: true, excludeTypes: TOUCH_EXCLUDED_AC_TYPES },
+          combinedModifiers,
+        ),
+        flatFooted: buildAc(
+          {
+            includeDex: false,
+            excludeTypes: FLAT_FOOTED_EXCLUDED_AC_TYPES,
+          },
+          combinedModifiers,
+        ),
+      },
+    ];
+  });
 
   const ac = {
     normal: buildAc({ includeDex: true, excludeTypes: new Set() }),
@@ -116,6 +168,7 @@ export function computeSheet(
       includeDex: false,
       excludeTypes: FLAT_FOOTED_EXCLUDED_AC_TYPES,
     }),
+    contextual,
   };
 
   // ---- Saving throws -----------------------------------------------------
