@@ -133,10 +133,14 @@ export interface EquipmentEntry {
     maxDexBonus?: number;
     checkPenalty?: number;
     speedPenalty?: number;
+    /** Fraction of armor AC retained against ranged attacks that target touch AC. */
+    rangedTouchArmorFraction?: number;
   };
   shield?: {
     acBonus?: number;
     checkPenalty?: number;
+    /** Fraction of shield AC retained against ranged attacks that target touch AC. */
+    rangedTouchShieldFraction?: number;
   };
   weapon?: Omit<Weapon, "name" | "proficient">;
 }

@@ -12,6 +12,7 @@ import {
   type DomainDefinition,
   type FeatRegistry,
   type MagicItemDefinition,
+  type Modifier,
   type SchoolDefinition,
   type SpellDefinition,
   type SpellRegistry,
@@ -50,9 +51,128 @@ export interface RuntimeArmorDefinition {
   costGp?: number;
   weightLb?: number;
   description?: string;
+  modifiers?: Modifier[];
+  /** Fraction of this armor's current AC bonus retained against ranged touch attacks. */
+  rangedTouchArmorFraction?: number;
+  /** Fraction of this shield's current AC bonus retained against ranged touch attacks. */
+  rangedTouchShieldFraction?: number;
 }
 
+export const SAVAGE_COMPANY_ARMOR: RuntimeArmorDefinition[] = [
+  {
+    id: "sc-road-gear",
+    name: "Road Gear",
+    source: "Savage Company",
+    categoryRaw: "Light armor",
+    categoryNormalized: "light",
+    armorBonus: 1,
+    maxDexBonus: 6,
+    armorCheckPenalty: 0,
+    arcaneSpellFailure: 10,
+    speed30: 30,
+    speed20: 20,
+    costGp: 100,
+    weightLb: 10,
+  },
+  {
+    id: "sc-shooters-plate",
+    name: "Shooters Plate",
+    source: "Savage Company",
+    categoryRaw: "Light armor",
+    categoryNormalized: "light",
+    armorBonus: 3,
+    maxDexBonus: 6,
+    armorCheckPenalty: -1,
+    arcaneSpellFailure: 20,
+    speed30: 30,
+    speed20: 20,
+    costGp: 400,
+    weightLb: 12,
+    description:
+      "Provides DR 3/— against firearms. Damage reduction is currently tracked manually.",
+  },
+  {
+    id: "sc-riot-gear",
+    name: "Riot Gear",
+    source: "Savage Company",
+    categoryRaw: "Medium armor",
+    categoryNormalized: "medium",
+    armorBonus: 4,
+    maxDexBonus: 5,
+    armorCheckPenalty: -1,
+    arcaneSpellFailure: 30,
+    speed30: 20,
+    speed20: 15,
+    costGp: 500,
+    weightLb: 25,
+    description:
+      "Provides DR 3/— against firearms and bludgeoning damage. Damage reduction is currently tracked manually.",
+  },
+  {
+    id: "sc-savage-plate",
+    name: "Savage Plate",
+    source: "Savage Company",
+    categoryRaw: "Heavy armor",
+    categoryNormalized: "heavy",
+    armorBonus: 6,
+    maxDexBonus: 4,
+    armorCheckPenalty: -6,
+    arcaneSpellFailure: 50,
+    speed30: 20,
+    speed20: 15,
+    costGp: 2100,
+    weightLb: 75,
+    rangedTouchArmorFraction: 0.5,
+    description:
+      "Retains half its armor bonus against ranged weapon attacks that would ignore armor. Baadan and Savage-race +1 is not automated yet.",
+  },
+  {
+    id: "sc-ballistic-shield",
+    name: "Ballistic Shield",
+    source: "Savage Company",
+    categoryRaw: "Shield",
+    categoryNormalized: "shield",
+    armorBonus: 2,
+    armorCheckPenalty: -1,
+    arcaneSpellFailure: 25,
+    costGp: 535,
+    weightLb: 12,
+    rangedTouchShieldFraction: 1,
+    description:
+      "Retains its shield bonus against ranged weapon attacks that ignore shield AC.",
+  },
+  {
+    id: "sc-deployable-shield",
+    name: "Deployable Shield",
+    source: "Savage Company",
+    categoryRaw: "Shield",
+    categoryNormalized: "shield",
+    armorBonus: 2,
+    armorCheckPenalty: -4,
+    arcaneSpellFailure: 25,
+    costGp: 700,
+    weightLb: 24,
+    rangedTouchShieldFraction: 1,
+    description:
+      "Includes ballistic-shield touch defense and can deploy as cover. Deployment state is currently manual.",
+  },
+  {
+    id: "sc-canid-field-armor",
+    name: "Canid Field Armor",
+    source: "Savage Company",
+    categoryRaw: "Light armor",
+    categoryNormalized: "light",
+    armorBonus: 3,
+    maxDexBonus: 6,
+    armorCheckPenalty: -3,
+    arcaneSpellFailure: 10,
+    costGp: 300,
+    weightLb: 8,
+  },
+];
+
 const SUPPLEMENTAL_ARMOR: RuntimeArmorDefinition[] = [
+  ...SAVAGE_COMPANY_ARMOR,
   {
     id: "ring-mail",
     name: "Ring mail",

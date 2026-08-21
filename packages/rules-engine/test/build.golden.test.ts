@@ -261,6 +261,39 @@ describe("inventory math", () => {
     });
   });
 
+  it("retains a configured fraction of armor against ranged touch attacks", () => {
+    const build = grukkLevel1();
+    build.equipment = [
+      {
+        name: "Savage Plate",
+        equipped: true,
+        slot: "armor",
+        armor: {
+          category: "heavy",
+          acBonus: 6,
+          maxDexBonus: 4,
+          checkPenalty: -6,
+          speedPenalty: 5,
+          rangedTouchArmorFraction: 0.5,
+        },
+      },
+    ];
+
+    const sheet = computeSheet(buildCharacter(build));
+    expect(sheet.ac.normal.total).toBe(17);
+    expect(sheet.ac.touch.total).toBe(11);
+    expect(sheet.ac.contextual).toHaveLength(1);
+    expect(sheet.ac.contextual[0]).toMatchObject({
+      context: "ranged",
+      normal: { total: 17 },
+      touch: { total: 14 },
+      flatFooted: { total: 16 },
+    });
+    expect(
+      sheet.ac.contextual[0]?.touch.breakdown.map((entry) => entry.source),
+    ).toContain("Savage Plate (ranged touch defense)");
+  });
+
   it("applies equipped shield bonuses and penalties without acting like armor", () => {
     const build = grukkLevel1();
     build.equipment = [

@@ -49,6 +49,7 @@ interface BuildFeatPickerOptionsArgs {
   availableWeaponNames?: string[];
   suggestedFeatNames?: Set<string>;
   query?: string;
+  maxOptions?: number;
 }
 
 interface LooseFeatSearchOptionsArgs {
@@ -67,6 +68,7 @@ export function buildFeatPickerOptions({
   availableWeaponNames,
   suggestedFeatNames,
   query,
+  maxOptions,
 }: BuildFeatPickerOptionsArgs): CompendiumOption[] {
   const normalizedCurrent = currentSelection?.trim().toLowerCase() ?? "";
   const normalizedQuery = query?.trim().toLowerCase() ?? "";
@@ -87,7 +89,10 @@ export function buildFeatPickerOptions({
       ]
         .join(" ")
         .toLowerCase();
-      return baseParts.includes(normalizedQuery);
+      return (
+        baseParts.includes(normalizedQuery) ||
+        (!!feat.parameter && normalizedQuery.includes(feat.name.toLowerCase()))
+      );
     })
     .flatMap((feat) => {
       const parameterChoices = feat.parameter
@@ -135,6 +140,7 @@ export function buildFeatPickerOptions({
       if (aSuggested !== bSuggested) return bSuggested - aSuggested;
       return a.selectionName.localeCompare(b.selectionName);
     })
+    .slice(0, maxOptions ?? Number.POSITIVE_INFINITY)
     .map(({ feat, selectionName, parameterValue, prereq }) => ({
       id: `${feat.id}:${parameterValue?.toLowerCase() ?? "base"}`,
       name: selectionName,

@@ -1,12 +1,43 @@
 import type { RulesDataSet } from "@mathfinder/rules-data";
 import { describe, expect, it } from "vitest";
-import { raceOptionsFromDataSet, runtimeContentAssetUrl } from "./content";
+import {
+  raceOptionsFromDataSet,
+  runtimeContentAssetUrl,
+  SAVAGE_COMPANY_ARMOR,
+} from "./content";
 
 describe("runtimeContentAssetUrl", () => {
   it("loads content from the app root regardless of the current route", () => {
     expect(runtimeContentAssetUrl("http://127.0.0.1:5173")).toBe(
       "http://127.0.0.1:5173/usable-content.json",
     );
+  });
+});
+
+describe("Savage Company armor", () => {
+  it("includes the manuscript armor table with projectile-defense metadata", () => {
+    expect(SAVAGE_COMPANY_ARMOR).toHaveLength(7);
+    expect(
+      SAVAGE_COMPANY_ARMOR.find((armor) => armor.id === "sc-shooters-plate"),
+    ).toMatchObject({
+      name: "Shooters Plate",
+      armorBonus: 3,
+      costGp: 400,
+      weightLb: 12,
+    });
+    expect(
+      SAVAGE_COMPANY_ARMOR.find((armor) => armor.id === "sc-savage-plate"),
+    ).toMatchObject({
+      name: "Savage Plate",
+      armorBonus: 6,
+      rangedTouchArmorFraction: 0.5,
+    });
+    expect(
+      SAVAGE_COMPANY_ARMOR.find((armor) => armor.id === "sc-ballistic-shield"),
+    ).toMatchObject({
+      name: "Ballistic Shield",
+      rangedTouchShieldFraction: 1,
+    });
   });
 });
 

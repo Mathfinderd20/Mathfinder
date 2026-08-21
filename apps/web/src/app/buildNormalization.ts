@@ -156,10 +156,15 @@ function normalizeEquipmentItem(
         weight: armorItem.weightLb,
         costGp: armorItem.costGp,
         slot: "shield",
+        modifiers: armorItem.modifiers,
         armor: undefined,
         shield: {
           acBonus: armorItem.armorBonus,
-          checkPenalty: armorItem.armorCheckPenalty,
+          checkPenalty:
+            armorItem.armorCheckPenalty === undefined
+              ? undefined
+              : Math.abs(armorItem.armorCheckPenalty),
+          rangedTouchShieldFraction: armorItem.rangedTouchShieldFraction,
         },
       };
     }
@@ -172,18 +177,23 @@ function normalizeEquipmentItem(
       weight: armorItem.weightLb,
       costGp: armorItem.costGp,
       slot: "armor",
+      modifiers: armorItem.modifiers,
       shield: undefined,
       armor: armorItem.categoryNormalized
         ? {
             category: armorItem.categoryNormalized,
             acBonus: armorItem.armorBonus,
             maxDexBonus: armorItem.maxDexBonus,
-            checkPenalty: armorItem.armorCheckPenalty,
+            checkPenalty:
+              armorItem.armorCheckPenalty === undefined
+                ? undefined
+                : Math.abs(armorItem.armorCheckPenalty),
             speedPenalty:
               typeof armorItem.speed30 === "number" &&
               typeof armorItem.speed20 === "number"
                 ? armorItem.speed30 - armorItem.speed20
                 : undefined,
+            rangedTouchArmorFraction: armorItem.rangedTouchArmorFraction,
           }
         : undefined,
     };

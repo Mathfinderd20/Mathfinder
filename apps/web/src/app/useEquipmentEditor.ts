@@ -136,11 +136,15 @@ export function useEquipmentEditor(
                     weight: item.weightLb,
                     costGp: item.costGp,
                     slot: "shield",
-                    modifiers: undefined,
+                    modifiers: item.modifiers,
                     armor: undefined,
                     shield: {
                       acBonus: item.armorBonus,
-                      checkPenalty: item.armorCheckPenalty,
+                      checkPenalty:
+                        item.armorCheckPenalty === undefined
+                          ? undefined
+                          : Math.abs(item.armorCheckPenalty),
+                      rangedTouchShieldFraction: item.rangedTouchShieldFraction,
                     },
                     weapon: undefined,
                   }
@@ -152,18 +156,23 @@ export function useEquipmentEditor(
                     weight: item.weightLb,
                     costGp: item.costGp,
                     slot: "armor",
-                    modifiers: undefined,
+                    modifiers: item.modifiers,
                     armor: item.categoryNormalized
                       ? {
                           category: item.categoryNormalized,
                           acBonus: item.armorBonus,
                           maxDexBonus: item.maxDexBonus,
-                          checkPenalty: item.armorCheckPenalty,
+                          checkPenalty:
+                            item.armorCheckPenalty === undefined
+                              ? undefined
+                              : Math.abs(item.armorCheckPenalty),
                           speedPenalty:
                             typeof item.speed30 === "number" &&
                             typeof item.speed20 === "number"
                               ? item.speed30 - item.speed20
                               : undefined,
+                          rangedTouchArmorFraction:
+                            item.rangedTouchArmorFraction,
                         }
                       : undefined,
                     shield: undefined,
@@ -247,18 +256,23 @@ export function useEquipmentEditor(
       weight: item.weightLb,
       costGp: item.costGp,
       slot: "armor",
+      modifiers: item.modifiers,
       armor:
         item.categoryNormalized && item.categoryNormalized !== "shield"
           ? {
               category: item.categoryNormalized,
               acBonus: item.armorBonus,
               maxDexBonus: item.maxDexBonus,
-              checkPenalty: item.armorCheckPenalty,
+              checkPenalty:
+                item.armorCheckPenalty === undefined
+                  ? undefined
+                  : Math.abs(item.armorCheckPenalty),
               speedPenalty:
                 typeof item.speed30 === "number" &&
                 typeof item.speed20 === "number"
                   ? item.speed30 - item.speed20
                   : undefined,
+              rangedTouchArmorFraction: item.rangedTouchArmorFraction,
             }
           : undefined,
     });
@@ -278,9 +292,14 @@ export function useEquipmentEditor(
       weight: item.weightLb,
       costGp: item.costGp,
       slot: "shield",
+      modifiers: item.modifiers,
       shield: {
         acBonus: item.armorBonus,
-        checkPenalty: item.armorCheckPenalty,
+        checkPenalty:
+          item.armorCheckPenalty === undefined
+            ? undefined
+            : Math.abs(item.armorCheckPenalty),
+        rangedTouchShieldFraction: item.rangedTouchShieldFraction,
       },
     });
   }

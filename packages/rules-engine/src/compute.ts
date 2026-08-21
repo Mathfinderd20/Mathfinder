@@ -93,6 +93,7 @@ export function computeSheet(
       excludeTypes: ReadonlySet<BonusType>;
     },
     modifiers = baseAcModifiers,
+    explicitTargetPrefix?: string,
   ): DerivedStat => {
     const breakdown: BreakdownEntry[] = [
       { source: "base", type: "base", value: 10 },
@@ -107,8 +108,13 @@ export function computeSheet(
     if (opts.includeDex && dexToAc !== 0) {
       breakdown.push({ source: "Dexterity", type: "dex", value: dexToAc });
     }
-    for (const m of resolveModifiers(modifiers).contributing) {
-      if (opts.excludeTypes.has(m.type)) continue;
+    const eligibleModifiers = modifiers.filter(
+      (modifier) =>
+        !opts.excludeTypes.has(modifier.type) ||
+        (!!explicitTargetPrefix &&
+          modifier.target.startsWith(explicitTargetPrefix)),
+    );
+    for (const m of resolveModifiers(eligibleModifiers).contributing) {
       breakdown.push({ source: m.source, type: m.type, value: m.value });
     }
     return stat(breakdown);
@@ -117,27 +123,39 @@ export function computeSheet(
   const acContextDefinitions: Array<{
     context: ArmorClassContext;
     label: string;
-    targets: string[];
+    inheritedContexts: ArmorClassContext[];
   }> = [
     {
       context: "firearms",
       label: "vs Firearms",
-      targets: ["ac.vs.ranged", "ac.vs.firearms"],
+      inheritedContexts: ["ranged", "firearms"],
     },
-    { context: "ranged", label: "vs Ranged", targets: ["ac.vs.ranged"] },
-    { context: "melee", label: "vs Melee", targets: ["ac.vs.melee"] },
+    { context: "ranged", label: "vs Ranged", inheritedContexts: ["ranged"] },
+    { context: "melee", label: "vs Melee", inheritedContexts: ["melee"] },
   ];
   const contextual = acContextDefinitions.flatMap((definition) => {
-    const contextualModifiers = input.modifiers.filter(
-      (modifier) =>
-        modifier.enabled !== false &&
-        definition.targets.includes(modifier.target),
+    const ownTargetSuffix = `.vs.${definition.context}`;
+    const contextualModifiers = input.modifiers.filter((modifier) => {
+      if (modifier.enabled === false) return false;
+      return definition.inheritedContexts.some(
+        (context) =>
+          modifier.target === `ac.vs.${context}` ||
+          modifier.target === `ac.touch.vs.${context}`,
+      );
+    });
+    if (
+      !contextualModifiers.some((modifier) =>
+        modifier.target.endsWith(ownTargetSuffix),
+      )
+    )
+      return [];
+    const commonModifiers = contextualModifiers.filter((modifier) =>
+      modifier.target.startsWith("ac.vs."),
     );
-    const hasSpecificModifier = contextualModifiers.some(
-      (modifier) => modifier.target === `ac.vs.${definition.context}`,
+    const touchModifiers = contextualModifiers.filter((modifier) =>
+      modifier.target.startsWith("ac.touch.vs."),
     );
-    if (!hasSpecificModifier) return [];
-    const combinedModifiers = [...baseAcModifiers, ...contextualModifiers];
+    const combinedModifiers = [...baseAcModifiers, ...commonModifiers];
     return [
       {
         context: definition.context,
@@ -148,7 +166,8 @@ export function computeSheet(
         ),
         touch: buildAc(
           { includeDex: true, excludeTypes: TOUCH_EXCLUDED_AC_TYPES },
-          combinedModifiers,
+          [...combinedModifiers, ...touchModifiers],
+          "ac.touch.",
         ),
         flatFooted: buildAc(
           {

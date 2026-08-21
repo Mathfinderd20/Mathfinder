@@ -1,4 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import {
   buildCharacter,
   classAllowsAlignment,
@@ -85,6 +91,7 @@ export function CharacterCreationModal({
   const [className, setClassName] = useState(defaultClassName);
   const [abilityScores, setAbilityScores] =
     useState<Record<AbilityKey, number>>(DEFAULT_SCORES);
+  const deferredAbilityScores = useDeferredValue(abilityScores);
   const [flexibleAbility, setFlexibleAbility] = useState<AbilityKey>("str");
   const [selectedSkills, setSelectedSkills] = useState<Set<SkillKey>>(
     new Set(),
@@ -106,35 +113,41 @@ export function CharacterCreationModal({
   const hasFlexibleAbility = !!race?.choiceOptions?.flexibleAbilityBonus;
   const hasRaceBonusFeat = !!race?.choiceOptions?.bonusFeat;
 
-  const draftBuild = useMemo(() => {
-    if (!race || !classDefinition) return undefined;
-    return createFreshCharacterBuild(characterName, race, {
-      className: classDefinition.name,
+  const createBuild = useCallback(
+    (scores: Record<AbilityKey, number>) => {
+      if (!race || !classDefinition) return undefined;
+      return createFreshCharacterBuild(characterName, race, {
+        className: classDefinition.name,
+        alignment,
+        hitPointRoll: classDefinition.hitDie,
+        baseAbilityScores: scores,
+        flexibleAbility: hasFlexibleAbility ? flexibleAbility : undefined,
+        raceBonusFeat: hasRaceBonusFeat ? raceBonusFeat : undefined,
+        skillRanks: Object.fromEntries(
+          [...selectedSkills].map((skill) => [skill, 1]),
+        ),
+        feats: selectedFeats,
+        favoredClass,
+      });
+    },
+    [
       alignment,
-      hitPointRoll: classDefinition.hitDie,
-      baseAbilityScores: abilityScores,
-      flexibleAbility: hasFlexibleAbility ? flexibleAbility : undefined,
-      raceBonusFeat: hasRaceBonusFeat ? raceBonusFeat : undefined,
-      skillRanks: Object.fromEntries(
-        [...selectedSkills].map((skill) => [skill, 1]),
-      ),
-      feats: selectedFeats,
+      characterName,
+      classDefinition,
       favoredClass,
-    });
-  }, [
-    abilityScores,
-    alignment,
-    characterName,
-    classDefinition,
-    favoredClass,
-    flexibleAbility,
-    hasFlexibleAbility,
-    hasRaceBonusFeat,
-    race,
-    raceBonusFeat,
-    selectedFeats,
-    selectedSkills,
-  ]);
+      flexibleAbility,
+      hasFlexibleAbility,
+      hasRaceBonusFeat,
+      race,
+      raceBonusFeat,
+      selectedFeats,
+      selectedSkills,
+    ],
+  );
+  const draftBuild = useMemo(
+    () => createBuild(deferredAbilityScores),
+    [createBuild, deferredAbilityScores],
+  );
 
   const previewSheet = useMemo(
     () =>
@@ -192,42 +205,24 @@ export function CharacterCreationModal({
       draftBuild ? collectFeatWeaponNames(draftBuild, RUNTIME_WEAPONS) : [],
     [draftBuild],
   );
-  const featOptionsBySlot = useMemo(
-    () =>
-      featContext
-        ? featSlots.map((slot, slotIndex) =>
-            buildFeatPickerOptions({
-              featRegistry: RUNTIME_FEATS,
-              featContext,
-              grantKind: slot.kind,
-              takenSelections: [raceBonusFeat, ...selectedFeats].filter(
-                Boolean,
-              ),
-              currentSelection: selectedFeats[slotIndex],
-              availableWeaponNames,
-            }),
-          )
-        : [],
-    [
-      availableWeaponNames,
-      featContext,
-      featSlots,
-      raceBonusFeat,
-      selectedFeats,
-    ],
-  );
-  const raceFeatOptions = useMemo(
-    () =>
-      featContext
-        ? buildFeatPickerOptions({
-            featRegistry: RUNTIME_FEATS,
-            featContext,
-            grantKind: "general",
-            takenSelections: [raceBonusFeat, ...selectedFeats].filter(Boolean),
-            currentSelection: raceBonusFeat,
-            availableWeaponNames,
-          })
-        : [],
+  const resolveFeatOptions = useCallback(
+    (
+      grantKind: "general" | "fighter-bonus",
+      currentSelection: string | undefined,
+      query: string,
+    ) => {
+      if (!featContext || !query.trim()) return [];
+      return buildFeatPickerOptions({
+        featRegistry: RUNTIME_FEATS,
+        featContext,
+        grantKind,
+        takenSelections: [raceBonusFeat, ...selectedFeats].filter(Boolean),
+        currentSelection,
+        availableWeaponNames,
+        query,
+        maxOptions: 40,
+      });
+    },
     [availableWeaponNames, featContext, raceBonusFeat, selectedFeats],
   );
 
@@ -395,8 +390,11 @@ export function CharacterCreationModal({
                     return next;
                   })
                 }
-                options={featOptionsBySlot[slotIndex] ?? []}
-                placeholder="Search legal feat"
+                options={[]}
+                resolveOptions={(query) =>
+                  resolveFeatOptions(slot.kind, selected, query)
+                }
+                placeholder="Type to search legal feats"
                 tooltip={featTitle(selected)}
               />
             </label>
@@ -413,8 +411,11 @@ export function CharacterCreationModal({
                   normalizeSelectedFeatSelection(RUNTIME_FEATS, value),
                 )
               }
-              options={raceFeatOptions}
-              placeholder="Search legal feat"
+              options={[]}
+              resolveOptions={(query) =>
+                resolveFeatOptions("general", raceBonusFeat, query)
+              }
+              placeholder="Type to search legal feats"
               tooltip={featTitle(raceBonusFeat)}
             />
           </label>
@@ -501,7 +502,10 @@ export function CharacterCreationModal({
           <button
             type="button"
             disabled={!canConfirm}
-            onClick={() => draftBuild && onConfirm(draftBuild)}
+            onClick={() => {
+              const finalBuild = createBuild(abilityScores);
+              if (finalBuild) onConfirm(finalBuild);
+            }}
           >
             Create Character
           </button>

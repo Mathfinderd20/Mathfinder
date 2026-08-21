@@ -1095,6 +1095,18 @@ export function buildCharacter(
           source: `${item.name} (armor)`,
         });
       }
+      if (
+        armor.rangedTouchArmorFraction &&
+        armor.acBonus &&
+        armor.rangedTouchArmorFraction > 0
+      ) {
+        modifiers.push({
+          target: "ac.touch.vs.ranged",
+          type: "armor",
+          value: Math.floor(armor.acBonus * armor.rangedTouchArmorFraction),
+          source: `${item.name} (ranged touch defense)`,
+        });
+      }
       if (armor.maxDexBonus !== undefined) {
         maxDexBonus =
           maxDexBonus === undefined
@@ -1119,6 +1131,18 @@ export function buildCharacter(
           type: "shield",
           value: shield.acBonus,
           source: `${item.name} (shield)`,
+        });
+      }
+      if (
+        shield.rangedTouchShieldFraction &&
+        shield.acBonus &&
+        shield.rangedTouchShieldFraction > 0
+      ) {
+        modifiers.push({
+          target: "ac.touch.vs.ranged",
+          type: "shield",
+          value: Math.floor(shield.acBonus * shield.rangedTouchShieldFraction),
+          source: `${item.name} (ranged touch defense)`,
         });
       }
       if (shield.checkPenalty) armorCheckPenalty += shield.checkPenalty;
