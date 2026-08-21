@@ -24,6 +24,11 @@ describe("Savage Company armor", () => {
       armorBonus: 3,
       costGp: 400,
       weightLb: 12,
+      speed30: 30,
+      speed20: 20,
+      damageReductions: [
+        expect.objectContaining({ value: 3, appliesAgainst: "Firearms" }),
+      ],
     });
     expect(
       SAVAGE_COMPANY_ARMOR.find((armor) => armor.id === "sc-savage-plate"),

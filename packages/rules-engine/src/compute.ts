@@ -19,6 +19,7 @@ import type {
   BreakdownEntry,
   ArmorClassContext,
   CharacterInput,
+  DerivedDamageReduction,
   DerivedSheet,
   DerivedStat,
   HitPointDetails,
@@ -53,6 +54,40 @@ function deriveAmmoByType(
 
 function stat(breakdown: BreakdownEntry[]): DerivedStat {
   return { total: sumBreakdown(breakdown), breakdown };
+}
+
+function deriveDamageReductions(
+  entries: CharacterInput["damageReductions"],
+): DerivedDamageReduction[] {
+  const grouped = new Map<string, NonNullable<typeof entries>>();
+  for (const entry of entries ?? []) {
+    if (!Number.isFinite(entry.value) || entry.value <= 0) continue;
+    const key = `${entry.appliesAgainst.trim().toLowerCase()}::${entry.bypass.trim().toLowerCase()}`;
+    const group = grouped.get(key);
+    if (group) group.push(entry);
+    else grouped.set(key, [entry]);
+  }
+  return [...grouped.entries()]
+    .map(([id, group]) => {
+      const strongest = group.reduce((best, entry) =>
+        entry.value > best.value ? entry : best,
+      );
+      return {
+        id,
+        label: strongest.label ?? `DR vs ${strongest.appliesAgainst.trim()}`,
+        value: strongest.value,
+        bypass: strongest.bypass.trim() || "—",
+        appliesAgainst: strongest.appliesAgainst.trim(),
+        breakdown: [
+          {
+            source: strongest.source,
+            type: "damage-reduction",
+            value: strongest.value,
+          },
+        ],
+      };
+    })
+    .sort((a, b) => a.label.localeCompare(b.label));
 }
 
 /**
@@ -393,6 +428,7 @@ export function computeSheet(
     inventoryItems: input.inventoryItems ?? [],
     rangedCombat: { ammoByType },
     spellcasting,
+    damageReductions: deriveDamageReductions(input.damageReductions),
     descriptor: input.descriptor ?? {
       classes: [],
       archetypes: [],

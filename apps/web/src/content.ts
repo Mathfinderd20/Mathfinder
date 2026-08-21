@@ -52,6 +52,12 @@ export interface RuntimeArmorDefinition {
   weightLb?: number;
   description?: string;
   modifiers?: Modifier[];
+  damageReductions?: Array<{
+    value: number;
+    bypass: string;
+    appliesAgainst: string;
+    label?: string;
+  }>;
   /** Fraction of this armor's current AC bonus retained against ranged touch attacks. */
   rangedTouchArmorFraction?: number;
   /** Fraction of this shield's current AC bonus retained against ranged touch attacks. */
@@ -88,8 +94,15 @@ export const SAVAGE_COMPANY_ARMOR: RuntimeArmorDefinition[] = [
     speed20: 20,
     costGp: 400,
     weightLb: 12,
-    description:
-      "Provides DR 3/— against firearms. Damage reduction is currently tracked manually.",
+    damageReductions: [
+      {
+        value: 3,
+        bypass: "—",
+        appliesAgainst: "Firearms",
+        label: "DR vs Firearms",
+      },
+    ],
+    description: "Provides DR 3/— against firearms.",
   },
   {
     id: "sc-riot-gear",
@@ -105,8 +118,15 @@ export const SAVAGE_COMPANY_ARMOR: RuntimeArmorDefinition[] = [
     speed20: 15,
     costGp: 500,
     weightLb: 25,
-    description:
-      "Provides DR 3/— against firearms and bludgeoning damage. Damage reduction is currently tracked manually.",
+    damageReductions: [
+      {
+        value: 3,
+        bypass: "—",
+        appliesAgainst: "Firearms & Bludgeoning",
+        label: "DR vs Firearms & Bludgeoning",
+      },
+    ],
+    description: "Provides DR 3/— against firearms and bludgeoning damage.",
   },
   {
     id: "sc-savage-plate",

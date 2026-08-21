@@ -92,6 +92,7 @@ export function useEquipmentEditor(
             costGp: template.costGp,
             slot: template.slot,
             modifiers: template.modifiers,
+            damageReductions: undefined,
             armor: undefined,
             shield: undefined,
             weapon: undefined,
@@ -137,6 +138,7 @@ export function useEquipmentEditor(
                     costGp: item.costGp,
                     slot: "shield",
                     modifiers: item.modifiers,
+                    damageReductions: item.damageReductions,
                     armor: undefined,
                     shield: {
                       acBonus: item.armorBonus,
@@ -157,6 +159,7 @@ export function useEquipmentEditor(
                     costGp: item.costGp,
                     slot: "armor",
                     modifiers: item.modifiers,
+                    damageReductions: item.damageReductions,
                     armor: item.categoryNormalized
                       ? {
                           category: item.categoryNormalized,
@@ -166,11 +169,9 @@ export function useEquipmentEditor(
                             item.armorCheckPenalty === undefined
                               ? undefined
                               : Math.abs(item.armorCheckPenalty),
-                          speedPenalty:
-                            typeof item.speed30 === "number" &&
-                            typeof item.speed20 === "number"
-                              ? item.speed30 - item.speed20
-                              : undefined,
+                          speedPenalty: undefined,
+                          speed30: item.speed30,
+                          speed20: item.speed20,
                           rangedTouchArmorFraction:
                             item.rangedTouchArmorFraction,
                         }
@@ -187,6 +188,7 @@ export function useEquipmentEditor(
                   costGp: item.costGp,
                   slot: undefined,
                   modifiers: undefined,
+                  damageReductions: undefined,
                   armor: undefined,
                   shield: undefined,
                   weapon: undefined,
@@ -257,6 +259,7 @@ export function useEquipmentEditor(
       costGp: item.costGp,
       slot: "armor",
       modifiers: item.modifiers,
+      damageReductions: item.damageReductions,
       armor:
         item.categoryNormalized && item.categoryNormalized !== "shield"
           ? {
@@ -267,11 +270,9 @@ export function useEquipmentEditor(
                 item.armorCheckPenalty === undefined
                   ? undefined
                   : Math.abs(item.armorCheckPenalty),
-              speedPenalty:
-                typeof item.speed30 === "number" &&
-                typeof item.speed20 === "number"
-                  ? item.speed30 - item.speed20
-                  : undefined,
+              speedPenalty: undefined,
+              speed30: item.speed30,
+              speed20: item.speed20,
               rangedTouchArmorFraction: item.rangedTouchArmorFraction,
             }
           : undefined,
@@ -293,6 +294,7 @@ export function useEquipmentEditor(
       costGp: item.costGp,
       slot: "shield",
       modifiers: item.modifiers,
+      damageReductions: item.damageReductions,
       shield: {
         acBonus: item.armorBonus,
         checkPenalty:
@@ -378,6 +380,7 @@ export function useEquipmentEditor(
                     : item.slot,
                 shield: patch.enabled
                   ? {
+                      ...(item.shield ?? {}),
                       acBonus: patch.acBonus,
                       checkPenalty: patch.checkPenalty,
                     }
@@ -456,6 +459,7 @@ export function useEquipmentEditor(
                   patch.category === "none"
                     ? undefined
                     : {
+                        ...(item.armor ?? {}),
                         category: patch.category,
                         acBonus: patch.acBonus,
                         maxDexBonus: patch.maxDexBonus,

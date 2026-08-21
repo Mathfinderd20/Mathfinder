@@ -132,10 +132,20 @@ export interface EquipmentEntry {
     acBonus?: number;
     maxDexBonus?: number;
     checkPenalty?: number;
+    /** Manual fallback for custom armor without speed profiles. */
     speedPenalty?: number;
+    /** Resulting land speed for creatures whose base speed is 30 or 20 feet. */
+    speed30?: number;
+    speed20?: number;
     /** Fraction of armor AC retained against ranged attacks that target touch AC. */
     rangedTouchArmorFraction?: number;
   };
+  damageReductions?: Array<{
+    value: number;
+    bypass: string;
+    appliesAgainst: string;
+    label?: string;
+  }>;
   shield?: {
     acBonus?: number;
     checkPenalty?: number;

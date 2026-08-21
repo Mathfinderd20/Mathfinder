@@ -28,6 +28,8 @@ describe("equipment normalization", () => {
       armorBonus: 6,
       maxDexBonus: 4,
       armorCheckPenalty: -6,
+      speed30: 20,
+      speed20: 15,
       rangedTouchArmorFraction: 0.5,
     });
     try {
@@ -41,6 +43,8 @@ describe("equipment normalization", () => {
         armor: {
           acBonus: 6,
           checkPenalty: 6,
+          speed30: 20,
+          speed20: 15,
           rangedTouchArmorFraction: 0.5,
         },
       });

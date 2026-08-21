@@ -261,6 +261,47 @@ describe("inventory math", () => {
     });
   });
 
+  it("uses armor speed profiles and surfaces conditional gear DR", () => {
+    const build = grukkLevel1();
+    build.equipment = [
+      {
+        name: "Shooters Plate",
+        equipped: true,
+        slot: "armor",
+        damageReductions: [
+          { value: 3, bypass: "—", appliesAgainst: "Firearms" },
+        ],
+        armor: {
+          category: "light",
+          acBonus: 3,
+          maxDexBonus: 6,
+          checkPenalty: 1,
+          speed30: 30,
+          speed20: 20,
+        },
+      },
+    ];
+
+    const sheet = computeSheet(buildCharacter(build));
+    expect(sheet.speed.total).toBe(40);
+    expect(sheet.damageReductions).toEqual([
+      expect.objectContaining({
+        label: "DR vs Firearms",
+        value: 3,
+        bypass: "—",
+        appliesAgainst: "Firearms",
+      }),
+    ]);
+    expect(sheet.damageReductions[0]?.breakdown[0]?.source).toBe(
+      "Shooters Plate",
+    );
+
+    build.equipment[0]!.equipped = false;
+    const unequippedSheet = computeSheet(buildCharacter(build));
+    expect(unequippedSheet.damageReductions).toEqual([]);
+    expect(unequippedSheet.speed.total).toBe(40);
+  });
+
   it("retains a configured fraction of armor against ranged touch attacks", () => {
     const build = grukkLevel1();
     build.equipment = [

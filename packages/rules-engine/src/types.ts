@@ -123,6 +123,23 @@ export interface ContextualArmorClass {
   flatFooted: DerivedStat;
 }
 
+export interface DamageReduction {
+  value: number;
+  bypass: string;
+  appliesAgainst: string;
+  source: string;
+  label?: string;
+}
+
+export interface DerivedDamageReduction {
+  id: string;
+  label: string;
+  value: number;
+  bypass: string;
+  appliesAgainst: string;
+  breakdown: BreakdownEntry[];
+}
+
 export interface DerivedAbility {
   score: number;
   mod: number;
@@ -398,6 +415,8 @@ export interface InventoryArmorDetails {
   maxDexBonus?: number;
   checkPenalty?: number;
   speedPenalty?: number;
+  speed30?: number;
+  speed20?: number;
 }
 
 export type InventoryEquipmentSlot =
@@ -613,6 +632,8 @@ export interface CharacterInput {
   skillUsableOverrides?: Partial<Record<SkillKey, boolean>>;
   /** Explicit weapon damage-ability overrides keyed by weapon name/template id. */
   weaponDamageAbilityOverrides?: Partial<Record<string, AbilityKey | null>>;
+  /** Conditional damage reduction supplied by equipped gear and abilities. */
+  damageReductions?: DamageReduction[];
   /** Every active effect: feats, gear, class features, conditions, buffs, auras. */
   modifiers: Modifier[];
 }
@@ -649,6 +670,7 @@ export interface DerivedSheet {
   inventoryItems: DerivedInventoryItem[];
   rangedCombat: RangedCombatStatus;
   spellcasting: DerivedSpellcasting[];
+  damageReductions: DerivedDamageReduction[];
   /** Race/class/feats/features for display (empty if not provided). */
   descriptor: SheetDescriptor;
 }

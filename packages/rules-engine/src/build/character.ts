@@ -474,6 +474,8 @@ function inventoryItems(equipment: EquipmentEntry[] | undefined) {
             maxDexBonus: item.armor.maxDexBonus,
             checkPenalty: item.armor.checkPenalty,
             speedPenalty: item.armor.speedPenalty,
+            speed30: item.armor.speed30,
+            speed20: item.armor.speed20,
           }
         : undefined,
       shield:
@@ -899,6 +901,7 @@ export function buildCharacter(
     ...(activeRace.traits ?? []),
     ...featEffects(raceBonusFeatNames(activeRace), featRegistry),
   ];
+  const damageReductions: NonNullable<CharacterInput["damageReductions"]> = [];
 
   // Equipment-derived legality context.
   let armorCategory: "none" | "light" | "medium" | "heavy" = "none";
@@ -1085,6 +1088,9 @@ export function buildCharacter(
   let armorCheckPenalty = 0;
   for (const item of equippedEquipment(build.equipment)) {
     if (item.modifiers) modifiers.push(...item.modifiers);
+    for (const reduction of item.damageReductions ?? []) {
+      damageReductions.push({ ...reduction, source: item.name });
+    }
     const armor = item.armor;
     if (armor) {
       if (armor.acBonus) {
@@ -1114,11 +1120,18 @@ export function buildCharacter(
             : Math.min(maxDexBonus, armor.maxDexBonus);
       }
       if (armor.checkPenalty) armorCheckPenalty += armor.checkPenalty;
-      if (armor.speedPenalty) {
+      const baseRaceSpeed = activeRace.speed ?? 30;
+      const profiledArmorSpeed =
+        baseRaceSpeed >= 30 ? armor.speed30 : armor.speed20;
+      const speedPenalty =
+        profiledArmorSpeed !== undefined
+          ? Math.max(0, baseRaceSpeed - profiledArmorSpeed)
+          : (armor.speedPenalty ?? 0);
+      if (speedPenalty > 0) {
         modifiers.push({
           target: "speed",
           type: "untyped",
-          value: -armor.speedPenalty,
+          value: -speedPenalty,
           source: `${item.name} (armor)`,
         });
       }
@@ -1422,6 +1435,7 @@ export function buildCharacter(
     weaponDamageAbilityOverrides: weaponDamageAbilityOverridesForBuild(build),
     weapons: resolvedWeapons,
     spellcasting,
+    damageReductions,
     modifiers,
   };
 }

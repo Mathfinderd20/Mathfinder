@@ -154,6 +154,18 @@ function contextualAcTooltip(
   ].join("\n\n");
 }
 
+function damageReductionTooltip(
+  reduction: DerivedSheet["damageReductions"][number],
+) {
+  return [
+    `${reduction.label}: ${reduction.value}/${reduction.bypass}`,
+    `Applies against: ${reduction.appliesAgainst}`,
+    ...reduction.breakdown.map(
+      (entry) => `${entry.source}: ${entry.value}/${reduction.bypass}`,
+    ),
+  ].join("\n\n");
+}
+
 function weaponDamageTooltip(weapon: DerivedSheet["weapons"][number]) {
   return breakdownTooltip(weapon.damageDisplay, weapon.damageBreakdown);
 }
@@ -575,6 +587,20 @@ export function Sheet({
                     <span className="summary-label">AC {profile.label}</span>
                     <span className="summary-value">
                       {profile.normal.total}
+                    </span>
+                  </div>
+                </Tooltip>
+              ))}
+              {sheet.damageReductions.map((reduction) => (
+                <Tooltip
+                  key={reduction.id}
+                  content={damageReductionTooltip(reduction)}
+                  className="mf-tooltip-anchor-block"
+                >
+                  <div className="summary-box defense-contextual">
+                    <span className="summary-label">{reduction.label}</span>
+                    <span className="summary-value">
+                      {reduction.value}/{reduction.bypass}
                     </span>
                   </div>
                 </Tooltip>
@@ -1618,10 +1644,13 @@ export function Sheet({
                           ACP: {item.armor.checkPenalty ?? 0}
                         </span>
                         <span className="chip">
-                          Speed Penalty:{" "}
-                          {item.armor.speedPenalty
-                            ? `${sign(-item.armor.speedPenalty)} ft`
-                            : "—"}
+                          Speed:{" "}
+                          {item.armor.speed30 !== undefined ||
+                          item.armor.speed20 !== undefined
+                            ? `${item.armor.speed30 ?? "—"}/${item.armor.speed20 ?? "—"} ft profile`
+                            : item.armor.speedPenalty
+                              ? `${sign(-item.armor.speedPenalty)} ft`
+                              : "—"}
                         </span>
                       </div>
                     ) : null}

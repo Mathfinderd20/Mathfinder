@@ -151,6 +151,7 @@ function normalizeEquipmentItem(
       costGp: template.costGp,
       slot: template.slot,
       modifiers: template.modifiers,
+      damageReductions: undefined,
     };
   }
 
@@ -167,6 +168,7 @@ function normalizeEquipmentItem(
         costGp: armorItem.costGp,
         slot: "shield",
         modifiers: armorItem.modifiers,
+        damageReductions: armorItem.damageReductions,
         armor: undefined,
         shield: {
           acBonus: armorItem.armorBonus,
@@ -188,6 +190,7 @@ function normalizeEquipmentItem(
       costGp: armorItem.costGp,
       slot: "armor",
       modifiers: armorItem.modifiers,
+      damageReductions: armorItem.damageReductions,
       shield: undefined,
       armor: armorItem.categoryNormalized
         ? {
@@ -198,11 +201,9 @@ function normalizeEquipmentItem(
               armorItem.armorCheckPenalty === undefined
                 ? undefined
                 : Math.abs(armorItem.armorCheckPenalty),
-            speedPenalty:
-              typeof armorItem.speed30 === "number" &&
-              typeof armorItem.speed20 === "number"
-                ? armorItem.speed30 - armorItem.speed20
-                : undefined,
+            speedPenalty: undefined,
+            speed30: armorItem.speed30,
+            speed20: armorItem.speed20,
             rangedTouchArmorFraction: armorItem.rangedTouchArmorFraction,
           }
         : undefined,
@@ -222,6 +223,7 @@ function normalizeEquipmentItem(
       name: mundaneItem.name,
       weight: mundaneItem.weightLb,
       costGp: mundaneItem.costGp,
+      damageReductions: undefined,
       armor: undefined,
       shield: undefined,
     };
