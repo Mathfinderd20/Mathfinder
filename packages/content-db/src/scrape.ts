@@ -2,6 +2,7 @@ import type Database from "better-sqlite3";
 import { load } from "cheerio";
 import { fetch } from "undici";
 import type {
+  ParsedScrapedArchetype,
   ParsedScrapedArmor,
   ParsedScrapedClassFeature,
   ParsedScrapedGear,
@@ -27,6 +28,20 @@ let lastAonRequestAt = 0;
 function wait(milliseconds: number) {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
+
+export const AON_SUPPORTED_ARCHETYPE_CLASSES = [
+  "Barbarian",
+  "Bard",
+  "Cleric",
+  "Druid",
+  "Fighter",
+  "Inquisitor",
+  "Paladin",
+  "Ranger",
+  "Rogue",
+  "Sorcerer",
+  "Wizard",
+] as const;
 
 export const AON_BASE_CLASSES = [
   "Alchemist",
@@ -174,6 +189,7 @@ type GearListEntry = NamedLink & {
 type ScrapeKind =
   | "spell"
   | "feat"
+  | "archetype"
   | "magic-item"
   | "class-feature"
   | "weapon"
@@ -1347,6 +1363,155 @@ export function parseAonWeaponDetail(
   };
 }
 
+export function parseAonArchetypeLinks(html: string) {
+  const $ = load(html);
+  const links = new Map<
+    string,
+    NamedLink & { replacementText?: string; description?: string }
+  >();
+  $("a[href^='ArchetypeDisplay.aspx?FixedName=']").each((_, element) => {
+    const href = $(element).attr("href");
+    const name = cleanText($(element).text());
+    if (!href || !name) return;
+    const cells = $(element).closest("tr").find("td").toArray();
+    links.set(absoluteUrl(href), {
+      name,
+      url: absoluteUrl(href),
+      replacementText: cells[1] ? cleanText($(cells[1]).text()) : undefined,
+      description: cells[2] ? cleanText($(cells[2]).text()) : undefined,
+    });
+  });
+  return [...links.values()];
+}
+
+function archetypeFeatureLevel(text: string) {
+  const match = text.match(
+    /(?:at|starting at|beginning at|upon reaching)\s+(\d+)(?:st|nd|rd|th)\s+level|\b(\d+)(?:st|nd|rd|th)-level/i,
+  );
+  const level = Number(match?.[1] ?? match?.[2]);
+  return Number.isInteger(level) && level > 0 ? level : undefined;
+}
+
+function archetypeFeatureChanges(text: string, verb: "replaces" | "alters") {
+  const changes: string[] = [];
+  const pattern = new RegExp(`\\b${verb}\\s+([^.]*)`, "gi");
+  for (const match of text.matchAll(pattern)) {
+    const raw = cleanText(match[1] ?? "")
+      .replace(/\bclass features?$/i, "")
+      .replace(/^the\s+/i, "")
+      .trim();
+    for (const item of raw.split(/\s*;\s*|\s*,\s*(?=[A-Za-z])|\s+and\s+/i)) {
+      const normalized = cleanText(item).replace(/[,:;]+$/, "");
+      if (
+        normalized &&
+        !changes.some(
+          (entry) => entry.toLowerCase() === normalized.toLowerCase(),
+        )
+      )
+        changes.push(normalized);
+    }
+  }
+  return changes;
+}
+
+export function parseAonArchetypeDetail(
+  html: string,
+  sourceUrl: string,
+  baseClassName: string,
+  indexDescription?: string,
+  indexReplacementText?: string,
+): ParsedScrapedArchetype {
+  const { $, block } = detailBlock(html);
+  const container = block.find("span").first().length
+    ? block.find("span").first()
+    : block;
+  const nodes = container.contents().toArray();
+  const name = cleanText(container.find("h1.title").first().text());
+  const sourceNodeIndex = nodes.findIndex(
+    (node) =>
+      nodeTagName(node) === "b" && cleanText($(node).text()) === "Source",
+  );
+  let source: string | undefined;
+  let firstFeatureIndex = -1;
+  let descriptionHtml = "";
+  let passedSourceBreak = sourceNodeIndex < 0;
+  for (let index = sourceNodeIndex + 1; index < nodes.length; index += 1) {
+    const node = nodes[index];
+    if (!node) continue;
+    const tag = nodeTagName(node);
+    if (!source && tag === "a") source = cleanText($(node).text()) || undefined;
+    if (tag === "br") {
+      passedSourceBreak = true;
+      continue;
+    }
+    if (tag === "b") {
+      firstFeatureIndex = index;
+      break;
+    }
+    if (passedSourceBreak && tag !== "h1")
+      descriptionHtml += $.html(node) ?? "";
+  }
+  const description =
+    cleanText(load(`<div>${descriptionHtml}</div>`).text()) ||
+    cleanText(indexDescription ?? "") ||
+    `${name} is a ${baseClassName} archetype.`;
+  const features: ParsedScrapedArchetype["features"] = [];
+  for (
+    let index = Math.max(firstFeatureIndex, 0);
+    index < nodes.length;
+    index += 1
+  ) {
+    const node = nodes[index];
+    if (!node || nodeTagName(node) !== "b") continue;
+    const rawTitle = cleanText($(node).text());
+    if (!rawTitle || rawTitle === "Source") continue;
+    let chunk = "";
+    for (let cursor = index + 1; cursor < nodes.length; cursor += 1) {
+      const nextNode = nodes[cursor];
+      if (!nextNode || nodeTagName(nextNode) === "b") break;
+      chunk += $.html(nextNode) ?? "";
+    }
+    const summary = cleanText(load(`<div>${chunk}</div>`).text()).replace(
+      /^:\s*/,
+      "",
+    );
+    const titleMatch = rawTitle.match(/^(.*?)(?:\s+\(([^)]+)\))?$/);
+    const featureName = cleanText(titleMatch?.[1] ?? rawTitle);
+    if (!featureName || !summary) continue;
+    features.push({
+      name: featureName,
+      featureType: titleMatch?.[2],
+      level: archetypeFeatureLevel(summary),
+      summary,
+    });
+  }
+  const allFeatureText = features.map((feature) => feature.summary).join(" ");
+  const indexReplaces = cleanText(indexReplacementText ?? "")
+    .split(/\s*;\s*/)
+    .filter(Boolean);
+  const replaces = (
+    indexReplaces.length
+      ? indexReplaces
+      : archetypeFeatureChanges(allFeatureText, "replaces")
+  ).filter(
+    (item, index, values) =>
+      values.findIndex(
+        (candidate) => candidate.toLowerCase() === item.toLowerCase(),
+      ) === index,
+  );
+  const alters = archetypeFeatureChanges(allFeatureText, "alters");
+  return {
+    name,
+    baseClassName,
+    source,
+    description,
+    replaces: replaces.length ? replaces : undefined,
+    alters: alters.length ? alters : undefined,
+    features,
+    sourceUrl,
+  };
+}
+
 export function parseAonClassFeatureLevels(html: string) {
   const { $, block } = detailBlock(html);
   const rows = block.find("table").first().find("tr").toArray();
@@ -2017,6 +2182,58 @@ export async function refreshCachedAonClassFeatures(
     });
     throw error;
   }
+}
+
+export async function scrapeAonArchetypes(
+  db: Database.Database,
+  className = "Fighter",
+) {
+  const run = beginIngestionRun(db, "archetype", { className });
+  try {
+    const indexUrl = `${AON_BASE}Archetypes.aspx?Class=${encodeURIComponent(className)}`;
+    const { html } = await fetchCachedPage(db, "aonprd", indexUrl);
+    const links = parseAonArchetypeLinks(html);
+    for (const link of links) {
+      const detail = await fetchCachedPage(db, "aonprd", link.url);
+      const parsed = parseAonArchetypeDetail(
+        detail.html,
+        link.url,
+        className,
+        link.description,
+        link.replacementText,
+      );
+      upsertScrapedEntity(
+        db,
+        "archetype",
+        `scrape-aon-${slug(className)}-${slug(parsed.name)}`,
+        parsed.name,
+        parsed.sourceUrl,
+        parsed,
+      );
+    }
+    finishIngestionRun(db, run.lastInsertRowid, "completed", {
+      className,
+      imported: links.length,
+    });
+    return links.length;
+  } catch (error) {
+    finishIngestionRun(db, run.lastInsertRowid, "failed", {
+      className,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    throw error;
+  }
+}
+
+export async function scrapeAonSupportedArchetypes(db: Database.Database) {
+  const results: Record<string, number> = {};
+  let total = 0;
+  for (const className of AON_SUPPORTED_ARCHETYPE_CLASSES) {
+    const imported = await scrapeAonArchetypes(db, className);
+    results[className] = imported;
+    total += imported;
+  }
+  return { total, results };
 }
 
 export async function scrapeAonClassFeatures(

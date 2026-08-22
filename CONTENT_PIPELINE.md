@@ -93,6 +93,9 @@ npm run content:db:init
 npm run content:db:seed-local
 npm run db:scrape:aon-spells --workspace @mathfinder/content-db
 npm run db:scrape:aon-feats --workspace @mathfinder/content-db
+npm run db:scrape:aon-archetypes --workspace @mathfinder/content-db
+# Optional single-class refresh:
+npm run db:scrape:aon-archetypes --workspace @mathfinder/content-db -- Fighter
 npm run db:export:usable-json --workspace @mathfinder/content-db -- ../../apps/web/public/usable-content.json
 ```
 

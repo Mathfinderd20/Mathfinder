@@ -30,6 +30,14 @@ function safeName(value: { name?: string } | null | undefined) {
   return value?.name?.trim() ?? "";
 }
 
+function byLowerId<T extends { id?: string }>(items: T[]): Record<string, T> {
+  return Object.fromEntries(
+    items
+      .filter((item): item is T => !!item?.id?.trim())
+      .map((item) => [item.id!.trim().toLowerCase(), item]),
+  );
+}
+
 function byLowerName<T extends { name?: string }>(
   items: T[],
 ): Record<string, T> {
@@ -142,7 +150,7 @@ export function buildRulesDataIndex(data: RulesDataSet): RulesDataIndex {
     ),
     packs: Object.fromEntries(packs.map((pack) => [pack.id, pack])),
     classes: byLowerName(classes),
-    archetypes: byLowerName(archetypes),
+    archetypes: byLowerId(archetypes),
     archetypesByClass: groupArchetypes(archetypes),
     bloodlines: byLowerName(bloodlines),
     kineticistElements: byLowerName(kineticistElements),

@@ -39,6 +39,7 @@ function packEntities(
 ): Array<{ kind: ContentEntityKind; item: unknown }> {
   return [
     ...pack.classes.map((item) => ({ kind: "class" as const, item })),
+    ...pack.archetypes.map((item) => ({ kind: "archetype" as const, item })),
     ...pack.classFeatures.map((item) => ({
       kind: "class-feature" as const,
       item,

@@ -1,5 +1,6 @@
 export type ContentEntityKind =
   | "class"
+  | "archetype"
   | "class-feature"
   | "feat"
   | "race"
@@ -65,6 +66,24 @@ export interface ParsedScrapedMagicItem {
   price?: string;
   weight?: string;
   description: string;
+  sourceUrl: string;
+}
+
+export interface ParsedScrapedArchetypeFeature {
+  name: string;
+  featureType?: string;
+  level?: number;
+  summary: string;
+}
+
+export interface ParsedScrapedArchetype {
+  name: string;
+  baseClassName: string;
+  source?: string;
+  description: string;
+  replaces?: string[];
+  alters?: string[];
+  features: ParsedScrapedArchetypeFeature[];
   sourceUrl: string;
 }
 

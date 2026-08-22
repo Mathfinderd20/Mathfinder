@@ -30,6 +30,7 @@
     "db:scrape:aon-rings": "tsx src/cli.ts scrape-aon-rings",
     "db:scrape:aon-rods": "tsx src/cli.ts scrape-aon-rods",
     "db:scrape:aon-staves": "tsx src/cli.ts scrape-aon-staves",
+    "db:scrape:aon-archetypes": "tsx src/cli.ts scrape-aon-archetypes",
     "db:scrape:aon-class-features": "tsx src/cli.ts scrape-aon-class-features",
     "db:scrape:aon-base-class-features": "tsx src/cli.ts scrape-aon-base-class-features",
     "db:scrape:aon-weapons": "tsx src/cli.ts scrape-aon-weapons",

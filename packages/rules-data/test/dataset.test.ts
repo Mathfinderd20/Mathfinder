@@ -14,6 +14,7 @@ describe("rules-data dataset", () => {
     const index = buildRulesDataIndex(RULES_DATA_SET);
     expect(index.classes["fighter"]?.name).toBe("Fighter");
     expect(index.archetypes["bugler"]?.id).toBe("bugler");
+    expect(Object.keys(index.archetypes)).toContain("battle-chaplain");
     expect(
       index.archetypesByClass["witch"]?.map((archetype) => archetype.name),
     ).toEqual(["Apocalypse Witch", "Hexslinger"]);

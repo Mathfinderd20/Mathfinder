@@ -100,6 +100,8 @@ if (normalized !== undefined) {
   if (!normalized || typeof normalized !== "object") {
     fail("normalized, when present, must be an object.");
   }
+  if (normalized.archetypes !== undefined)
+    assertArray(normalized.archetypes, "normalized.archetypes");
   if (normalized.spells !== undefined)
     assertArray(normalized.spells, "normalized.spells");
   if (normalized.armor !== undefined)
@@ -107,6 +109,18 @@ if (normalized !== undefined) {
   if (normalized.mundaneEquipment !== undefined) {
     assertArray(normalized.mundaneEquipment, "normalized.mundaneEquipment");
   }
+}
+
+const archetypes = rulesDataSet.packs.flatMap((pack) => pack.archetypes ?? []);
+const archetypeIds = new Set();
+for (const archetype of archetypes) {
+  if (!archetype.id || !archetype.name || !archetype.baseClassName) {
+    fail(`Malformed archetype in pack ${archetype.pack ?? "<unknown>"}.`);
+  }
+  if (archetypeIds.has(archetype.id)) {
+    fail(`Duplicate archetype id: ${archetype.id}`);
+  }
+  archetypeIds.add(archetype.id);
 }
 
 const favoredClassBonuses = rulesDataSet.packs.flatMap((pack) =>
@@ -135,6 +149,7 @@ const summary = {
   sourceCount: rulesDataSet.sources.length,
   packCount: rulesDataSet.packs.length,
   classCount: countPackEntries(rulesDataSet.packs, "classes"),
+  archetypeCount: archetypes.length,
   featCount: countPackEntries(rulesDataSet.packs, "feats"),
   raceCount: countPackEntries(rulesDataSet.packs, "races"),
   favoredClassBonusCount: favoredClassBonuses.length,

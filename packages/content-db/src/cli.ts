@@ -12,6 +12,7 @@ import {
   refreshCachedAonFeats,
   refreshCachedAonMagicItems,
   refreshCachedAonSpells,
+  scrapeAonArchetypes,
   scrapeAonArmor,
   scrapeAonBaseClassFeatures,
   scrapeAonClassFeatures,
@@ -25,6 +26,7 @@ import {
   scrapeAonRods,
   scrapeAonSpells,
   scrapeAonStaves,
+  scrapeAonSupportedArchetypes,
   scrapeAonWeapons,
   scrapeAonWondrousItems,
 } from "./scrape";
@@ -258,6 +260,21 @@ async function main() {
         `Scraped ${result.total} AoN staff records across ${Object.keys(result.results).length} staff pages.`,
       );
       console.log(JSON.stringify(result.results, null, 2));
+      exportUsableSnapshot(db);
+      return;
+    }
+    if (command === "scrape-aon-archetypes") {
+      const className = process.argv[3];
+      if (className) {
+        const imported = await scrapeAonArchetypes(db, className);
+        console.log(`Scraped ${imported} AoN archetypes for ${className}.`);
+      } else {
+        const result = await scrapeAonSupportedArchetypes(db);
+        console.log(
+          `Scraped ${result.total} AoN archetypes across ${Object.keys(result.results).length} supported classes.`,
+        );
+        console.log(JSON.stringify(result.results, null, 2));
+      }
       exportUsableSnapshot(db);
       return;
     }
