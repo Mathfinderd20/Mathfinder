@@ -6,9 +6,27 @@ import {
   buildBaseFeatOptions,
   featSelectionIsComplete,
   FeatSelectionPicker,
+  searchBaseFeatOptions,
 } from "./FeatSelectionPicker";
 
 describe("FeatSelectionPicker", () => {
+  it("ranks feat-name matches ahead of rules-text noise", () => {
+    const options = [
+      ...Array.from({ length: 40 }, (_, index) => ({
+        id: `noise-${index}`,
+        name: `Unrelated Combat Feat ${index}`,
+        searchText: "Requires Weapon Focus",
+      })),
+      { id: "weapon-focus", name: "Weapon Focus" },
+      { id: "weapon-specialization", name: "Weapon Specialization" },
+    ];
+    expect(
+      searchBaseFeatOptions(options, "weapon")
+        .slice(0, 2)
+        .map((option) => option.name),
+    ).toEqual(["Weapon Focus", "Weapon Specialization"]);
+  });
+
   it("lists Weapon Focus once instead of once per weapon", () => {
     const options = buildBaseFeatOptions(FEATS, "fighter-bonus");
     expect(

@@ -408,13 +408,51 @@ export const SAVAGE_COMPANY_FEATS: FeatDefinition[] = [];
 
 function withKnownParameterizedSemantics(feat: FeatDefinition): FeatDefinition {
   const normalizedName = feat.name.trim().toLowerCase();
-  if (normalizedName === "weapon focus")
+  const weaponFeatPrerequisites: Partial<Record<string, string[]>> = {
+    "weapon focus": [],
+    "weapon specialization": ["Weapon Focus"],
+    "greater weapon focus": ["Weapon Focus"],
+    "greater weapon specialization": [
+      "Weapon Focus",
+      "Greater Weapon Focus",
+      "Weapon Specialization",
+    ],
+  };
+  const requiredWeaponFeats = weaponFeatPrerequisites[normalizedName];
+  if (requiredWeaponFeats) {
+    const prerequisites = [...feat.prerequisites];
+    for (const featName of requiredWeaponFeats) {
+      if (
+        !prerequisites.some(
+          (prerequisite) =>
+            prerequisite.type === "feat" &&
+            prerequisite.featName?.toLowerCase() === featName.toLowerCase(),
+        )
+      ) {
+        prerequisites.push({
+          type: "feat",
+          featName,
+          sameParameter: true,
+          description: `${featName} with selected weapon`,
+        });
+      }
+    }
     return {
       ...feat,
       tags: [...new Set([...(feat.tags ?? []), "combat"])],
+      prerequisites: prerequisites.map((prerequisite) =>
+        prerequisite.type === "feat" &&
+        requiredWeaponFeats.some(
+          (featName) =>
+            featName.toLowerCase() === prerequisite.featName?.toLowerCase(),
+        )
+          ? { ...prerequisite, sameParameter: true }
+          : prerequisite,
+      ),
       repeatable: true,
       parameter: { kind: "weapon", label: "Weapon" },
     };
+  }
   if (normalizedName === "skill focus")
     return {
       ...feat,
@@ -598,6 +636,33 @@ function parameterizedFeatEffects(selection: ParsedFeatSelection): Modifier[] {
   const { feat, parameterValue } = selection;
   const normalizedFeatName = feat.name.trim().toLowerCase();
   if (normalizedFeatName === "weapon focus") {
+    const normalizedWeapon = normalizeWeaponChoice(parameterValue ?? "");
+    if (!normalizedWeapon) return [];
+    return [
+      {
+        target: `weapon.attack.${normalizedWeapon}`,
+        type: "untyped",
+        value: 1,
+        source: formatFeatSelection(feat.name, parameterValue),
+      },
+    ];
+  }
+  if (
+    normalizedFeatName === "weapon specialization" ||
+    normalizedFeatName === "greater weapon specialization"
+  ) {
+    const normalizedWeapon = normalizeWeaponChoice(parameterValue ?? "");
+    if (!normalizedWeapon) return [];
+    return [
+      {
+        target: `weapon.damage.${normalizedWeapon}`,
+        type: "untyped",
+        value: 2,
+        source: formatFeatSelection(feat.name, parameterValue),
+      },
+    ];
+  }
+  if (normalizedFeatName === "greater weapon focus") {
     const normalizedWeapon = normalizeWeaponChoice(parameterValue ?? "");
     if (!normalizedWeapon) return [];
     return [

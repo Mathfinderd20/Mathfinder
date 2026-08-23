@@ -55,6 +55,40 @@ export function buildBaseFeatOptions(
     }));
 }
 
+export function searchBaseFeatOptions(
+  options: CompendiumOption[],
+  query: string,
+) {
+  const search = query.trim().toLowerCase();
+  if (!search) return options;
+  const nameText = (option: CompendiumOption) => option.name.toLowerCase();
+  const searchText = (option: CompendiumOption) =>
+    [
+      option.name,
+      ...(Array.isArray(option.searchText)
+        ? option.searchText
+        : option.searchText
+          ? [option.searchText]
+          : []),
+      ...(option.tags ?? []),
+    ]
+      .join(" ")
+      .toLowerCase();
+  return options
+    .filter((option) => searchText(option).includes(search))
+    .sort((a, b) => {
+      const rank = (option: CompendiumOption) => {
+        const name = nameText(option);
+        if (name === search) return 0;
+        if (name.startsWith(search)) return 1;
+        if (name.split(/\s+/).some((word) => word.startsWith(search))) return 2;
+        if (name.includes(search)) return 3;
+        return 4;
+      };
+      return rank(a) - rank(b) || a.name.localeCompare(b.name);
+    });
+}
+
 export function featSelectionIsComplete(
   featRegistry: FeatRegistry,
   value: string,
@@ -135,7 +169,8 @@ export function FeatSelectionPicker({
         <CompendiumPicker
           value={displayedFeat?.name ?? ""}
           onChange={selectBaseFeat}
-          options={baseOptions}
+          options={[]}
+          resolveOptions={(query) => searchBaseFeatOptions(baseOptions, query)}
           placeholder={placeholder}
           tooltip={displayedFeat ? featTitle(displayedFeat.name) : undefined}
           commitMode="select"

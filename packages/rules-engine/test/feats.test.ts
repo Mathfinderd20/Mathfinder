@@ -121,6 +121,14 @@ describe("feat prerequisites", () => {
         effects: [],
       },
       {
+        id: "scrape-aon-weapon-specialization",
+        name: "Weapon Specialization",
+        pack: "scraped",
+        description: "Choose one weapon and deal extra damage.",
+        prerequisites: [],
+        effects: [],
+      },
+      {
         id: "scrape-aon-spell-focus",
         name: "Spell Focus",
         pack: "scraped",
@@ -136,6 +144,16 @@ describe("feat prerequisites", () => {
         "fighter-bonus",
       ),
     ).toBe(true);
+    expect(getFeat(registry, "Weapon Specialization")).toMatchObject({
+      parameter: { kind: "weapon" },
+      repeatable: true,
+      prerequisites: [
+        expect.objectContaining({
+          featName: "Weapon Focus",
+          sameParameter: true,
+        }),
+      ],
+    });
     expect(getFeat(registry, "Spell Focus")?.parameter?.kind).toBe(
       "spell-school",
     );
@@ -143,6 +161,14 @@ describe("feat prerequisites", () => {
       expect.objectContaining({
         target: "weapon.attack.longsword",
         value: 1,
+      }),
+    ]);
+    expect(
+      featEffects(["Weapon Specialization (Longsword)"], registry),
+    ).toEqual([
+      expect.objectContaining({
+        target: "weapon.damage.longsword",
+        value: 2,
       }),
     ]);
   });
