@@ -65,6 +65,10 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 - [x] Equipment/inventory engine: item quantities, costs, auto weight, equipped flags, armor metadata, slots, containers, coin/ammo/component tracking, purchase validation, and sheet itemization are all live
 - [~] Prerequisite validation for prestige classes, archetypes — archetype legality/conflict validation is live; prestige-class prerequisites still pending
 - [x] Parameterized feats (Weapon Focus weapon choice, Skill Focus skill choice)
+- [ ] Complete parameterized-feat picker and mechanical coverage, especially weapon selections for Weapon Focus and school selections for Spell Focus; verify the selected parameter changes the correct attack rolls or spell save DCs
+- [ ] Add a campaign house-rule toggle that disables alignment restrictions and alignment-based validation
+- [ ] Complete Guns Everywhere economics by applying the ruleset's firearm and ammunition price changes throughout catalogs, purchases, and existing templated equipment
+- [ ] Add a campaign house-rule toggle to ignore encumbrance and suppress load-based penalties/restrictions without deleting inventory weight
 
 ## Phase 3 — Character Builder UX
 
@@ -108,6 +112,13 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 - [~] Complete ancestry-specific favored-class bonuses — 731 AoN options across 49 scraped races are ingested with source URLs and available as manual selections; automate common effect families and ingest owner-authored Savage Company FCBs from the manuscript
 - [ ] Shared compendium/runtime normalization work from `PLAN.md`
 - [ ] Savage Company content ingestion breadth
+- [ ] Campaign house-rule controls: ignore alignment restrictions, complete Guns Everywhere pricing, and optionally ignore encumbrance
+- [ ] Complete selection-bearing feat UX/mechanics for Weapon Focus, Spell Focus, and future parameterized feats
+
+## Ingestion Research
+
+- [x] Review Luke Parke's 2023 “Scraping Archives of Nethys for fun and profit” article and repository — it bulk-downloads PF2e records from AoN's Elasticsearch `aon` index by category, then writes raw, parsed `_source`, and per-record JSON; useful as evidence that discovery/fetch/normalization should remain separate
+- [ ] Spike whether AoN's Elasticsearch service exposes complete, licensed PF1 records with stable IDs and richer structured fields than the PF1 ASP.NET pages; do not replace the cached PF1 HTML pipeline unless completeness, provenance, rate limits, and schema stability are verified
 
 ## Open Questions / Risks
 
