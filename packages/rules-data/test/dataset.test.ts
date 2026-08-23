@@ -173,6 +173,11 @@ describe("rules-data dataset", () => {
     ).toMatchObject({
       level: 1,
       name: "Grit",
+      resourcePool: {
+        id: "infantryman-grit",
+        unit: "grit",
+        maximum: { ability: "wis", minimum: 1 },
+      },
     });
     expect(
       infantrymanFeatures?.find(

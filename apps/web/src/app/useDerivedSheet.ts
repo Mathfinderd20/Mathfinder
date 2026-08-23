@@ -3,6 +3,7 @@ import {
   activatableResourceMax,
   buildCharacter,
   collectActivatableEffects,
+  collectResourcePools,
   computeSheet,
   groupActivatables,
   resolveActivatableSelections,
@@ -55,6 +56,12 @@ export function useDerivedSheet(args: {
       baseAttackBonus: baseSheet.baseAttackBonus,
       characterLevel: baseSheet.level,
       abilityModifiers,
+      classLevels: Object.fromEntries(
+        baseSheet.descriptor.classes.map((entry) => [
+          entry.name.toLowerCase(),
+          entry.level,
+        ]),
+      ),
     };
     const spellEffectContext: SpellEffectRuntimeContext = {
       characterLevel: baseSheet.level,
@@ -64,11 +71,21 @@ export function useDerivedSheet(args: {
       ),
     };
     const runtimeBuffs = buildRuntimeBuffs(spellEffectContext);
+    const resourcePools = collectResourcePools({
+      descriptor: baseSheet.descriptor,
+      classFeatureRegistry: RUNTIME_CLASS_FEATURES,
+      featRegistry: RUNTIME_FEATS,
+      context: activationContext,
+    });
     const resourceMaxes: Record<string, number> = {};
     const resourceLabels: Record<string, string> = {};
     for (const feature of activatableFeatures) {
       const max = activatableResourceMax(feature, activationContext);
       if (max !== undefined) resourceMaxes[feature.id] = max;
+    }
+    for (const pool of resourcePools) {
+      resourceMaxes[pool.id] = pool.max;
+      resourceLabels[pool.id] = pool.unit;
     }
     for (const buff of runtimeBuffs) {
       if (buff.trackerMax !== undefined)
@@ -98,6 +115,7 @@ export function useDerivedSheet(args: {
       activatableConflicts: resolvedActivatables.conflicts,
       resourceMaxes,
       resourceLabels,
+      resourcePools,
       runtimeBuffs,
       spellEffectContext,
     };

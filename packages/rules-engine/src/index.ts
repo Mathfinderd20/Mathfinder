@@ -96,6 +96,8 @@ export {
 // ---- Content: activatables ----
 export {
   collectActivatableEffects,
+  collectResourcePools,
+  resourcePoolMaximum,
   resolveActivatableSelections,
   groupActivatables,
   activatableModifiers,
@@ -105,6 +107,9 @@ export {
   activatableFeatsForDescriptor,
   type ActivatableEffect,
   type ActivatableResource,
+  type ResourcePoolDefinition,
+  type ResourcePoolMaximum,
+  type DerivedResourcePool,
   type ActivatableConflict,
   type ResolvedActivatables,
   type ActivationContext,

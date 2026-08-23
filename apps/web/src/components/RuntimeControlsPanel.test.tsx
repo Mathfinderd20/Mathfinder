@@ -19,15 +19,29 @@ const haste = {
   modifiers: [{ target: "attack", value: 1, source: "Haste" }],
 };
 
-function renderPanel(ownedSpellNames: string[]) {
+function renderPanel(
+  ownedSpellNames: string[],
+  resourcePools: Array<{
+    id: string;
+    name: string;
+    unit: string;
+    description: string;
+    max: number;
+  }> = [],
+) {
   return renderToStaticMarkup(
     <RuntimeControlsPanel
       activatableGroups={{ ungrouped: [], grouped: {} }}
       activatableConflicts={[]}
       activeBuffs={{}}
       resourcesUsed={{}}
-      resourceMaxes={{}}
-      resourceLabels={{}}
+      resourceMaxes={Object.fromEntries(
+        resourcePools.map((pool) => [pool.id, pool.max]),
+      )}
+      resourceLabels={Object.fromEntries(
+        resourcePools.map((pool) => [pool.id, pool.unit]),
+      )}
+      resourcePools={resourcePools}
       fatigued={false}
       buffs={[haste]}
       ownedSpellNames={ownedSpellNames}
@@ -50,5 +64,25 @@ describe("RuntimeControlsPanel", () => {
 
   it("keeps owned spells visible", () => {
     expect(renderPanel(["Haste"])).toContain("<strong>Haste</strong>");
+  });
+
+  it("renders standalone class resource pools without an ability toggle", () => {
+    const html = renderPanel(
+      [],
+      [
+        {
+          id: "infantryman-grit",
+          name: "Grit",
+          unit: "grit",
+          description: "Spend grit on deeds.",
+          max: 3,
+        },
+      ],
+    );
+    expect(html).toContain("resource pools");
+    expect(html).toContain("3/3 grit");
+    expect(html).toContain("Spend");
+    expect(html).toContain("Regain");
+    expect(html).not.toContain("Grit (ability)");
   });
 });

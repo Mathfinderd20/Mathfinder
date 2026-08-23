@@ -6,6 +6,7 @@ import {
   type RuntimeProfile,
   type RuntimeTacticalCategory,
 } from "../runtimeInsights";
+import type { DerivedResourcePool } from "@mathfinder/rules-engine";
 
 interface ActivatableView {
   id: string;
@@ -23,6 +24,7 @@ interface RuntimeControlsPanelProps {
   resourcesUsed: Record<string, number>;
   resourceMaxes: Record<string, number>;
   resourceLabels: Record<string, string>;
+  resourcePools: DerivedResourcePool[];
   fatigued: boolean;
   buffs: RuntimeBuffView[];
   ownedSpellNames: string[];
@@ -41,6 +43,7 @@ function ResourceControls({
   resourcesUsed,
   onAdjustResource,
   onResetResource,
+  poolMode = false,
 }: {
   featureId: string;
   resourceMaxes: Record<string, number>;
@@ -48,6 +51,7 @@ function ResourceControls({
   resourcesUsed: Record<string, number>;
   onAdjustResource: (id: string, delta: number, max?: number) => void;
   onResetResource: (id: string) => void;
+  poolMode?: boolean;
 }) {
   const max = resourceMaxes[featureId];
   if (max === undefined) return null;
@@ -62,15 +66,15 @@ function ResourceControls({
       <div className="resource-buttons">
         <button
           className="ghost small"
-          onClick={() => onAdjustResource(featureId, -1, max)}
+          onClick={() => onAdjustResource(featureId, poolMode ? 1 : -1, max)}
         >
-          -
+          {poolMode ? "Spend" : "-"}
         </button>
         <button
           className="ghost small"
-          onClick={() => onAdjustResource(featureId, 1, max)}
+          onClick={() => onAdjustResource(featureId, poolMode ? -1 : 1, max)}
         >
-          +
+          {poolMode ? "Regain" : "+"}
         </button>
         <button
           className="ghost small"
@@ -97,6 +101,7 @@ export function RuntimeControlsPanel({
   resourcesUsed,
   resourceMaxes,
   resourceLabels,
+  resourcePools,
   fatigued,
   buffs,
   ownedSpellNames,
@@ -335,6 +340,30 @@ export function RuntimeControlsPanel({
               </button>
             ) : null}
           </div>
+        </div>
+      ) : null}
+      {resourcePools.length > 0 ? (
+        <div className="mode-group">
+          <div className="mode-title">resource pools</div>
+          {resourcePools.map((pool) => (
+            <div className="buff-block" key={pool.id}>
+              <div className="buff">
+                <span>
+                  <strong>{pool.name}</strong>
+                  <span className="buff-desc">{pool.description}</span>
+                </span>
+              </div>
+              <ResourceControls
+                featureId={pool.id}
+                resourceMaxes={resourceMaxes}
+                resourceLabels={resourceLabels}
+                resourcesUsed={resourcesUsed}
+                onAdjustResource={onAdjustResource}
+                onResetResource={onResetResource}
+                poolMode
+              />
+            </div>
+          ))}
         </div>
       ) : null}
       {resourceActivatables.length > 0 ? (

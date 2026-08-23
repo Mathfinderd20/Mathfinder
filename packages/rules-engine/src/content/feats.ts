@@ -1,7 +1,11 @@
 import { buildCompendiumIndex, getCompendiumEntryByName } from "../compendium";
 import { SKILL_DEFINITIONS } from "../skills";
 import type { AbilityKey, DerivedSheet, Modifier, SkillKey } from "../types";
-import { babStep, type ActivatableEffect } from "./activatables";
+import {
+  babStep,
+  type ActivatableEffect,
+  type ResourcePoolDefinition,
+} from "./activatables";
 import { ADDITIONAL_CORE_FEATS } from "./core-feats-additional";
 
 /** A single feat prerequisite, with a human-readable label for the UI. */
@@ -40,6 +44,8 @@ export interface FeatDefinition {
   effects: Modifier[];
   /** Optional activated state, e.g. Combat Expertise. */
   activatable?: ActivatableEffect;
+  /** Optional always-available tracked pool granted by this feat. */
+  resourcePool?: ResourcePoolDefinition;
 }
 
 export type FeatGrantKind = "general" | "fighter-bonus";
@@ -530,6 +536,7 @@ function mergeFeatDefinitions(
     repeatable: incoming.repeatable ?? existing.repeatable,
     parameter: incoming.parameter ?? existing.parameter,
     activatable: incoming.activatable ?? existing.activatable,
+    resourcePool: incoming.resourcePool ?? existing.resourcePool,
   });
 }
 

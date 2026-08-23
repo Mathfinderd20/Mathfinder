@@ -428,6 +428,7 @@ export function App({
     activatableConflicts,
     resourceMaxes,
     resourceLabels,
+    resourcePools,
     runtimeBuffs,
     spellEffectContext,
   } = useDerivedSheet({
@@ -543,6 +544,7 @@ export function App({
               resourcesUsed={resourcesUsed}
               resourceMaxes={resourceMaxes}
               resourceLabels={resourceLabels}
+              resourcePools={resourcePools}
               fatigued={fatigued}
               buffs={runtimeBuffs}
               ownedSpellNames={ownedSpellNames}

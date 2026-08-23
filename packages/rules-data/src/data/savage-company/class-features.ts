@@ -13,6 +13,17 @@ export const SAVAGE_COMPANY_CLASS_FEATURES: ClassFeatureDefinition[] = [
     description:
       "Gain grit points based on Wisdom and recover them with firearm critical hits or killing blows.",
     effects: [],
+    resourcePool: {
+      id: "infantryman-grit",
+      name: "Grit",
+      unit: "grit",
+      description:
+        "Spend grit on Infantryman deeds; recover it with qualifying firearm critical hits and killing blows.",
+      maximum: {
+        ability: "wis",
+        minimum: 1,
+      },
+    },
   },
   {
     id: "infantryman-deeds-l1",

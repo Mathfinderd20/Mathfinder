@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   activatableModifiers,
   babStep,
+  collectResourcePools,
   groupActivatables,
+  resourcePoolMaximum,
   resolveActivatableSelections,
   type ActivatableEffect,
 } from "../src/content/activatables";
@@ -31,6 +33,95 @@ const PA: ActivatableEffect = {
     { target: "attack", type: "untyped", value: -1, source: "Power Attack" },
   ],
 };
+
+describe("resource pools", () => {
+  it("derives serializable ability- and class-scaled maximums", () => {
+    expect(
+      resourcePoolMaximum(
+        {
+          id: "ki",
+          name: "Ki",
+          unit: "points",
+          description: "A test pool.",
+          maximum: {
+            base: 1,
+            ability: "wis",
+            className: "monk",
+            classLevelMultiplier: 0.5,
+            minimum: 1,
+          },
+        },
+        {
+          baseAttackBonus: 4,
+          characterLevel: 6,
+          abilityModifiers: { str: 0, dex: 0, con: 0, int: 0, wis: 3, cha: 0 },
+          classLevels: { monk: 6 },
+        },
+      ),
+    ).toBe(7);
+  });
+
+  it("collects a granted class pool without requiring an activatable toggle", () => {
+    const pools = collectResourcePools({
+      descriptor: {
+        classes: [{ name: "Infantryman", level: 1 }],
+        archetypes: [],
+        feats: [],
+        features: [{ name: "Grit", level: 1 }],
+        suppressedFeatures: [],
+      },
+      classFeatureRegistry: {
+        infantryman: [
+          {
+            id: "grit-feature",
+            name: "Grit",
+            className: "infantryman",
+            level: 1,
+            pack: "test",
+            description: "Gain grit.",
+            effects: [],
+            resourcePool: {
+              id: "infantryman-grit",
+              name: "Grit",
+              unit: "grit",
+              description: "Spend grit on deeds.",
+              maximum: { ability: "wis", minimum: 1 },
+            },
+          },
+        ],
+      },
+      featRegistry: {},
+      context: {
+        baseAttackBonus: 1,
+        characterLevel: 1,
+        abilityModifiers: { str: 0, dex: 0, con: 0, int: 0, wis: 3, cha: 0 },
+        classLevels: { infantryman: 1 },
+      },
+    });
+    expect(pools).toEqual([
+      expect.objectContaining({ id: "infantryman-grit", name: "Grit", max: 3 }),
+    ]);
+  });
+
+  it("enforces the grit minimum when Wisdom is low", () => {
+    expect(
+      resourcePoolMaximum(
+        {
+          id: "grit",
+          name: "Grit",
+          unit: "grit",
+          description: "A test pool.",
+          maximum: { ability: "wis", minimum: 1 },
+        },
+        {
+          baseAttackBonus: 1,
+          characterLevel: 1,
+          abilityModifiers: { str: 0, dex: 0, con: 0, int: 0, wis: -2, cha: 0 },
+        },
+      ),
+    ).toBe(1);
+  });
+});
 
 describe("resolveActivatableSelections", () => {
   it("activates independent toggles normally", () => {

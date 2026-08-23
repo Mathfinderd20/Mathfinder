@@ -57,7 +57,7 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 - [x] Runtime selection resolver for activatables
 - [x] Exclusivity groups for modes/stances (e.g. attack-mode) + UI radios
 - [x] Activated ability runtime rules: rounds/day/resource tracking scaffold (Rage rounds/day)
-- [ ] Add data-driven dynamic class resource pools to the derived sheet and runtime controls — class/archetype/feat grants such as ki, grit, panache, arcane pool, and similar resources should appear automatically when acquired, scale from the granting rules, persist current usage, and disappear when the grant is removed
+- [~] Add data-driven dynamic class resource pools to the derived sheet and runtime controls — serializable base/ability/class-level scaling, persisted usage, automatic grant/removal, and Infantryman grit are live; add ki, panache, arcane pool, and further class/archetype/feat pool definitions incrementally
 - [x] Activated ability runtime rules: scaling values by BAB (Power Attack, Combat Expertise, Deadly Aim)
 - [x] Conditional requirement / illegal-state suppression scaffold (Fast Movement blocked by armor/load)
 - [x] Suppression reasons surfaced in the sheet (e.g. Fast Movement suppressed: medium armor)
