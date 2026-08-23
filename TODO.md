@@ -118,7 +118,7 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 ## Ingestion Research
 
 - [x] Review Luke Parke's 2023 “Scraping Archives of Nethys for fun and profit” article and repository — it bulk-downloads PF2e records from AoN's Elasticsearch `aon` index by category, then writes raw, parsed `_source`, and per-record JSON; useful as evidence that discovery/fetch/normalization should remain separate
-- [ ] Spike whether AoN's Elasticsearch service exposes complete, licensed PF1 records with stable IDs and richer structured fields than the PF1 ASP.NET pages; do not replace the cached PF1 HTML pipeline unless completeness, provenance, rate limits, and schema stability are verified
+- [x] Spike AoN's Elasticsearch service — the anonymous `aon` index contains 45,405 structured PF2e records, but PF1 URL shapes and PF1-only CMB/CMD terminology return zero results; retain the cached PF1 HTML pipeline rather than importing the wrong edition very efficiently
 
 ## Open Questions / Risks
 
