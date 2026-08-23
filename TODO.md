@@ -67,7 +67,7 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 - [~] Prerequisite validation for prestige classes, archetypes — archetype legality/conflict validation is live; prestige-class prerequisites still pending
 - [x] Parameterized feats (Weapon Focus weapon choice, Skill Focus skill choice)
 - [x] Complete parameterized-feat picker and mechanical coverage for Weapon Focus, Skill Focus, Spell Focus, and Greater Spell Focus — runtime scraped feat overrides retain parameter semantics; weapon choices affect only matching attacks, school choices affect only matching spell save DCs, and Greater Spell Focus requires the same school
-- [ ] Add a campaign house-rule toggle that disables alignment restrictions and alignment-based validation
+- [x] Add a campaign house-rule toggle that disables alignment restrictions and alignment-based validation across character creation, level-up, build validation, and persisted campaign rules
 - [ ] Complete Guns Everywhere economics by applying the ruleset's firearm and ammunition price changes throughout catalogs, purchases, and existing templated equipment
 - [ ] Add a campaign house-rule toggle to ignore encumbrance and suppress load-based penalties/restrictions without deleting inventory weight
 
@@ -113,7 +113,7 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 - [~] Complete ancestry-specific favored-class bonuses — 731 AoN options across 49 scraped races are ingested with source URLs and available as manual selections; automate common effect families and ingest owner-authored Savage Company FCBs from the manuscript
 - [ ] Shared compendium/runtime normalization work from `PLAN.md`
 - [ ] Savage Company content ingestion breadth
-- [ ] Campaign house-rule controls: ignore alignment restrictions, complete Guns Everywhere pricing, and optionally ignore encumbrance
+- [~] Campaign house-rule controls — ignore alignment restrictions is live; complete Guns Everywhere pricing and optionally ignore encumbrance
 - [x] Complete selection-bearing feat UX/mechanics for Weapon Focus and Spell Focus; retain the generic parameter model for future selection-bearing feats
 
 ## Ingestion Research

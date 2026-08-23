@@ -1664,7 +1664,9 @@ export function validateBuild(
         level: levelNum,
         message: `Unknown class "${lvl.className}" at level ${levelNum}.`,
       });
-    } else if (!classAllowsAlignment(def, build.alignment)) {
+    } else if (
+      !classAllowsAlignment(def, build.alignment, build.campaignRules)
+    ) {
       issues.push({
         severity: "error",
         code: "class-alignment-restriction",

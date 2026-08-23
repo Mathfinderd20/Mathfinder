@@ -11,6 +11,34 @@ import {
   syncTemplatedWeaponsToCampaignRules,
 } from "./buildNormalization";
 
+export function campaignRulesOrUndefined(
+  rules: NonNullable<CharacterBuild["campaignRules"]>,
+) {
+  return rules.firearmRules || rules.ignoreAlignmentRestrictions
+    ? rules
+    : undefined;
+}
+
+export function withFirearmRulesMode(
+  current: CharacterBuild["campaignRules"],
+  value: FirearmRulesMode,
+) {
+  const campaignRules = { ...(current ?? {}) };
+  if (value === "standard") delete campaignRules.firearmRules;
+  else campaignRules.firearmRules = value;
+  return campaignRulesOrUndefined(campaignRules);
+}
+
+export function withIgnoreAlignmentRestrictions(
+  current: CharacterBuild["campaignRules"],
+  value: boolean,
+) {
+  const campaignRules = { ...(current ?? {}) };
+  if (value) campaignRules.ignoreAlignmentRestrictions = true;
+  else delete campaignRules.ignoreAlignmentRestrictions;
+  return campaignRulesOrUndefined(campaignRules);
+}
+
 export function useBuildBasicsEditor(
   setBuild: Dispatch<SetStateAction<CharacterBuild>>,
 ) {
@@ -106,12 +134,19 @@ export function useBuildBasicsEditor(
     setBuild((previous) =>
       syncTemplatedWeaponsToCampaignRules({
         ...previous,
-        campaignRules:
-          value === "standard"
-            ? undefined
-            : { ...(previous.campaignRules ?? {}), firearmRules: value },
+        campaignRules: withFirearmRulesMode(previous.campaignRules, value),
       }),
     );
+  }
+
+  function updateIgnoreAlignmentRestrictions(value: boolean) {
+    setBuild((previous) => ({
+      ...previous,
+      campaignRules: withIgnoreAlignmentRestrictions(
+        previous.campaignRules,
+        value,
+      ),
+    }));
   }
 
   function updateInfantrymanGunTraining(weaponName: string) {
@@ -157,6 +192,7 @@ export function useBuildBasicsEditor(
     updateClassArchetypes,
     updateFavoredClassName,
     updateFirearmRulesMode,
+    updateIgnoreAlignmentRestrictions,
     updateInfantrymanGunTraining,
     updateRace,
     updateRaceBonusFeat,

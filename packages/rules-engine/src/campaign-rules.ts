@@ -4,6 +4,13 @@ export type FirearmRulesMode = "standard" | "guns-everywhere";
 
 export interface CampaignRules {
   firearmRules?: FirearmRulesMode;
+  ignoreAlignmentRestrictions?: boolean;
+}
+
+export function alignmentRestrictionsEnabled(
+  rules?: CampaignRules | null,
+): boolean {
+  return rules?.ignoreAlignmentRestrictions !== true;
 }
 
 export function firearmRulesMode(

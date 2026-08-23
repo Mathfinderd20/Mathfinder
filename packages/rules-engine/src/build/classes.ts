@@ -1,4 +1,8 @@
 import type { Alignment } from "../alignment";
+import {
+  alignmentRestrictionsEnabled,
+  type CampaignRules,
+} from "../campaign-rules";
 import { alignmentEthic, alignmentHasNeutralComponent } from "../alignment";
 import type {
   AbilityKey,
@@ -85,7 +89,9 @@ export interface ClassDefinition {
 export function classAllowsAlignment(
   classDef: ClassDefinition,
   alignment: Alignment | undefined,
+  campaignRules?: CampaignRules | null,
 ): boolean {
+  if (!alignmentRestrictionsEnabled(campaignRules)) return true;
   const restriction = classDef.alignmentRestriction;
   if (!restriction || !alignment) return true;
   switch (restriction.type) {

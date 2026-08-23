@@ -86,6 +86,8 @@ export function CharacterCreationModal({
     "Fighter";
   const [raceKey, setRaceKey] = useState(defaultRaceKey);
   const [alignment, setAlignment] = useState<Alignment>("true-neutral");
+  const [ignoreAlignmentRestrictions, setIgnoreAlignmentRestrictions] =
+    useState(false);
   const [className, setClassName] = useState(defaultClassName);
   const [abilityScores, setAbilityScores] =
     useState<Record<AbilityKey, number>>(DEFAULT_SCORES);
@@ -126,6 +128,7 @@ export function CharacterCreationModal({
         ),
         feats: selectedFeats,
         favoredClass,
+        ignoreAlignmentRestrictions,
       });
     },
     [
@@ -136,6 +139,7 @@ export function CharacterCreationModal({
       flexibleAbility,
       hasFlexibleAbility,
       hasRaceBonusFeat,
+      ignoreAlignmentRestrictions,
       race,
       raceBonusFeat,
       selectedFeats,
@@ -222,7 +226,10 @@ export function CharacterCreationModal({
   );
 
   const classAlignmentAllowed =
-    !!classDefinition && classAllowsAlignment(classDefinition, alignment);
+    !!classDefinition &&
+    classAllowsAlignment(classDefinition, alignment, {
+      ignoreAlignmentRestrictions,
+    });
   const missingRequiredFeat =
     selectedFeats.filter(Boolean).length < featSlots.length ||
     (hasRaceBonusFeat && !raceBonusFeat);
@@ -274,6 +281,22 @@ export function CharacterCreationModal({
           <AlignmentPicker value={alignment} onChange={setAlignment} />
         </div>
 
+        <label className="pick campaign-rule-pick">
+          <input
+            type="checkbox"
+            checked={ignoreAlignmentRestrictions}
+            onChange={(event) =>
+              setIgnoreAlignmentRestrictions(event.target.checked)
+            }
+          />
+          <span>
+            <strong>Ignore alignment restrictions</strong>
+            <span className="buff-desc">
+              House rule: all class alignment requirements are disabled.
+            </span>
+          </span>
+        </label>
+
         <div className="field">
           <span>Class</span>
           <select
@@ -284,6 +307,7 @@ export function CharacterCreationModal({
               const allowed = classAllowsAlignment(
                 RUNTIME_CLASSES[classKeyForName(option.name)]!,
                 alignment,
+                { ignoreAlignmentRestrictions },
               );
               return (
                 <option

@@ -15,6 +15,7 @@ interface FreshCharacterChoices {
   skillRanks?: Partial<Record<SkillKey, number>>;
   feats?: string[];
   favoredClass?: string;
+  ignoreAlignmentRestrictions?: boolean;
 }
 
 export function createFreshCharacterBuild(
@@ -46,7 +47,11 @@ export function createFreshCharacterBuild(
         modifiers: [],
       },
     ],
-    campaignRules: { firearmRules: "standard" },
+    campaignRules: {
+      firearmRules: "standard",
+      ignoreAlignmentRestrictions:
+        choices.ignoreAlignmentRestrictions || undefined,
+    },
     coinPurse: { pp: 0, gp: 0, sp: 0, cp: 0 },
     weapons: [],
     equipment: [],

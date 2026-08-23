@@ -89,6 +89,7 @@ interface Props {
   onUpdateFirearmRulesMode: (value: FirearmRulesMode) => void;
   onUpdateClassArchetypes: (className: string, archetypeIds: string[]) => void;
   onUpdateInfantrymanGunTraining: (weaponName: string) => void;
+  onUpdateIgnoreAlignmentRestrictions: (value: boolean) => void;
   onAddStructureLevel: () => void;
   onEnsureLevelCount: (count: number) => void;
   onSetCurrentLevel: (level: number) => void;
@@ -415,6 +416,25 @@ export function BuildEditorTab(props: Props) {
                     <option value="standard">Standard</option>
                     <option value="guns-everywhere">Guns Everywhere</option>
                   </select>
+                </label>
+                <label className="pick campaign-rule-pick">
+                  <input
+                    type="checkbox"
+                    checked={
+                      build.campaignRules?.ignoreAlignmentRestrictions === true
+                    }
+                    onChange={(event) =>
+                      props.onUpdateIgnoreAlignmentRestrictions(
+                        event.target.checked,
+                      )
+                    }
+                  />
+                  <span>
+                    <strong>Ignore alignment restrictions</strong>
+                    <span className="buff-desc">
+                      House rule: classes do not enforce alignment requirements.
+                    </span>
+                  </span>
                 </label>
               </div>
               {Object.keys(raceChoiceOptions).length > 0 ||

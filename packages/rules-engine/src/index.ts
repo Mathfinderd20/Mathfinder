@@ -85,6 +85,7 @@ export { renderSheet, explainStat } from "./format";
 export {
   applyCampaignRulesToWeapon,
   effectiveWeaponProficiencyGroup,
+  alignmentRestrictionsEnabled,
   firearmCostMultiplier,
   firearmRulesMode,
   infantrymanGunTrainingPickCount,

@@ -91,6 +91,14 @@ describe("validateBuild level diagnostics", () => {
       }),
     );
 
+    lawfulBarbarian.campaignRules = { ignoreAlignmentRestrictions: true };
+    expect(
+      validateBuild(lawfulBarbarian).some(
+        (issue) => issue.code === "class-alignment-restriction",
+      ),
+    ).toBe(false);
+
+    lawfulBarbarian.campaignRules = undefined;
     lawfulBarbarian.alignment = "chaotic-neutral";
     expect(
       validateBuild(lawfulBarbarian).some(

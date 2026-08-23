@@ -196,7 +196,8 @@ export function LevelUpModal({
   const resolvedClassName = RUNTIME_CLASSES[className]?.name ?? className;
   const selectedClass = RUNTIME_CLASSES[className];
   const classAlignmentAllowed =
-    !!selectedClass && classAllowsAlignment(selectedClass, build.alignment);
+    !!selectedClass &&
+    classAllowsAlignment(selectedClass, build.alignment, build.campaignRules);
   const favoredClassEligible =
     !!build.favoredClassName &&
     build.favoredClassName.toLowerCase() === resolvedClassName.toLowerCase();
@@ -536,7 +537,12 @@ export function LevelUpModal({
             {CLASS_KEYS.map((key) => {
               const classDef = RUNTIME_CLASSES[key];
               const allowed =
-                !!classDef && classAllowsAlignment(classDef, build.alignment);
+                !!classDef &&
+                classAllowsAlignment(
+                  classDef,
+                  build.alignment,
+                  build.campaignRules,
+                );
               return (
                 <option key={key} value={key} disabled={!allowed}>
                   {classDef?.name ?? key}
