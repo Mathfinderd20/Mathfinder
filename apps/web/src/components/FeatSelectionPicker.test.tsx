@@ -2,7 +2,9 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { FEATS } from "@mathfinder/rules-engine";
 import {
+  beginFeatSelection,
   buildBaseFeatOptions,
+  featSelectionIsComplete,
   FeatSelectionPicker,
 } from "./FeatSelectionPicker";
 
@@ -17,7 +19,18 @@ describe("FeatSelectionPicker", () => {
     ).toBe(false);
   });
 
-  it("shows a temporary weapon field while Weapon Focus needs a choice", () => {
+  it("keeps parameterized feats pending but commits ordinary feats immediately", () => {
+    expect(beginFeatSelection(FEATS, "Weapon Focus", "")).toEqual({
+      committedValue: "",
+      pendingFeatName: "Weapon Focus",
+    });
+    expect(beginFeatSelection(FEATS, "Power Attack", "")).toEqual({
+      committedValue: "Power Attack",
+    });
+  });
+
+  it("does not treat an incomplete parameterized feat as selected", () => {
+    expect(featSelectionIsComplete(FEATS, "Weapon Focus")).toBe(false);
     const markup = renderToStaticMarkup(
       <FeatSelectionPicker
         value="Weapon Focus"
@@ -27,11 +40,13 @@ describe("FeatSelectionPicker", () => {
         availableWeaponNames={["Adam's Custom Gun"]}
       />,
     );
-    expect(markup).toContain("Weapon");
-    expect(markup).toContain("Choose weapon");
+    expect(markup).not.toContain("Choose weapon");
   });
 
   it("collapses a completed weapon choice into a compact summary", () => {
+    expect(
+      featSelectionIsComplete(FEATS, "Weapon Focus (Adam's Custom Gun)"),
+    ).toBe(true);
     const markup = renderToStaticMarkup(
       <FeatSelectionPicker
         value="Weapon Focus (Adam's Custom Gun)"

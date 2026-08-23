@@ -569,6 +569,21 @@ button:disabled {
   gap: 7px;
   min-width: 0;
 }
+.feat-base-picker-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
+  align-items: start;
+}
+.feat-clear-button {
+  min-height: 30px;
+}
+.feat-parameter-prompt {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
+  align-items: end;
+}
 .feat-parameter-field {
   display: grid;
   gap: 4px;
