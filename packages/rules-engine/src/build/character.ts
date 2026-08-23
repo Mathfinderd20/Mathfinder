@@ -34,6 +34,7 @@ import {
   checkPrerequisites,
   featContextFromSheet,
   featEffects,
+  featParameterOptions,
   FEATS,
   parseFeatSelection,
   type FeatRegistry,
@@ -1810,6 +1811,23 @@ export function validateBuild(
           });
           continue;
         }
+        if (
+          parsed.parameterValue &&
+          parsed.feat.parameter &&
+          parsed.feat.parameter.kind !== "weapon" &&
+          !featParameterOptions(parsed.feat).some(
+            (option) =>
+              option.toLowerCase() === parsed.parameterValue?.toLowerCase(),
+          )
+        ) {
+          issues.push({
+            severity: "error",
+            code: "feat-parameter-invalid",
+            level: levelNum,
+            message: `${parsed.selectionName} uses an invalid ${parsed.feat.parameter.label.toLowerCase()} choice.`,
+          });
+          continue;
+        }
         const duplicate = parsed.feat.repeatable
           ? chosenFeatSelections.some(
               (selection) =>
@@ -1829,7 +1847,11 @@ export function validateBuild(
           });
           continue;
         }
-        const prereq = checkPrerequisites(parsed.feat, featContext);
+        const prereq = checkPrerequisites(
+          parsed.feat,
+          featContext,
+          parsed.parameterValue,
+        );
         if (!prereq.met) {
           issues.push({
             severity: "error",

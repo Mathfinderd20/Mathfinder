@@ -3,6 +3,8 @@ import {
   buildFeatRegistry,
   checkPrerequisites,
   featContextFromSheet,
+  featEffects,
+  featParameterOptions,
   FEATS,
   getFeat,
   listFeats,
@@ -50,18 +52,92 @@ describe("feat prerequisites", () => {
     );
   });
 
-  it("requires Spell Focus before Greater Spell Focus", () => {
+  it("requires Spell Focus in the same school before Greater Spell Focus", () => {
     const feat = getFeat(FEATS, "Greater Spell Focus")!;
     expect(feat.prerequisites.map((entry) => entry.description)).toEqual([
       "Spell Focus",
     ]);
-    expect(checkPrerequisites(feat, baseCtx).met).toBe(false);
+    expect(checkPrerequisites(feat, baseCtx, "Evocation").met).toBe(false);
     expect(
-      checkPrerequisites(feat, {
-        ...baseCtx,
-        featNames: ["Spell Focus (Evocation)"],
-      }).met,
+      checkPrerequisites(
+        feat,
+        {
+          ...baseCtx,
+          featNames: ["Spell Focus (Conjuration)"],
+        },
+        "Evocation",
+      ).met,
+    ).toBe(false);
+    expect(
+      checkPrerequisites(
+        feat,
+        {
+          ...baseCtx,
+          featNames: ["Spell Focus (Evocation)"],
+        },
+        "Evocation",
+      ).met,
     ).toBe(true);
+  });
+
+  it("offers every spell school and emits school-specific DC modifiers", () => {
+    const spellFocus = getFeat(FEATS, "Spell Focus")!;
+    expect(featParameterOptions(spellFocus)).toEqual([
+      "Abjuration",
+      "Conjuration",
+      "Divination",
+      "Enchantment",
+      "Evocation",
+      "Illusion",
+      "Necromancy",
+      "Transmutation",
+    ]);
+    expect(
+      featEffects(
+        ["Spell Focus (Evocation)", "Greater Spell Focus (Evocation)"],
+        FEATS,
+      ),
+    ).toEqual([
+      expect.objectContaining({
+        target: "spell.dc.school.evocation",
+        value: 1,
+      }),
+      expect.objectContaining({
+        target: "spell.dc.school.evocation",
+        value: 1,
+      }),
+    ]);
+  });
+
+  it("restores parameter semantics when scraped feats override core ids", () => {
+    const registry = buildFeatRegistry([
+      {
+        id: "scrape-aon-weapon-focus",
+        name: "Weapon Focus",
+        pack: "scraped",
+        description: "Choose one weapon.",
+        prerequisites: [],
+        effects: [],
+      },
+      {
+        id: "scrape-aon-spell-focus",
+        name: "Spell Focus",
+        pack: "scraped",
+        description: "Choose one school.",
+        prerequisites: [],
+        effects: [],
+      },
+    ]);
+    expect(getFeat(registry, "Weapon Focus")?.parameter?.kind).toBe("weapon");
+    expect(getFeat(registry, "Spell Focus")?.parameter?.kind).toBe(
+      "spell-school",
+    );
+    expect(featEffects(["Weapon Focus (Longsword)"], registry)).toEqual([
+      expect.objectContaining({
+        target: "weapon.attack.longsword",
+        value: 1,
+      }),
+    ]);
   });
 
   it("removes impossible self-prerequisites from imported feats", () => {

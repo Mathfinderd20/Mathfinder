@@ -8,6 +8,7 @@ import type {
   SpellcastingEntry,
 } from "./types";
 import type { DerivedAbility } from "./types";
+import { modifiersFor, resolveModifiers } from "./modifiers";
 import {
   SPELLS,
   classSpellLevel,
@@ -85,12 +86,58 @@ export function spellSaveDc(
   return 10 + spellLevel + castingAbilityMod;
 }
 
+function deriveSchoolSaveDcBonuses(input: CharacterInput) {
+  const prefix = "spell.dc.school.";
+  const schools = [
+    ...new Set(
+      input.modifiers
+        .map((modifier) => modifier.target.toString().toLowerCase())
+        .filter((target) => target.startsWith(prefix))
+        .map((target) => target.slice(prefix.length))
+        .filter(Boolean),
+    ),
+  ];
+  return Object.fromEntries(
+    schools.map((school) => {
+      const resolved = resolveModifiers(
+        modifiersFor(input.modifiers, `${prefix}${school}`),
+      );
+      return [
+        school,
+        {
+          total: resolved.total,
+          breakdown: resolved.contributing.map((modifier) => ({
+            source: modifier.source,
+            type: modifier.type,
+            value: modifier.value,
+          })),
+        },
+      ];
+    }),
+  );
+}
+
+export function spellSaveDcForSchool(
+  spellcasting: DerivedSpellcasting,
+  spellLevel: number,
+  school: string | undefined,
+): number | undefined {
+  const baseDc = spellcasting.spellSaveDcs[spellLevel];
+  if (baseDc === undefined) return undefined;
+  const schoolBonus = school
+    ? (spellcasting.spellSaveDcBonusesBySchool[school.trim().toLowerCase()]
+        ?.total ?? 0)
+    : 0;
+  return baseDc + schoolBonus;
+}
+
 export function deriveSpellcasting(
   input: CharacterInput,
   abilities: Record<AbilityKey, DerivedAbility>,
   spellRegistry: SpellRegistry = SPELLS,
 ): DerivedSpellcasting[] {
   const entries = input.spellcasting ?? [];
+  const spellSaveDcBonusesBySchool = deriveSchoolSaveDcBonuses(input);
   return entries.map((entry: SpellcastingEntry) => {
     const ability = abilities[entry.castingAbility];
     const abilityScore = ability.score;
@@ -261,6 +308,7 @@ export function deriveSpellcasting(
       slotsUsed,
       slotsRemaining,
       spellSaveDcs,
+      spellSaveDcBonusesBySchool,
       maxSpellLevel: highestTrackedLevel,
     };
   });

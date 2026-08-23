@@ -266,6 +266,48 @@ describe("validateBuild inventory diagnostics", () => {
     expect(sheet.skills.perception?.total).toBe(4);
   });
 
+  it("rejects invalid parameterized feat choices", () => {
+    const build: CharacterBuild = {
+      ...baseBuild(),
+      levels: [
+        {
+          className: "Wizard",
+          hitPointRoll: 6,
+          feats: ["Spell Focus (Chronomancy)"],
+        },
+      ],
+    };
+    expect(
+      validateBuild(build).some(
+        (issue) => issue.code === "feat-parameter-invalid",
+      ),
+    ).toBe(true);
+  });
+
+  it("requires Greater Spell Focus to match an existing Spell Focus school", () => {
+    const build: CharacterBuild = {
+      ...baseBuild(),
+      levels: [
+        {
+          className: "Wizard",
+          hitPointRoll: 6,
+          feats: [
+            "Spell Focus (Conjuration)",
+            "Greater Spell Focus (Evocation)",
+          ],
+        },
+      ],
+    };
+    const issues = validateBuild(build);
+    expect(
+      issues.some(
+        (issue) =>
+          issue.code === "feat-prerequisites" &&
+          issue.message.includes("Greater Spell Focus (Evocation)"),
+      ),
+    ).toBe(true);
+  });
+
   it("flags missing feat parameters and duplicate non-repeatable feats", () => {
     const build: CharacterBuild = {
       ...baseBuild(),

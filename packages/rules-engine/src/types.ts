@@ -586,6 +586,8 @@ export interface DerivedSpellcasting {
   slotsUsed: SpellSlotUsageByLevel;
   slotsRemaining: SpellSlotUsageByLevel;
   spellSaveDcs: Partial<Record<number, number>>;
+  /** School-specific bonuses applied on top of spellSaveDcs. */
+  spellSaveDcBonusesBySchool: Record<string, DerivedStat>;
   maxSpellLevel: number;
 }
 

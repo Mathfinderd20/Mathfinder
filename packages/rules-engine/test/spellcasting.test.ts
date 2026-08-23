@@ -5,7 +5,13 @@ import {
   type CharacterBuild,
   validateBuild,
 } from "../src/build/character";
-import { bonusSpellSlots, SPELLS, spellSaveDc, spellsByLevel } from "../src";
+import {
+  bonusSpellSlots,
+  SPELLS,
+  spellSaveDc,
+  spellSaveDcForSchool,
+  spellsByLevel,
+} from "../src";
 
 describe("spellcasting helpers", () => {
   it("computes spell save DCs from spell level and casting modifier", () => {
@@ -61,6 +67,33 @@ describe("runtime spell registries", () => {
 });
 
 describe("wizard spellcasting", () => {
+  it("applies Spell Focus only to the selected school's save DCs", () => {
+    const build: CharacterBuild = {
+      name: "Focused Caster",
+      race: { name: "Human", size: "medium", speed: 30 },
+      baseAbilityScores: {
+        str: 8,
+        dex: 14,
+        con: 12,
+        int: 18,
+        wis: 10,
+        cha: 10,
+      },
+      levels: [
+        {
+          className: "Wizard",
+          hitPointRoll: 6,
+          feats: ["Spell Focus (Evocation)", "Greater Spell Focus (Evocation)"],
+        },
+      ],
+    };
+    const caster = computeSheet(buildCharacter(build)).spellcasting[0]!;
+    expect(caster.spellSaveDcs[1]).toBe(15);
+    expect(caster.spellSaveDcBonusesBySchool.evocation?.total).toBe(2);
+    expect(spellSaveDcForSchool(caster, 1, "Evocation")).toBe(17);
+    expect(spellSaveDcForSchool(caster, 1, "Conjuration")).toBe(15);
+  });
+
   it("uses the supplied runtime spell registry for selection diagnostics", () => {
     const build: CharacterBuild = {
       name: "Runtime Librarian",

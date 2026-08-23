@@ -125,7 +125,11 @@ export function buildFeatPickerOptions({
       feat,
       selectionName,
       parameterValue,
-      prereq: checkPrerequisites(feat, { ...featContext, featNames: taken }),
+      prereq: checkPrerequisites(
+        feat,
+        { ...featContext, featNames: taken },
+        parameterValue,
+      ),
     }))
     .sort((a, b) => {
       const aMet = a.prereq.met ? 1 : 0;

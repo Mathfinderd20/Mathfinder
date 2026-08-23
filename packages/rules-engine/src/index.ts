@@ -78,6 +78,7 @@ export { deriveEncumbrance, loadThresholds, loadBand } from "./encumbrance";
 export {
   deriveSpellcasting,
   spellSaveDc,
+  spellSaveDcForSchool,
   bonusSpellSlots,
 } from "./spellcasting";
 export { renderSheet, explainStat } from "./format";

@@ -1836,6 +1836,23 @@ export function Sheet({
                         School: {displaySchoolName(c.specialistSchool)}
                       </span>
                     ) : null}
+                    {Object.entries(c.spellSaveDcBonusesBySchool)
+                      .filter(([, bonus]) => bonus.total !== 0)
+                      .map(([school, bonus]) => (
+                        <Tooltip
+                          key={`${classKey}-spell-dc-${school}`}
+                          content={bonus.breakdown
+                            .map(
+                              (entry) =>
+                                `${entry.source}: ${sign(entry.value)} ${entry.type}`,
+                            )
+                            .join("\n")}
+                        >
+                          <span className="chip">
+                            {displaySchoolName(school)} DC {sign(bonus.total)}
+                          </span>
+                        </Tooltip>
+                      ))}
                   </div>
                   <div className="spell-level-list">
                     {levels.map((level) => {

@@ -65,7 +65,7 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 - [x] Equipment/inventory engine: item quantities, costs, auto weight, equipped flags, armor metadata, slots, containers, coin/ammo/component tracking, purchase validation, and sheet itemization are all live
 - [~] Prerequisite validation for prestige classes, archetypes — archetype legality/conflict validation is live; prestige-class prerequisites still pending
 - [x] Parameterized feats (Weapon Focus weapon choice, Skill Focus skill choice)
-- [ ] Complete parameterized-feat picker and mechanical coverage, especially weapon selections for Weapon Focus and school selections for Spell Focus; verify the selected parameter changes the correct attack rolls or spell save DCs
+- [x] Complete parameterized-feat picker and mechanical coverage for Weapon Focus, Skill Focus, Spell Focus, and Greater Spell Focus — runtime scraped feat overrides retain parameter semantics; weapon choices affect only matching attacks, school choices affect only matching spell save DCs, and Greater Spell Focus requires the same school
 - [ ] Add a campaign house-rule toggle that disables alignment restrictions and alignment-based validation
 - [ ] Complete Guns Everywhere economics by applying the ruleset's firearm and ammunition price changes throughout catalogs, purchases, and existing templated equipment
 - [ ] Add a campaign house-rule toggle to ignore encumbrance and suppress load-based penalties/restrictions without deleting inventory weight
@@ -113,7 +113,7 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 - [ ] Shared compendium/runtime normalization work from `PLAN.md`
 - [ ] Savage Company content ingestion breadth
 - [ ] Campaign house-rule controls: ignore alignment restrictions, complete Guns Everywhere pricing, and optionally ignore encumbrance
-- [ ] Complete selection-bearing feat UX/mechanics for Weapon Focus, Spell Focus, and future parameterized feats
+- [x] Complete selection-bearing feat UX/mechanics for Weapon Focus and Spell Focus; retain the generic parameter model for future selection-bearing feats
 
 ## Ingestion Research
 
