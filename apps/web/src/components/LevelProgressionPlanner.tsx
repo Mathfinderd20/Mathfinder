@@ -1,8 +1,4 @@
-import type {
-  AbilityKey,
-  CharacterBuild,
-  FeatGrantKind,
-} from "@mathfinder/rules-engine";
+import type { AbilityKey, CharacterBuild } from "@mathfinder/rules-engine";
 import { useMemo, useState } from "react";
 import type {
   LevelPlannerSuggestions,
@@ -11,13 +7,9 @@ import type {
 } from "../buildSuggestions";
 import { featSlotTag, plannedFeatSlotsForLevel } from "../featSlots";
 import { buildFavoredClassBonusOptions } from "../favoredClassBonusData";
-import {
-  buildLooseFeatSearchOptions,
-  collectFeatWeaponNames,
-  normalizeSelectedFeatSelection,
-} from "../featOptionData";
+import { collectFeatWeaponNames } from "../featOptionData";
 import { RUNTIME_FEATS, RUNTIME_WEAPONS } from "../content";
-import { CompendiumPicker } from "./CompendiumPicker";
+import { FeatSelectionPicker } from "./FeatSelectionPicker";
 
 interface LevelProgressionPlannerProps {
   build: CharacterBuild;
@@ -99,13 +91,6 @@ export function LevelProgressionPlanner({
     () => collectFeatWeaponNames(build, RUNTIME_WEAPONS),
     [build],
   );
-  const resolveFeatOptions = (query: string, grantKind: FeatGrantKind) =>
-    buildLooseFeatSearchOptions({
-      featRegistry: RUNTIME_FEATS,
-      grantKind,
-      availableWeaponNames,
-      query,
-    });
   const [expandedLevels, setExpandedLevels] = useState<Record<number, boolean>>(
     {},
   );
@@ -273,25 +258,15 @@ export function LevelProgressionPlanner({
                                     {featSlotTag(slot.kind)}
                                   </span>
                                 </span>
-                                <CompendiumPicker
+                                <FeatSelectionPicker
                                   value={selectedFeat}
                                   onChange={(value) =>
-                                    onSetLevelFeat(
-                                      index,
-                                      featIndex,
-                                      normalizeSelectedFeatSelection(
-                                        RUNTIME_FEATS,
-                                        value,
-                                      ),
-                                    )
+                                    onSetLevelFeat(index, featIndex, value)
                                   }
-                                  options={[]}
-                                  resolveOptions={(query) =>
-                                    resolveFeatOptions(query, slot.kind)
-                                  }
+                                  featRegistry={RUNTIME_FEATS}
+                                  grantKind={slot.kind}
+                                  availableWeaponNames={availableWeaponNames}
                                   placeholder="Feat"
-                                  commitMode="select"
-                                  maxResults={24}
                                 />
                               </div>
                             );

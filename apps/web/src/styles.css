@@ -524,6 +524,12 @@ button:disabled {
   display: grid;
   gap: 8px;
 }
+.archetype-catalog-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
 .archetype-result-list.search-results {
   max-height: 520px;
   overflow-y: auto;
@@ -557,6 +563,18 @@ button:disabled {
 }
 .archetype-apply-pick {
   margin-top: 2px;
+}
+.feat-selection-picker {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+.feat-parameter-field {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 11px;
 }
 .alignment-field {
   width: fit-content;

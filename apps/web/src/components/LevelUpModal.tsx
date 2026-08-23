@@ -31,7 +31,7 @@ import {
   type SpellSuggestionChoice,
 } from "../buildSuggestions";
 import { displaySpellName } from "../spellLabels";
-import { featTitle, spellTitle } from "../rulesText";
+import { spellTitle } from "../rulesText";
 import { featSlotTag } from "../featSlots";
 import {
   buildFavoredClassBonusOptions,
@@ -42,7 +42,7 @@ import {
   collectFeatWeaponNames,
   normalizeSelectedFeatSelection,
 } from "../featOptionData";
-import { CompendiumPicker } from "./CompendiumPicker";
+import { FeatSelectionPicker } from "./FeatSelectionPicker";
 import { Tooltip } from "./Tooltip";
 
 const ABILITIES: AbilityKey[] = ["str", "dex", "con", "int", "wis", "cha"];
@@ -311,6 +311,10 @@ export function LevelUpModal({
     setSelectedFeats((prev) => prev.slice(0, plan.featSlots.length));
   }, [plan.featSlots.length]);
 
+  const availableFeatWeaponNames = useMemo(
+    () => collectFeatWeaponNames(preview.build, RUNTIME_WEAPONS),
+    [preview.build],
+  );
   const featOptionsBySlot = useMemo(() => {
     const ctx = featContextFromSheet(
       computeSheet(
@@ -324,10 +328,6 @@ export function LevelUpModal({
         { spellRegistry: RUNTIME_SPELLS },
       ),
     );
-    const availableWeaponNames = collectFeatWeaponNames(
-      preview.build,
-      RUNTIME_WEAPONS,
-    );
     return plan.featSlots.map((slot, slotIndex) =>
       buildFeatPickerOptions({
         featRegistry: RUNTIME_FEATS,
@@ -335,11 +335,17 @@ export function LevelUpModal({
         grantKind: slot.kind,
         takenSelections: ctx.featNames,
         currentSelection: selectedFeats[slotIndex],
-        availableWeaponNames,
+        availableWeaponNames: availableFeatWeaponNames,
         suggestedFeatNames,
       }),
     );
-  }, [plan.featSlots, preview.build, selectedFeats, suggestedFeatNames]);
+  }, [
+    availableFeatWeaponNames,
+    plan.featSlots,
+    preview.build,
+    selectedFeats,
+    suggestedFeatNames,
+  ]);
 
   const spellSeedGroups: Array<{
     classKey: string;
@@ -648,21 +654,20 @@ export function LevelUpModal({
                       · {slot.source} · {featSlotTag(slot.kind)}
                     </span>
                   </span>
-                  <CompendiumPicker
+                  <FeatSelectionPicker
                     value={selectedFeat}
                     onChange={(value) =>
                       setSelectedFeats((prev) => {
                         const next = [...prev];
-                        next[slotIndex] = normalizeSelectedFeatSelection(
-                          RUNTIME_FEATS,
-                          value,
-                        );
+                        next[slotIndex] = value;
                         return next;
                       })
                     }
-                    options={options}
+                    featRegistry={RUNTIME_FEATS}
+                    grantKind={slot.kind}
+                    availableWeaponNames={availableFeatWeaponNames}
+                    allowedOptions={options}
                     placeholder="Search legal feat"
-                    tooltip={featTitle(selectedFeat)}
                   />
                   <SuggestionCardRow
                     title={`Why these ${slot.label.toLowerCase()} picks`}

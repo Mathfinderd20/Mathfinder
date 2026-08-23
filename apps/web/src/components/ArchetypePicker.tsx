@@ -96,12 +96,16 @@ export function ArchetypePicker({
   onSelectionChange,
 }: ArchetypePickerProps) {
   const [query, setQuery] = useState("");
+  const [catalogOpen, setCatalogOpen] = useState(false);
   const normalizedSelectedIds = selectedIds.map((id) => id.toLowerCase());
   const selected = archetypes.filter((archetype) =>
     normalizedSelectedIds.includes(archetype.id.toLowerCase()),
   );
   const matches = useMemo(
-    () => filterArchetypes(archetypes, query).slice(0, 20),
+    () =>
+      query.trim()
+        ? filterArchetypes(archetypes, query)
+        : [...archetypes].sort((a, b) => a.name.localeCompare(b.name)),
     [archetypes, query],
   );
 
@@ -143,32 +147,50 @@ export function ArchetypePicker({
         className="searchable-name-input archetype-search-input"
         type="search"
         value={query}
-        onChange={(event) => setQuery(event.target.value)}
+        onFocus={() => setCatalogOpen(true)}
+        onChange={(event) => {
+          setQuery(event.target.value);
+          setCatalogOpen(true);
+        }}
         placeholder={`Search ${className} archetypes`}
         autoComplete="off"
       />
 
-      {query.trim() ? (
+      {catalogOpen ? (
         matches.length > 0 ? (
-          <div className="archetype-result-list search-results">
-            {matches.map((archetype) => (
-              <ArchetypeCard
-                key={`result-${archetype.id}`}
-                archetype={archetype}
-                applied={normalizedSelectedIds.includes(
-                  archetype.id.toLowerCase(),
-                )}
-                onApply={(applied) => setApplied(archetype, applied)}
-              />
-            ))}
-          </div>
+          <>
+            <div className="archetype-catalog-actions">
+              <span className="hint">
+                {matches.length} archetype{matches.length === 1 ? "" : "s"}
+              </span>
+              <button
+                type="button"
+                className="ghost tiny"
+                onClick={() => setCatalogOpen(false)}
+              >
+                Hide results
+              </button>
+            </div>
+            <div className="archetype-result-list search-results">
+              {matches.map((archetype) => (
+                <ArchetypeCard
+                  key={`result-${archetype.id}`}
+                  archetype={archetype}
+                  applied={normalizedSelectedIds.includes(
+                    archetype.id.toLowerCase(),
+                  )}
+                  onApply={(applied) => setApplied(archetype, applied)}
+                />
+              ))}
+            </div>
+          </>
         ) : (
           <p className="hint">No matching archetypes.</p>
         )
       ) : (
         <p className="hint">
-          Search by name, description, or replaced feature. Results stay hidden
-          until you search.
+          Click the search box to browse everything, or type to narrow by name,
+          description, or replaced feature.
         </p>
       )}
     </div>

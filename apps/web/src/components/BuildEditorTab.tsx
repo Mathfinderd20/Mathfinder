@@ -10,6 +10,8 @@ import {
   type SkillKey,
 } from "@mathfinder/rules-engine";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { RUNTIME_FEATS, RUNTIME_WEAPONS } from "../content";
+import { collectFeatWeaponNames } from "../featOptionData";
 import { featTitle } from "../rulesText";
 import type { SpellCastCounts } from "../runtimeState";
 import { skillMetadataTooltip, skillTrainingFlag } from "../skillPresentation";
@@ -21,7 +23,8 @@ import type {
 } from "../buildSuggestions";
 import { AlignmentPicker } from "./AlignmentPicker";
 import { ArchetypePicker } from "./ArchetypePicker";
-import { CompendiumPicker, type CompendiumOption } from "./CompendiumPicker";
+import type { CompendiumOption } from "./CompendiumPicker";
+import { FeatSelectionPicker } from "./FeatSelectionPicker";
 import { SpellcastingManager } from "./SpellcastingManager";
 import { Tooltip } from "./Tooltip";
 
@@ -223,6 +226,10 @@ export function BuildEditorTab(props: Props) {
       allowedSet.has(option.name.toLowerCase()),
     );
   }, [featOptions, raceChoiceOptions.bonusFeat?.featOptions]);
+  const availableFeatWeaponNames = useMemo(
+    () => collectFeatWeaponNames(build, RUNTIME_WEAPONS),
+    [build],
+  );
   const archetypeClasses = useMemo(
     () =>
       [...new Set(build.levels.map((level) => level.className))]
@@ -440,14 +447,14 @@ export function BuildEditorTab(props: Props) {
                     {raceChoiceOptions.bonusFeat ? (
                       <label className="field compact">
                         <span>Bonus feat</span>
-                        <CompendiumPicker
+                        <FeatSelectionPicker
                           value={build.race.choiceSelection?.bonusFeat ?? ""}
                           onChange={props.onUpdateRaceBonusFeat}
-                          options={raceBonusFeatOptions}
+                          featRegistry={RUNTIME_FEATS}
+                          grantKind="general"
+                          availableWeaponNames={availableFeatWeaponNames}
+                          allowedOptions={raceBonusFeatOptions}
                           placeholder="Search feat"
-                          tooltip={featTitle(
-                            build.race.choiceSelection?.bonusFeat ?? "",
-                          )}
                         />
                       </label>
                     ) : null}

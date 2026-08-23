@@ -24,20 +24,26 @@ export function collectFeatWeaponNames(
   build: CharacterBuild,
   runtimeWeapons: WeaponDefinition[],
 ): string[] {
-  return [
+  const normalizeNames = (names: Array<string | undefined>) =>
+    names.map((name) => name?.trim() ?? "").filter(Boolean);
+  const ownedNames = [
     ...new Set(
-      [
+      normalizeNames([
         ...(build.race.grantedWeapons ?? []).map((weapon) => weapon.name),
         ...(build.weapons ?? []).map((weapon) => weapon.name),
         ...(build.equipment ?? [])
           .filter((item) => !!item.weapon)
           .map((item) => item.name),
-        ...runtimeWeapons.map((weapon) => weapon.name),
-      ]
-        .map((name) => name?.trim() ?? "")
-        .filter(Boolean),
+      ]),
     ),
   ].sort((a, b) => a.localeCompare(b));
+  const ownedKeys = new Set(ownedNames.map((name) => name.toLowerCase()));
+  const catalogNames = [
+    ...new Set(normalizeNames(runtimeWeapons.map((weapon) => weapon.name))),
+  ]
+    .filter((name) => !ownedKeys.has(name.toLowerCase()))
+    .sort((a, b) => a.localeCompare(b));
+  return [...ownedNames, ...catalogNames];
 }
 
 interface BuildFeatPickerOptionsArgs {

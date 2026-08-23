@@ -619,7 +619,7 @@ export function featParameterOptions(
       ...new Set(
         (availableWeaponNames ?? []).map((name) => name.trim()).filter(Boolean),
       ),
-    ].sort((a, b) => a.localeCompare(b));
+    ];
   }
   return [];
 }

@@ -1,8 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { FEATS, type FeatContext } from "@mathfinder/rules-engine";
+import {
+  FEATS,
+  type CharacterBuild,
+  type FeatContext,
+  type WeaponDefinition,
+} from "@mathfinder/rules-engine";
 import {
   buildFeatPickerOptions,
   buildLooseFeatSearchOptions,
+  collectFeatWeaponNames,
 } from "./featOptionData";
 
 const FEAT_CONTEXT: FeatContext = {
@@ -13,6 +19,20 @@ const FEAT_CONTEXT: FeatContext = {
 };
 
 describe("parameterized feat picker options", () => {
+  it("puts the character's own guns before the global weapon catalog", () => {
+    const build = {
+      race: { name: "Human", size: "medium", speed: 30 },
+      weapons: [{ name: "Adam's Custom Gun" }],
+      equipment: [{ name: "Equipped Revolver", weapon: {} }],
+    } as CharacterBuild;
+    expect(
+      collectFeatWeaponNames(build, [
+        { id: "axe", name: "Axe" },
+        { id: "sword", name: "Sword" },
+      ] as WeaponDefinition[]),
+    ).toEqual(["Adam's Custom Gun", "Equipped Revolver", "Axe", "Sword"]);
+  });
+
   it("expands Weapon Focus choices for planner searches", () => {
     const options = buildLooseFeatSearchOptions({
       featRegistry: FEATS,

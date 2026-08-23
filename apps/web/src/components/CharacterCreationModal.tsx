@@ -29,14 +29,12 @@ import {
 import {
   buildFeatPickerOptions,
   collectFeatWeaponNames,
-  normalizeSelectedFeatSelection,
 } from "../featOptionData";
 import { plannedFeatSlotsForLevel } from "../featSlots";
 import { buildFavoredClassBonusOptions } from "../favoredClassBonusData";
-import { featTitle } from "../rulesText";
 import { createFreshCharacterBuild } from "../features/characters/newCharacterBuild";
 import { AlignmentPicker } from "./AlignmentPicker";
-import { CompendiumPicker } from "./CompendiumPicker";
+import { FeatSelectionPicker } from "./FeatSelectionPicker";
 
 const ABILITIES: AbilityKey[] = ["str", "dex", "con", "int", "wis", "cha"];
 const DEFAULT_SCORES: Record<AbilityKey, number> = {
@@ -209,9 +207,8 @@ export function CharacterCreationModal({
     (
       grantKind: "general" | "fighter-bonus",
       currentSelection: string | undefined,
-      query: string,
     ) => {
-      if (!featContext || !query.trim()) return [];
+      if (!featContext) return [];
       return buildFeatPickerOptions({
         featRegistry: RUNTIME_FEATS,
         featContext,
@@ -219,8 +216,6 @@ export function CharacterCreationModal({
         takenSelections: [raceBonusFeat, ...selectedFeats].filter(Boolean),
         currentSelection,
         availableWeaponNames,
-        query,
-        maxOptions: 40,
       });
     },
     [availableWeaponNames, featContext, raceBonusFeat, selectedFeats],
@@ -378,24 +373,20 @@ export function CharacterCreationModal({
           return (
             <label className="field" key={`${slot.source}-${slotIndex}`}>
               <span>{slot.label}</span>
-              <CompendiumPicker
+              <FeatSelectionPicker
                 value={selected}
                 onChange={(value) =>
                   setSelectedFeats((previous) => {
                     const next = [...previous];
-                    next[slotIndex] = normalizeSelectedFeatSelection(
-                      RUNTIME_FEATS,
-                      value,
-                    );
+                    next[slotIndex] = value;
                     return next;
                   })
                 }
-                options={[]}
-                resolveOptions={(query) =>
-                  resolveFeatOptions(slot.kind, selected, query)
-                }
+                featRegistry={RUNTIME_FEATS}
+                grantKind={slot.kind}
+                availableWeaponNames={availableWeaponNames}
+                allowedOptions={resolveFeatOptions(slot.kind, selected)}
                 placeholder="Type to search legal feats"
-                tooltip={featTitle(selected)}
               />
             </label>
           );
@@ -404,19 +395,14 @@ export function CharacterCreationModal({
         {hasRaceBonusFeat ? (
           <label className="field">
             <span>{race?.name} bonus feat</span>
-            <CompendiumPicker
+            <FeatSelectionPicker
               value={raceBonusFeat}
-              onChange={(value) =>
-                setRaceBonusFeat(
-                  normalizeSelectedFeatSelection(RUNTIME_FEATS, value),
-                )
-              }
-              options={[]}
-              resolveOptions={(query) =>
-                resolveFeatOptions("general", raceBonusFeat, query)
-              }
+              onChange={setRaceBonusFeat}
+              featRegistry={RUNTIME_FEATS}
+              grantKind="general"
+              availableWeaponNames={availableWeaponNames}
+              allowedOptions={resolveFeatOptions("general", raceBonusFeat)}
               placeholder="Type to search legal feats"
-              tooltip={featTitle(raceBonusFeat)}
             />
           </label>
         ) : null}
