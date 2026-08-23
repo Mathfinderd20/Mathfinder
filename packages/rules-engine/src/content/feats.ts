@@ -411,6 +411,7 @@ function withKnownParameterizedSemantics(feat: FeatDefinition): FeatDefinition {
   if (normalizedName === "weapon focus")
     return {
       ...feat,
+      tags: [...new Set([...(feat.tags ?? []), "combat"])],
       repeatable: true,
       parameter: { kind: "weapon", label: "Weapon" },
     };

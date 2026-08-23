@@ -5,6 +5,7 @@ import {
   featContextFromSheet,
   featEffects,
   featParameterOptions,
+  featQualifiesForGrant,
   FEATS,
   getFeat,
   listFeats,
@@ -129,6 +130,12 @@ describe("feat prerequisites", () => {
       },
     ]);
     expect(getFeat(registry, "Weapon Focus")?.parameter?.kind).toBe("weapon");
+    expect(
+      featQualifiesForGrant(
+        getFeat(registry, "Weapon Focus")!,
+        "fighter-bonus",
+      ),
+    ).toBe(true);
     expect(getFeat(registry, "Spell Focus")?.parameter?.kind).toBe(
       "spell-school",
     );

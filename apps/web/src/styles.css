@@ -515,19 +515,48 @@ button:disabled {
 }
 .archetype-picker-card {
   display: grid;
+  gap: 10px;
+}
+.archetype-search-input {
+  width: 100%;
+}
+.archetype-result-list {
+  display: grid;
   gap: 8px;
 }
-.archetype-selection-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+.archetype-result-list.search-results {
+  max-height: 520px;
+  overflow-y: auto;
+  padding-right: 4px;
 }
-.archetype-selection-chip {
+.archetype-result-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.1);
+}
+.archetype-result-card.applied {
+  border-color: rgba(111, 174, 111, 0.55);
+  background: rgba(111, 174, 111, 0.08);
+}
+.archetype-result-card > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 9px 10px;
   cursor: pointer;
 }
-.archetype-selection-chip:hover {
-  border-color: var(--err);
-  color: var(--ink);
+.archetype-result-body {
+  display: grid;
+  gap: 8px;
+  padding: 0 10px 10px;
+  border-top: 1px dotted var(--line);
+}
+.archetype-result-body > p {
+  margin: 8px 0 0;
+}
+.archetype-apply-pick {
+  margin-top: 2px;
 }
 .alignment-field {
   width: fit-content;
