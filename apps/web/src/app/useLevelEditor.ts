@@ -2,8 +2,54 @@ import type { Dispatch, SetStateAction } from "react";
 import type { CharacterBuild, SkillKey } from "@mathfinder/rules-engine";
 import { RUNTIME_CLASSES, RUNTIME_CLASS_OPTIONS } from "../content";
 import { buildFavoredClassBonusOptions } from "../favoredClassBonusData";
+import {
+  normalizeFeatListLength,
+  plannedFeatSlotsForLevel,
+} from "../featSlots";
 
 type Level = CharacterBuild["levels"][number];
+
+export function levelAfterClassChange(
+  previous: CharacterBuild,
+  levelIndex: number,
+  className: string,
+): Level | undefined {
+  const level = previous.levels[levelIndex];
+  if (!level) return undefined;
+  const classDefinition = RUNTIME_CLASSES[className.toLowerCase()];
+  const favoredClassEligible =
+    !!previous.favoredClassName &&
+    previous.favoredClassName.toLowerCase() === className.toLowerCase();
+  const availableBonuses = new Set(
+    buildFavoredClassBonusOptions(previous.race, className).map(
+      (option) => option.value,
+    ),
+  );
+  const changedLevel: Level = {
+    ...level,
+    className,
+    hitPointRoll: classDefinition
+      ? Math.min(level.hitPointRoll, classDefinition.hitDie)
+      : level.hitPointRoll,
+    favoredClass:
+      favoredClassEligible &&
+      level.favoredClass !== undefined &&
+      availableBonuses.has(level.favoredClass)
+        ? level.favoredClass
+        : undefined,
+  };
+  const previewLevels = previous.levels.map((entry, previewIndex) =>
+    previewIndex === levelIndex ? changedLevel : entry,
+  );
+  const slotCount = plannedFeatSlotsForLevel(
+    { ...previous, levels: previewLevels },
+    levelIndex,
+  ).length;
+  return {
+    ...changedLevel,
+    feats: normalizeFeatListLength(changedLevel.feats, slotCount),
+  };
+}
 
 export function useLevelEditor(
   build: CharacterBuild,
@@ -51,28 +97,7 @@ export function useLevelEditor(
       levels: previous.levels.map((level, itemIndex) => {
         if (itemIndex !== levelIndex) return level;
         if (key === "className" && typeof value === "string") {
-          const classDefinition = RUNTIME_CLASSES[value.toLowerCase()];
-          const favoredClassEligible =
-            !!previous.favoredClassName &&
-            previous.favoredClassName.toLowerCase() === value.toLowerCase();
-          const availableBonuses = new Set(
-            buildFavoredClassBonusOptions(previous.race, value).map(
-              (option) => option.value,
-            ),
-          );
-          return {
-            ...level,
-            className: value,
-            hitPointRoll: classDefinition
-              ? Math.min(level.hitPointRoll, classDefinition.hitDie)
-              : level.hitPointRoll,
-            favoredClass:
-              favoredClassEligible &&
-              level.favoredClass !== undefined &&
-              availableBonuses.has(level.favoredClass)
-                ? level.favoredClass
-                : undefined,
-          };
+          return levelAfterClassChange(previous, levelIndex, value) ?? level;
         }
         if (key === "hitPointRoll" && typeof value === "number") {
           const classDefinition =

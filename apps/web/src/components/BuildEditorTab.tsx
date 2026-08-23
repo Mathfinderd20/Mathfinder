@@ -1,5 +1,6 @@
 import {
   ALIGNMENT_LABELS,
+  infantrymanGunTrainingPickCount,
   SKILL_DEFINITIONS,
   type AbilityKey,
   type Alignment,
@@ -11,7 +12,7 @@ import {
 } from "@mathfinder/rules-engine";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { RUNTIME_FEATS, RUNTIME_WEAPONS } from "../content";
-import { collectFeatWeaponNames } from "../featOptionData";
+import { collectFeatWeaponNames, collectFirearmNames } from "../featOptionData";
 import { featTitle } from "../rulesText";
 import type { SpellCastCounts } from "../runtimeState";
 import { skillMetadataTooltip, skillTrainingFlag } from "../skillPresentation";
@@ -23,7 +24,7 @@ import type {
 } from "../buildSuggestions";
 import { AlignmentPicker } from "./AlignmentPicker";
 import { ArchetypePicker } from "./ArchetypePicker";
-import type { CompendiumOption } from "./CompendiumPicker";
+import { CompendiumPicker, type CompendiumOption } from "./CompendiumPicker";
 import { FeatSelectionPicker } from "./FeatSelectionPicker";
 import { SpellcastingManager } from "./SpellcastingManager";
 import { Tooltip } from "./Tooltip";
@@ -87,6 +88,7 @@ interface Props {
   onUpdateFavoredClassName: (value: string) => void;
   onUpdateFirearmRulesMode: (value: FirearmRulesMode) => void;
   onUpdateClassArchetypes: (className: string, archetypeIds: string[]) => void;
+  onUpdateInfantrymanGunTraining: (weaponName: string) => void;
   onAddStructureLevel: () => void;
   onEnsureLevelCount: (count: number) => void;
   onSetCurrentLevel: (level: number) => void;
@@ -229,6 +231,17 @@ export function BuildEditorTab(props: Props) {
   const availableFeatWeaponNames = useMemo(
     () => collectFeatWeaponNames(build, RUNTIME_WEAPONS),
     [build],
+  );
+  const firearmNames = useMemo(
+    () => collectFirearmNames(build, RUNTIME_WEAPONS),
+    [build],
+  );
+  const infantrymanLevel = build.levels.filter(
+    (level) => level.className.toLowerCase() === "infantryman",
+  ).length;
+  const infantrymanGunTrainingPicks = infantrymanGunTrainingPickCount(
+    infantrymanLevel,
+    build.campaignRules,
   );
   const archetypeClasses = useMemo(
     () =>
@@ -530,6 +543,38 @@ export function BuildEditorTab(props: Props) {
                   />
                 </div>
               ))}
+            </div>
+          </EditorSection>
+        ) : null}
+
+        {infantrymanGunTrainingPicks > 0 ? (
+          <EditorSection title="Infantryman Gun Training">
+            <div className="item-card">
+              <p className="hint">
+                Add Dexterity to damage with one selected firearm type.
+                {build.campaignRules?.firearmRules === "guns-everywhere"
+                  ? " Guns Everywhere grants this at Infantryman level 1."
+                  : " This becomes available at Infantryman level 5."}
+              </p>
+              {firearmNames.length > 0 ? (
+                <CompendiumPicker
+                  value={build.gunTrainingSelections?.infantryman?.[0] ?? ""}
+                  onChange={props.onUpdateInfantrymanGunTraining}
+                  options={firearmNames.map((name) => ({
+                    id: `infantryman-gun-training-${name.toLowerCase()}`,
+                    name,
+                    tooltip: `Gun Training: add Dexterity to damage with ${name}.`,
+                  }))}
+                  placeholder="Choose trained firearm"
+                  commitMode="select"
+                  maxResults={40}
+                />
+              ) : (
+                <p className="hint">
+                  Add a firearm to the character or load the firearm catalog to
+                  choose Gun Training.
+                </p>
+              )}
             </div>
           </EditorSection>
         ) : null}

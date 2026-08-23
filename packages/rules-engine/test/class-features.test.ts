@@ -80,7 +80,7 @@ describe("class feature progression", () => {
       expect(sheet.weapons[1]?.damageDisplay).toBe("1d12");
     });
 
-    it("grants Dexterity-to-damage overrides for two selected firearms by class level 9", () => {
+    it("limits Infantryman gun training to one selected firearm", () => {
       const build: CharacterBuild = {
         name: "Shootier",
         race: {
@@ -137,7 +137,49 @@ describe("class feature progression", () => {
       };
       const sheet = computeSheet(buildCharacter(build));
       expect(sheet.weapons[0]?.damageDisplay).toBe("1d8+3");
-      expect(sheet.weapons[1]?.damageDisplay).toBe("1d12+3");
+      expect(sheet.weapons[1]?.damageDisplay).toBe("1d12");
+    });
+
+    it("grants selected-firearm Dexterity damage at level 1 under Guns Everywhere", () => {
+      const build: CharacterBuild = {
+        name: "Everywhere Shooty",
+        race: {
+          name: "Human",
+          size: "medium",
+          speed: 30,
+          abilityModifiers: [],
+        },
+        campaignRules: { firearmRules: "guns-everywhere" },
+        baseAbilityScores: {
+          str: 12,
+          dex: 16,
+          con: 12,
+          int: 10,
+          wis: 12,
+          cha: 8,
+        },
+        levels: [{ className: "Infantryman", hitPointRoll: 10 }],
+        gunTrainingSelections: { infantryman: ["Pistol"] },
+        weapons: [
+          {
+            name: "Pistol",
+            weaponTemplateId: "pistol",
+            category: "ranged",
+            proficiencyGroup: "exotic",
+            damageDice: "1d8",
+            critMultiplier: 4,
+            rangeIncrementFeet: 20,
+            ammoType: "bullet",
+            ammoPerAttack: 1,
+            reloadType: "move",
+            firearmCategory: "one-handed",
+            misfire: 1,
+            targetsTouchAcWithinFirstRangeIncrement: true,
+          },
+        ],
+      };
+      const sheet = computeSheet(buildCharacter(build));
+      expect(sheet.weapons[0]?.damageDisplay).toBe("1d8+3");
     });
 
     it("does not grant Infantryman gun training overrides before class level 5", () => {

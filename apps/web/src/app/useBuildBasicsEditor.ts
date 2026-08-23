@@ -114,6 +114,19 @@ export function useBuildBasicsEditor(
     );
   }
 
+  function updateInfantrymanGunTraining(weaponName: string) {
+    setBuild((previous) => {
+      const nextSelections = { ...(previous.gunTrainingSelections ?? {}) };
+      if (weaponName.trim()) nextSelections.infantryman = [weaponName.trim()];
+      else delete nextSelections.infantryman;
+      return {
+        ...previous,
+        gunTrainingSelections:
+          Object.keys(nextSelections).length > 0 ? nextSelections : undefined,
+      };
+    });
+  }
+
   function updateClassArchetypes(className: string, archetypeIds: string[]) {
     setBuild((previous) => {
       const classKey = className.toLowerCase();
@@ -144,6 +157,7 @@ export function useBuildBasicsEditor(
     updateClassArchetypes,
     updateFavoredClassName,
     updateFirearmRulesMode,
+    updateInfantrymanGunTraining,
     updateRace,
     updateRaceBonusFeat,
     updateRaceFlexibleAbility,

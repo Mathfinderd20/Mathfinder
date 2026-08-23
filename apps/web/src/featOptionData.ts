@@ -5,6 +5,7 @@ import {
   formatFeatSelection,
   listFeats,
   parseFeatSelection,
+  weaponUsesFirearmRules,
   type CharacterBuild,
   type FeatContext,
   type FeatGrantKind,
@@ -18,6 +19,34 @@ function featSelectionBaseName(selection: string): string {
   const trimmed = selection.trim();
   const match = /^(.*?)\s*\(.+\)\s*$/.exec(trimmed);
   return (match?.[1] ?? trimmed).trim().toLowerCase();
+}
+
+export function collectFirearmNames(
+  build: CharacterBuild,
+  runtimeWeapons: WeaponDefinition[],
+): string[] {
+  const names = [
+    ...(build.race.grantedWeapons ?? [])
+      .filter(weaponUsesFirearmRules)
+      .map((weapon) => weapon.name),
+    ...(build.weapons ?? [])
+      .filter(weaponUsesFirearmRules)
+      .map((weapon) => weapon.name),
+    ...(build.equipment ?? [])
+      .filter(
+        (item) =>
+          !!item.weapon &&
+          weaponUsesFirearmRules({
+            firearmCategory: item.weapon.firearmCategory,
+            specialTags: item.weapon.specialTags,
+          }),
+      )
+      .map((item) => item.name),
+    ...runtimeWeapons
+      .filter(weaponUsesFirearmRules)
+      .map((weapon) => weapon.name),
+  ];
+  return [...new Set(names.map((name) => name.trim()).filter(Boolean))];
 }
 
 export function collectFeatWeaponNames(

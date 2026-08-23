@@ -12,6 +12,14 @@ export function firearmRulesMode(
   return rules?.firearmRules ?? "standard";
 }
 
+export function infantrymanGunTrainingPickCount(
+  classLevel: number,
+  rules?: CampaignRules | null,
+) {
+  const minimumLevel = firearmRulesMode(rules) === "guns-everywhere" ? 1 : 5;
+  return classLevel >= minimumLevel ? 1 : 0;
+}
+
 export function firearmCostMultiplier(rules?: CampaignRules | null) {
   return firearmRulesMode(rules) === "guns-everywhere" ? 0.1 : 1;
 }

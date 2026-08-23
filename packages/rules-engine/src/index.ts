@@ -87,6 +87,7 @@ export {
   effectiveWeaponProficiencyGroup,
   firearmCostMultiplier,
   firearmRulesMode,
+  infantrymanGunTrainingPickCount,
   weaponUsesFirearmRules,
   type CampaignRules,
   type FirearmRulesMode,

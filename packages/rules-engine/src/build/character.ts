@@ -1,6 +1,9 @@
 import { abilityModifier } from "../abilities";
 import { computeSheet } from "../compute";
-import { effectiveWeaponProficiencyGroup } from "../campaign-rules";
+import {
+  effectiveWeaponProficiencyGroup,
+  infantrymanGunTrainingPickCount,
+} from "../campaign-rules";
 import type {
   AbilityKey,
   AbilityScores,
@@ -340,10 +343,6 @@ function normalizeWeaponName(name: string): string {
   return name.trim().toLowerCase();
 }
 
-function infantrymanGunTrainingPickCount(classLevel: number): number {
-  return classLevel >= 5 ? 1 + Math.floor((classLevel - 5) / 4) : 0;
-}
-
 function weaponDamageAbilityOverridesForBuild(
   build: CharacterBuild,
 ): Partial<Record<string, AbilityKey | null>> {
@@ -352,8 +351,10 @@ function weaponDamageAbilityOverridesForBuild(
   };
   const counts = classLevelCounts(build);
   const infantrymanLevel = counts.get("infantryman") ?? 0;
-  const infantrymanPickCount =
-    infantrymanGunTrainingPickCount(infantrymanLevel);
+  const infantrymanPickCount = infantrymanGunTrainingPickCount(
+    infantrymanLevel,
+    build.campaignRules,
+  );
   if (infantrymanPickCount > 0) {
     for (const weaponName of (
       build.gunTrainingSelections?.infantryman ?? []

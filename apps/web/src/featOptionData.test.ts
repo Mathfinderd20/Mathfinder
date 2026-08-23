@@ -9,6 +9,7 @@ import {
   buildFeatPickerOptions,
   buildLooseFeatSearchOptions,
   collectFeatWeaponNames,
+  collectFirearmNames,
 } from "./featOptionData";
 
 const FEAT_CONTEXT: FeatContext = {
@@ -19,6 +20,22 @@ const FEAT_CONTEXT: FeatContext = {
 };
 
 describe("parameterized feat picker options", () => {
+  it("collects owned and catalog firearms for Gun Training", () => {
+    const build = {
+      race: { name: "Human", size: "medium", speed: 30 },
+      weapons: [
+        { name: "Custom Service Rifle", firearmCategory: "two-handed" },
+        { name: "Longsword" },
+      ],
+    } as CharacterBuild;
+    expect(
+      collectFirearmNames(build, [
+        { id: "pistol", name: "Pistol", firearmCategory: "one-handed" },
+        { id: "axe", name: "Axe" },
+      ] as WeaponDefinition[]),
+    ).toEqual(["Custom Service Rifle", "Pistol"]);
+  });
+
   it("puts the character's own guns before the global weapon catalog", () => {
     const build = {
       race: { name: "Human", size: "medium", speed: 30 },

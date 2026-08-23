@@ -141,6 +141,7 @@ export function App({
     updateClassArchetypes,
     updateFavoredClassName,
     updateFirearmRulesMode,
+    updateInfantrymanGunTraining,
     updateRace,
     updateRaceBonusFeat,
     updateRaceFlexibleAbility,
@@ -690,6 +691,7 @@ export function App({
             onUpdateFavoredClassName={updateFavoredClassName}
             onUpdateFirearmRulesMode={updateFirearmRulesMode}
             onUpdateClassArchetypes={updateClassArchetypes}
+            onUpdateInfantrymanGunTraining={updateInfantrymanGunTraining}
             onAddStructureLevel={addStructureLevel}
             onEnsureLevelCount={(count) => {
               const nextBuild = buildWithLevelCount(build, count);
