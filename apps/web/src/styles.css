@@ -86,6 +86,27 @@ body {
   visibility: visible;
   transform: translateX(-50%) translateY(0);
 }
+.mf-tooltip-panel-portal {
+  position: fixed;
+  right: auto;
+  bottom: auto;
+  opacity: 1;
+  visibility: visible;
+  z-index: 10000;
+}
+.mf-tooltip-panel-portal.above {
+  transform: translate(-50%, -100%);
+}
+.mf-tooltip-panel-portal.below {
+  transform: translate(-50%, 0);
+}
+.mf-tooltip-panel-portal.below::after {
+  top: auto;
+  bottom: 100%;
+  border: 0;
+  border-top: 1px solid rgba(217, 154, 91, 0.45);
+  border-left: 1px solid rgba(217, 154, 91, 0.45);
+}
 .mf-tooltip-section {
   display: block;
 }
@@ -491,6 +512,22 @@ button:disabled {
   padding: 8px 10px;
   font-size: 11px;
   color: var(--muted);
+}
+.archetype-picker-card {
+  display: grid;
+  gap: 8px;
+}
+.archetype-selection-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.archetype-selection-chip {
+  cursor: pointer;
+}
+.archetype-selection-chip:hover {
+  border-color: var(--err);
+  color: var(--ink);
 }
 .alignment-field {
   width: fit-content;

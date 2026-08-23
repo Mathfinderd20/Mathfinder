@@ -1,8 +1,7 @@
-import {
-  featQualifiesForGrant,
-  getFeat,
-  type AbilityKey,
-  type CharacterBuild,
+import type {
+  AbilityKey,
+  CharacterBuild,
+  FeatGrantKind,
 } from "@mathfinder/rules-engine";
 import { useMemo, useState } from "react";
 import type {
@@ -12,16 +11,19 @@ import type {
 } from "../buildSuggestions";
 import { featSlotTag, plannedFeatSlotsForLevel } from "../featSlots";
 import { buildFavoredClassBonusOptions } from "../favoredClassBonusData";
-import { normalizeSelectedFeatSelection } from "../featOptionData";
-import { RUNTIME_FEATS } from "../content";
-import { CompendiumPicker, type CompendiumOption } from "./CompendiumPicker";
+import {
+  buildLooseFeatSearchOptions,
+  collectFeatWeaponNames,
+  normalizeSelectedFeatSelection,
+} from "../featOptionData";
+import { RUNTIME_FEATS, RUNTIME_WEAPONS } from "../content";
+import { CompendiumPicker } from "./CompendiumPicker";
 
 interface LevelProgressionPlannerProps {
   build: CharacterBuild;
   currentLevel: number;
   abilityOrder: readonly AbilityKey[];
   classOptions: Array<{ name: string; hitDie: number }>;
-  featOptions: CompendiumOption[];
   plannerSuggestions: LevelPlannerSuggestions[];
   onEnsureLevelCount: (count: number) => void;
   onSetCurrentLevel: (level: number) => void;
@@ -84,7 +86,6 @@ export function LevelProgressionPlanner({
   currentLevel,
   abilityOrder,
   classOptions,
-  featOptions,
   plannerSuggestions,
   onEnsureLevelCount,
   onSetCurrentLevel,
@@ -94,21 +95,17 @@ export function LevelProgressionPlanner({
   onRequestPlannerSuggestions,
   onClearPlannedLevelChoices,
 }: LevelProgressionPlannerProps) {
-  const plannerFeatOptionsByKind = useMemo(() => {
-    const cleanedOptions = featOptions.map((option) => ({
-      ...option,
-      tags: undefined,
-    }));
-    const combatOptions = cleanedOptions.filter((option) => {
-      const feat = getFeat(RUNTIME_FEATS, option.name);
-      return feat ? featQualifiesForGrant(feat, "fighter-bonus") : false;
+  const availableWeaponNames = useMemo(
+    () => collectFeatWeaponNames(build, RUNTIME_WEAPONS),
+    [build],
+  );
+  const resolveFeatOptions = (query: string, grantKind: FeatGrantKind) =>
+    buildLooseFeatSearchOptions({
+      featRegistry: RUNTIME_FEATS,
+      grantKind,
+      availableWeaponNames,
+      query,
     });
-    return {
-      general: cleanedOptions,
-      "fighter-bonus":
-        combatOptions.length > 0 ? combatOptions : cleanedOptions,
-    };
-  }, [featOptions]);
   const [expandedLevels, setExpandedLevels] = useState<Record<number, boolean>>(
     {},
   );
@@ -265,16 +262,6 @@ export function LevelProgressionPlanner({
                         <div className="planner-feat-slots">
                           {featSlots.map((slot, featIndex) => {
                             const selectedFeat = level.feats?.[featIndex] ?? "";
-                            const pickerOptions =
-                              plannerFeatOptionsByKind[slot.kind] ??
-                              featOptions;
-                            const pickerValue = pickerOptions.some(
-                              (option) =>
-                                option.name.toLowerCase() ===
-                                selectedFeat.trim().toLowerCase(),
-                            )
-                              ? selectedFeat
-                              : "";
                             return (
                               <div
                                 key={`${levelNumber}-${slot.source}-${featIndex}`}
@@ -287,7 +274,7 @@ export function LevelProgressionPlanner({
                                   </span>
                                 </span>
                                 <CompendiumPicker
-                                  value={pickerValue}
+                                  value={selectedFeat}
                                   onChange={(value) =>
                                     onSetLevelFeat(
                                       index,
@@ -299,54 +286,9 @@ export function LevelProgressionPlanner({
                                     )
                                   }
                                   options={[]}
-                                  resolveOptions={(query) => {
-                                    const normalizedQuery = query
-                                      .trim()
-                                      .toLowerCase();
-                                    if (!normalizedQuery) return pickerOptions;
-
-                                    const byNamePrefix = pickerOptions.filter(
-                                      (option) =>
-                                        option.name
-                                          .toLowerCase()
-                                          .startsWith(normalizedQuery),
-                                    );
-                                    if (byNamePrefix.length > 0)
-                                      return byNamePrefix;
-
-                                    const byNameWord = pickerOptions.filter(
-                                      (option) =>
-                                        option.name
-                                          .toLowerCase()
-                                          .split(/\s+/)
-                                          .some((word) =>
-                                            word.startsWith(normalizedQuery),
-                                          ),
-                                    );
-                                    if (byNameWord.length > 0)
-                                      return byNameWord;
-
-                                    const byNameContains = pickerOptions.filter(
-                                      (option) =>
-                                        option.name
-                                          .toLowerCase()
-                                          .includes(normalizedQuery),
-                                    );
-                                    if (byNameContains.length > 0)
-                                      return byNameContains;
-
-                                    return pickerOptions.filter((option) =>
-                                      (Array.isArray(option.searchText)
-                                        ? option.searchText
-                                        : option.searchText
-                                          ? [option.searchText]
-                                          : []
-                                      )
-                                        .join(" ")
-                                        .toLowerCase()
-                                        .includes(normalizedQuery),
-                                    );
-                                  }}
+                                  resolveOptions={(query) =>
+                                    resolveFeatOptions(query, slot.kind)
+                                  }
                                   placeholder="Feat"
                                   commitMode="select"
                                   maxResults={24}

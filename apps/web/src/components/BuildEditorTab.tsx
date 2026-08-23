@@ -205,6 +205,9 @@ export function BuildEditorTab(props: Props) {
   } = props;
 
   const [plannerOpen, setPlannerOpen] = useState(true);
+  const [archetypeSearchByClass, setArchetypeSearchByClass] = useState<
+    Record<string, string>
+  >({});
   const [coreSetupOpen, setCoreSetupOpen] = useState(true);
   const [coreSetupAutoCollapsed, setCoreSetupAutoCollapsed] = useState(false);
   const currentLevelIndex = Math.max(0, currentLevel - 1);
@@ -222,6 +225,18 @@ export function BuildEditorTab(props: Props) {
       allowedSet.has(option.name.toLowerCase()),
     );
   }, [featOptions, raceChoiceOptions.bonusFeat?.featOptions]);
+  const archetypeClasses = useMemo(
+    () =>
+      [...new Set(build.levels.map((level) => level.className))]
+        .sort((a, b) => a.localeCompare(b))
+        .map((className) => ({
+          className,
+          classKey: className.toLowerCase(),
+          archetypes: archetypeOptionsByClass[className.toLowerCase()] ?? [],
+        }))
+        .filter(({ archetypes }) => archetypes.length > 0),
+    [archetypeOptionsByClass, build.levels],
+  );
   const coreSetupLooksConfigured =
     abilityOrder.some((ability) => build.baseAbilityScores[ability] !== 10) ||
     !!build.alignment ||
@@ -492,86 +507,125 @@ export function BuildEditorTab(props: Props) {
           ) : null}
         </div>
 
-        <EditorSection title="Class Archetypes">
-          <div className="item-card">
-            <div className="editor-section-head tight">
-              <h3>Archetype Picks</h3>
-              <span className="skill-builder-meta">Per class in build</span>
-            </div>
+        {archetypeClasses.length > 0 ? (
+          <EditorSection title="Class Archetypes">
             <div className="race-alt-trait-list">
-              {[...new Set(build.levels.map((level) => level.className))]
-                .sort((a, b) => a.localeCompare(b))
-                .map((className) => {
-                  const classKey = className.toLowerCase();
-                  const archetypes = archetypeOptionsByClass[classKey] ?? [];
-                  const selected = new Set(
-                    (build.classArchetypes?.[classKey] ?? []).map((id) =>
-                      id.toLowerCase(),
-                    ),
-                  );
-                  return (
-                    <div
-                      key={`archetypes-${classKey}`}
-                      className="item-card nested"
-                    >
-                      <div className="editor-section-head tight">
-                        <h3>{className}</h3>
-                        <span className="skill-builder-meta">
-                          {archetypes.length} archetype
-                          {archetypes.length === 1 ? "" : "s"}
-                        </span>
-                      </div>
-                      {archetypes.length === 0 ? (
-                        <p className="hint">
-                          No runtime archetypes loaded for this class. Tragic,
-                          but concise.
-                        </p>
-                      ) : (
-                        <div className="race-alt-trait-list">
-                          {archetypes.map((archetype) => {
-                            const active = selected.has(
-                              archetype.id.toLowerCase(),
-                            );
-                            return (
-                              <label
-                                key={`class-archetype-${classKey}-${archetype.id}`}
-                                className={`pick ${active ? "on" : ""}`}
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={active}
-                                  onChange={() => {
-                                    const next = new Set(selected);
-                                    if (active)
-                                      next.delete(archetype.id.toLowerCase());
-                                    else next.add(archetype.id.toLowerCase());
-                                    props.onUpdateClassArchetypes(className, [
-                                      ...next,
-                                    ]);
-                                  }}
-                                />
-                                <span>
-                                  <strong>{archetype.name}</strong>
-                                  <span className="buff-desc">
-                                    {archetype.description}
-                                  </span>
-                                  {archetype.replaces?.length ? (
-                                    <span className="buff-desc">
-                                      Replaces: {archetype.replaces.join(", ")}.
-                                    </span>
-                                  ) : null}
-                                </span>
-                              </label>
-                            );
-                          })}
-                        </div>
-                      )}
+              {archetypeClasses.map(({ className, classKey, archetypes }) => {
+                const selectedIds = (
+                  build.classArchetypes?.[classKey] ?? []
+                ).map((id) => id.toLowerCase());
+                const selected = archetypes.filter((archetype) =>
+                  selectedIds.includes(archetype.id.toLowerCase()),
+                );
+                const availableOptions = archetypes
+                  .filter(
+                    (archetype) =>
+                      !selectedIds.includes(archetype.id.toLowerCase()),
+                  )
+                  .map((archetype) => ({
+                    id: archetype.id,
+                    name: archetype.name,
+                    searchText: [
+                      archetype.description,
+                      ...(archetype.replaces ?? []),
+                      ...(archetype.alters ?? []),
+                    ],
+                    tooltip: [
+                      archetype.name,
+                      archetype.description,
+                      archetype.replaces?.length
+                        ? `Replaces: ${archetype.replaces.join(", ")}`
+                        : "",
+                      archetype.alters?.length
+                        ? `Alters: ${archetype.alters.join(", ")}`
+                        : "",
+                    ]
+                      .filter(Boolean)
+                      .join("\n\n"),
+                  }));
+                return (
+                  <div
+                    key={`archetypes-${classKey}`}
+                    className="item-card nested archetype-picker-card"
+                  >
+                    <div className="editor-section-head tight">
+                      <h3>{className}</h3>
+                      <span className="skill-builder-meta">
+                        {selected.length} selected · {archetypes.length}{" "}
+                        available
+                      </span>
                     </div>
-                  );
-                })}
+                    {selected.length > 0 ? (
+                      <div className="archetype-selection-list">
+                        {selected.map((archetype) => (
+                          <Tooltip
+                            key={`selected-archetype-${classKey}-${archetype.id}`}
+                            content={[
+                              archetype.description,
+                              archetype.replaces?.length
+                                ? `Replaces: ${archetype.replaces.join(", ")}`
+                                : "",
+                            ]
+                              .filter(Boolean)
+                              .join("\n\n")}
+                          >
+                            <button
+                              type="button"
+                              className="chip archetype-selection-chip"
+                              onClick={() =>
+                                props.onUpdateClassArchetypes(
+                                  className,
+                                  selectedIds.filter(
+                                    (id) => id !== archetype.id.toLowerCase(),
+                                  ),
+                                )
+                              }
+                            >
+                              {archetype.name} ×
+                            </button>
+                          </Tooltip>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="hint">No archetype selected.</p>
+                    )}
+                    {availableOptions.length > 0 ? (
+                      <CompendiumPicker
+                        value={archetypeSearchByClass[classKey] ?? ""}
+                        onChange={(value) => {
+                          const chosen = archetypes.find(
+                            (archetype) =>
+                              archetype.name.toLowerCase() ===
+                              value.trim().toLowerCase(),
+                          );
+                          if (chosen) {
+                            props.onUpdateClassArchetypes(className, [
+                              ...selectedIds,
+                              chosen.id,
+                            ]);
+                            setArchetypeSearchByClass((previous) => ({
+                              ...previous,
+                              [classKey]: "",
+                            }));
+                          } else {
+                            setArchetypeSearchByClass((previous) => ({
+                              ...previous,
+                              [classKey]: value,
+                            }));
+                          }
+                        }}
+                        options={availableOptions}
+                        placeholder={`Search ${className} archetypes`}
+                        commitMode="select"
+                        maxResults={12}
+                      />
+                    ) : null}
+                  </div>
+                );
+              })}
             </div>
-          </div>
-        </EditorSection>
+          </EditorSection>
+        ) : null}
 
         <section className="planner-builder">
           <div className="planner-builder-summary">
@@ -597,7 +651,6 @@ export function BuildEditorTab(props: Props) {
               currentLevel={currentLevel}
               abilityOrder={abilityOrder}
               classOptions={classOptions}
-              featOptions={featOptions}
               plannerSuggestions={plannerSuggestions}
               onEnsureLevelCount={props.onEnsureLevelCount}
               onSetCurrentLevel={props.onSetCurrentLevel}

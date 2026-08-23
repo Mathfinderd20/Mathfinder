@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { FEATS, type FeatContext } from "@mathfinder/rules-engine";
-import { buildFeatPickerOptions } from "./featOptionData";
+import {
+  buildFeatPickerOptions,
+  buildLooseFeatSearchOptions,
+} from "./featOptionData";
 
 const FEAT_CONTEXT: FeatContext = {
   baseAttackBonus: 1,
@@ -10,6 +13,20 @@ const FEAT_CONTEXT: FeatContext = {
 };
 
 describe("parameterized feat picker options", () => {
+  it("expands Weapon Focus choices for planner searches", () => {
+    const options = buildLooseFeatSearchOptions({
+      featRegistry: FEATS,
+      grantKind: "fighter-bonus",
+      availableWeaponNames: ["Longsword", "Musket"],
+      query: "Weapon Focus",
+    });
+
+    expect(options.map((option) => option.name)).toEqual([
+      "Weapon Focus (Longsword)",
+      "Weapon Focus (Musket)",
+    ]);
+  });
+
   it("offers explicit school choices for Spell Focus", () => {
     const options = buildFeatPickerOptions({
       featRegistry: FEATS,
