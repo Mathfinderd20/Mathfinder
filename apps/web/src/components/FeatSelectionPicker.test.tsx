@@ -17,7 +17,7 @@ describe("FeatSelectionPicker", () => {
     ).toBe(false);
   });
 
-  it("shows a separate weapon field after Weapon Focus is selected", () => {
+  it("shows a temporary weapon field while Weapon Focus needs a choice", () => {
     const markup = renderToStaticMarkup(
       <FeatSelectionPicker
         value="Weapon Focus"
@@ -29,5 +29,20 @@ describe("FeatSelectionPicker", () => {
     );
     expect(markup).toContain("Weapon");
     expect(markup).toContain("Choose weapon");
+  });
+
+  it("collapses a completed weapon choice into a compact summary", () => {
+    const markup = renderToStaticMarkup(
+      <FeatSelectionPicker
+        value="Weapon Focus (Adam's Custom Gun)"
+        onChange={() => undefined}
+        featRegistry={FEATS}
+        grantKind="fighter-bonus"
+        availableWeaponNames={["Adam's Custom Gun"]}
+      />,
+    );
+    expect(markup).toContain("Adam&#x27;s Custom Gun");
+    expect(markup).toContain("Change");
+    expect(markup).not.toContain("Choose weapon");
   });
 });

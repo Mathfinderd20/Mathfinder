@@ -576,6 +576,17 @@ button:disabled {
   color: var(--muted);
   font-size: 11px;
 }
+.feat-parameter-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.feat-parameter-summary strong {
+  color: var(--ink);
+}
 .alignment-field {
   width: fit-content;
   max-width: 100%;

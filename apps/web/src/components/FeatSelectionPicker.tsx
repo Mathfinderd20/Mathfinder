@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   featParameterOptions,
   featQualifiesForGrant,
@@ -64,6 +64,7 @@ export function FeatSelectionPicker({
   allowedOptions,
   placeholder = "Search feats",
 }: FeatSelectionPickerProps) {
+  const [editingParameter, setEditingParameter] = useState(false);
   const parsed = parseFeatSelection(featRegistry, value);
   const selectedFeat = parsed?.feat;
   const baseOptions = useMemo(
@@ -73,6 +74,8 @@ export function FeatSelectionPicker({
   const parameterOptions = selectedFeat?.parameter
     ? featParameterOptions(selectedFeat, availableWeaponNames)
     : [];
+  const showParameterPicker =
+    !!selectedFeat?.parameter && (!parsed?.parameterValue || editingParameter);
 
   return (
     <div className="feat-selection-picker">
@@ -80,6 +83,7 @@ export function FeatSelectionPicker({
         value={selectedFeat?.name ?? ""}
         onChange={(featName) => {
           const feat = getFeat(featRegistry, featName);
+          setEditingParameter(!!feat?.parameter);
           onChange(feat?.parameter ? feat.name : featName);
         }}
         options={baseOptions}
@@ -88,14 +92,15 @@ export function FeatSelectionPicker({
         commitMode="select"
         maxResults={30}
       />
-      {selectedFeat?.parameter ? (
+      {showParameterPicker && selectedFeat?.parameter ? (
         <label className="feat-parameter-field">
           <span>{selectedFeat.parameter.label}</span>
           <CompendiumPicker
             value={parsed?.parameterValue ?? ""}
-            onChange={(parameterValue) =>
-              onChange(formatFeatSelection(selectedFeat.name, parameterValue))
-            }
+            onChange={(parameterValue) => {
+              onChange(formatFeatSelection(selectedFeat.name, parameterValue));
+              setEditingParameter(false);
+            }}
             options={parameterOptions.map((parameterValue) => ({
               id: `${selectedFeat.id}:${parameterValue.toLowerCase()}`,
               name: parameterValue,
@@ -112,6 +117,20 @@ export function FeatSelectionPicker({
             </span>
           ) : null}
         </label>
+      ) : selectedFeat?.parameter && parsed?.parameterValue ? (
+        <div className="feat-parameter-summary">
+          <span>
+            {selectedFeat.parameter.label}:{" "}
+            <strong>{parsed.parameterValue}</strong>
+          </span>
+          <button
+            type="button"
+            className="ghost tiny"
+            onClick={() => setEditingParameter(true)}
+          >
+            Change
+          </button>
+        </div>
       ) : null}
     </div>
   );
