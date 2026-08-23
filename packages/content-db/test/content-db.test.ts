@@ -471,6 +471,7 @@ describe("content-db", () => {
         name: "Power Attack",
         pack: "aon-scraped-feats",
         description: "Trade accuracy for damage.",
+        tags: ["combat"],
         prerequisites: [
           { type: "ability", ability: "str", min: 13, description: "Str 13" },
           { type: "bab", min: 1, description: "BAB +1" },
@@ -951,6 +952,7 @@ describe("content-db", () => {
       "https://example.test/improved-initiative",
       JSON.stringify({
         name: "Improved Initiative",
+        category: "Combat",
         benefit: "You get a +4 bonus on initiative checks.",
         description: "You get a +4 bonus on initiative checks.",
         sourceUrl: "https://example.test/improved-initiative",
@@ -1045,6 +1047,7 @@ describe("content-db", () => {
       .find((pack) => pack.id === "aon-scraped-magic-items")
       ?.magicItems.find((entry) => entry.name === "Cloak of Resistance +2");
 
+    expect(feat?.tags).toEqual(["combat"]);
     expect(feat?.effects).toEqual([
       {
         target: "init",

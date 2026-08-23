@@ -455,13 +455,57 @@ function withoutSelfPrerequisite(feat: FeatDefinition): FeatDefinition {
     : { ...enhanced, prerequisites };
 }
 
+function mergeFeatDefinitions(
+  existing: FeatDefinition,
+  incoming: FeatDefinition,
+): FeatDefinition {
+  const prerequisites = [
+    ...existing.prerequisites,
+    ...incoming.prerequisites,
+  ].filter(
+    (prerequisite, index, all) =>
+      all.findIndex(
+        (candidate) =>
+          candidate.type === prerequisite.type &&
+          candidate.description.toLowerCase() ===
+            prerequisite.description.toLowerCase() &&
+          candidate.featName?.toLowerCase() ===
+            prerequisite.featName?.toLowerCase(),
+      ) === index,
+  );
+  const effects = [...existing.effects, ...incoming.effects].filter(
+    (effect, index, all) =>
+      all.findIndex(
+        (candidate) =>
+          candidate.target === effect.target &&
+          candidate.type === effect.type &&
+          candidate.value === effect.value &&
+          candidate.source.toLowerCase() === effect.source.toLowerCase(),
+      ) === index,
+  );
+  return withoutSelfPrerequisite({
+    ...existing,
+    ...incoming,
+    tags: [...new Set([...(existing.tags ?? []), ...(incoming.tags ?? [])])],
+    prerequisites,
+    effects,
+    repeatable: incoming.repeatable ?? existing.repeatable,
+    parameter: incoming.parameter ?? existing.parameter,
+    activatable: incoming.activatable ?? existing.activatable,
+  });
+}
+
 /** Merge one or more feat packs into a lookup keyed by lowercased name. */
 export function buildFeatRegistry(...packs: FeatDefinition[][]): FeatRegistry {
-  return Object.fromEntries(
-    buildCompendiumIndex(packs.flat().map(withoutSelfPrerequisite)).all.map(
-      (feat) => [feat.name.toLowerCase(), feat],
-    ),
-  );
+  const registry: FeatRegistry = {};
+  for (const rawFeat of packs.flat()) {
+    const feat = withoutSelfPrerequisite(rawFeat);
+    const key = feat.name.toLowerCase();
+    registry[key] = registry[key]
+      ? mergeFeatDefinitions(registry[key], feat)
+      : feat;
+  }
+  return registry;
 }
 
 /** Default registry: core + (empty) Savage Company pack. */

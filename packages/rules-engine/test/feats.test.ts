@@ -147,6 +147,43 @@ describe("feat prerequisites", () => {
     ]);
   });
 
+  it("merges scraped text without erasing canonical combat mechanics", () => {
+    const registry = buildFeatRegistry(
+      [
+        {
+          id: "canonical-dodge",
+          name: "Dodge",
+          pack: "core",
+          description: "Canonical description.",
+          tags: ["combat"],
+          prerequisites: [],
+          effects: [{ target: "ac", type: "dodge", value: 1, source: "Dodge" }],
+        },
+      ],
+      [
+        {
+          id: "scraped-dodge",
+          name: "Dodge",
+          pack: "scraped",
+          description: "Richer scraped rules text.",
+          prerequisites: [],
+          effects: [],
+        },
+      ],
+    );
+    expect(getFeat(registry, "Dodge")).toMatchObject({
+      id: "scraped-dodge",
+      description: "Richer scraped rules text.",
+      tags: ["combat"],
+      effects: [
+        expect.objectContaining({ target: "ac", type: "dodge", value: 1 }),
+      ],
+    });
+    expect(
+      featQualifiesForGrant(getFeat(registry, "Dodge")!, "fighter-bonus"),
+    ).toBe(true);
+  });
+
   it("removes impossible self-prerequisites from imported feats", () => {
     const registry = buildFeatRegistry([
       {

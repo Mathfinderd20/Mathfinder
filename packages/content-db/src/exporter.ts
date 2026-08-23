@@ -1056,11 +1056,16 @@ function buildScrapedFeats(rows: EntityExportRow[]) {
         const name = payload.name || row.name;
         const description =
           payload.benefit || payload.description || payload.special || "";
+        const tags = cleanText(payload.category)
+          .split(/\s*[,/;]\s*/)
+          .map((tag) => tag.trim().toLowerCase())
+          .filter(Boolean);
         return {
           id: row.entityId || slug(name),
           name,
           pack: "aon-scraped-feats",
           description,
+          tags: tags.length > 0 ? tags : undefined,
           prerequisites: parseFeatPrereqsInternal(
             payload.prerequisites,
             featNames,
