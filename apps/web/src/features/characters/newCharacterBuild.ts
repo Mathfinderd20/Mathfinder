@@ -57,6 +57,5 @@ export function createFreshCharacterBuild(
     coinPurse: { pp: 0, gp: 0, sp: 0, cp: 0 },
     weapons: [],
     equipment: [],
-    carriedWeight: 0,
   };
 }

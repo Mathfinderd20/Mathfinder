@@ -19,6 +19,14 @@ function build(): CharacterBuild {
   };
 }
 
+describe("build normalization", () => {
+  it("removes the legacy zero weight override so gear and coins can count", () => {
+    const source = build();
+    source.carriedWeight = 0;
+    expect(normalizeBuild(source).carriedWeight).toBeUndefined();
+  });
+});
+
 describe("equipment normalization", () => {
   it("upgrades manually named catalog armor so saved builds gain new mechanics", () => {
     RUNTIME_ARMOR.push({

@@ -350,6 +350,19 @@ describe("class feature effects auto-apply through buildCharacter", () => {
     ]);
   });
 
+  it("counts coin weight when no manual total-weight override is present", () => {
+    const coinBuild: CharacterBuild = {
+      ...build,
+      coinPurse: { gp: 100_000 },
+      coinWeightCountsTowardEncumbrance: true,
+      carriedWeight: undefined,
+    };
+    const coinSheet = computeSheet(buildCharacter(coinBuild));
+    expect(coinSheet.encumbrance.carriedWeight).toBe(2_000);
+    expect(coinSheet.encumbrance.actualBand).toBe("overloaded");
+    expect(coinSheet.encumbrance.band).toBe("overloaded");
+  });
+
   it("keeps load-restricted features active when encumbrance is ignored", () => {
     const ignoredLoadBuild: CharacterBuild = {
       ...build,

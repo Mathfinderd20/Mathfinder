@@ -400,8 +400,8 @@ export function GearTab(props: Props) {
         <EditorSection title="Gear Overview">
           <label className="field compact">
             <span>
-              Manual carried weight (lb){" "}
-              <span className="muted">optional override</span>
+              Total carried weight override (lb){" "}
+              <span className="muted">leave blank for gear + coins</span>
             </span>
             <input
               type="number"

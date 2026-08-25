@@ -54,6 +54,7 @@ describe("createFreshCharacterBuild", () => {
     expect(build.weapons).toEqual([]);
     expect(build.equipment).toEqual([]);
     expect(build.coinPurse).toEqual({ pp: 0, gp: 0, sp: 0, cp: 0 });
+    expect(build.carriedWeight).toBeUndefined();
     expect(build.campaignRules?.ignoreAlignmentRestrictions).toBe(true);
     expect(build.campaignRules?.ignoreEncumbrance).toBe(true);
 
