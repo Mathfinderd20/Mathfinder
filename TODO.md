@@ -68,7 +68,7 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 - [x] Parameterized feats (Weapon Focus weapon choice, Skill Focus skill choice)
 - [x] Complete parameterized-feat picker and mechanical coverage for Weapon Focus, Skill Focus, Spell Focus, and Greater Spell Focus — runtime scraped feat overrides retain parameter semantics; weapon choices affect only matching attacks, school choices affect only matching spell save DCs, and Greater Spell Focus requires the same school
 - [x] Add a campaign house-rule toggle that disables alignment restrictions and alignment-based validation across character creation, level-up, build validation, and persisted campaign rules
-- [ ] Complete Guns Everywhere economics by applying the ruleset's firearm and ammunition price changes throughout catalogs, purchases, and existing templated equipment
+- [x] Complete Guns Everywhere economics — firearms and firearm ammunition use reversible canonical 10% pricing across catalogs, presets, purchases, sales, wealth, restored ammo stacks, and existing templated equipment
 - [x] Add a campaign house-rule toggle to ignore encumbrance — carried weight, thresholds, and actual load remain visible while the effective load is light for penalties and feature restrictions
 
 ## Phase 3 — Character Builder UX
@@ -113,7 +113,7 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 - [~] Complete ancestry-specific favored-class bonuses — 731 AoN options across 49 scraped races are ingested with source URLs and available as manual selections; automate common effect families and ingest owner-authored Savage Company FCBs from the manuscript
 - [ ] Shared compendium/runtime normalization work from `PLAN.md`
 - [ ] Savage Company content ingestion breadth
-- [~] Campaign house-rule controls — ignore alignment restrictions and ignore encumbrance are live; complete Guns Everywhere pricing
+- [x] Campaign house-rule controls — Guns Everywhere pricing, ignore alignment restrictions, and ignore encumbrance are live
 - [x] Complete selection-bearing feat UX/mechanics for Weapon Focus and Spell Focus; retain the generic parameter model for future selection-bearing feats
 
 ## Ingestion Research

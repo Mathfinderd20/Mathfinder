@@ -1,5 +1,6 @@
 import {
   normalizeAmmoType,
+  type CampaignRules,
   type CharacterBuild,
 } from "@mathfinder/rules-engine";
 import {
@@ -191,10 +192,14 @@ export const EQUIPMENT_COMPONENT_PRESETS: EquipmentComponentPreset[] = [
 export function applyEquipmentUsePreset(
   item: EquipmentItem,
   presetId: EquipmentUsePresetId,
+  campaignRules?: CampaignRules | null,
 ): Partial<EquipmentItem> {
   const preset = EQUIPMENT_USE_PRESETS.find((entry) => entry.id === presetId);
   if (!preset) return {};
-  return { ...item, ...preset.patch };
+  const ammoPatch = preset.patch.ammoType
+    ? createAmmoStack(preset.patch.ammoType, campaignRules)
+    : undefined;
+  return { ...item, ...preset.patch, ...ammoPatch };
 }
 
 export function applyEquipmentComponentPreset(
@@ -216,14 +221,17 @@ export function ammoStackName(ammoType: string) {
   return ammoCatalogStackName(ammoType);
 }
 
-export function createAmmoStack(ammoType: string): EquipmentItem {
+export function createAmmoStack(
+  ammoType: string,
+  campaignRules?: CampaignRules | null,
+): EquipmentItem {
   const normalized = normalizeAmmoType(ammoType);
   return {
     kind: "mundane",
     name: ammoStackName(normalized),
     quantity: defaultAmmoStackQuantity(normalized),
     weight: ammoStackWeightLb(normalized),
-    costGp: ammoStackCostGp(normalized),
+    costGp: ammoStackCostGp(normalized, campaignRules),
     equipped: false,
     carryState: "stowed",
     ammoType: normalized,
@@ -442,6 +450,7 @@ export function restoreAmmoToEquipment(
   equipment: EquipmentItem[],
   ammoType: string | undefined,
   amount: number,
+  campaignRules?: CampaignRules | null,
 ) {
   if (!ammoType?.trim() || amount <= 0) return equipment;
   const normalized = normalizeAmmoType(ammoType);
@@ -457,7 +466,10 @@ export function restoreAmmoToEquipment(
         : item,
     );
   }
-  return [...equipment, { ...createAmmoStack(normalized), quantity: amount }];
+  return [
+    ...equipment,
+    { ...createAmmoStack(normalized, campaignRules), quantity: amount },
+  ];
 }
 
 type SpellTriggerMode = "single" | "all";

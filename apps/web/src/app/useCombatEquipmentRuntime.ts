@@ -19,6 +19,7 @@ export function restoreAttackHistoryAmmo(
   history: WeaponAttackHistory,
   ammoSpent: Record<string, number>,
   weaponKey?: string,
+  campaignRules?: CharacterBuild["campaignRules"],
 ) {
   const attacks = weaponKey
     ? (history[weaponKey] ?? [])
@@ -38,6 +39,7 @@ export function restoreAttackHistoryAmmo(
         current,
         ammoType,
         Math.min(amount, ammoSpent[ammoType] ?? 0),
+        campaignRules,
       ),
     equipment ?? [],
   );
@@ -169,7 +171,12 @@ export function useCombatEquipmentRuntime(
         ...previous,
         equipment: (last?.ammoEntries ?? []).reduce(
           (equipment, entry) =>
-            restoreAmmoToEquipment(equipment, entry.ammoType, entry.amount),
+            restoreAmmoToEquipment(
+              equipment,
+              entry.ammoType,
+              entry.amount,
+              previous.campaignRules,
+            ),
           previous.equipment ?? [],
         ),
       }));
@@ -185,6 +192,7 @@ export function useCombatEquipmentRuntime(
         runtime.weaponAttackHistory,
         runtime.ammoSpent,
         weaponKey,
+        previous.campaignRules,
       ),
     }));
     runtime.resetWeaponAttackHistory(weaponKey, weaponName);
@@ -196,7 +204,12 @@ export function useCombatEquipmentRuntime(
         ...previous,
         equipment: Object.entries(runtime.ammoSpent).reduce(
           (equipment, [type, amount]) =>
-            restoreAmmoToEquipment(equipment, type, amount),
+            restoreAmmoToEquipment(
+              equipment,
+              type,
+              amount,
+              previous.campaignRules,
+            ),
           previous.equipment ?? [],
         ),
       }));
@@ -212,6 +225,7 @@ export function useCombatEquipmentRuntime(
           previous.equipment ?? [],
           normalized,
           restoreAmount,
+          previous.campaignRules,
         ),
       }));
     }

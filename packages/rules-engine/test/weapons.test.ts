@@ -1,10 +1,32 @@
 import { describe, expect, it } from "vitest";
+import { applyCampaignRulesToWeapon } from "../src/campaign-rules";
 import { computeSheet } from "../src/compute";
 import {
   equipmentWeaponTemplate,
   getWeaponByName,
 } from "../src/content/weapons";
 import type { CharacterInput } from "../src/types";
+
+describe("campaign firearm pricing", () => {
+  it("applies Guns Everywhere from canonical cost without compounding", () => {
+    const firearm = {
+      name: "Pistol",
+      category: "ranged" as const,
+      proficiencyGroup: "exotic" as const,
+      damageDice: "1d8",
+      firearmCategory: "one-handed" as const,
+      costGp: 1_000,
+    };
+    const discounted = applyCampaignRulesToWeapon(firearm, {
+      firearmRules: "guns-everywhere",
+    });
+    expect(discounted).toMatchObject({
+      proficiencyGroup: "simple",
+      costGp: 100,
+    });
+    expect(applyCampaignRulesToWeapon(firearm).costGp).toBe(1_000);
+  });
+});
 
 function input(extra: Partial<CharacterInput> = {}): CharacterInput {
   return {

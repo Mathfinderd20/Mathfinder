@@ -1859,7 +1859,11 @@ function renderEquipmentCard({
               onClick={() =>
                 props.onUpdateEquipment(
                   index,
-                  applyEquipmentUsePreset(item, preset.id),
+                  applyEquipmentUsePreset(
+                    item,
+                    preset.id,
+                    props.build.campaignRules,
+                  ),
                 )
               }
             >

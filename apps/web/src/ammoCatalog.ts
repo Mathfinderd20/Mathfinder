@@ -1,5 +1,7 @@
 import {
+  firearmCostMultiplier,
   normalizeAmmoType,
+  type CampaignRules,
   type WeaponOrdnanceProfile,
 } from "@mathfinder/rules-engine";
 
@@ -383,11 +385,32 @@ export function defaultAmmoStackQuantity(ammoType: string) {
     fallbackAmmoQuantity(ammoType)
   );
 }
-export function ammoStackCostGp(ammoType: string) {
-  return ammoCatalogEntry(ammoType)?.costGp ?? 0;
+export function ammoUsesFirearmRules(ammoType: string) {
+  const normalized = normalizeAmmoType(ammoType);
+  return (
+    !!ammoCatalogEntry(normalized) &&
+    normalized !== "arrow" &&
+    normalized !== "bolt"
+  );
+}
+
+export function ammoStackCostGp(
+  ammoType: string,
+  campaignRules?: CampaignRules | null,
+) {
+  const entry = ammoCatalogEntry(ammoType);
+  if (!entry) return 0;
+  const multiplier = ammoUsesFirearmRules(ammoType)
+    ? firearmCostMultiplier(campaignRules)
+    : 1;
+  return (
+    Math.round(((entry.costGp * multiplier) / entry.defaultQuantity) * 10_000) /
+    10_000
+  );
 }
 export function ammoStackWeightLb(ammoType: string) {
-  return ammoCatalogEntry(ammoType)?.weightLb ?? 0;
+  const entry = ammoCatalogEntry(ammoType);
+  return entry ? entry.weightLb / entry.defaultQuantity : 0;
 }
 
 function fallbackAmmoName(ammoType: string) {
