@@ -45,7 +45,7 @@ describe("class feature progression", () => {
         weapons: [
           {
             name: "Pistol",
-            weaponTemplateId: "pistol",
+            weaponTemplateId: "catalog-pistol-template",
             category: "ranged",
             proficiencyGroup: "exotic",
             damageDice: "1d8",

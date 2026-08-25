@@ -424,19 +424,47 @@ export function setWeaponAttackNote(
 export function resetWeaponAttackHistory(
   history: WeaponAttackHistory,
   events: CombatEventRecord[],
+  ammoLedger: Record<string, number>,
   weaponKey?: string,
   weaponName?: string,
   eventHistoryLimit?: number,
 ) {
-  if (!weaponKey) return { history: {}, events };
-  const removed = history[weaponKey] ?? [];
+  const removed = weaponKey
+    ? (history[weaponKey] ?? [])
+    : Object.values(history).flat();
+  const restoredByType = new Map<string, number>();
+  for (const attack of removed) {
+    for (const entry of attack.ammoEntries ?? []) {
+      restoredByType.set(
+        entry.ammoType,
+        (restoredByType.get(entry.ammoType) ?? 0) + entry.amount,
+      );
+    }
+  }
+  const ammoEntries = [...restoredByType].map(([ammoType, amount]) => ({
+    ammoType,
+    amount,
+  }));
+  const nextAmmoLedger = ammoEntries.reduce(
+    (ledger, entry) => updateLedger(ledger, entry.ammoType, -entry.amount),
+    ammoLedger,
+  );
   return {
-    history: { ...history, [weaponKey]: [] },
+    ammoLedger: nextAmmoLedger,
+    history: weaponKey ? { ...history, [weaponKey]: [] } : {},
     events:
       removed.length > 0
         ? appendCombatEvent(
             events,
-            { kind: "reset-weapon-history", weaponName },
+            {
+              kind: "reset-weapon-history",
+              weaponName,
+              ammoDelta: -ammoEntries.reduce(
+                (sum, entry) => sum + entry.amount,
+                0,
+              ),
+              ammoEntries,
+            },
             eventHistoryLimit,
           )
         : events,
@@ -853,11 +881,17 @@ export function reduceRuntimeState(
       const next = resetWeaponAttackHistory(
         state.histories,
         state.events,
+        state.ledgers,
         action.weaponKey,
         action.weaponName,
         eventHistoryLimit,
       );
-      return { ...state, histories: next.history, events: next.events };
+      return {
+        ...state,
+        ledgers: next.ammoLedger,
+        histories: next.history,
+        events: next.events,
+      };
     }
   }
 }

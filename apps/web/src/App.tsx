@@ -187,7 +187,6 @@ export function App({
     tagLatestWeaponAttackOutcome,
     setWeaponAttackNote,
     setLatestWeaponAttackNote,
-    resetWeaponAttackHistory,
   } = runtime;
   const [leveling, setLeveling] = useState(false);
   const [activeTab, setActiveTab] = useState<WorkspaceTab>(initialTab);
@@ -442,6 +441,7 @@ export function App({
     castSpell,
     recordWeaponAttack,
     resetAmmo,
+    resetWeaponAttackHistory,
     setSheetWeaponLoadedAmmo,
     undoWeaponAttack,
   } = useCombatEquipmentRuntime(build, setBuild, spellEffectContext, runtime);

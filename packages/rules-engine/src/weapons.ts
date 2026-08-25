@@ -103,10 +103,14 @@ export function deriveWeapons(args: {
     const breakdown: BreakdownEntry[] = [];
 
     // Ability-to-damage: Str for melee by default; ranged adds nothing unless set.
-    const weaponOverrideKey =
-      weapon.weaponTemplateId?.toLowerCase() ?? weapon.name.toLowerCase();
+    const weaponTemplateOverrideKey = weapon.weaponTemplateId?.toLowerCase();
+    const weaponNameOverrideKey = weapon.name.toLowerCase();
     const explicitDamageAbility =
-      weaponDamageAbilityOverrides?.[weaponOverrideKey] ?? weapon.damageAbility;
+      (weaponTemplateOverrideKey
+        ? weaponDamageAbilityOverrides?.[weaponTemplateOverrideKey]
+        : undefined) ??
+      weaponDamageAbilityOverrides?.[weaponNameOverrideKey] ??
+      weapon.damageAbility;
     const damageAbility =
       explicitDamageAbility === undefined
         ? isMelee

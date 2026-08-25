@@ -47,6 +47,54 @@ describe("runtime reducer + helpers", () => {
     expect(undone?.events).toHaveLength(2);
   });
 
+  it("restores recorded ammo when weapon attack history is reset", () => {
+    let state = createRuntimeStateSnapshot();
+    state = reduceRuntimeState(state, {
+      type: "record-weapon-attack",
+      weaponKey: "rifle#1",
+      weaponName: "Service Rifle",
+      ammoEntries: [
+        { ammoType: "bullets", amount: 1 },
+        { ammoType: "powder charges", amount: 1 },
+      ],
+    });
+    state = reduceRuntimeState(state, {
+      type: "record-weapon-attack",
+      weaponKey: "bow#1",
+      weaponName: "Longbow",
+      ammoType: "arrows",
+      ammoSpentForAttack: 1,
+    });
+    expect(state.ledgers).toMatchObject({
+      bullet: 1,
+      "powder charge": 1,
+      arrow: 1,
+    });
+
+    state = reduceRuntimeState(state, {
+      type: "reset-weapon-attack-history",
+      weaponKey: "rifle#1",
+      weaponName: "Service Rifle",
+    });
+    expect(state.ledgers).toMatchObject({
+      bullet: 0,
+      "powder charge": 0,
+      arrow: 1,
+    });
+    expect(state.histories["rifle#1"]).toEqual([]);
+    expect(state.histories["bow#1"]).toHaveLength(1);
+    expect(state.events[state.events.length - 1]).toMatchObject({
+      kind: "reset-weapon-history",
+      ammoDelta: -2,
+    });
+
+    state = reduceRuntimeState(state, {
+      type: "reset-weapon-attack-history",
+    });
+    expect(state.ledgers.arrow).toBe(0);
+    expect(state.histories).toEqual({});
+  });
+
   it("caps per-weapon attack history alongside the event log", () => {
     let runtime = {
       history: {},

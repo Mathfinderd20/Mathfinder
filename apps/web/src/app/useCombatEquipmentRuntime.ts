@@ -5,6 +5,7 @@ import {
   spellEffectResourceMax,
   type CharacterBuild,
   type SpellEffectRuntimeContext,
+  type WeaponAttackHistory,
 } from "@mathfinder/rules-engine";
 import {
   consumeAmmoFromEquipment,
@@ -12,6 +13,35 @@ import {
   restoreAmmoToEquipment,
 } from "../equipmentTools";
 import type { RuntimeStateController } from "../useRuntimeState";
+
+export function restoreAttackHistoryAmmo(
+  equipment: CharacterBuild["equipment"],
+  history: WeaponAttackHistory,
+  ammoSpent: Record<string, number>,
+  weaponKey?: string,
+) {
+  const attacks = weaponKey
+    ? (history[weaponKey] ?? [])
+    : Object.values(history).flat();
+  const totals = new Map<string, number>();
+  for (const attack of attacks) {
+    for (const entry of attack.ammoEntries ?? []) {
+      totals.set(
+        entry.ammoType,
+        (totals.get(entry.ammoType) ?? 0) + entry.amount,
+      );
+    }
+  }
+  return [...totals].reduce(
+    (current, [ammoType, amount]) =>
+      restoreAmmoToEquipment(
+        current,
+        ammoType,
+        Math.min(amount, ammoSpent[ammoType] ?? 0),
+      ),
+    equipment ?? [],
+  );
+}
 
 export function useCombatEquipmentRuntime(
   build: CharacterBuild,
@@ -147,6 +177,19 @@ export function useCombatEquipmentRuntime(
     runtime.undoWeaponAttack(weaponKey, weaponName);
   }
 
+  function resetWeaponAttackHistory(weaponKey?: string, weaponName?: string) {
+    setBuild((previous) => ({
+      ...previous,
+      equipment: restoreAttackHistoryAmmo(
+        previous.equipment,
+        runtime.weaponAttackHistory,
+        runtime.ammoSpent,
+        weaponKey,
+      ),
+    }));
+    runtime.resetWeaponAttackHistory(weaponKey, weaponName);
+  }
+
   function resetAmmo(ammoType?: string) {
     if (!ammoType?.trim()) {
       setBuild((previous) => ({
@@ -179,6 +222,7 @@ export function useCombatEquipmentRuntime(
     castSpell,
     recordWeaponAttack,
     resetAmmo,
+    resetWeaponAttackHistory,
     setSheetWeaponLoadedAmmo,
     undoWeaponAttack,
   };
