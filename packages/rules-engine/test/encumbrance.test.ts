@@ -21,4 +21,13 @@ describe("encumbrance", () => {
     expect(deriveEncumbrance(16, 230).band).toBe("heavy");
     expect(deriveEncumbrance(16, 231).band).toBe("overloaded");
   });
+
+  it("preserves actual weight and load while ignoring effective penalties", () => {
+    expect(deriveEncumbrance(16, 230, true)).toMatchObject({
+      carriedWeight: 230,
+      band: "light",
+      actualBand: "heavy",
+      ignored: true,
+    });
+  });
 });

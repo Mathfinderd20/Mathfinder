@@ -148,6 +148,7 @@ export function App({
     updateFavoredClassName,
     updateFirearmRulesMode,
     updateIgnoreAlignmentRestrictions,
+    updateIgnoreEncumbrance,
     updateInfantrymanGunTraining,
     updateRace,
     updateRaceBonusFeat,
@@ -766,6 +767,7 @@ export function App({
             onUpdateIgnoreAlignmentRestrictions={
               updateIgnoreAlignmentRestrictions
             }
+            onUpdateIgnoreEncumbrance={updateIgnoreEncumbrance}
             onAddStructureLevel={addStructureLevel}
             onEnsureLevelCount={(count) => {
               const nextBuild = buildWithLevelCount(build, count);

@@ -88,6 +88,7 @@ export function CharacterCreationModal({
   const [alignment, setAlignment] = useState<Alignment>("true-neutral");
   const [ignoreAlignmentRestrictions, setIgnoreAlignmentRestrictions] =
     useState(false);
+  const [ignoreEncumbrance, setIgnoreEncumbrance] = useState(false);
   const [className, setClassName] = useState(defaultClassName);
   const [abilityScores, setAbilityScores] =
     useState<Record<AbilityKey, number>>(DEFAULT_SCORES);
@@ -129,6 +130,7 @@ export function CharacterCreationModal({
         feats: selectedFeats,
         favoredClass,
         ignoreAlignmentRestrictions,
+        ignoreEncumbrance,
       });
     },
     [
@@ -140,6 +142,7 @@ export function CharacterCreationModal({
       hasFlexibleAbility,
       hasRaceBonusFeat,
       ignoreAlignmentRestrictions,
+      ignoreEncumbrance,
       race,
       raceBonusFeat,
       selectedFeats,
@@ -293,6 +296,20 @@ export function CharacterCreationModal({
             <strong>Ignore alignment restrictions</strong>
             <span className="buff-desc">
               House rule: all class alignment requirements are disabled.
+            </span>
+          </span>
+        </label>
+
+        <label className="pick campaign-rule-pick">
+          <input
+            type="checkbox"
+            checked={ignoreEncumbrance}
+            onChange={(event) => setIgnoreEncumbrance(event.target.checked)}
+          />
+          <span>
+            <strong>Ignore encumbrance</strong>
+            <span className="buff-desc">
+              Keep weight visible but ignore load penalties and restrictions.
             </span>
           </span>
         </label>

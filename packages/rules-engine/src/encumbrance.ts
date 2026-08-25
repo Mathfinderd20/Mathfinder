@@ -70,13 +70,17 @@ export function loadBand(
 export function deriveEncumbrance(
   strScore: number,
   carriedWeight = 0,
+  ignored = false,
 ): Encumbrance {
   const { lightMax, mediumMax, heavyMax } = loadThresholds(strScore);
+  const actualBand = loadBand(carriedWeight, heavyMax, mediumMax, lightMax);
   return {
     carriedWeight,
     lightMax,
     mediumMax,
     heavyMax,
-    band: loadBand(carriedWeight, heavyMax, mediumMax, lightMax),
+    band: ignored ? "light" : actualBand,
+    actualBand,
+    ignored,
   };
 }

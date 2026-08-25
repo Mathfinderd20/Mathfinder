@@ -2,6 +2,7 @@ import { abilityModifier } from "../abilities";
 import { computeSheet } from "../compute";
 import {
   effectiveWeaponProficiencyGroup,
+  encumbranceRulesEnabled,
   infantrymanGunTrainingPickCount,
 } from "../campaign-rules";
 import type {
@@ -928,7 +929,12 @@ export function buildCharacter(
       ? coinWeight(build.coinPurse)
       : 0);
   const carriedWeight = build.carriedWeight ?? derivedCarriedWeight;
-  const encumbrance = deriveEncumbrance(baseStr, carriedWeight);
+  const ignoreEncumbrance = !encumbranceRulesEnabled(build.campaignRules);
+  const encumbrance = deriveEncumbrance(
+    baseStr,
+    carriedWeight,
+    ignoreEncumbrance,
+  );
   const weaponProficiencies = new Set<"simple" | "martial" | "exotic">(
     activeRace.weaponProficiencies ?? [],
   );
@@ -1418,6 +1424,7 @@ export function buildCharacter(
     baseSaves,
     armorCategory,
     carriedWeight,
+    ignoreEncumbrance,
     inventory: equipmentInventory,
     inventoryItems: equipmentInventoryItems,
     maxDexBonus,

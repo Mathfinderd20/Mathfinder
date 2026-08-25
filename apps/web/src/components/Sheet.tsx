@@ -206,9 +206,15 @@ function abilityTooltip(score: number, breakdown: BreakdownEntry[]) {
   return breakdownTooltip(`${score}`, breakdown);
 }
 
+function encumbranceLabel(encumbrance: DerivedSheet["encumbrance"]) {
+  return encumbrance.ignored ? "ignored" : encumbrance.band;
+}
+
 function encumbranceTooltip(encumbrance: DerivedSheet["encumbrance"]) {
   return [
-    `Load: ${encumbrance.band}`,
+    encumbrance.ignored
+      ? `Load penalties ignored (actual load: ${encumbrance.actualBand})`
+      : `Load: ${encumbrance.band}`,
     `Carried: ${formatWeight(encumbrance.carriedWeight)}`,
     `Light max: ${formatWeight(encumbrance.lightMax)}`,
     `Medium max: ${formatWeight(encumbrance.mediumMax)}`,
@@ -501,7 +507,7 @@ export function Sheet({
             ) : null}
             <span>Size: {sheet.size}</span>
             <Tooltip content={encumbranceTooltip(sheet.encumbrance)}>
-              <span>Load: {sheet.encumbrance.band}</span>
+              <span>Load: {encumbranceLabel(sheet.encumbrance)}</span>
             </Tooltip>
             <Tooltip
               content={`Current HP ${currentHp} / ${sheet.hitPoints.total}\n\nDeath threshold ${healthStatus.deathThreshold} HP`}
@@ -870,7 +876,7 @@ export function Sheet({
                 <div className="stat-card">
                   <span className="summary-label">Encumbrance</span>
                   <span className="summary-value smallcaps">
-                    {sheet.encumbrance.band}
+                    {encumbranceLabel(sheet.encumbrance)}
                   </span>
                 </div>
               </Tooltip>

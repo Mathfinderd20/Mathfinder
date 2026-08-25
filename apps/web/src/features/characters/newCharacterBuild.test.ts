@@ -31,6 +31,7 @@ describe("createFreshCharacterBuild", () => {
       feats: ["Weapon Finesse"],
       favoredClass: "skill",
       ignoreAlignmentRestrictions: true,
+      ignoreEncumbrance: true,
     });
 
     expect(build.name).toBe("Merisiel");
@@ -54,6 +55,7 @@ describe("createFreshCharacterBuild", () => {
     expect(build.equipment).toEqual([]);
     expect(build.coinPurse).toEqual({ pp: 0, gp: 0, sp: 0, cp: 0 });
     expect(build.campaignRules?.ignoreAlignmentRestrictions).toBe(true);
+    expect(build.campaignRules?.ignoreEncumbrance).toBe(true);
 
     const sheet = computeSheet(buildCharacter(build));
     expect(sheet.skills.acrobatics.ranks).toBe(1);

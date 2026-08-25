@@ -90,6 +90,7 @@ interface Props {
   onUpdateClassArchetypes: (className: string, archetypeIds: string[]) => void;
   onUpdateInfantrymanGunTraining: (weaponName: string) => void;
   onUpdateIgnoreAlignmentRestrictions: (value: boolean) => void;
+  onUpdateIgnoreEncumbrance: (value: boolean) => void;
   onAddStructureLevel: () => void;
   onEnsureLevelCount: (count: number) => void;
   onSetCurrentLevel: (level: number) => void;
@@ -433,6 +434,22 @@ export function BuildEditorTab(props: Props) {
                     <strong>Ignore alignment restrictions</strong>
                     <span className="buff-desc">
                       House rule: classes do not enforce alignment requirements.
+                    </span>
+                  </span>
+                </label>
+                <label className="pick campaign-rule-pick">
+                  <input
+                    type="checkbox"
+                    checked={build.campaignRules?.ignoreEncumbrance === true}
+                    onChange={(event) =>
+                      props.onUpdateIgnoreEncumbrance(event.target.checked)
+                    }
+                  />
+                  <span>
+                    <strong>Ignore encumbrance</strong>
+                    <span className="buff-desc">
+                      House rule: keep carried weight visible but ignore
+                      load-based penalties and restrictions.
                     </span>
                   </span>
                 </label>

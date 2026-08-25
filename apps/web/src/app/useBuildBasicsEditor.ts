@@ -14,7 +14,9 @@ import {
 export function campaignRulesOrUndefined(
   rules: NonNullable<CharacterBuild["campaignRules"]>,
 ) {
-  return rules.firearmRules || rules.ignoreAlignmentRestrictions
+  return rules.firearmRules ||
+    rules.ignoreAlignmentRestrictions ||
+    rules.ignoreEncumbrance
     ? rules
     : undefined;
 }
@@ -36,6 +38,16 @@ export function withIgnoreAlignmentRestrictions(
   const campaignRules = { ...(current ?? {}) };
   if (value) campaignRules.ignoreAlignmentRestrictions = true;
   else delete campaignRules.ignoreAlignmentRestrictions;
+  return campaignRulesOrUndefined(campaignRules);
+}
+
+export function withIgnoreEncumbrance(
+  current: CharacterBuild["campaignRules"],
+  value: boolean,
+) {
+  const campaignRules = { ...(current ?? {}) };
+  if (value) campaignRules.ignoreEncumbrance = true;
+  else delete campaignRules.ignoreEncumbrance;
   return campaignRulesOrUndefined(campaignRules);
 }
 
@@ -149,6 +161,13 @@ export function useBuildBasicsEditor(
     }));
   }
 
+  function updateIgnoreEncumbrance(value: boolean) {
+    setBuild((previous) => ({
+      ...previous,
+      campaignRules: withIgnoreEncumbrance(previous.campaignRules, value),
+    }));
+  }
+
   function updateInfantrymanGunTraining(weaponName: string) {
     setBuild((previous) => {
       const nextSelections = { ...(previous.gunTrainingSelections ?? {}) };
@@ -193,6 +212,7 @@ export function useBuildBasicsEditor(
     updateFavoredClassName,
     updateFirearmRulesMode,
     updateIgnoreAlignmentRestrictions,
+    updateIgnoreEncumbrance,
     updateInfantrymanGunTraining,
     updateRace,
     updateRaceBonusFeat,

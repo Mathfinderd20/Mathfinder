@@ -350,6 +350,23 @@ describe("class feature effects auto-apply through buildCharacter", () => {
     ]);
   });
 
+  it("keeps load-restricted features active when encumbrance is ignored", () => {
+    const ignoredLoadBuild: CharacterBuild = {
+      ...build,
+      carriedWeight: 230,
+      campaignRules: { ignoreEncumbrance: true },
+    };
+    const ignoredLoadSheet = computeSheet(buildCharacter(ignoredLoadBuild));
+    expect(ignoredLoadSheet.encumbrance).toMatchObject({
+      carriedWeight: 230,
+      band: "light",
+      actualBand: "heavy",
+      ignored: true,
+    });
+    expect(ignoredLoadSheet.speed.total).toBe(40);
+    expect(ignoredLoadSheet.descriptor.suppressedFeatures).toEqual([]);
+  });
+
   it("dedupes features if a build manually repeats an auto-granted one", () => {
     const dupBuild: CharacterBuild = {
       ...build,

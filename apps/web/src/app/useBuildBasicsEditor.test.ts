@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   withFirearmRulesMode,
   withIgnoreAlignmentRestrictions,
+  withIgnoreEncumbrance,
 } from "./useBuildBasicsEditor";
 
 describe("campaign house-rule updates", () => {
@@ -45,5 +46,24 @@ describe("campaign house-rule updates", () => {
         false,
       ),
     ).toEqual({ firearmRules: "guns-everywhere" });
+  });
+
+  it("toggles encumbrance independently of other campaign rules", () => {
+    const enabled = withIgnoreEncumbrance(
+      {
+        firearmRules: "guns-everywhere",
+        ignoreAlignmentRestrictions: true,
+      },
+      true,
+    );
+    expect(enabled).toEqual({
+      firearmRules: "guns-everywhere",
+      ignoreAlignmentRestrictions: true,
+      ignoreEncumbrance: true,
+    });
+    expect(withIgnoreEncumbrance(enabled, false)).toEqual({
+      firearmRules: "guns-everywhere",
+      ignoreAlignmentRestrictions: true,
+    });
   });
 });

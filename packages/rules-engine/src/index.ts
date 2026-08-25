@@ -86,6 +86,7 @@ export {
   applyCampaignRulesToWeapon,
   effectiveWeaponProficiencyGroup,
   alignmentRestrictionsEnabled,
+  encumbranceRulesEnabled,
   firearmCostMultiplier,
   firearmRulesMode,
   infantrymanGunTrainingPickCount,

@@ -418,7 +418,11 @@ export function computeSheet(
     speed,
     skills,
     weapons,
-    encumbrance: deriveEncumbrance(strScore, input.carriedWeight ?? 0),
+    encumbrance: deriveEncumbrance(
+      strScore,
+      input.carriedWeight ?? 0,
+      input.ignoreEncumbrance,
+    ),
     inventory: input.inventory ?? {
       itemCount: 0,
       equippedCount: 0,
