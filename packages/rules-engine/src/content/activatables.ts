@@ -1,4 +1,11 @@
-import type { AbilityKey, Modifier, SheetDescriptor } from "../types";
+import type {
+  AbilityKey,
+  ArmorCategory,
+  Condition,
+  LoadBand,
+  Modifier,
+  SheetDescriptor,
+} from "../types";
 import type { ClassFeatureRegistry } from "./class-features";
 import type { FeatRegistry } from "./feats";
 
@@ -12,6 +19,9 @@ export interface ActivationContext {
   characterLevel: number;
   abilityModifiers?: Record<AbilityKey, number>;
   classLevels?: Record<string, number>;
+  armorCategory?: ArmorCategory;
+  loadBand?: LoadBand;
+  conditions?: Condition[];
 }
 
 /** Serializable scaling for pools such as grit, ki, panache, or arcane pool. */
@@ -67,6 +77,16 @@ export interface ActivatableResource {
   max: (ctx: ActivationContext) => number;
 }
 
+export interface ActivatableResourceCost {
+  poolId: string;
+  amount: number;
+}
+
+export interface ActivatableRequirements {
+  maximumArmorCategory?: ArmorCategory;
+  maximumLoadBand?: LoadBand;
+}
+
 export interface ActivatableEffect {
   id: string;
   name: string;
@@ -79,6 +99,47 @@ export interface ActivatableEffect {
   group?: string;
   /** Optional limited-use resource pool, e.g. Rage rounds/day. */
   resource?: ActivatableResource;
+  /** Cost paid from a standalone tracked pool when activated. */
+  resourceCost?: ActivatableResourceCost;
+  /** Serializable activation legality gates. */
+  requirements?: ActivatableRequirements;
+}
+
+const ARMOR_RANK: Record<ArmorCategory, number> = {
+  none: 0,
+  light: 1,
+  medium: 2,
+  heavy: 3,
+};
+const LOAD_RANK: Record<LoadBand, number> = {
+  light: 0,
+  medium: 1,
+  heavy: 2,
+  overloaded: 3,
+};
+
+export function activatableRequirementFailure(
+  effect: ActivatableEffect,
+  context: ActivationContext,
+): string | undefined {
+  const requirements = effect.requirements;
+  if (!requirements) return undefined;
+  if (
+    requirements.maximumArmorCategory &&
+    context.armorCategory &&
+    ARMOR_RANK[context.armorCategory] >
+      ARMOR_RANK[requirements.maximumArmorCategory]
+  ) {
+    return `requires ${requirements.maximumArmorCategory} armor or lighter`;
+  }
+  if (
+    requirements.maximumLoadBand &&
+    context.loadBand &&
+    LOAD_RANK[context.loadBand] > LOAD_RANK[requirements.maximumLoadBand]
+  ) {
+    return `requires a ${requirements.maximumLoadBand} load or lighter`;
+  }
+  return undefined;
 }
 
 /** Resolve an activatable's max resource pool, or undefined if it has none. */
@@ -237,6 +298,10 @@ export function resolveActivatableSelections(args: {
   const conflicts: ActivatableConflict[] = [];
 
   for (const item of picked) {
+    if (args.context && activatableRequirementFailure(item, args.context)) {
+      suppressed.push(item);
+      continue;
+    }
     if (!item.group) {
       active.push(item);
       continue;

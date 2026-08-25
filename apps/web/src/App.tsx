@@ -467,6 +467,7 @@ export function App({
     sheet,
     activatableGroups,
     activatableConflicts,
+    activatableBlockedReasons,
     resourceMaxes,
     resourceLabels,
     resourcePools,
@@ -610,6 +611,7 @@ export function App({
             <RuntimeControlsPanel
               activatableGroups={activatableGroups}
               activatableConflicts={activatableConflicts}
+              activatableBlockedReasons={activatableBlockedReasons}
               activeBuffs={activeBuffs}
               resourcesUsed={resourcesUsed}
               resourceMaxes={resourceMaxes}

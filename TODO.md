@@ -62,7 +62,7 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 - [x] Conditional requirement / illegal-state suppression scaffold (Fast Movement blocked by armor/load)
 - [x] Suppression reasons surfaced in the sheet (e.g. Fast Movement suppressed: medium armor)
 - [x] Fatigue state + Rage legality suppression
-- [ ] Broaden conditional legality (more armor/load restrictions, class-feature gates, etc.)
+- [~] Broaden conditional legality — serializable activatable armor/load gates and Infantryman's Dodge enforcement are live; expand to additional class features, archetypes, feats, and conditions
 - [x] Equipment/inventory engine: item quantities, costs, auto weight, equipped flags, armor metadata, slots, containers, coin/ammo/component tracking, purchase validation, and sheet itemization are all live
 - [~] Prerequisite validation for prestige classes, archetypes — archetype legality/conflict validation is live; prestige-class prerequisites still pending
 - [x] Parameterized feats (Weapon Focus weapon choice, Skill Focus skill choice)

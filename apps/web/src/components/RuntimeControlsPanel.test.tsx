@@ -1,6 +1,9 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { RuntimeControlsPanel } from "./RuntimeControlsPanel";
+import {
+  activatableResourceFailure,
+  RuntimeControlsPanel,
+} from "./RuntimeControlsPanel";
 
 const NOOP = () => undefined;
 const fighterProfile = {
@@ -33,6 +36,7 @@ function renderPanel(
     <RuntimeControlsPanel
       activatableGroups={{ ungrouped: [], grouped: {} }}
       activatableConflicts={[]}
+      activatableBlockedReasons={{}}
       activeBuffs={{}}
       resourcesUsed={{}}
       resourceMaxes={Object.fromEntries(
@@ -54,6 +58,37 @@ function renderPanel(
     />,
   );
 }
+
+describe("activatable resource costs", () => {
+  const deed = {
+    id: "dodge",
+    name: "Dodge",
+    description: "Spend grit.",
+    resourceCost: { poolId: "infantryman-grit", amount: 1 },
+  };
+
+  it("blocks a deed when its pool is empty", () => {
+    expect(
+      activatableResourceFailure(
+        deed,
+        { "infantryman-grit": 1 },
+        { "infantryman-grit": 1 },
+        { "infantryman-grit": "grit" },
+      ),
+    ).toBe("requires 1 grit (0 remaining)");
+  });
+
+  it("allows a deed while enough resource remains", () => {
+    expect(
+      activatableResourceFailure(
+        deed,
+        { "infantryman-grit": 2 },
+        { "infantryman-grit": 1 },
+        { "infantryman-grit": "grit" },
+      ),
+    ).toBeUndefined();
+  });
+});
 
 describe("RuntimeControlsPanel", () => {
   it("does not promote unowned spells on a fighter by default", () => {
