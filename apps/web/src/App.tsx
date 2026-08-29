@@ -301,14 +301,17 @@ export function App({
     setCurrentLevel((prev) =>
       clampCurrentLevel(prev + 1, build.levels.length + 1),
     );
-    selectTab("build");
+    selectTab("sheet");
     setLeveling(false);
     clearLevelUpEffectTimer();
-    setLevelUpEffect("celebrating");
+    setLevelUpEffect("idle");
     levelUpEffectTimer.current = window.setTimeout(() => {
-      levelUpEffectTimer.current = undefined;
-      setLevelUpEffect("idle");
-    }, 700);
+      setLevelUpEffect("celebrating");
+      levelUpEffectTimer.current = window.setTimeout(() => {
+        levelUpEffectTimer.current = undefined;
+        setLevelUpEffect("idle");
+      }, 700);
+    }, 50);
   }
 
   function advanceLevel() {

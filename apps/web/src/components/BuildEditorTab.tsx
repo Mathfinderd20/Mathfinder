@@ -192,7 +192,7 @@ export function BuildEditorTab(props: Props) {
     spellCastCounts,
   } = props;
 
-  const [plannerOpen, setPlannerOpen] = useState(true);
+  const [plannerOpen, setPlannerOpen] = useState(false);
   const [coreSetupOpen, setCoreSetupOpen] = useState(true);
   const [coreSetupAutoCollapsed, setCoreSetupAutoCollapsed] = useState(false);
   const currentLevelIndex = Math.max(0, currentLevel - 1);

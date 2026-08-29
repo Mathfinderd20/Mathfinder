@@ -63,7 +63,7 @@ export function CompendiumPicker({
   );
 
   const results = useMemo(() => {
-    if (!open && !debouncedQuery.trim()) return [] as CompendiumOption[];
+    if (!open) return [] as CompendiumOption[];
     if (resolveOptions)
       return resolveOptions(debouncedQuery).slice(0, maxResults);
     return searchCompendiumOptions(options, debouncedQuery).slice(

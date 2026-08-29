@@ -184,17 +184,55 @@ export function SpellcastingManager({
   const [spellSchoolFilters, setSpellSchoolFilters] = useState<
     Record<string, string | null>
   >({});
+  const [managerOpen, setManagerOpen] = useState(false);
   const spellCompendiumOptions = useMemo(
-    () => buildSpellCompendiumOptions(spellOptions),
-    [spellOptions],
+    () =>
+      casters.length > 0 && managerOpen
+        ? buildSpellCompendiumOptions(
+            spellOptions,
+            casters.map((caster) => caster.className),
+          )
+        : [],
+    [casters, managerOpen, spellOptions],
   );
 
   if (casters.length === 0) return null;
+
+  if (!managerOpen) {
+    return (
+      <section className="planner-builder">
+        <div className="planner-builder-summary">
+          <span className="subsection-title planner-builder-title">
+            Spellcasting Build Setup
+          </span>
+          <div className="planner-builder-controls">
+            <span className="planner-builder-meta">
+              {casters.length} caster{casters.length === 1 ? "" : "s"}
+            </span>
+            <button
+              className="ghost small"
+              type="button"
+              onClick={() => setManagerOpen(true)}
+            >
+              Expand
+            </button>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <>
       <div className="editor-section-head">
         <h3>Spellcasting Build Setup</h3>
+        <button
+          className="ghost small"
+          type="button"
+          onClick={() => setManagerOpen(false)}
+        >
+          Collapse
+        </button>
       </div>
       <p className="hint">
         Manage library/learnable spells, prepared or known picks, and runtime
