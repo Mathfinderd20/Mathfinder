@@ -24,6 +24,11 @@ export const CORE_CLASSES: ClassDefinition[] = overridePacklessClasses([
   ...SAMPLE_CLASS_ARRAY,
   {
     name: "Paladin",
+    alignmentRestriction: {
+      type: "exact",
+      alignment: "lawful-good",
+      description: "Paladins must be lawful good.",
+    },
     hitDie: 10,
     bab: "full",
     goodSaves: ["fort", "will"],

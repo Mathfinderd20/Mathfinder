@@ -12,10 +12,14 @@ import { deriveHitPoints, deriveSpeed } from "./vitals";
 import { deriveWeapons } from "./weapons";
 import { deriveEncumbrance } from "./encumbrance";
 import { deriveSpellcasting } from "./spellcasting";
+import { normalizeAmmoType } from "./runtime";
+import type { SpellRegistry } from "./content/spells";
 import type {
   BonusType,
   BreakdownEntry,
+  ArmorClassContext,
   CharacterInput,
+  DerivedDamageReduction,
   DerivedSheet,
   DerivedStat,
   HitPointDetails,
@@ -23,10 +27,6 @@ import type {
 
 function sumBreakdown(breakdown: BreakdownEntry[]): number {
   return breakdown.reduce((sum, entry) => sum + entry.value, 0);
-}
-
-function normalizeAmmoType(name: string): string {
-  return name.trim().toLowerCase();
 }
 
 function deriveAmmoByType(
@@ -44,7 +44,7 @@ function deriveAmmoByType(
           fallbackName.endsWith("bolts") ||
           fallbackName.endsWith("bullet") ||
           fallbackName.endsWith("bullets")
-        ? fallbackName.replace(/s$/, "")
+        ? normalizeAmmoType(fallbackName)
         : "";
     if (!inferredType) continue;
     ammo[inferredType] = (ammo[inferredType] ?? 0) + item.quantity;
@@ -56,12 +56,53 @@ function stat(breakdown: BreakdownEntry[]): DerivedStat {
   return { total: sumBreakdown(breakdown), breakdown };
 }
 
+function deriveDamageReductions(
+  entries: CharacterInput["damageReductions"],
+): DerivedDamageReduction[] {
+  const grouped = new Map<string, NonNullable<typeof entries>>();
+  for (const entry of entries ?? []) {
+    if (!Number.isFinite(entry.value) || entry.value <= 0) continue;
+    const key = `${entry.appliesAgainst.trim().toLowerCase()}::${entry.bypass.trim().toLowerCase()}`;
+    const group = grouped.get(key);
+    if (group) group.push(entry);
+    else grouped.set(key, [entry]);
+  }
+  return [...grouped.entries()]
+    .map(([id, group]) => {
+      const strongest = group.reduce((best, entry) =>
+        entry.value > best.value ? entry : best,
+      );
+      return {
+        id,
+        label: strongest.label ?? `DR vs ${strongest.appliesAgainst.trim()}`,
+        value: strongest.value,
+        bypass: strongest.bypass.trim() || "—",
+        appliesAgainst: strongest.appliesAgainst.trim(),
+        breakdown: [
+          {
+            source: strongest.source,
+            type: "damage-reduction",
+            value: strongest.value,
+          },
+        ],
+      };
+    })
+    .sort((a, b) => a.label.localeCompare(b.label));
+}
+
 /**
  * Compute a complete derived character sheet from base data + a flat modifier
  * stream. Deterministic and side-effect free: identical inputs always yield
  * identical output, so it can run on device AND on the server.
  */
-export function computeSheet(input: CharacterInput): DerivedSheet {
+export interface ComputeSheetOptions {
+  spellRegistry?: SpellRegistry;
+}
+
+export function computeSheet(
+  input: CharacterInput,
+  options: ComputeSheetOptions = {},
+): DerivedSheet {
   const abilities = deriveAbilities(input);
   const strScore = abilities.str.score;
   const strMod = abilities.str.mod;
@@ -78,12 +119,17 @@ export function computeSheet(input: CharacterInput): DerivedSheet {
   const dexToAc = dexMod < 0 ? dexMod : Math.min(dexMod, maxDex);
 
   // ---- Armor Class -------------------------------------------------------
-  const acMods = resolveModifiers(modifiersFor(input.modifiers, "ac"));
+  const baseAcModifiers = modifiersFor(input.modifiers, "ac");
+  const acMods = resolveModifiers(baseAcModifiers);
 
-  const buildAc = (opts: {
-    includeDex: boolean;
-    excludeTypes: ReadonlySet<BonusType>;
-  }): DerivedStat => {
+  const buildAc = (
+    opts: {
+      includeDex: boolean;
+      excludeTypes: ReadonlySet<BonusType>;
+    },
+    modifiers = baseAcModifiers,
+    explicitTargetPrefix?: string,
+  ): DerivedStat => {
     const breakdown: BreakdownEntry[] = [
       { source: "base", type: "base", value: 10 },
     ];
@@ -97,12 +143,77 @@ export function computeSheet(input: CharacterInput): DerivedSheet {
     if (opts.includeDex && dexToAc !== 0) {
       breakdown.push({ source: "Dexterity", type: "dex", value: dexToAc });
     }
-    for (const m of acMods.contributing) {
-      if (opts.excludeTypes.has(m.type)) continue;
+    const eligibleModifiers = modifiers.filter(
+      (modifier) =>
+        !opts.excludeTypes.has(modifier.type) ||
+        (!!explicitTargetPrefix &&
+          modifier.target.startsWith(explicitTargetPrefix)),
+    );
+    for (const m of resolveModifiers(eligibleModifiers).contributing) {
       breakdown.push({ source: m.source, type: m.type, value: m.value });
     }
     return stat(breakdown);
   };
+
+  const acContextDefinitions: Array<{
+    context: ArmorClassContext;
+    label: string;
+    inheritedContexts: ArmorClassContext[];
+  }> = [
+    {
+      context: "firearms",
+      label: "vs Firearms",
+      inheritedContexts: ["ranged", "firearms"],
+    },
+    { context: "ranged", label: "vs Ranged", inheritedContexts: ["ranged"] },
+    { context: "melee", label: "vs Melee", inheritedContexts: ["melee"] },
+  ];
+  const contextual = acContextDefinitions.flatMap((definition) => {
+    const ownTargetSuffix = `.vs.${definition.context}`;
+    const contextualModifiers = input.modifiers.filter((modifier) => {
+      if (modifier.enabled === false) return false;
+      return definition.inheritedContexts.some(
+        (context) =>
+          modifier.target === `ac.vs.${context}` ||
+          modifier.target === `ac.touch.vs.${context}`,
+      );
+    });
+    if (
+      !contextualModifiers.some((modifier) =>
+        modifier.target.endsWith(ownTargetSuffix),
+      )
+    )
+      return [];
+    const commonModifiers = contextualModifiers.filter((modifier) =>
+      modifier.target.startsWith("ac.vs."),
+    );
+    const touchModifiers = contextualModifiers.filter((modifier) =>
+      modifier.target.startsWith("ac.touch.vs."),
+    );
+    const combinedModifiers = [...baseAcModifiers, ...commonModifiers];
+    return [
+      {
+        context: definition.context,
+        label: definition.label,
+        normal: buildAc(
+          { includeDex: true, excludeTypes: new Set() },
+          combinedModifiers,
+        ),
+        touch: buildAc(
+          { includeDex: true, excludeTypes: TOUCH_EXCLUDED_AC_TYPES },
+          [...combinedModifiers, ...touchModifiers],
+          "ac.touch.",
+        ),
+        flatFooted: buildAc(
+          {
+            includeDex: false,
+            excludeTypes: FLAT_FOOTED_EXCLUDED_AC_TYPES,
+          },
+          combinedModifiers,
+        ),
+      },
+    ];
+  });
 
   const ac = {
     normal: buildAc({ includeDex: true, excludeTypes: new Set() }),
@@ -111,6 +222,7 @@ export function computeSheet(input: CharacterInput): DerivedSheet {
       includeDex: false,
       excludeTypes: FLAT_FOOTED_EXCLUDED_AC_TYPES,
     }),
+    contextual,
   };
 
   // ---- Saving throws -----------------------------------------------------
@@ -264,20 +376,29 @@ export function computeSheet(input: CharacterInput): DerivedSheet {
           .map((entry) => ({
             ammoType: normalizeAmmoType(entry.ammoType),
             amount: entry.amount,
-            available:
-              ammoByType[normalizeAmmoType(entry.ammoType)] ?? 0,
+            available: ammoByType[normalizeAmmoType(entry.ammoType)] ?? 0,
           }));
         return [weaponKey, availability] as const;
       }),
     ),
-    strMod,
-    dexMod,
+    abilityMods: {
+      str: abilities.str.mod,
+      dex: abilities.dex.mod,
+      con: abilities.con.mod,
+      int: abilities.int.mod,
+      wis: abilities.wis.mod,
+      cha: abilities.cha.mod,
+    },
     meleeAttack: attack.melee,
     rangedAttack: attack.ranged,
     modifiers: input.modifiers,
     weaponDamageAbilityOverrides: input.weaponDamageAbilityOverrides,
   });
-  const spellcasting = deriveSpellcasting(input, abilities);
+  const spellcasting = deriveSpellcasting(
+    input,
+    abilities,
+    options.spellRegistry,
+  );
 
   return {
     raceMetadata: input.raceMetadata,
@@ -307,6 +428,7 @@ export function computeSheet(input: CharacterInput): DerivedSheet {
     inventoryItems: input.inventoryItems ?? [],
     rangedCombat: { ammoByType },
     spellcasting,
+    damageReductions: deriveDamageReductions(input.damageReductions),
     descriptor: input.descriptor ?? {
       classes: [],
       archetypes: [],

@@ -3,6 +3,7 @@ import path from "node:path";
 import type Database from "better-sqlite3";
 import {
   validateRulesDataSet,
+  type ArchetypeDefinition,
   type RaceDefinition,
   type RulesDataSet,
   type RulesPack,
@@ -38,6 +39,7 @@ import {
 } from "@mathfinder/rules-engine";
 import type {
   ContentEntityKind,
+  ParsedScrapedArchetype,
   ParsedScrapedClassFeature,
   ParsedScrapedFeat,
   ParsedScrapedMagicItem,
@@ -49,6 +51,7 @@ import type {
 
 const CONTENT_KINDS: readonly ContentEntityKind[] = [
   "class",
+  "archetype",
   "class-feature",
   "feat",
   "race",
@@ -185,6 +188,7 @@ export interface UsableContentExport {
   summary: ExportSummary;
   normalized: {
     classes: ClassDefinition[];
+    archetypes: ArchetypeDefinition[];
     classFeatures: ClassFeatureDefinition[];
     feats: FeatDefinition[];
     races: RaceDefinition[];
@@ -755,14 +759,29 @@ function buildScrapedRaces(rows: EntityExportRow[]) {
     const name = cleanText(urlName || payload.name || row.name);
     const size = parseRaceSize(payload.size);
     const speed = parseRaceSpeed(payload.speedText);
-    if (!name || !size || !speed) continue;
+    const favoredClassBonuses = (payload.favoredClassBonuses ?? []).map(
+      (bonus, index) => ({
+        id: `aon-${slug(name)}-${slug(bonus.className)}-${index + 1}`,
+        className: bonus.className,
+        label:
+          bonus.description.length <= 90
+            ? bonus.description
+            : `${bonus.description.slice(0, 87).trimEnd()}…`,
+        description: bonus.description,
+        source: bonus.sources?.join("; "),
+        sourceUrl: payload.sourceUrl,
+        automationStatus: "manual" as const,
+      }),
+    );
+    if (!name || ((!size || !speed) && favoredClassBonuses.length === 0))
+      continue;
     const mapped = parseRaceTraitsAndClassSkills(name, payload);
     items.push({
       id: row.entityId || slug(name),
       name,
       pack: "aon-scraped-races",
-      size,
-      speed,
+      size: size ?? "medium",
+      speed: speed ?? 30,
       abilityModifiers: parseRaceAbilityModifiers(
         payload.abilityScoreText,
         name,
@@ -781,6 +800,7 @@ function buildScrapedRaces(rows: EntityExportRow[]) {
         Object.keys(mapped.resistances).length > 0
           ? mapped.resistances
           : undefined,
+      favoredClassBonuses,
       notes: mapped.notes.length > 0 ? mapped.notes : undefined,
     });
   }
@@ -957,6 +977,8 @@ function buildSeedPackMap(
       });
     if (row.kind === "class")
       current.classes.push(row.payload as ClassDefinition);
+    else if (row.kind === "archetype")
+      current.archetypes.push(row.payload as ArchetypeDefinition);
     else if (row.kind === "class-feature")
       current.classFeatures.push(row.payload as ClassFeatureDefinition);
     else if (row.kind === "feat")
@@ -982,6 +1004,42 @@ function buildSeedPackMap(
   return [...packs.values()];
 }
 
+function buildScrapedArchetypes(rows: EntityExportRow[]) {
+  return dedupeByKey(
+    rows
+      .filter((row) => row.kind === "archetype" && row.origin === "scrape")
+      .map((row) => {
+        const payload = row.payload as ParsedScrapedArchetype;
+        const name = payload.name || row.name;
+        return {
+          id: `${slug(payload.baseClassName)}-${slug(name)}`,
+          name,
+          pack: "aon-scraped-archetypes",
+          baseClassName: payload.baseClassName,
+          description: payload.description,
+          replaces: payload.replaces,
+          alters: payload.alters,
+          features: payload.features.map((feature) => ({
+            level: feature.level,
+            name: feature.name,
+            summary: feature.summary,
+          })),
+          notes: [
+            `Source: ${payload.source || "Archives of Nethys"}`,
+            `Reference: ${row.sourceUrl || payload.sourceUrl}`,
+          ],
+        } satisfies ArchetypeDefinition;
+      })
+      .filter(
+        (archetype) =>
+          cleanText(archetype.name).length > 0 &&
+          cleanText(archetype.baseClassName).length > 0,
+      ),
+    (archetype) =>
+      `${archetype.baseClassName.toLowerCase()}:${archetype.name.toLowerCase()}`,
+  );
+}
+
 function buildScrapedFeats(rows: EntityExportRow[]) {
   const featRows = rows
     .filter((row) => row.kind === "feat" && row.origin === "scrape")
@@ -998,11 +1056,16 @@ function buildScrapedFeats(rows: EntityExportRow[]) {
         const name = payload.name || row.name;
         const description =
           payload.benefit || payload.description || payload.special || "";
+        const tags = cleanText(payload.category)
+          .split(/\s*[,/;]\s*/)
+          .map((tag) => tag.trim().toLowerCase())
+          .filter(Boolean);
         return {
           id: row.entityId || slug(name),
           name,
           pack: "aon-scraped-feats",
           description,
+          tags: tags.length > 0 ? tags : undefined,
           prerequisites: parseFeatPrereqsInternal(
             payload.prerequisites,
             featNames,
@@ -1166,6 +1229,9 @@ function buildNormalizedFromRows(rows: EntityExportRow[]) {
     classes: rows
       .filter((row) => row.origin === "seed" && row.kind === "class")
       .map((row) => row.payload as ClassDefinition),
+    archetypes: rows
+      .filter((row) => row.origin === "seed" && row.kind === "archetype")
+      .map((row) => row.payload as ArchetypeDefinition),
     classFeatures: rows
       .filter((row) => row.origin === "seed" && row.kind === "class-feature")
       .map((row) => row.payload as ClassFeatureDefinition),
@@ -1198,6 +1264,11 @@ function buildNormalizedFromRows(rows: EntityExportRow[]) {
   const scrapedMagicItems = buildScrapedMagicItems(rows);
   return {
     classes: dedupeByName(seed.classes),
+    archetypes: dedupeByKey(
+      [...seed.archetypes, ...buildScrapedArchetypes(rows)],
+      (archetype) =>
+        `${archetype.baseClassName.toLowerCase()}:${archetype.name.toLowerCase()}`,
+    ),
     classFeatures: [...seed.classFeatures, ...buildScrapedClassFeatures(rows)],
     feats: [...seed.feats, ...buildScrapedFeats(rows)],
     races: dedupeByName([...seed.races, ...scrapedRaces]),
@@ -1225,6 +1296,7 @@ function buildRulesDataSetFromRows(
     packMeta.map((pack) => [pack.id, pack] satisfies [string, DbPackMeta]),
   );
   const seedPacks = buildSeedPackMap(rows, packMetaById);
+  const scrapedArchetypes = buildScrapedArchetypes(rows);
   const scrapedFeats = buildScrapedFeats(rows);
   const scrapedSpells = buildScrapedSpells(rows);
   const scrapedWeapons = buildScrapedWeapons(rows);
@@ -1251,6 +1323,16 @@ function buildRulesDataSetFromRows(
     ],
     packs: [
       ...seedPacks,
+      {
+        ...createRulesPack({
+          id: "aon-scraped-archetypes",
+          name: "AoN Scraped Archetypes",
+          enabledByDefault: true,
+          sourceId: "aonprd-scrape",
+          version: new Date().toISOString().slice(0, 10),
+        }),
+        archetypes: scrapedArchetypes,
+      },
       {
         ...createRulesPack({
           id: "aon-scraped-feats",

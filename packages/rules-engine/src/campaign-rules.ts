@@ -4,12 +4,27 @@ export type FirearmRulesMode = "standard" | "guns-everywhere";
 
 export interface CampaignRules {
   firearmRules?: FirearmRulesMode;
+  ignoreAlignmentRestrictions?: boolean;
+}
+
+export function alignmentRestrictionsEnabled(
+  rules?: CampaignRules | null,
+): boolean {
+  return rules?.ignoreAlignmentRestrictions !== true;
 }
 
 export function firearmRulesMode(
   rules?: CampaignRules | null,
 ): FirearmRulesMode {
   return rules?.firearmRules ?? "standard";
+}
+
+export function infantrymanGunTrainingPickCount(
+  classLevel: number,
+  rules?: CampaignRules | null,
+) {
+  const minimumLevel = firearmRulesMode(rules) === "guns-everywhere" ? 1 : 5;
+  return classLevel >= minimumLevel ? 1 : 0;
 }
 
 export function firearmCostMultiplier(rules?: CampaignRules | null) {

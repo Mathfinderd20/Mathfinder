@@ -60,6 +60,12 @@ export type BonusType =
 export type ModifierTarget =
   | AbilityKey
   | "ac"
+  | "ac.vs.firearms"
+  | "ac.vs.ranged"
+  | "ac.vs.melee"
+  | "ac.touch.vs.firearms"
+  | "ac.touch.vs.ranged"
+  | "ac.touch.vs.melee"
   | "save.fort"
   | "save.ref"
   | "save.will"
@@ -104,6 +110,33 @@ export interface BreakdownEntry {
 
 export interface DerivedStat {
   total: number;
+  breakdown: BreakdownEntry[];
+}
+
+export type ArmorClassContext = "firearms" | "ranged" | "melee";
+
+export interface ContextualArmorClass {
+  context: ArmorClassContext;
+  label: string;
+  normal: DerivedStat;
+  touch: DerivedStat;
+  flatFooted: DerivedStat;
+}
+
+export interface DamageReduction {
+  value: number;
+  bypass: string;
+  appliesAgainst: string;
+  source: string;
+  label?: string;
+}
+
+export interface DerivedDamageReduction {
+  id: string;
+  label: string;
+  value: number;
+  bypass: string;
+  appliesAgainst: string;
   breakdown: BreakdownEntry[];
 }
 
@@ -189,6 +222,7 @@ export interface SuppressedAcquisition extends NamedAcquisition {
 /** Non-mechanical identity carried through to the sheet (race/class/feats/etc.). */
 export interface SheetDescriptor {
   race?: string;
+  alignment?: import("./alignment").Alignment;
   classes: NamedAcquisition[];
   archetypes: NamedAcquisition[];
   feats: NamedAcquisition[];
@@ -216,10 +250,25 @@ export interface SenseProfile {
   lowLightVision?: boolean;
 }
 
+export type FerocityMode = "orc" | "half-orc";
+
+export interface FavoredClassBonusDefinition {
+  id: string;
+  className: string;
+  label: string;
+  description: string;
+  source?: string;
+  sourceUrl?: string;
+  automationStatus?: "automated" | "manual";
+  deathThresholdBonus?: number;
+}
+
 export interface RaceMetadata {
   movementModes?: Partial<Record<MovementMode, number>>;
   senses?: SenseProfile;
   resistances?: Partial<Record<EnergyType, number>>;
+  ferocity?: FerocityMode;
+  favoredClassBonuses?: FavoredClassBonusDefinition[];
   notes?: string[];
 }
 
@@ -366,6 +415,8 @@ export interface InventoryArmorDetails {
   maxDexBonus?: number;
   checkPenalty?: number;
   speedPenalty?: number;
+  speed30?: number;
+  speed20?: number;
 }
 
 export type InventoryEquipmentSlot =
@@ -418,11 +469,7 @@ export interface InventoryWeaponDetails {
 
 export type InventoryOwnership = "owned" | "wishlist";
 export type InventoryComponentCategory =
-  | "material"
-  | "focus"
-  | "divine-focus"
-  | "spellbook"
-  | "kit";
+  "material" | "focus" | "divine-focus" | "spellbook" | "kit";
 
 export interface DerivedInventoryItem {
   name: string;
@@ -539,6 +586,8 @@ export interface DerivedSpellcasting {
   slotsUsed: SpellSlotUsageByLevel;
   slotsRemaining: SpellSlotUsageByLevel;
   spellSaveDcs: Partial<Record<number, number>>;
+  /** School-specific bonuses applied on top of spellSaveDcs. */
+  spellSaveDcBonusesBySchool: Record<string, DerivedStat>;
   maxSpellLevel: number;
 }
 
@@ -585,6 +634,8 @@ export interface CharacterInput {
   skillUsableOverrides?: Partial<Record<SkillKey, boolean>>;
   /** Explicit weapon damage-ability overrides keyed by weapon name/template id. */
   weaponDamageAbilityOverrides?: Partial<Record<string, AbilityKey | null>>;
+  /** Conditional damage reduction supplied by equipped gear and abilities. */
+  damageReductions?: DamageReduction[];
   /** Every active effect: feats, gear, class features, conditions, buffs, auras. */
   modifiers: Modifier[];
 }
@@ -599,7 +650,12 @@ export interface DerivedSheet {
   level: number;
   size: Size;
   abilities: Record<AbilityKey, DerivedAbility>;
-  ac: { normal: DerivedStat; touch: DerivedStat; flatFooted: DerivedStat };
+  ac: {
+    normal: DerivedStat;
+    touch: DerivedStat;
+    flatFooted: DerivedStat;
+    contextual: ContextualArmorClass[];
+  };
   saves: { fort: DerivedStat; ref: DerivedStat; will: DerivedStat };
   initiative: DerivedStat;
   baseAttackBonus: number;
@@ -616,6 +672,7 @@ export interface DerivedSheet {
   inventoryItems: DerivedInventoryItem[];
   rangedCombat: RangedCombatStatus;
   spellcasting: DerivedSpellcasting[];
+  damageReductions: DerivedDamageReduction[];
   /** Race/class/feats/features for display (empty if not provided). */
   descriptor: SheetDescriptor;
 }

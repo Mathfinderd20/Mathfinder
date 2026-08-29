@@ -11,6 +11,52 @@ export interface ActivationContext {
   baseAttackBonus: number;
   characterLevel: number;
   abilityModifiers?: Record<AbilityKey, number>;
+  classLevels?: Record<string, number>;
+}
+
+/** Serializable scaling for pools such as grit, ki, panache, or arcane pool. */
+export interface ResourcePoolMaximum {
+  base?: number;
+  ability?: AbilityKey;
+  abilityMultiplier?: number;
+  className?: string;
+  classLevelMultiplier?: number;
+  minimum?: number;
+}
+
+export interface ResourcePoolDefinition {
+  id: string;
+  name: string;
+  unit: string;
+  description: string;
+  maximum: ResourcePoolMaximum;
+}
+
+export interface DerivedResourcePool {
+  id: string;
+  name: string;
+  unit: string;
+  description: string;
+  max: number;
+}
+
+export function resourcePoolMaximum(
+  pool: ResourcePoolDefinition,
+  context: ActivationContext,
+) {
+  const maximum = pool.maximum;
+  const abilityValue = maximum.ability
+    ? (context.abilityModifiers?.[maximum.ability] ?? 0) *
+      (maximum.abilityMultiplier ?? 1)
+    : 0;
+  const classLevel = maximum.className
+    ? (context.classLevels?.[maximum.className.toLowerCase()] ?? 0)
+    : 0;
+  const classValue = classLevel * (maximum.classLevelMultiplier ?? 0);
+  return Math.max(
+    maximum.minimum ?? 0,
+    Math.floor((maximum.base ?? 0) + abilityValue + classValue),
+  );
 }
 
 /** A limited-use resource pool, e.g. Rage rounds/day. */
@@ -127,6 +173,56 @@ export function collectActivatableEffects(args: {
     seen.add(item.id);
     return true;
   });
+}
+
+export function collectResourcePools(args: {
+  descriptor: SheetDescriptor;
+  classFeatureRegistry: ClassFeatureRegistry;
+  featRegistry: FeatRegistry;
+  context: ActivationContext;
+}): DerivedResourcePool[] {
+  const featureNames = new Set(
+    args.descriptor.features.map((feature) => feature.name.toLowerCase()),
+  );
+  const suppressedNames = new Set(
+    args.descriptor.suppressedFeatures.map((feature) =>
+      feature.name.toLowerCase(),
+    ),
+  );
+  const featNames = new Set(
+    args.descriptor.feats.map((feat) => feat.name.toLowerCase()),
+  );
+  const definitions = [
+    ...Object.values(args.classFeatureRegistry)
+      .flat()
+      .filter(
+        (feature) =>
+          !!feature.resourcePool &&
+          featureNames.has(feature.name.toLowerCase()) &&
+          !suppressedNames.has(feature.name.toLowerCase()),
+      )
+      .map((feature) => feature.resourcePool!),
+    ...Object.values(args.featRegistry)
+      .filter(
+        (feat) => !!feat.resourcePool && featNames.has(feat.name.toLowerCase()),
+      )
+      .map((feat) => feat.resourcePool!),
+  ];
+  const seen = new Set<string>();
+  return definitions
+    .filter((definition) => {
+      if (seen.has(definition.id)) return false;
+      seen.add(definition.id);
+      return true;
+    })
+    .map((definition) => ({
+      id: definition.id,
+      name: definition.name,
+      unit: definition.unit,
+      description: definition.description,
+      max: resourcePoolMaximum(definition, args.context),
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
 }
 
 export function resolveActivatableSelections(args: {

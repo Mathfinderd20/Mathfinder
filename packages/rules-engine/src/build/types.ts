@@ -16,6 +16,7 @@ import type {
 } from "../types";
 import type { FeatGrantKind } from "../content/feats";
 import type { CampaignRules } from "../campaign-rules";
+import type { Alignment } from "../alignment";
 
 export interface RaceChoiceSelection {
   flexibleAbility?: AbilityKey;
@@ -46,7 +47,7 @@ export interface LevelEntry {
   feats?: string[];
   features?: string[];
   abilityIncrease?: AbilityKey;
-  favoredClass?: "hp" | "skill";
+  favoredClass?: string;
   modifiers?: Modifier[];
 }
 
@@ -105,11 +106,7 @@ export const EQUIPMENT_SLOTS: EquipmentSlot[] = [
 
 export type EquipmentOwnership = "owned" | "wishlist";
 export type EquipmentComponentCategory =
-  | "material"
-  | "focus"
-  | "divine-focus"
-  | "spellbook"
-  | "kit";
+  "material" | "focus" | "divine-focus" | "spellbook" | "kit";
 
 export interface EquipmentEntry {
   kind?: "magic" | "mundane";
@@ -135,17 +132,33 @@ export interface EquipmentEntry {
     acBonus?: number;
     maxDexBonus?: number;
     checkPenalty?: number;
+    /** Manual fallback for custom armor without speed profiles. */
     speedPenalty?: number;
+    /** Resulting land speed for creatures whose base speed is 30 or 20 feet. */
+    speed30?: number;
+    speed20?: number;
+    /** Fraction of armor AC retained against ranged attacks that target touch AC. */
+    rangedTouchArmorFraction?: number;
   };
+  damageReductions?: Array<{
+    value: number;
+    bypass: string;
+    appliesAgainst: string;
+    label?: string;
+  }>;
   shield?: {
     acBonus?: number;
     checkPenalty?: number;
+    /** Fraction of shield AC retained against ranged attacks that target touch AC. */
+    rangedTouchShieldFraction?: number;
   };
   weapon?: Omit<Weapon, "name" | "proficient">;
 }
 
 export interface CharacterBuild {
   name: string;
+  /** Optional only for backward compatibility with persisted pre-alignment builds. */
+  alignment?: Alignment;
   race: RaceChoice;
   classArchetypes?: Partial<Record<string, string[]>>;
   favoredClassName?: string;
@@ -208,7 +221,7 @@ export interface LevelUpSelection {
   skillRanks: Partial<Record<SkillKey, number>>;
   feats?: string[];
   abilityIncrease?: AbilityKey;
-  favoredClass?: "hp" | "skill";
+  favoredClass?: string;
 }
 
 export interface PreLevelBuildSelection {
@@ -217,7 +230,7 @@ export interface PreLevelBuildSelection {
   skillRanks?: Partial<Record<SkillKey, number>>;
   feats?: string[];
   abilityIncrease?: AbilityKey;
-  favoredClass?: "hp" | "skill";
+  favoredClass?: string;
 }
 
 export interface PreLevelBuildResult {

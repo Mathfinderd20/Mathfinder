@@ -12,6 +12,7 @@ import {
   type DomainDefinition,
   type FeatRegistry,
   type MagicItemDefinition,
+  type Modifier,
   type SchoolDefinition,
   type SpellDefinition,
   type SpellRegistry,
@@ -50,6 +51,319 @@ export interface RuntimeArmorDefinition {
   costGp?: number;
   weightLb?: number;
   description?: string;
+  modifiers?: Modifier[];
+  damageReductions?: Array<{
+    value: number;
+    bypass: string;
+    appliesAgainst: string;
+    label?: string;
+  }>;
+  /** Fraction of this armor's current AC bonus retained against ranged touch attacks. */
+  rangedTouchArmorFraction?: number;
+  /** Fraction of this shield's current AC bonus retained against ranged touch attacks. */
+  rangedTouchShieldFraction?: number;
+}
+
+export const SAVAGE_COMPANY_ARMOR: RuntimeArmorDefinition[] = [
+  {
+    id: "sc-road-gear",
+    name: "Road Gear",
+    source: "Savage Company",
+    categoryRaw: "Light armor",
+    categoryNormalized: "light",
+    armorBonus: 1,
+    maxDexBonus: 6,
+    armorCheckPenalty: 0,
+    arcaneSpellFailure: 10,
+    speed30: 30,
+    speed20: 20,
+    costGp: 100,
+    weightLb: 10,
+  },
+  {
+    id: "sc-shooters-plate",
+    name: "Shooters Plate",
+    source: "Savage Company",
+    categoryRaw: "Light armor",
+    categoryNormalized: "light",
+    armorBonus: 3,
+    maxDexBonus: 6,
+    armorCheckPenalty: -1,
+    arcaneSpellFailure: 20,
+    speed30: 30,
+    speed20: 20,
+    costGp: 400,
+    weightLb: 12,
+    damageReductions: [
+      {
+        value: 3,
+        bypass: "—",
+        appliesAgainst: "Firearms",
+        label: "DR vs Firearms",
+      },
+    ],
+    description: "Provides DR 3/— against firearms.",
+  },
+  {
+    id: "sc-riot-gear",
+    name: "Riot Gear",
+    source: "Savage Company",
+    categoryRaw: "Medium armor",
+    categoryNormalized: "medium",
+    armorBonus: 4,
+    maxDexBonus: 5,
+    armorCheckPenalty: -1,
+    arcaneSpellFailure: 30,
+    speed30: 20,
+    speed20: 15,
+    costGp: 500,
+    weightLb: 25,
+    damageReductions: [
+      {
+        value: 3,
+        bypass: "—",
+        appliesAgainst: "Firearms & Bludgeoning",
+        label: "DR vs Firearms & Bludgeoning",
+      },
+    ],
+    description: "Provides DR 3/— against firearms and bludgeoning damage.",
+  },
+  {
+    id: "sc-savage-plate",
+    name: "Savage Plate",
+    source: "Savage Company",
+    categoryRaw: "Heavy armor",
+    categoryNormalized: "heavy",
+    armorBonus: 6,
+    maxDexBonus: 4,
+    armorCheckPenalty: -6,
+    arcaneSpellFailure: 50,
+    speed30: 20,
+    speed20: 15,
+    costGp: 2100,
+    weightLb: 75,
+    rangedTouchArmorFraction: 0.5,
+    description:
+      "Retains half its armor bonus against ranged weapon attacks that would ignore armor. Baadan and Savage-race +1 is not automated yet.",
+  },
+  {
+    id: "sc-ballistic-shield",
+    name: "Ballistic Shield",
+    source: "Savage Company",
+    categoryRaw: "Shield",
+    categoryNormalized: "shield",
+    armorBonus: 2,
+    armorCheckPenalty: -1,
+    arcaneSpellFailure: 25,
+    costGp: 535,
+    weightLb: 12,
+    rangedTouchShieldFraction: 1,
+    description:
+      "Retains its shield bonus against ranged weapon attacks that ignore shield AC.",
+  },
+  {
+    id: "sc-deployable-shield",
+    name: "Deployable Shield",
+    source: "Savage Company",
+    categoryRaw: "Shield",
+    categoryNormalized: "shield",
+    armorBonus: 2,
+    armorCheckPenalty: -4,
+    arcaneSpellFailure: 25,
+    costGp: 700,
+    weightLb: 24,
+    rangedTouchShieldFraction: 1,
+    description:
+      "Includes ballistic-shield touch defense and can deploy as cover. Deployment state is currently manual.",
+  },
+  {
+    id: "sc-canid-field-armor",
+    name: "Canid Field Armor",
+    source: "Savage Company",
+    categoryRaw: "Light armor",
+    categoryNormalized: "light",
+    armorBonus: 3,
+    maxDexBonus: 6,
+    armorCheckPenalty: -3,
+    arcaneSpellFailure: 10,
+    costGp: 300,
+    weightLb: 8,
+  },
+];
+
+const SUPPLEMENTAL_ARMOR: RuntimeArmorDefinition[] = [
+  ...SAVAGE_COMPANY_ARMOR,
+  {
+    id: "ring-mail",
+    name: "Ring mail",
+    source: "Core Rulebook",
+    categoryRaw: "Heavy armor",
+    categoryNormalized: "heavy",
+    armorBonus: 4,
+    maxDexBonus: 0,
+    armorCheckPenalty: -7,
+    arcaneSpellFailure: 35,
+    speed30: 20,
+    speed20: 15,
+    costGp: 30,
+    weightLb: 40,
+  },
+  {
+    id: "stone-coat",
+    name: "Stone coat",
+    source: "Armor Master's Handbook",
+    categoryRaw: "Medium armor",
+    categoryNormalized: "medium",
+    armorBonus: 4,
+    maxDexBonus: 3,
+    armorCheckPenalty: -3,
+    arcaneSpellFailure: 25,
+    speed30: 20,
+    speed20: 15,
+    costGp: 50,
+    weightLb: 30,
+  },
+  {
+    id: "lamellar-leather",
+    name: "Lamellar leather",
+    source: "Ultimate Equipment",
+    categoryRaw: "Light armor",
+    categoryNormalized: "light",
+    armorBonus: 4,
+    maxDexBonus: 3,
+    armorCheckPenalty: -2,
+    arcaneSpellFailure: 15,
+    speed30: 30,
+    speed20: 20,
+    costGp: 60,
+    weightLb: 25,
+  },
+  {
+    id: "lamellar-horn",
+    name: "Lamellar horn",
+    source: "Ultimate Equipment",
+    categoryRaw: "Medium armor",
+    categoryNormalized: "medium",
+    armorBonus: 5,
+    maxDexBonus: 3,
+    armorCheckPenalty: -4,
+    arcaneSpellFailure: 25,
+    speed30: 20,
+    speed20: 15,
+    costGp: 150,
+    weightLb: 30,
+  },
+  {
+    id: "lamellar-steel",
+    name: "Lamellar steel",
+    source: "Ultimate Equipment",
+    categoryRaw: "Heavy armor",
+    categoryNormalized: "heavy",
+    armorBonus: 7,
+    maxDexBonus: 0,
+    armorCheckPenalty: -7,
+    arcaneSpellFailure: 35,
+    speed30: 20,
+    speed20: 15,
+    costGp: 200,
+    weightLb: 50,
+  },
+  {
+    id: "mwangi-hide",
+    name: "Mwangi hide",
+    source: "Heroes from the Fringe",
+    categoryRaw: "Light armor",
+    categoryNormalized: "light",
+    armorBonus: 3,
+    maxDexBonus: 4,
+    armorCheckPenalty: -2,
+    arcaneSpellFailure: 15,
+    speed30: 30,
+    speed20: 20,
+    costGp: 25,
+    weightLb: 20,
+  },
+  {
+    id: "light-wooden-shield",
+    name: "Light wooden shield",
+    source: "Core Rulebook",
+    categoryRaw: "Shield",
+    categoryNormalized: "shield",
+    armorBonus: 1,
+    armorCheckPenalty: -1,
+    arcaneSpellFailure: 5,
+    costGp: 3,
+    weightLb: 5,
+  },
+  {
+    id: "heavy-wooden-shield",
+    name: "Heavy wooden shield",
+    source: "Core Rulebook",
+    categoryRaw: "Shield",
+    categoryNormalized: "shield",
+    armorBonus: 2,
+    armorCheckPenalty: -2,
+    arcaneSpellFailure: 15,
+    costGp: 7,
+    weightLb: 10,
+  },
+  {
+    id: "light-steel-shield",
+    name: "Light steel shield",
+    source: "Core Rulebook",
+    categoryRaw: "Shield",
+    categoryNormalized: "shield",
+    armorBonus: 1,
+    armorCheckPenalty: -1,
+    arcaneSpellFailure: 5,
+    costGp: 9,
+    weightLb: 6,
+  },
+  {
+    id: "heavy-steel-shield",
+    name: "Heavy steel shield",
+    source: "Core Rulebook",
+    categoryRaw: "Shield",
+    categoryNormalized: "shield",
+    armorBonus: 2,
+    armorCheckPenalty: -2,
+    arcaneSpellFailure: 15,
+    costGp: 20,
+    weightLb: 15,
+  },
+  {
+    id: "tower-shield",
+    name: "Tower shield",
+    source: "Core Rulebook",
+    categoryRaw: "Shield",
+    categoryNormalized: "shield",
+    armorBonus: 4,
+    armorCheckPenalty: -10,
+    arcaneSpellFailure: 50,
+    costGp: 30,
+    weightLb: 45,
+  },
+];
+
+function mergeArmorDefinitions(
+  base: RuntimeArmorDefinition[],
+  extras: RuntimeArmorDefinition[],
+) {
+  const seenIds = new Set(base.map((entry) => entry.id.toLowerCase()));
+  const seenNames = new Set(
+    base.map((entry) => entry.name.trim().toLowerCase()),
+  );
+  return [
+    ...base,
+    ...extras.filter((entry) => {
+      const id = entry.id.toLowerCase();
+      const name = entry.name.trim().toLowerCase();
+      if (seenIds.has(id) || seenNames.has(name)) return false;
+      seenIds.add(id);
+      seenNames.add(name);
+      return true;
+    }),
+  ];
 }
 
 interface UsableContentAsset {
@@ -75,30 +389,63 @@ function replaceArray<T>(target: T[], source: T[]) {
 export function raceOptionsFromDataSet(
   data: RulesDataSet,
 ): Record<string, CharacterBuild["race"]> {
-  return Object.fromEntries(
-    data.packs
-      .flatMap((pack) => pack.races)
-      .map((race) => [
-        race.id,
-        {
-          name: race.name,
-          size: race.size,
-          speed: race.speed,
-          abilityModifiers: race.abilityModifiers,
-          traits: race.traits,
-          classSkills: race.classSkills,
-          weaponProficiencies: race.weaponProficiencies,
-          specificWeaponProficiencies: race.specificWeaponProficiencies,
-          grantedWeapons: race.grantedWeapons,
-          choiceOptions: race.choiceOptions,
-          alternateTraits: race.alternateTraits,
-          movementModes: race.movementModes,
-          senses: race.senses,
-          resistances: race.resistances,
-          notes: race.notes,
-        },
-      ]),
-  );
+  const sourceRaces = data.packs.flatMap((pack) => pack.races);
+  const favoredBonusesByName = new Map<
+    string,
+    NonNullable<CharacterBuild["race"]["favoredClassBonuses"]>
+  >();
+  for (const race of sourceRaces) {
+    const nameKey = race.name.trim().toLowerCase();
+    const combined = [
+      ...(favoredBonusesByName.get(nameKey) ?? []),
+      ...(race.favoredClassBonuses ?? []),
+    ].filter(
+      (bonus, index, all) =>
+        all.findIndex((candidate) => candidate.id === bonus.id) === index,
+    );
+    favoredBonusesByName.set(nameKey, combined);
+  }
+  const races = new Map<string, CharacterBuild["race"]>();
+  for (const race of sourceRaces) {
+    const key = race.id.trim().toLowerCase();
+    const existing = races.get(key);
+    const mapped: CharacterBuild["race"] = {
+      name: race.name,
+      size: race.size,
+      speed: race.speed,
+      abilityModifiers: race.abilityModifiers,
+      traits: race.traits,
+      classSkills: race.classSkills,
+      weaponProficiencies: race.weaponProficiencies,
+      specificWeaponProficiencies: race.specificWeaponProficiencies,
+      grantedWeapons: race.grantedWeapons,
+      choiceOptions: race.choiceOptions,
+      alternateTraits: race.alternateTraits,
+      movementModes: race.movementModes,
+      senses: race.senses,
+      resistances: race.resistances,
+      ferocity: race.ferocity,
+      favoredClassBonuses: favoredBonusesByName.get(
+        race.name.trim().toLowerCase(),
+      ),
+      notes: race.notes,
+    };
+    if (!existing) {
+      races.set(key, mapped);
+      continue;
+    }
+    races.set(key, {
+      ...existing,
+      favoredClassBonuses: [
+        ...(existing.favoredClassBonuses ?? []),
+        ...(mapped.favoredClassBonuses ?? []),
+      ].filter(
+        (bonus, index, all) =>
+          all.findIndex((candidate) => candidate.id === bonus.id) === index,
+      ),
+    });
+  }
+  return Object.fromEntries(races);
 }
 
 export function runtimeContentAssetUrl(origin: string) {
@@ -265,9 +612,12 @@ export async function loadRuntimeContent() {
     );
     replaceArray(
       RUNTIME_ARMOR,
-      [...(usableContent.normalized?.armor ?? [])]
-        .filter((entry) => !!safeName(entry))
-        .sort(bySafeName),
+      mergeArmorDefinitions(
+        [...(usableContent.normalized?.armor ?? [])].filter(
+          (entry) => !!safeName(entry),
+        ),
+        SUPPLEMENTAL_ARMOR,
+      ).sort(bySafeName),
     );
     replaceArray(
       RUNTIME_MUNDANE_EQUIPMENT,
@@ -305,7 +655,12 @@ export async function loadRuntimeContent() {
         .filter((entry) => !!safeName(entry))
         .sort(bySafeName),
     );
-  })();
+  })().catch((error: unknown) => {
+    // A transient network or deployment error should not poison every future
+    // load attempt for the lifetime of the tab.
+    loadPromise = null;
+    throw error;
+  });
   return loadPromise;
 }
 

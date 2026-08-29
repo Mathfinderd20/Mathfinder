@@ -13,18 +13,9 @@ export type EquipmentItem = NonNullable<CharacterBuild["equipment"]>[number];
 export type CarryState = NonNullable<EquipmentItem["carryState"]>;
 export type OwnershipState = NonNullable<EquipmentItem["ownership"]>;
 export type GearSortMode =
-  | "manual"
-  | "name"
-  | "weight"
-  | "cost"
-  | "quantity"
-  | "equipped";
+  "manual" | "name" | "weight" | "cost" | "quantity" | "equipped";
 export type GearGroupMode =
-  | "none"
-  | "carry-state"
-  | "slot"
-  | "usage"
-  | "container";
+  "none" | "carry-state" | "slot" | "usage" | "container";
 export type EquipmentUsePresetId =
   | "wand"
   | "potion"
@@ -56,11 +47,7 @@ export type EquipmentUsePresetId =
   | "law-of-fire-rocket"
   | "rpgl-rocket";
 export type EquipmentComponentPresetId =
-  | "component-pouch"
-  | "arcane-focus"
-  | "holy-symbol"
-  | "spellbook"
-  | "kit";
+  "component-pouch" | "arcane-focus" | "holy-symbol" | "spellbook" | "kit";
 
 export interface EquipmentUsePreset {
   id: EquipmentUsePresetId;
@@ -156,7 +143,9 @@ export function defaultOwnership(item: EquipmentItem): OwnershipState {
 }
 
 export function equipmentCountsTowardWeight(item: EquipmentItem) {
-  return defaultOwnership(item) === "owned" && defaultCarryState(item) !== "cached";
+  return (
+    defaultOwnership(item) === "owned" && defaultCarryState(item) !== "cached"
+  );
 }
 
 export function equipmentIsOwned(item: EquipmentItem) {
@@ -212,7 +201,9 @@ export function applyEquipmentComponentPreset(
   item: EquipmentItem,
   presetId: EquipmentComponentPresetId,
 ): Partial<EquipmentItem> {
-  const preset = EQUIPMENT_COMPONENT_PRESETS.find((entry) => entry.id === presetId);
+  const preset = EQUIPMENT_COMPONENT_PRESETS.find(
+    (entry) => entry.id === presetId,
+  );
   if (!preset) return {};
   return { ...item, ...preset.patch };
 }
@@ -309,16 +300,25 @@ export function summarizeComponents(equipment: EquipmentItem[]) {
     if (!category) continue;
     totals.set(category, (totals.get(category) ?? 0) + (item.quantity ?? 1));
   }
-  return [...totals.entries()].map(([category, quantity]) => ({ category, quantity }));
+  return [...totals.entries()].map(([category, quantity]) => ({
+    category,
+    quantity,
+  }));
 }
 
 export function collectContainerOptions(equipment: EquipmentItem[]) {
-  return [...new Set(
-    equipment
-      .filter((item) => equipmentIsOwned(item) && typeof item.containerCapacityLb === "number")
-      .map((item) => item.name.trim())
-      .filter(Boolean),
-  )].sort((a, b) => a.localeCompare(b));
+  return [
+    ...new Set(
+      equipment
+        .filter(
+          (item) =>
+            equipmentIsOwned(item) &&
+            typeof item.containerCapacityLb === "number",
+        )
+        .map((item) => item.name.trim())
+        .filter(Boolean),
+    ),
+  ].sort((a, b) => a.localeCompare(b));
 }
 
 export function summarizeContainers(equipment: EquipmentItem[]) {
@@ -341,8 +341,11 @@ export function summarizeContainers(equipment: EquipmentItem[]) {
   }
   const duplicateNames = [...containerNameCounts.entries()]
     .filter(([, count]) => count > 1)
-    .map(([normalizedName]) =>
-      containerEntries.find((entry) => entry.normalizedName === normalizedName)?.name,
+    .map(
+      ([normalizedName]) =>
+        containerEntries.find(
+          (entry) => entry.normalizedName === normalizedName,
+        )?.name,
     )
     .filter((name): name is string => !!name);
   const entries = containerEntries.map((container) => {
@@ -383,11 +386,14 @@ export function summarizeContainers(equipment: EquipmentItem[]) {
   const selfAssignments = owned
     .filter((item) => item.containerName?.trim())
     .filter(
-      (item) => item.containerName!.trim().toLowerCase() === item.name.trim().toLowerCase(),
+      (item) =>
+        item.containerName!.trim().toLowerCase() ===
+        item.name.trim().toLowerCase(),
     )
     .map((item) => `${item.name} cannot contain itself. Shocking but true.`);
   const duplicateWarnings = duplicateNames.map(
-    (name) => `Multiple containers are named “${name}”. Rename them so assignments stop being a guessing game.`,
+    (name) =>
+      `Multiple containers are named “${name}”. Rename them so assignments stop being a guessing game.`,
   );
   return { entries, missingAssignments, selfAssignments, duplicateWarnings };
 }
@@ -451,10 +457,7 @@ export function restoreAmmoToEquipment(
         : item,
     );
   }
-  return [
-    ...equipment,
-    { ...createAmmoStack(normalized), quantity: amount },
-  ];
+  return [...equipment, { ...createAmmoStack(normalized), quantity: amount }];
 }
 
 type SpellTriggerMode = "single" | "all";
@@ -498,7 +501,8 @@ function compareSpellTriggerCandidates(a: EquipmentItem, b: EquipmentItem) {
   const triggerCountDelta =
     (a.spellTriggerNames?.length ?? 0) - (b.spellTriggerNames?.length ?? 0);
   if (triggerCountDelta !== 0) return triggerCountDelta;
-  const accessibilityDelta = itemAccessibilityRank(a) - itemAccessibilityRank(b);
+  const accessibilityDelta =
+    itemAccessibilityRank(a) - itemAccessibilityRank(b);
   if (accessibilityDelta !== 0) return accessibilityDelta;
   const unitsDelta = itemConsumableUnits(a) - itemConsumableUnits(b);
   if (unitsDelta !== 0) return unitsDelta;
@@ -627,7 +631,9 @@ function groupKeyForItem(item: EquipmentItem, groupMode: GearGroupMode) {
 function groupLabelForKey(key: string, groupMode: GearGroupMode) {
   if (groupMode === "carry-state") return displayCarryState(key as CarryState);
   if (groupMode === "slot") return key.replace(/-/g, " ");
-  if (groupMode === "container") return key === "loose" ? "Loose / unbagged" : key;
-  if (key.startsWith("component:")) return key.replace("component:", "").replace(/-/g, " ");
+  if (groupMode === "container")
+    return key === "loose" ? "Loose / unbagged" : key;
+  if (key.startsWith("component:"))
+    return key.replace("component:", "").replace(/-/g, " ");
   return key;
 }

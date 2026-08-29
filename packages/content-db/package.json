@@ -30,6 +30,7 @@
     "db:scrape:aon-rings": "tsx src/cli.ts scrape-aon-rings",
     "db:scrape:aon-rods": "tsx src/cli.ts scrape-aon-rods",
     "db:scrape:aon-staves": "tsx src/cli.ts scrape-aon-staves",
+    "db:scrape:aon-archetypes": "tsx src/cli.ts scrape-aon-archetypes",
     "db:scrape:aon-class-features": "tsx src/cli.ts scrape-aon-class-features",
     "db:scrape:aon-base-class-features": "tsx src/cli.ts scrape-aon-base-class-features",
     "db:scrape:aon-weapons": "tsx src/cli.ts scrape-aon-weapons",
@@ -49,9 +50,9 @@
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^24.5.2",
-    "typescript": "^5.6.3",
     "tsx": "^4.19.2",
-    "vitest": "^2.1.8"
+    "typescript": "^5.6.3",
+    "vitest": "^4.1.10"
   },
   "license": "UNLICENSED"
 }

@@ -16,6 +16,7 @@ export {
 } from "./overrides";
 export {
   AON_BASE_CLASSES,
+  AON_SUPPORTED_ARCHETYPE_CLASSES,
   AON_ARMOR_CATEGORIES,
   AON_MISC_EQUIPMENT_CATEGORIES,
   AON_WEAPON_PROFICIENCIES,
@@ -23,6 +24,8 @@ export {
   AON_ROD_CATEGORIES,
   AON_RACE_CATEGORIES,
   fetchCachedPage,
+  parseAonArchetypeDetail,
+  parseAonArchetypeLinks,
   parseAonClassFeatureDetails,
   parseAonClassFeatureLevels,
   parseAonFeatCategories,
@@ -45,6 +48,7 @@ export {
   refreshCachedAonFeats,
   refreshCachedAonMagicItems,
   refreshCachedAonSpells,
+  scrapeAonArchetypes,
   scrapeAonBaseClassFeatures,
   scrapeAonClassFeatures,
   scrapeAonFeatCatalog,
@@ -58,6 +62,7 @@ export {
   scrapeAonRods,
   scrapeAonSpells,
   scrapeAonStaves,
+  scrapeAonSupportedArchetypes,
   scrapeAonWeapons,
   scrapeAonWondrousItems,
 } from "./scrape";

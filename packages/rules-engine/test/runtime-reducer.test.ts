@@ -47,6 +47,75 @@ describe("runtime reducer + helpers", () => {
     expect(undone?.events).toHaveLength(2);
   });
 
+  it("restores recorded ammo when weapon attack history is reset", () => {
+    let state = createRuntimeStateSnapshot();
+    state = reduceRuntimeState(state, {
+      type: "record-weapon-attack",
+      weaponKey: "rifle#1",
+      weaponName: "Service Rifle",
+      ammoEntries: [
+        { ammoType: "bullets", amount: 1 },
+        { ammoType: "powder charges", amount: 1 },
+      ],
+    });
+    state = reduceRuntimeState(state, {
+      type: "record-weapon-attack",
+      weaponKey: "bow#1",
+      weaponName: "Longbow",
+      ammoType: "arrows",
+      ammoSpentForAttack: 1,
+    });
+    expect(state.ledgers).toMatchObject({
+      bullet: 1,
+      "powder charge": 1,
+      arrow: 1,
+    });
+
+    state = reduceRuntimeState(state, {
+      type: "reset-weapon-attack-history",
+      weaponKey: "rifle#1",
+      weaponName: "Service Rifle",
+    });
+    expect(state.ledgers).toMatchObject({
+      bullet: 0,
+      "powder charge": 0,
+      arrow: 1,
+    });
+    expect(state.histories["rifle#1"]).toEqual([]);
+    expect(state.histories["bow#1"]).toHaveLength(1);
+    expect(state.events[state.events.length - 1]).toMatchObject({
+      kind: "reset-weapon-history",
+      ammoDelta: -2,
+    });
+
+    state = reduceRuntimeState(state, {
+      type: "reset-weapon-attack-history",
+    });
+    expect(state.ledgers.arrow).toBe(0);
+    expect(state.histories).toEqual({});
+  });
+
+  it("caps per-weapon attack history alongside the event log", () => {
+    let runtime = {
+      history: {},
+      events: [],
+      ammoLedger: {},
+    } as Pick<
+      ReturnType<typeof recordWeaponAttack>,
+      "history" | "events" | "ammoLedger"
+    >;
+    for (let index = 0; index < 3; index += 1) {
+      runtime = recordWeaponAttack({
+        ...runtime,
+        weaponKey: "bow#1",
+        weaponName: "Shortbow",
+        eventHistoryLimit: 2,
+      });
+    }
+    expect(runtime.history["bow#1"]).toHaveLength(2);
+    expect(runtime.events).toHaveLength(2);
+  });
+
   it("updates attack notes/outcomes and appends combat events", () => {
     const recorded = recordWeaponAttack({
       history: {},
@@ -123,12 +192,35 @@ describe("runtime reducer + helpers", () => {
     expect(state.collections.wizard?.[1]?.["Mage Armor"]).toBe(1);
     expect(state.ledgers.arrow).toBe(1);
     expect(state.histories["bow#1"]).toHaveLength(1);
-    expect(state.events.some((event) => event.kind === "cast-spell")).toBe(true);
+    expect(state.events.some((event) => event.kind === "cast-spell")).toBe(
+      true,
+    );
     const latestEvent = state.events[state.events.length - 1];
     expect(latestEvent?.kind).toBe("consume-spell-component");
     expect(latestEvent?.itemName).toBe("Scroll of Mage Armor");
     expect(state.flags.fatigued).toBe(true);
     expect(normalizeAmmoType("Arrows")).toBe("arrow");
+    expect(normalizeAmmoType("Shotgun Shells")).toBe("shotgun shell");
+    expect(normalizeAmmoType("Alchemical Gas")).toBe("alchemical gas");
+  });
+
+  it("rejects duplicate spell casts when a stale UI count says slots remain", () => {
+    const cast = {
+      type: "cast-spell" as const,
+      classKey: "wizard",
+      level: 1,
+      max: 1,
+      spellName: "Mage Armor",
+      remaining: 1,
+    };
+    const once = reduceRuntimeState(createRuntimeStateSnapshot(), cast);
+    const twice = reduceRuntimeState(once, cast);
+
+    expect(twice.slotUsage.wizard?.[1]).toBe(1);
+    expect(twice.collections.wizard?.[1]?.["Mage Armor"]).toBe(1);
+    expect(
+      twice.events.filter((event) => event.kind === "cast-spell"),
+    ).toHaveLength(1);
   });
 
   it("auto-consumes one-shot spell effects on tracked weapon attacks", () => {
@@ -170,13 +262,18 @@ describe("runtime reducer + helpers", () => {
       hpDamageResourceId: "hp",
       tempHpResourceId: "tempHp",
       spellAbsorptions: [
-        { effectId: "spell-stoneskin", effectName: "Stoneskin", max: 10 },
+        {
+          effectId: "spell-stoneskin",
+          effectName: "Stoneskin",
+          max: 100,
+          perHitMaximum: 10,
+        },
       ],
     });
     expect(state.resources["spell-stoneskin"]).toBe(10);
     expect(state.resources.tempHp).toBe(2);
     expect(state.resources.hp).toBe(0);
-    expect(state.toggles["spell-stoneskin"]).toBe(false);
+    expect(state.toggles["spell-stoneskin"]).toBe(true);
 
     state = reduceRuntimeState(state, {
       type: "apply-damage",
@@ -198,6 +295,40 @@ describe("runtime reducer + helpers", () => {
     expect(state.events.some((event) => event.kind === "apply-damage")).toBe(
       true,
     );
+  });
+
+  it("only breaks stabilization when damage reaches HP or temporary HP", () => {
+    const protectedState = reduceRuntimeState(
+      createRuntimeStateSnapshot({
+        flags: { stable: true },
+        toggles: { protection: true },
+        resources: { protection: 0, hp: 0 },
+      }),
+      {
+        type: "apply-damage",
+        amount: 5,
+        hpDamageResourceId: "hp",
+        spellAbsorptions: [{ effectId: "protection", max: 10 }],
+      },
+    );
+    expect(protectedState.flags.stable).toBe(true);
+    expect(protectedState.resources.hp).toBe(0);
+
+    const tempHpState = reduceRuntimeState(
+      createRuntimeStateSnapshot({
+        flags: { stable: true },
+        resources: { temp: 5, hp: 0 },
+      }),
+      {
+        type: "apply-damage",
+        amount: 3,
+        hpDamageResourceId: "hp",
+        tempHpResourceId: "temp",
+      },
+    );
+    expect(tempHpState.flags.stable).toBe(false);
+    expect(tempHpState.resources.temp).toBe(2);
+    expect(tempHpState.resources.hp).toBe(0);
   });
 
   it("selects touch AC for firearms within their first range increment", () => {

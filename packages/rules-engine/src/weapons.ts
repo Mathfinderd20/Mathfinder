@@ -1,5 +1,7 @@
+import { ABILITY_LABEL } from "./abilities";
 import { modifiersFor, resolveModifiers } from "./modifiers";
 import type {
+  AbilityKey,
   BreakdownEntry,
   DerivedStat,
   DerivedWeapon,
@@ -10,7 +12,12 @@ import type {
 } from "./types";
 
 /** Strength-to-damage multiplier by handedness. */
-function strDamageFactor(handedness: WeaponHandedness | undefined): number {
+function strengthDamageFactor(
+  strengthModifier: number,
+  handedness: WeaponHandedness | undefined,
+): number {
+  // PF1 only multiplies a Strength bonus. A Strength penalty applies in full.
+  if (strengthModifier < 0) return 1;
   switch (handedness) {
     case "two":
       return 1.5;
@@ -41,8 +48,7 @@ function weaponChoiceKey(weapon: Weapon): string {
  */
 export function deriveWeapons(args: {
   weapons: Weapon[] | undefined;
-  strMod: number;
-  dexMod: number;
+  abilityMods: Record<AbilityKey, number>;
   meleeAttack: DerivedStat;
   rangedAttack: DerivedStat;
   modifiers: Modifier[];
@@ -53,8 +59,7 @@ export function deriveWeapons(args: {
 }): DerivedWeapon[] {
   const {
     weapons,
-    strMod,
-    dexMod,
+    abilityMods,
     meleeAttack,
     rangedAttack,
     modifiers,
@@ -98,30 +103,37 @@ export function deriveWeapons(args: {
     const breakdown: BreakdownEntry[] = [];
 
     // Ability-to-damage: Str for melee by default; ranged adds nothing unless set.
-    const weaponOverrideKey =
-      weapon.weaponTemplateId?.toLowerCase() ?? weapon.name.toLowerCase();
+    const weaponTemplateOverrideKey = weapon.weaponTemplateId?.toLowerCase();
+    const weaponNameOverrideKey = weapon.name.toLowerCase();
     const explicitDamageAbility =
-      weaponDamageAbilityOverrides?.[weaponOverrideKey] ?? weapon.damageAbility;
-    const abilityToDamage =
+      (weaponTemplateOverrideKey
+        ? weaponDamageAbilityOverrides?.[weaponTemplateOverrideKey]
+        : undefined) ??
+      weaponDamageAbilityOverrides?.[weaponNameOverrideKey] ??
+      weapon.damageAbility;
+    const damageAbility =
       explicitDamageAbility === undefined
         ? isMelee
-          ? strMod
+          ? "str"
           : null
-        : explicitDamageAbility === null
-          ? null
-          : explicitDamageAbility === "str"
-            ? strMod
-            : explicitDamageAbility === "dex"
-              ? dexMod
-              : 0;
-    if (abilityToDamage !== null && abilityToDamage !== 0) {
-      const factor = strDamageFactor(weapon.handedness);
+        : explicitDamageAbility;
+    const abilityToDamage =
+      damageAbility === null ? null : abilityMods[damageAbility];
+    if (
+      damageAbility !== null &&
+      abilityToDamage !== null &&
+      abilityToDamage !== 0
+    ) {
+      const factor =
+        damageAbility === "str"
+          ? strengthDamageFactor(abilityToDamage, weapon.handedness)
+          : 1;
       const value = Math.floor(abilityToDamage * factor);
       if (value !== 0) {
-        const abilityLabel =
-          explicitDamageAbility === "dex" ? "Dexterity" : "Strength";
         const label =
-          factor === 1 ? abilityLabel : `${abilityLabel} x${factor}`;
+          factor === 1
+            ? ABILITY_LABEL[damageAbility]
+            : `${ABILITY_LABEL[damageAbility]} x${factor}`;
         breakdown.push({ source: label, type: "ability", value });
       }
     }

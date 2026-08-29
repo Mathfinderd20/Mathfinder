@@ -1,5 +1,5 @@
 import type { ArmorCategory, Condition, LoadBand, Modifier } from "../types";
-import type { ActivatableEffect } from "./activatables";
+import type { ActivatableEffect, ResourcePoolDefinition } from "./activatables";
 
 export interface ClassFeatureContext {
   armorCategory: ArmorCategory;
@@ -28,6 +28,8 @@ export interface ClassFeatureDefinition {
   unavailableReason?: (ctx: ClassFeatureContext) => string;
   /** Optional activated state, e.g. Rage. */
   activatable?: ActivatableEffect;
+  /** Optional always-available tracked pool, e.g. grit or ki. */
+  resourcePool?: ResourcePoolDefinition;
 }
 
 export type ClassFeatureRegistry = Record<string, ClassFeatureDefinition[]>;

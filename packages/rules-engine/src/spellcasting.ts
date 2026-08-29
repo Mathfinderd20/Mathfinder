@@ -8,7 +8,13 @@ import type {
   SpellcastingEntry,
 } from "./types";
 import type { DerivedAbility } from "./types";
-import { SPELLS, classSpellLevel, getSpell } from "./content/spells";
+import { modifiersFor, resolveModifiers } from "./modifiers";
+import {
+  SPELLS,
+  classSpellLevel,
+  getSpell,
+  type SpellRegistry,
+} from "./content/spells";
 
 function stat(total: number): DerivedStat {
   return {
@@ -80,11 +86,58 @@ export function spellSaveDc(
   return 10 + spellLevel + castingAbilityMod;
 }
 
+function deriveSchoolSaveDcBonuses(input: CharacterInput) {
+  const prefix = "spell.dc.school.";
+  const schools = [
+    ...new Set(
+      input.modifiers
+        .map((modifier) => modifier.target.toString().toLowerCase())
+        .filter((target) => target.startsWith(prefix))
+        .map((target) => target.slice(prefix.length))
+        .filter(Boolean),
+    ),
+  ];
+  return Object.fromEntries(
+    schools.map((school) => {
+      const resolved = resolveModifiers(
+        modifiersFor(input.modifiers, `${prefix}${school}`),
+      );
+      return [
+        school,
+        {
+          total: resolved.total,
+          breakdown: resolved.contributing.map((modifier) => ({
+            source: modifier.source,
+            type: modifier.type,
+            value: modifier.value,
+          })),
+        },
+      ];
+    }),
+  );
+}
+
+export function spellSaveDcForSchool(
+  spellcasting: DerivedSpellcasting,
+  spellLevel: number,
+  school: string | undefined,
+): number | undefined {
+  const baseDc = spellcasting.spellSaveDcs[spellLevel];
+  if (baseDc === undefined) return undefined;
+  const schoolBonus = school
+    ? (spellcasting.spellSaveDcBonusesBySchool[school.trim().toLowerCase()]
+        ?.total ?? 0)
+    : 0;
+  return baseDc + schoolBonus;
+}
+
 export function deriveSpellcasting(
   input: CharacterInput,
   abilities: Record<AbilityKey, DerivedAbility>,
+  spellRegistry: SpellRegistry = SPELLS,
 ): DerivedSpellcasting[] {
   const entries = input.spellcasting ?? [];
+  const spellSaveDcBonusesBySchool = deriveSchoolSaveDcBonuses(input);
   return entries.map((entry: SpellcastingEntry) => {
     const ability = abilities[entry.castingAbility];
     const abilityScore = ability.score;
@@ -146,7 +199,7 @@ export function deriveSpellcasting(
 
     for (let level = 0; level <= highestTrackedLevel; level += 1) {
       const selected = selectionSource[level] ?? [];
-      const availableSpellNames = Object.values(SPELLS)
+      const availableSpellNames = Object.values(spellRegistry)
         .filter((spell) => classSpellLevel(spell, entry.className) === level)
         .map((spell) => spell.name)
         .sort((a, b) => a.localeCompare(b));
@@ -160,7 +213,7 @@ export function deriveSpellcasting(
       const wrongLevelSpells: { name: string; actualLevel: number }[] = [];
       const missingFromLibrary: string[] = [];
       for (const name of selected) {
-        const spell = getSpell(SPELLS, name);
+        const spell = getSpell(spellRegistry, name);
         if (!spell) {
           unknownSpells.push(name);
           continue;
@@ -255,6 +308,7 @@ export function deriveSpellcasting(
       slotsUsed,
       slotsRemaining,
       spellSaveDcs,
+      spellSaveDcBonusesBySchool,
       maxSpellLevel: highestTrackedLevel,
     };
   });

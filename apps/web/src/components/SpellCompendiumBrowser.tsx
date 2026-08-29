@@ -93,6 +93,7 @@ export function SpellCompendiumBrowser({
   onAppendSelection,
 }: Props) {
   const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [levelFilter, setLevelFilter] = useState<number | null>(
     levels[0] ?? null,
   );
@@ -142,17 +143,19 @@ export function SpellCompendiumBrowser({
         level: levelFilter,
         tag: tagFilter,
         school: schoolFilter,
-        query,
-      }).filter((option) =>
-        supportFilter ? option.supportTag === supportFilter : true,
-      ).sort((a, b) =>
-        compareSpellBrowserOptions(a, b, sortMode, classKey, className),
-      ),
+        query: debouncedQuery,
+      })
+        .filter((option) =>
+          supportFilter ? option.supportTag === supportFilter : true,
+        )
+        .sort((a, b) =>
+          compareSpellBrowserOptions(a, b, sortMode, classKey, className),
+        ),
     [
       classKey,
       className,
       levelFilter,
-      query,
+      debouncedQuery,
       schoolFilter,
       sortMode,
       spellOptions,
@@ -166,8 +169,21 @@ export function SpellCompendiumBrowser({
   );
 
   useEffect(() => {
+    const timeout = window.setTimeout(() => setDebouncedQuery(query), 100);
+    return () => window.clearTimeout(timeout);
+  }, [query]);
+
+  useEffect(() => {
     setVisibleCount(24);
-  }, [query, levelFilter, tagFilter, schoolFilter, supportFilter, sortMode, classKey]);
+  }, [
+    debouncedQuery,
+    levelFilter,
+    tagFilter,
+    schoolFilter,
+    supportFilter,
+    sortMode,
+    classKey,
+  ]);
 
   return (
     <div className="item-card nested spell-browser-card">
@@ -194,6 +210,7 @@ export function SpellCompendiumBrowser({
           className="ghost small"
           onClick={() => {
             setQuery("");
+            setDebouncedQuery("");
             setLevelFilter(levels[0] ?? null);
             setTagFilter(null);
             setSchoolFilter(null);
@@ -345,7 +362,9 @@ export function SpellCompendiumBrowser({
                   {option.metaTag}
                 </div>
               ) : null}
-              {browseBadges.length > 0 || option.sourceTag || option.supportSummary ? (
+              {browseBadges.length > 0 ||
+              option.sourceTag ||
+              option.supportSummary ? (
                 <div className="spell-chip-list readonly">
                   {browseBadges.map((tag) => (
                     <span key={`${option.id}-${tag}`} className="chip">
@@ -359,7 +378,9 @@ export function SpellCompendiumBrowser({
                 </div>
               ) : null}
               {option.supportSummary ? (
-                <p className="hint spell-browser-desc">{option.supportSummary}</p>
+                <p className="hint spell-browser-desc">
+                  {option.supportSummary}
+                </p>
               ) : null}
               {option.spell?.description ? (
                 <p className="hint spell-browser-desc">
@@ -370,7 +391,7 @@ export function SpellCompendiumBrowser({
               <div className="resource-buttons wrap">
                 {option.sourceUrl ? (
                   <a
-                    className="ghost small"
+                    className="ghost small spell-source-link"
                     href={option.sourceUrl}
                     target="_blank"
                     rel="noreferrer"

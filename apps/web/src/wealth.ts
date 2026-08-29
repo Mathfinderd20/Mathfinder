@@ -27,7 +27,9 @@ function ownedItem(item: NonNullable<CharacterBuild["equipment"]>[number]) {
   return (item.ownership ?? "owned") === "owned";
 }
 
-export function normalizeCoinPurse(coinPurse: CoinPurse | undefined): Required<CoinPurse> {
+export function normalizeCoinPurse(
+  coinPurse: CoinPurse | undefined,
+): Required<CoinPurse> {
   return {
     pp: wholeCount(coinPurse?.pp),
     gp: wholeCount(coinPurse?.gp),
@@ -38,7 +40,12 @@ export function normalizeCoinPurse(coinPurse: CoinPurse | undefined): Required<C
 
 export function coinPurseToCopper(coinPurse: CoinPurse | undefined) {
   const normalized = normalizeCoinPurse(coinPurse);
-  return normalized.pp * 1000 + normalized.gp * 100 + normalized.sp * 10 + normalized.cp;
+  return (
+    normalized.pp * 1000 +
+    normalized.gp * 100 +
+    normalized.sp * 10 +
+    normalized.cp
+  );
 }
 
 export function copperToCoinPurse(totalCopper: number): Required<CoinPurse> {
@@ -56,13 +63,19 @@ export function gpToCopper(valueGp: number) {
   return Math.max(0, Math.round(valueGp * 100));
 }
 
-export function spendCoinPurse(coinPurse: CoinPurse | undefined, valueGp: number) {
+export function spendCoinPurse(
+  coinPurse: CoinPurse | undefined,
+  valueGp: number,
+) {
   const nextCopper = coinPurseToCopper(coinPurse) - gpToCopper(valueGp);
   if (nextCopper < 0) return null;
   return copperToCoinPurse(nextCopper);
 }
 
-export function addCoinPurseValue(coinPurse: CoinPurse | undefined, valueGp: number) {
+export function addCoinPurseValue(
+  coinPurse: CoinPurse | undefined,
+  valueGp: number,
+) {
   return copperToCoinPurse(coinPurseToCopper(coinPurse) + gpToCopper(valueGp));
 }
 

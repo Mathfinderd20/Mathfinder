@@ -93,10 +93,28 @@ npm run content:db:init
 npm run content:db:seed-local
 npm run db:scrape:aon-spells --workspace @mathfinder/content-db
 npm run db:scrape:aon-feats --workspace @mathfinder/content-db
+npm run db:scrape:aon-archetypes --workspace @mathfinder/content-db
+# Optional single-class refresh:
+npm run db:scrape:aon-archetypes --workspace @mathfinder/content-db -- Fighter
 npm run db:export:usable-json --workspace @mathfinder/content-db -- ../../apps/web/public/usable-content.json
 ```
 
 Most people should prefer the root `content:*` commands so the export target stays consistent.
+
+## Why the PF1 scraper does not use AoN Elasticsearch
+
+AoN's public Elasticsearch service was evaluated as a possible replacement for page-by-page ingestion. It is faster and more structured, but it serves the PF2e site rather than Mathfinder's PF1 source corpus.
+
+Evidence captured during the evaluation:
+
+- `GET https://elasticsearch.aonprd.com/aon/_count` reported 45,405 documents.
+- Representative records use PF2e shapes such as `action-1`, `/Actions.aspx?ID=1`, and `/Archetypes.aspx?ID=1`.
+- The index exposes useful structured fields including `id`, `category`, `markdown`, `text`, `primary_source`, `source_raw`, and `url`.
+- Searches for PF1 page shapes (`ArchetypeDisplay.aspx`, `FeatDisplay.aspx`, and `SpellDisplay.aspx`) returned zero records.
+- Searches for PF1-only combat terminology (`combat maneuver bonus`, `CMB`, and `CMD`) returned zero records.
+- Anonymous `_search` and `_count` access work, but mapping metadata is forbidden and the normal 10,000-result window applies.
+
+Decision: retain the cached `www.aonprd.com` HTML pipeline as the authoritative PF1 ingestion path. Do not add Elasticsearch as a second discovery path: without PF1 records it would add complexity without capability, violating YAGNI with unusual enthusiasm.
 
 ## Runtime contract
 

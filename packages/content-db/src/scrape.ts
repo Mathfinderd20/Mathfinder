@@ -2,6 +2,7 @@ import type Database from "better-sqlite3";
 import { load } from "cheerio";
 import { fetch } from "undici";
 import type {
+  ParsedScrapedArchetype,
   ParsedScrapedArmor,
   ParsedScrapedClassFeature,
   ParsedScrapedGear,
@@ -17,6 +18,30 @@ import {
 } from "./overrides";
 
 const AON_BASE = "https://www.aonprd.com/";
+const AON_USER_AGENT =
+  "MathfinderContentBot/0.1 (+https://github.com/adammartin2500-ship-it/Mathfinder; cached rules-data ingestion)";
+const AON_REQUEST_TIMEOUT_MS = 20_000;
+const AON_MIN_REQUEST_INTERVAL_MS = 250;
+const AON_MAX_FETCH_ATTEMPTS = 3;
+let lastAonRequestAt = 0;
+
+function wait(milliseconds: number) {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
+export const AON_SUPPORTED_ARCHETYPE_CLASSES = [
+  "Barbarian",
+  "Bard",
+  "Cleric",
+  "Druid",
+  "Fighter",
+  "Inquisitor",
+  "Paladin",
+  "Ranger",
+  "Rogue",
+  "Sorcerer",
+  "Wizard",
+] as const;
 
 export const AON_BASE_CLASSES = [
   "Alchemist",
@@ -164,6 +189,7 @@ type GearListEntry = NamedLink & {
 type ScrapeKind =
   | "spell"
   | "feat"
+  | "archetype"
   | "magic-item"
   | "class-feature"
   | "weapon"
@@ -351,13 +377,44 @@ export async function fetchCachedPage(
   const cached = db
     .prepare("SELECT html, status_code FROM page_cache WHERE url = ?")
     .get(url) as { html: string; status_code: number } | undefined;
-  if (cached) return cached;
-  const response = await fetch(url);
-  const html = await response.text();
-  db.prepare(
-    "INSERT OR REPLACE INTO page_cache (url, source, status_code, fetched_at, html) VALUES (?, ?, ?, ?, ?)",
-  ).run(url, source, response.status, new Date().toISOString(), html);
-  return { html, status_code: response.status };
+  if (
+    cached?.status_code &&
+    cached.status_code >= 200 &&
+    cached.status_code < 300
+  )
+    return cached;
+
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= AON_MAX_FETCH_ATTEMPTS; attempt += 1) {
+    const throttleDelay = Math.max(
+      0,
+      AON_MIN_REQUEST_INTERVAL_MS - (Date.now() - lastAonRequestAt),
+    );
+    if (throttleDelay > 0) await wait(throttleDelay);
+    lastAonRequestAt = Date.now();
+    try {
+      const response = await fetch(url, {
+        headers: { "user-agent": AON_USER_AGENT, accept: "text/html" },
+        signal: AbortSignal.timeout(AON_REQUEST_TIMEOUT_MS),
+      });
+      const html = await response.text();
+      db.prepare(
+        "INSERT OR REPLACE INTO page_cache (url, source, status_code, fetched_at, html) VALUES (?, ?, ?, ?, ?)",
+      ).run(url, source, response.status, new Date().toISOString(), html);
+      if (response.status >= 200 && response.status < 300)
+        return { html, status_code: response.status };
+      lastError = new Error(
+        `AoN request failed (${response.status}) for ${url}`,
+      );
+      if (response.status < 500 && response.status !== 429) break;
+    } catch (error) {
+      lastError = error;
+    }
+    if (attempt < AON_MAX_FETCH_ATTEMPTS) await wait(500 * 2 ** (attempt - 1));
+  }
+  throw lastError instanceof Error
+    ? lastError
+    : new Error(`AoN request failed for ${url}`);
 }
 
 function parseLinksByPrefix(html: string, hrefPrefix: string) {
@@ -741,6 +798,49 @@ function raceLabelValue(
   return normalizeFieldText(bits.join(" "))?.replace(/^:\s*/, "");
 }
 
+function parseAonFavoredClassBonuses(
+  $: ReturnType<typeof load>,
+  block: ReturnType<typeof detailBlock>["block"],
+) {
+  const heading = block
+    .find("h1.title")
+    .filter((_, element) => /Favored Class Options/i.test($(element).text()))
+    .first();
+  if (!heading.length) return [];
+  const bonuses: NonNullable<ParsedScrapedRace["favoredClassBonuses"]> = [];
+  let node = heading.get(0)?.nextSibling ?? null;
+  let currentClass: string | undefined;
+  let descriptionParts: string[] = [];
+  let sources: string[] = [];
+  const flush = () => {
+    const description = cleanText(descriptionParts.join(" ")).replace(
+      /^\W*:\s*/,
+      "",
+    );
+    if (currentClass && description)
+      bonuses.push({ className: currentClass, description, sources });
+    descriptionParts = [];
+    sources = [];
+  };
+  while (node) {
+    if (nodeTagName(node) === "h1") break;
+    if (nodeTagName(node) === "b") {
+      flush();
+      const parsedClass = cleanText($(node).text());
+      currentClass = parsedClass === "Kinetcist" ? "Kineticist" : parsedClass;
+    } else if (currentClass && nodeTagName(node) === "a") {
+      const source = cleanText($(node).text());
+      if (source) sources.push(source);
+    } else if (currentClass && nodeTagName(node) !== "br") {
+      const text = cleanText($(node).text());
+      if (text && !/^\s*[,()]\s*$/.test(text)) descriptionParts.push(text);
+    }
+    node = node.nextSibling;
+  }
+  flush();
+  return bonuses;
+}
+
 export function parseAonRaceDetail(
   html: string,
   sourceUrl: string,
@@ -794,6 +894,7 @@ export function parseAonRaceDetail(
       ? `${speedLabel}${speedValue ? `: ${speedValue}` : ""}`
       : undefined,
     languages: raceLabelValue($, block, "Languages"),
+    favoredClassBonuses: parseAonFavoredClassBonuses($, block),
     traitEntries: coreTraitLabels
       .filter(
         (label) =>
@@ -1262,6 +1363,155 @@ export function parseAonWeaponDetail(
   };
 }
 
+export function parseAonArchetypeLinks(html: string) {
+  const $ = load(html);
+  const links = new Map<
+    string,
+    NamedLink & { replacementText?: string; description?: string }
+  >();
+  $("a[href^='ArchetypeDisplay.aspx?FixedName=']").each((_, element) => {
+    const href = $(element).attr("href");
+    const name = cleanText($(element).text());
+    if (!href || !name) return;
+    const cells = $(element).closest("tr").find("td").toArray();
+    links.set(absoluteUrl(href), {
+      name,
+      url: absoluteUrl(href),
+      replacementText: cells[1] ? cleanText($(cells[1]).text()) : undefined,
+      description: cells[2] ? cleanText($(cells[2]).text()) : undefined,
+    });
+  });
+  return [...links.values()];
+}
+
+function archetypeFeatureLevel(text: string) {
+  const match = text.match(
+    /(?:at|starting at|beginning at|upon reaching)\s+(\d+)(?:st|nd|rd|th)\s+level|\b(\d+)(?:st|nd|rd|th)-level/i,
+  );
+  const level = Number(match?.[1] ?? match?.[2]);
+  return Number.isInteger(level) && level > 0 ? level : undefined;
+}
+
+function archetypeFeatureChanges(text: string, verb: "replaces" | "alters") {
+  const changes: string[] = [];
+  const pattern = new RegExp(`\\b${verb}\\s+([^.]*)`, "gi");
+  for (const match of text.matchAll(pattern)) {
+    const raw = cleanText(match[1] ?? "")
+      .replace(/\bclass features?$/i, "")
+      .replace(/^the\s+/i, "")
+      .trim();
+    for (const item of raw.split(/\s*;\s*|\s*,\s*(?=[A-Za-z])|\s+and\s+/i)) {
+      const normalized = cleanText(item).replace(/[,:;]+$/, "");
+      if (
+        normalized &&
+        !changes.some(
+          (entry) => entry.toLowerCase() === normalized.toLowerCase(),
+        )
+      )
+        changes.push(normalized);
+    }
+  }
+  return changes;
+}
+
+export function parseAonArchetypeDetail(
+  html: string,
+  sourceUrl: string,
+  baseClassName: string,
+  indexDescription?: string,
+  indexReplacementText?: string,
+): ParsedScrapedArchetype {
+  const { $, block } = detailBlock(html);
+  const container = block.find("span").first().length
+    ? block.find("span").first()
+    : block;
+  const nodes = container.contents().toArray();
+  const name = cleanText(container.find("h1.title").first().text());
+  const sourceNodeIndex = nodes.findIndex(
+    (node) =>
+      nodeTagName(node) === "b" && cleanText($(node).text()) === "Source",
+  );
+  let source: string | undefined;
+  let firstFeatureIndex = -1;
+  let descriptionHtml = "";
+  let passedSourceBreak = sourceNodeIndex < 0;
+  for (let index = sourceNodeIndex + 1; index < nodes.length; index += 1) {
+    const node = nodes[index];
+    if (!node) continue;
+    const tag = nodeTagName(node);
+    if (!source && tag === "a") source = cleanText($(node).text()) || undefined;
+    if (tag === "br") {
+      passedSourceBreak = true;
+      continue;
+    }
+    if (tag === "b") {
+      firstFeatureIndex = index;
+      break;
+    }
+    if (passedSourceBreak && tag !== "h1")
+      descriptionHtml += $.html(node) ?? "";
+  }
+  const description =
+    cleanText(load(`<div>${descriptionHtml}</div>`).text()) ||
+    cleanText(indexDescription ?? "") ||
+    `${name} is a ${baseClassName} archetype.`;
+  const features: ParsedScrapedArchetype["features"] = [];
+  for (
+    let index = Math.max(firstFeatureIndex, 0);
+    index < nodes.length;
+    index += 1
+  ) {
+    const node = nodes[index];
+    if (!node || nodeTagName(node) !== "b") continue;
+    const rawTitle = cleanText($(node).text());
+    if (!rawTitle || rawTitle === "Source") continue;
+    let chunk = "";
+    for (let cursor = index + 1; cursor < nodes.length; cursor += 1) {
+      const nextNode = nodes[cursor];
+      if (!nextNode || nodeTagName(nextNode) === "b") break;
+      chunk += $.html(nextNode) ?? "";
+    }
+    const summary = cleanText(load(`<div>${chunk}</div>`).text()).replace(
+      /^:\s*/,
+      "",
+    );
+    const titleMatch = rawTitle.match(/^(.*?)(?:\s+\(([^)]+)\))?$/);
+    const featureName = cleanText(titleMatch?.[1] ?? rawTitle);
+    if (!featureName || !summary) continue;
+    features.push({
+      name: featureName,
+      featureType: titleMatch?.[2],
+      level: archetypeFeatureLevel(summary),
+      summary,
+    });
+  }
+  const allFeatureText = features.map((feature) => feature.summary).join(" ");
+  const indexReplaces = cleanText(indexReplacementText ?? "")
+    .split(/\s*;\s*/)
+    .filter(Boolean);
+  const replaces = (
+    indexReplaces.length
+      ? indexReplaces
+      : archetypeFeatureChanges(allFeatureText, "replaces")
+  ).filter(
+    (item, index, values) =>
+      values.findIndex(
+        (candidate) => candidate.toLowerCase() === item.toLowerCase(),
+      ) === index,
+  );
+  const alters = archetypeFeatureChanges(allFeatureText, "alters");
+  return {
+    name,
+    baseClassName,
+    source,
+    description,
+    replaces: replaces.length ? replaces : undefined,
+    alters: alters.length ? alters : undefined,
+    features,
+    sourceUrl,
+  };
+}
+
 export function parseAonClassFeatureLevels(html: string) {
   const { $, block } = detailBlock(html);
   const rows = block.find("table").first().find("tr").toArray();
@@ -1666,7 +1916,12 @@ export async function scrapeAonRaces(
       const detail = await fetchCachedPage(db, "aonprd", link.url);
       const parsed = parseAonRaceDetail(detail.html, link.url, category);
       const merged = { ...parsed, name: link.name || parsed.name, category };
-      if (!merged.name || !merged.size || !merged.speedText) continue;
+      if (
+        !merged.name ||
+        ((!merged.size || !merged.speedText) &&
+          !merged.favoredClassBonuses?.length)
+      )
+        continue;
       insertScrapedEntity(db, "race", merged.name, merged.sourceUrl, merged);
     }
     finishIngestionRun(db, run.lastInsertRowid, "completed", {
@@ -1927,6 +2182,58 @@ export async function refreshCachedAonClassFeatures(
     });
     throw error;
   }
+}
+
+export async function scrapeAonArchetypes(
+  db: Database.Database,
+  className = "Fighter",
+) {
+  const run = beginIngestionRun(db, "archetype", { className });
+  try {
+    const indexUrl = `${AON_BASE}Archetypes.aspx?Class=${encodeURIComponent(className)}`;
+    const { html } = await fetchCachedPage(db, "aonprd", indexUrl);
+    const links = parseAonArchetypeLinks(html);
+    for (const link of links) {
+      const detail = await fetchCachedPage(db, "aonprd", link.url);
+      const parsed = parseAonArchetypeDetail(
+        detail.html,
+        link.url,
+        className,
+        link.description,
+        link.replacementText,
+      );
+      upsertScrapedEntity(
+        db,
+        "archetype",
+        `scrape-aon-${slug(className)}-${slug(parsed.name)}`,
+        parsed.name,
+        parsed.sourceUrl,
+        parsed,
+      );
+    }
+    finishIngestionRun(db, run.lastInsertRowid, "completed", {
+      className,
+      imported: links.length,
+    });
+    return links.length;
+  } catch (error) {
+    finishIngestionRun(db, run.lastInsertRowid, "failed", {
+      className,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    throw error;
+  }
+}
+
+export async function scrapeAonSupportedArchetypes(db: Database.Database) {
+  const results: Record<string, number> = {};
+  let total = 0;
+  for (const className of AON_SUPPORTED_ARCHETYPE_CLASSES) {
+    const imported = await scrapeAonArchetypes(db, className);
+    results[className] = imported;
+    total += imported;
+  }
+  return { total, results };
 }
 
 export async function scrapeAonClassFeatures(

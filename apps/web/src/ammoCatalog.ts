@@ -19,16 +19,76 @@ export interface AmmoCatalogEntry {
 }
 
 const AMMO_CATALOG: AmmoCatalogEntry[] = [
-  { ammoType: "arrow", name: "Arrows", defaultQuantity: 20, costGp: 1, weightLb: 3 },
-  { ammoType: "bolt", name: "Bolts", defaultQuantity: 10, costGp: 1, weightLb: 1 },
-  { ammoType: "bullet", name: "Bullets", defaultQuantity: 10, costGp: 100, weightLb: 1 },
-  { ammoType: "handgun round", name: "Handgun Ammunition", defaultQuantity: 50, costGp: 500, weightLb: 5 },
-  { ammoType: "rifle round", name: "Rifle Ammunition", defaultQuantity: 50, costGp: 750, weightLb: 8 },
-  { ammoType: "belted rifle round", name: "Belted Rifle Ammunition", defaultQuantity: 50, costGp: 750.5, weightLb: 8 },
-  { ammoType: "shotgun shell", name: "Shotgun Shells", defaultQuantity: 50, costGp: 750, weightLb: 8 },
-  { ammoType: "large caliber round", name: "Large Caliber Ammunition", defaultQuantity: 50, costGp: 1500, weightLb: 12 },
-  { ammoType: "belted large caliber round", name: "Belted Large Caliber Ammunition", defaultQuantity: 50, costGp: 1500.5, weightLb: 12 },
-  { ammoType: "autocannon round", name: "Autocannon Ammunition", defaultQuantity: 10, costGp: 600, weightLb: 10 },
+  {
+    ammoType: "arrow",
+    name: "Arrows",
+    defaultQuantity: 20,
+    costGp: 1,
+    weightLb: 3,
+  },
+  {
+    ammoType: "bolt",
+    name: "Bolts",
+    defaultQuantity: 10,
+    costGp: 1,
+    weightLb: 1,
+  },
+  {
+    ammoType: "bullet",
+    name: "Bullets",
+    defaultQuantity: 10,
+    costGp: 100,
+    weightLb: 1,
+  },
+  {
+    ammoType: "handgun round",
+    name: "Handgun Ammunition",
+    defaultQuantity: 50,
+    costGp: 500,
+    weightLb: 5,
+  },
+  {
+    ammoType: "rifle round",
+    name: "Rifle Ammunition",
+    defaultQuantity: 50,
+    costGp: 750,
+    weightLb: 8,
+  },
+  {
+    ammoType: "belted rifle round",
+    name: "Belted Rifle Ammunition",
+    defaultQuantity: 50,
+    costGp: 750.5,
+    weightLb: 8,
+  },
+  {
+    ammoType: "shotgun shell",
+    name: "Shotgun Shells",
+    defaultQuantity: 50,
+    costGp: 750,
+    weightLb: 8,
+  },
+  {
+    ammoType: "large caliber round",
+    name: "Large Caliber Ammunition",
+    defaultQuantity: 50,
+    costGp: 1500,
+    weightLb: 12,
+  },
+  {
+    ammoType: "belted large caliber round",
+    name: "Belted Large Caliber Ammunition",
+    defaultQuantity: 50,
+    costGp: 1500.5,
+    weightLb: 12,
+  },
+  {
+    ammoType: "autocannon round",
+    name: "Autocannon Ammunition",
+    defaultQuantity: 10,
+    costGp: 600,
+    weightLb: 10,
+  },
   {
     ammoType: "common tranq round",
     name: "Common Tranq Rounds",
@@ -53,7 +113,11 @@ const AMMO_CATALOG: AmmoCatalogEntry[] = [
     defaultQuantity: 50,
     costGp: 3000,
     weightLb: 5,
-    compatibleBaseTypes: ["handgun round", "rifle round", "large caliber round"],
+    compatibleBaseTypes: [
+      "handgun round",
+      "rifle round",
+      "large caliber round",
+    ],
     notes: ["Ignore object hardness less than 20"],
   },
   {
@@ -62,7 +126,11 @@ const AMMO_CATALOG: AmmoCatalogEntry[] = [
     defaultQuantity: 5,
     costGp: 1500,
     weightLb: 1,
-    compatibleBaseTypes: ["handgun round", "rifle round", "large caliber round"],
+    compatibleBaseTypes: [
+      "handgun round",
+      "rifle round",
+      "large caliber round",
+    ],
     notes: ["Hit causes bleed 1 until healed"],
   },
   {
@@ -71,7 +139,11 @@ const AMMO_CATALOG: AmmoCatalogEntry[] = [
     defaultQuantity: 50,
     costGp: 2,
     weightLb: 5,
-    compatibleBaseTypes: ["handgun round", "rifle round", "large caliber round"],
+    compatibleBaseTypes: [
+      "handgun round",
+      "rifle round",
+      "large caliber round",
+    ],
     rangeIncrementBonusFeet: 10,
     notes: ["-1 damage per range increment, minimum 1"],
   },
@@ -92,7 +164,12 @@ const AMMO_CATALOG: AmmoCatalogEntry[] = [
     defaultQuantity: 5,
     costGp: 500,
     weightLb: 1,
-    compatibleBaseTypes: ["handgun round", "rifle round", "large caliber round", "shotgun shell"],
+    compatibleBaseTypes: [
+      "handgun round",
+      "rifle round",
+      "large caliber round",
+      "shotgun shell",
+    ],
     attackModifier: -1,
     extraDamageDice: ["1d6 fire"],
   },
@@ -112,8 +189,16 @@ const AMMO_CATALOG: AmmoCatalogEntry[] = [
     defaultQuantity: 50,
     costGp: 750,
     weightLb: 5,
-    compatibleBaseTypes: ["handgun round", "rifle round", "large caliber round", "arrow", "bolt"],
-    notes: ["Wounded target suffers 20% arcane spell failure until projectile removed"],
+    compatibleBaseTypes: [
+      "handgun round",
+      "rifle round",
+      "large caliber round",
+      "arrow",
+      "bolt",
+    ],
+    notes: [
+      "Wounded target suffers 20% arcane spell failure until projectile removed",
+    ],
   },
   {
     ammoType: "tracer round",
@@ -121,10 +206,23 @@ const AMMO_CATALOG: AmmoCatalogEntry[] = [
     defaultQuantity: 50,
     costGp: 25,
     weightLb: 5,
-    compatibleBaseTypes: ["belted rifle round", "belted large caliber round", "rifle round", "large caliber round"],
-    notes: ["Automatic fire penalty reduced by 1 when at least 1 in 5 shots are tracers"],
+    compatibleBaseTypes: [
+      "belted rifle round",
+      "belted large caliber round",
+      "rifle round",
+      "large caliber round",
+    ],
+    notes: [
+      "Automatic fire penalty reduced by 1 when at least 1 in 5 shots are tracers",
+    ],
   },
-  { ammoType: "grenade sabot", name: "Grenade Sabots", defaultQuantity: 5, costGp: 50, weightLb: 5 },
+  {
+    ammoType: "grenade sabot",
+    name: "Grenade Sabots",
+    defaultQuantity: 5,
+    costGp: 50,
+    weightLb: 5,
+  },
   {
     ammoType: "flashbang grenade",
     name: "Flashbang Grenades",
@@ -133,7 +231,12 @@ const AMMO_CATALOG: AmmoCatalogEntry[] = [
     weightLb: 3,
     compatibleBaseTypes: ["grenade sabot"],
     consumeWithBase: true,
-    ordnanceProfile: { saveDc: 18, saveType: "ref", area: "10-ft radius", notes: ["Stunned 1d4 rounds"] },
+    ordnanceProfile: {
+      saveDc: 18,
+      saveType: "ref",
+      area: "10-ft radius",
+      notes: ["Stunned 1d4 rounds"],
+    },
   },
   {
     ammoType: "fragmentation grenade",
@@ -144,7 +247,12 @@ const AMMO_CATALOG: AmmoCatalogEntry[] = [
     compatibleBaseTypes: ["grenade sabot"],
     consumeWithBase: true,
     extraDamageDice: ["4d6 bludgeoning and piercing"],
-    ordnanceProfile: { saveDc: 18, saveType: "ref", area: "5-ft radius", directHitEffect: "Direct target gets no initial save when launched" },
+    ordnanceProfile: {
+      saveDc: 18,
+      saveType: "ref",
+      area: "5-ft radius",
+      directHitEffect: "Direct target gets no initial save when launched",
+    },
   },
   {
     ammoType: "gas grenade",
@@ -154,7 +262,13 @@ const AMMO_CATALOG: AmmoCatalogEntry[] = [
     weightLb: 3,
     compatibleBaseTypes: ["grenade sabot"],
     consumeWithBase: true,
-    ordnanceProfile: { saveDc: 18, saveType: "fort", area: "10-ft radius", duration: "1d6 rounds", notes: ["Fog cloud", "Breathers are sickened on failed Fort save"] },
+    ordnanceProfile: {
+      saveDc: 18,
+      saveType: "fort",
+      area: "10-ft radius",
+      duration: "1d6 rounds",
+      notes: ["Fog cloud", "Breathers are sickened on failed Fort save"],
+    },
   },
   {
     ammoType: "incendiary grenade",
@@ -165,7 +279,13 @@ const AMMO_CATALOG: AmmoCatalogEntry[] = [
     compatibleBaseTypes: ["grenade sabot"],
     consumeWithBase: true,
     extraDamageDice: ["6d6 fire"],
-    ordnanceProfile: { saveDc: 18, saveType: "ref", area: "5-ft square", duration: "1d6 rounds", directHitEffect: "Direct target gets no initial save when launched" },
+    ordnanceProfile: {
+      saveDc: 18,
+      saveType: "ref",
+      area: "5-ft square",
+      duration: "1d6 rounds",
+      directHitEffect: "Direct target gets no initial save when launched",
+    },
   },
   {
     ammoType: "smoke grenade",
@@ -175,9 +295,19 @@ const AMMO_CATALOG: AmmoCatalogEntry[] = [
     weightLb: 3,
     compatibleBaseTypes: ["grenade sabot"],
     consumeWithBase: true,
-    ordnanceProfile: { area: "10-ft radius", duration: "10 minutes", notes: ["Fog cloud"] },
+    ordnanceProfile: {
+      area: "10-ft radius",
+      duration: "10 minutes",
+      notes: ["Fog cloud"],
+    },
   },
-  { ammoType: "mortar shell", name: "Mortar Shells", defaultQuantity: 1, costGp: 3600, weightLb: 6 },
+  {
+    ammoType: "mortar shell",
+    name: "Mortar Shells",
+    defaultQuantity: 1,
+    costGp: 3600,
+    weightLb: 6,
+  },
   {
     ammoType: "ap mortar shell",
     name: "AP Mortar Shells",
@@ -222,7 +352,11 @@ const AMMO_CATALOG: AmmoCatalogEntry[] = [
   },
 ];
 
-const AMMO_BY_TYPE = new Map(AMMO_CATALOG.map((entry) => [normalizeAmmoType(entry.ammoType), entry] as const));
+const AMMO_BY_TYPE = new Map(
+  AMMO_CATALOG.map(
+    (entry) => [normalizeAmmoType(entry.ammoType), entry] as const,
+  ),
+);
 
 export const AMMO_CATALOG_ENTRIES = [...AMMO_CATALOG];
 
@@ -244,7 +378,10 @@ export function ammoStackName(ammoType: string) {
   return ammoCatalogEntry(ammoType)?.name ?? fallbackAmmoName(ammoType);
 }
 export function defaultAmmoStackQuantity(ammoType: string) {
-  return ammoCatalogEntry(ammoType)?.defaultQuantity ?? fallbackAmmoQuantity(ammoType);
+  return (
+    ammoCatalogEntry(ammoType)?.defaultQuantity ??
+    fallbackAmmoQuantity(ammoType)
+  );
 }
 export function ammoStackCostGp(ammoType: string) {
   return ammoCatalogEntry(ammoType)?.costGp ?? 0;
@@ -255,7 +392,12 @@ export function ammoStackWeightLb(ammoType: string) {
 
 function fallbackAmmoName(ammoType: string) {
   const normalized = normalizeAmmoType(ammoType);
-  return normalized.split(" ").map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(" ") + "s";
+  return (
+    normalized
+      .split(" ")
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(" ") + "s"
+  );
 }
 function fallbackAmmoQuantity(ammoType: string) {
   const normalized = normalizeAmmoType(ammoType);

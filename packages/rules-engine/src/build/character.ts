@@ -1,6 +1,9 @@
 import { abilityModifier } from "../abilities";
 import { computeSheet } from "../compute";
-import { effectiveWeaponProficiencyGroup } from "../campaign-rules";
+import {
+  effectiveWeaponProficiencyGroup,
+  infantrymanGunTrainingPickCount,
+} from "../campaign-rules";
 import type {
   AbilityKey,
   AbilityScores,
@@ -22,6 +25,7 @@ import type {
 import {
   babForLevels,
   checkClassPrerequisites,
+  classAllowsAlignment,
   getClassDefinition,
   saveBaseForClass,
   SAMPLE_CLASSES,
@@ -33,6 +37,7 @@ import {
   checkPrerequisites,
   featContextFromSheet,
   featEffects,
+  featParameterOptions,
   FEATS,
   parseFeatSelection,
   type FeatRegistry,
@@ -60,6 +65,7 @@ import {
   CLASS_FEATURES,
   type ClassFeatureRegistry,
 } from "../content/class-features";
+import { favoredClassBonusOptions } from "../death-rules";
 import { deriveEncumbrance } from "../encumbrance";
 import {
   applyArchetypeClassOverrides,
@@ -337,10 +343,6 @@ function normalizeWeaponName(name: string): string {
   return name.trim().toLowerCase();
 }
 
-function infantrymanGunTrainingPickCount(classLevel: number): number {
-  return classLevel >= 5 ? 1 + Math.floor((classLevel - 5) / 4) : 0;
-}
-
 function weaponDamageAbilityOverridesForBuild(
   build: CharacterBuild,
 ): Partial<Record<string, AbilityKey | null>> {
@@ -349,8 +351,10 @@ function weaponDamageAbilityOverridesForBuild(
   };
   const counts = classLevelCounts(build);
   const infantrymanLevel = counts.get("infantryman") ?? 0;
-  const infantrymanPickCount =
-    infantrymanGunTrainingPickCount(infantrymanLevel);
+  const infantrymanPickCount = infantrymanGunTrainingPickCount(
+    infantrymanLevel,
+    build.campaignRules,
+  );
   if (infantrymanPickCount > 0) {
     for (const weaponName of (
       build.gunTrainingSelections?.infantryman ?? []
@@ -472,6 +476,8 @@ function inventoryItems(equipment: EquipmentEntry[] | undefined) {
             maxDexBonus: item.armor.maxDexBonus,
             checkPenalty: item.armor.checkPenalty,
             speedPenalty: item.armor.speedPenalty,
+            speed30: item.armor.speed30,
+            speed20: item.armor.speed20,
           }
         : undefined,
       shield:
@@ -897,6 +903,7 @@ export function buildCharacter(
     ...(activeRace.traits ?? []),
     ...featEffects(raceBonusFeatNames(activeRace), featRegistry),
   ];
+  const damageReductions: NonNullable<CharacterInput["damageReductions"]> = [];
 
   // Equipment-derived legality context.
   let armorCategory: "none" | "light" | "medium" | "heavy" = "none";
@@ -1083,6 +1090,9 @@ export function buildCharacter(
   let armorCheckPenalty = 0;
   for (const item of equippedEquipment(build.equipment)) {
     if (item.modifiers) modifiers.push(...item.modifiers);
+    for (const reduction of item.damageReductions ?? []) {
+      damageReductions.push({ ...reduction, source: item.name });
+    }
     const armor = item.armor;
     if (armor) {
       if (armor.acBonus) {
@@ -1093,6 +1103,18 @@ export function buildCharacter(
           source: `${item.name} (armor)`,
         });
       }
+      if (
+        armor.rangedTouchArmorFraction &&
+        armor.acBonus &&
+        armor.rangedTouchArmorFraction > 0
+      ) {
+        modifiers.push({
+          target: "ac.touch.vs.ranged",
+          type: "armor",
+          value: Math.floor(armor.acBonus * armor.rangedTouchArmorFraction),
+          source: `${item.name} (ranged touch defense)`,
+        });
+      }
       if (armor.maxDexBonus !== undefined) {
         maxDexBonus =
           maxDexBonus === undefined
@@ -1100,11 +1122,18 @@ export function buildCharacter(
             : Math.min(maxDexBonus, armor.maxDexBonus);
       }
       if (armor.checkPenalty) armorCheckPenalty += armor.checkPenalty;
-      if (armor.speedPenalty) {
+      const baseRaceSpeed = activeRace.speed ?? 30;
+      const profiledArmorSpeed =
+        baseRaceSpeed >= 30 ? armor.speed30 : armor.speed20;
+      const speedPenalty =
+        profiledArmorSpeed !== undefined
+          ? Math.max(0, baseRaceSpeed - profiledArmorSpeed)
+          : (armor.speedPenalty ?? 0);
+      if (speedPenalty > 0) {
         modifiers.push({
           target: "speed",
           type: "untyped",
-          value: -armor.speedPenalty,
+          value: -speedPenalty,
           source: `${item.name} (armor)`,
         });
       }
@@ -1117,6 +1146,18 @@ export function buildCharacter(
           type: "shield",
           value: shield.acBonus,
           source: `${item.name} (shield)`,
+        });
+      }
+      if (
+        shield.rangedTouchShieldFraction &&
+        shield.acBonus &&
+        shield.rangedTouchShieldFraction > 0
+      ) {
+        modifiers.push({
+          target: "ac.touch.vs.ranged",
+          type: "shield",
+          value: Math.floor(shield.acBonus * shield.rangedTouchShieldFraction),
+          source: `${item.name} (ranged touch defense)`,
         });
       }
       if (shield.checkPenalty) armorCheckPenalty += shield.checkPenalty;
@@ -1351,6 +1392,7 @@ export function buildCharacter(
   };
   const descriptor: SheetDescriptor = {
     race: activeRace.name,
+    alignment: build.alignment,
     classes,
     archetypes: dedupeAcquisitions(archetypes),
     feats: dedupeAcquisitions(feats),
@@ -1363,6 +1405,8 @@ export function buildCharacter(
       movementModes: activeRace.movementModes,
       senses: activeRace.senses,
       resistances: activeRace.resistances,
+      ferocity: activeRace.ferocity,
+      favoredClassBonuses: activeRace.favoredClassBonuses,
       notes: [...(activeRace.notes ?? []), ...raceChoiceNotes(activeRace)],
     },
     descriptor,
@@ -1393,6 +1437,7 @@ export function buildCharacter(
     weaponDamageAbilityOverrides: weaponDamageAbilityOverridesForBuild(build),
     weapons: resolvedWeapons,
     spellcasting,
+    damageReductions,
     modifiers,
   };
 }
@@ -1619,6 +1664,26 @@ export function validateBuild(
         level: levelNum,
         message: `Unknown class "${lvl.className}" at level ${levelNum}.`,
       });
+    } else if (
+      !classAllowsAlignment(def, build.alignment, build.campaignRules)
+    ) {
+      issues.push({
+        severity: "error",
+        code: "class-alignment-restriction",
+        level: levelNum,
+        message: `Level ${levelNum}: ${def.alignmentRestriction?.description ?? `${def.name} does not allow this alignment.`}`,
+      });
+    } else if (
+      !Number.isInteger(lvl.hitPointRoll) ||
+      lvl.hitPointRoll < 1 ||
+      lvl.hitPointRoll > def.hitDie
+    ) {
+      issues.push({
+        severity: "error",
+        code: "invalid-hit-point-roll",
+        level: levelNum,
+        message: `Level ${levelNum}: HP roll ${lvl.hitPointRoll} must be a whole number from 1 to d${def.hitDie} for ${def.name}.`,
+      });
     }
 
     const priorClassLevels =
@@ -1656,6 +1721,34 @@ export function validateBuild(
         level: levelNum,
         message: `Ability score increase at level ${levelNum}; allowed only at levels 4, 8, 12, ...`,
       });
+    }
+
+    if (lvl.favoredClass) {
+      const isFavoredClassLevel =
+        !!build.favoredClassName &&
+        lvl.className.toLowerCase() === build.favoredClassName.toLowerCase();
+      if (!isFavoredClassLevel) {
+        issues.push({
+          severity: "warning",
+          code: "favored-class-bonus-ineligible",
+          level: levelNum,
+          message: `Level ${levelNum}: ${lvl.className} is not the selected favored class, so its favored-class bonus does not apply.`,
+        });
+      }
+      if (
+        lvl.favoredClass !== "hp" &&
+        lvl.favoredClass !== "skill" &&
+        !favoredClassBonusOptions(activeRace, lvl.className).some(
+          (bonus) => bonus.id === lvl.favoredClass,
+        )
+      ) {
+        issues.push({
+          severity: "error",
+          code: "unknown-favored-class-bonus",
+          level: levelNum,
+          message: `Level ${levelNum}: favored-class bonus "${lvl.favoredClass}" is not available to ${activeRace.name} ${lvl.className}.`,
+        });
+      }
     }
 
     // Per-level skill-point budget (soft check).
@@ -1721,6 +1814,23 @@ export function validateBuild(
           });
           continue;
         }
+        if (
+          parsed.parameterValue &&
+          parsed.feat.parameter &&
+          parsed.feat.parameter.kind !== "weapon" &&
+          !featParameterOptions(parsed.feat).some(
+            (option) =>
+              option.toLowerCase() === parsed.parameterValue?.toLowerCase(),
+          )
+        ) {
+          issues.push({
+            severity: "error",
+            code: "feat-parameter-invalid",
+            level: levelNum,
+            message: `${parsed.selectionName} uses an invalid ${parsed.feat.parameter.label.toLowerCase()} choice.`,
+          });
+          continue;
+        }
         const duplicate = parsed.feat.repeatable
           ? chosenFeatSelections.some(
               (selection) =>
@@ -1740,7 +1850,11 @@ export function validateBuild(
           });
           continue;
         }
-        const prereq = checkPrerequisites(parsed.feat, featContext);
+        const prereq = checkPrerequisites(
+          parsed.feat,
+          featContext,
+          parsed.parameterValue,
+        );
         if (!prereq.met) {
           issues.push({
             severity: "error",

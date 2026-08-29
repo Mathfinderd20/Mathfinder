@@ -21,7 +21,7 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 ## Phase 1 — Rules Data Foundation
 
 - [~] Define canonical rules-data schema/package for core entities (sources, packs, races, classes, class features, feats, skills, spells) — starter TS schema + validation + index/registry done; JSON serialization/items/archetypes still pending
-- [~] Build/ingest 1st-party (Core, APG, ACG, ARG, UM, UC, etc.) dataset under proper licensing (OGL/PRD) — local canonical content is now seedable into SQLite and AoN spell scraping pipeline exists; broad-book ingestion coverage is still pending
+- [~] Build/ingest 1st-party (Core, APG, ACG, ARG, UM, UC, etc.) dataset under proper licensing (OGL/PRD) — local canonical content is seedable into SQLite and AoN ingestion exists; exhaustive book coverage and source-by-source audit remain pending
 - [ ] Ingest **Savage Company (SHM Publishing)** content (cross-check d20pfsrd.com against original manuscript as source of truth)
 - [~] Add `source` tag + provenance fields to every entity (enables content-pack toggles) — rules-data sources/packs scaffolded; entity-by-entity provenance expansion still pending
 - [ ] Validate dataset against schema (CI gate)
@@ -57,6 +57,7 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 - [x] Runtime selection resolver for activatables
 - [x] Exclusivity groups for modes/stances (e.g. attack-mode) + UI radios
 - [x] Activated ability runtime rules: rounds/day/resource tracking scaffold (Rage rounds/day)
+- [~] Add data-driven dynamic class resource pools to the derived sheet and runtime controls — serializable base/ability/class-level scaling, persisted usage, automatic grant/removal, and Infantryman grit are live; add ki, panache, arcane pool, and further class/archetype/feat pool definitions incrementally
 - [x] Activated ability runtime rules: scaling values by BAB (Power Attack, Combat Expertise, Deadly Aim)
 - [x] Conditional requirement / illegal-state suppression scaffold (Fast Movement blocked by armor/load)
 - [x] Suppression reasons surfaced in the sheet (e.g. Fast Movement suppressed: medium armor)
@@ -64,7 +65,11 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 - [ ] Broaden conditional legality (more armor/load restrictions, class-feature gates, etc.)
 - [x] Equipment/inventory engine: item quantities, costs, auto weight, equipped flags, armor metadata, slots, containers, coin/ammo/component tracking, purchase validation, and sheet itemization are all live
 - [~] Prerequisite validation for prestige classes, archetypes — archetype legality/conflict validation is live; prestige-class prerequisites still pending
-- [ ] Parameterized feats (Weapon Focus weapon choice, Skill Focus skill choice)
+- [x] Parameterized feats (Weapon Focus weapon choice, Skill Focus skill choice)
+- [x] Complete parameterized-feat picker and mechanical coverage for Weapon Focus, Skill Focus, Spell Focus, and Greater Spell Focus — runtime scraped feat overrides retain parameter semantics; weapon choices affect only matching attacks, school choices affect only matching spell save DCs, and Greater Spell Focus requires the same school
+- [x] Add a campaign house-rule toggle that disables alignment restrictions and alignment-based validation across character creation, level-up, build validation, and persisted campaign rules
+- [ ] Complete Guns Everywhere economics by applying the ruleset's firearm and ammunition price changes throughout catalogs, purchases, and existing templated equipment
+- [ ] Add a campaign house-rule toggle to ignore encumbrance and suppress load-based penalties/restrictions without deleting inventory weight
 
 ## Phase 3 — Character Builder UX
 
@@ -78,11 +83,11 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 - [x] Level up / undo buttons backed by levelUp/levelDown
 - [x] Interactive level-up modal: class, HP, skill ranks, feat, ability increase (planLevelUp + validation)
 - [x] Inline validation surfacing
-- [ ] Guided build wizard (race → class → abilities → skills → feats → gear)
+- [~] Guided build wizard (race → class → abilities → skills → feats → gear) — homepage character creation now opens a dedicated level-1 decision modal for ancestry, class, abilities, skills, feats, favored-class bonus, and live preview; gear and deeper guided branches remain
 - [x] Build planner page for future levels / preselected advancement choices
 - [~] Editable core build fields in UI are substantial (name, base abilities, carried weight, sample race presets, race choice selections, class archetypes, per-level class/HP/favored-class/ASI, weapons, full inventory/equipment editing with slots/containers/coins/ammo/components/purchase flows, improved equipment/armor cards with running totals, per-level feats, compact/collapsible per-level skill rank builder, and spell library/selection management); broader compendium-backed content editing is still incremental
 - [ ] Port presentational components to React Native for the phone build
-- [~] Smart defaults + recommendations — planner/level-up suggestions for classes, feats, favored-class bonuses, ability increases, and spell picks are live; broader guided defaults/wizard flows are still pending
+- [~] Smart defaults + recommendations — planner/level-up suggestions use current abilities, projected BAB/saves, feats, weapons, shields, classes, archetypes, and spellcasting; recommendation quality still needs substantial tuning, richer feat-chain/party-role awareness, and real-character playtesting
 
 ## Phase 4 — Multiplayer / Group Layer
 
@@ -102,11 +107,19 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 
 ## Next Bulldoze Order
 
-- [ ] Parameterized feats (Weapon Focus weapon choice, Skill Focus skill choice)
+- [x] Parameterized feats (Weapon Focus weapon choice, Skill Focus skill choice)
 - [ ] Prestige-class prerequisite validation
-- [ ] Guided build wizard / broader smart-default flows
+- [~] Guided build wizard / smarter character-aware recommendation tuning
+- [~] Complete ancestry-specific favored-class bonuses — 731 AoN options across 49 scraped races are ingested with source URLs and available as manual selections; automate common effect families and ingest owner-authored Savage Company FCBs from the manuscript
 - [ ] Shared compendium/runtime normalization work from `PLAN.md`
 - [ ] Savage Company content ingestion breadth
+- [~] Campaign house-rule controls — ignore alignment restrictions is live; complete Guns Everywhere pricing and optionally ignore encumbrance
+- [x] Complete selection-bearing feat UX/mechanics for Weapon Focus and Spell Focus; retain the generic parameter model for future selection-bearing feats
+
+## Ingestion Research
+
+- [x] Review Luke Parke's 2023 “Scraping Archives of Nethys for fun and profit” article and repository — it bulk-downloads PF2e records from AoN's Elasticsearch `aon` index by category, then writes raw, parsed `_source`, and per-record JSON; useful as evidence that discovery/fetch/normalization should remain separate
+- [x] Spike AoN's Elasticsearch service — the anonymous `aon` index contains 45,405 structured PF2e records, but PF1 URL shapes and PF1-only CMB/CMD terminology return zero results; retain the cached PF1 HTML pipeline rather than importing the wrong edition very efficiently
 
 ## Open Questions / Risks
 

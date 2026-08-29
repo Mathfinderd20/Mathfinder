@@ -94,6 +94,7 @@ export function useRuntimeState(storageKey: string) {
           effectId: string;
           effectName?: string;
           max: number;
+          perHitMaximum?: number;
         }>,
       ) =>
         dispatch({
@@ -185,7 +186,12 @@ export function useRuntimeState(storageKey: string) {
     combatEventLog: state.events,
     fatigued: state.flags.fatigued ?? false,
     stable: state.flags.stable ?? false,
+    diehardActive: state.flags["diehard-active"] ?? false,
+    ferocityActive: state.flags["ferocity-active"] ?? false,
+    ferocityUsed: state.flags["ferocity-used"] ?? false,
     bleeding: state.flags.bleeding ?? false,
     ...actions,
   };
 }
+
+export type RuntimeStateController = ReturnType<typeof useRuntimeState>;

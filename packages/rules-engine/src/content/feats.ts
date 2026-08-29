@@ -1,7 +1,12 @@
 import { buildCompendiumIndex, getCompendiumEntryByName } from "../compendium";
 import { SKILL_DEFINITIONS } from "../skills";
 import type { AbilityKey, DerivedSheet, Modifier, SkillKey } from "../types";
-import { babStep, type ActivatableEffect } from "./activatables";
+import {
+  babStep,
+  type ActivatableEffect,
+  type ResourcePoolDefinition,
+} from "./activatables";
+import { ADDITIONAL_CORE_FEATS } from "./core-feats-additional";
 
 /** A single feat prerequisite, with a human-readable label for the UI. */
 export interface Prerequisite {
@@ -9,11 +14,13 @@ export interface Prerequisite {
   ability?: AbilityKey;
   min?: number;
   featName?: string;
+  /** Require the prerequisite feat to use the same parameter choice. */
+  sameParameter?: boolean;
   /** e.g. "Str 13", "BAB +1", "Power Attack". */
   description: string;
 }
 
-export type FeatParameterKind = "weapon" | "skill";
+export type FeatParameterKind = "weapon" | "skill" | "spell-school";
 
 export interface FeatParameterDefinition {
   kind: FeatParameterKind;
@@ -37,6 +44,8 @@ export interface FeatDefinition {
   effects: Modifier[];
   /** Optional activated state, e.g. Combat Expertise. */
   activatable?: ActivatableEffect;
+  /** Optional always-available tracked pool granted by this feat. */
+  resourcePool?: ResourcePoolDefinition;
 }
 
 export type FeatGrantKind = "general" | "fighter-bonus";
@@ -146,6 +155,17 @@ export const CORE_FEATS: FeatDefinition[] = [
     effects: [],
   },
   {
+    id: "spell-focus",
+    name: "Spell Focus",
+    pack: "core",
+    description:
+      "+1 to the Difficulty Class for saving throws against spells from a chosen school.",
+    repeatable: true,
+    parameter: { kind: "spell-school", label: "School" },
+    prerequisites: [],
+    effects: [],
+  },
+  {
     id: "skill-focus",
     name: "Skill Focus",
     pack: "core",
@@ -180,6 +200,17 @@ export const CORE_FEATS: FeatDefinition[] = [
     description: "You remain conscious and can act while dying.",
     prerequisites: [
       { type: "feat", featName: "Endurance", description: "Endurance" },
+    ],
+    effects: [],
+  },
+  {
+    id: "selective-channeling",
+    name: "Selective Channeling",
+    pack: "core",
+    description:
+      "When you channel energy, you can choose a number of creatures in the area up to your Charisma modifier; those creatures are not affected by the channel.",
+    prerequisites: [
+      { type: "ability", ability: "cha", min: 13, description: "Cha 13" },
     ],
     effects: [],
   },
@@ -323,6 +354,7 @@ export const CORE_FEATS: FeatDefinition[] = [
       },
     },
   },
+  ...ADDITIONAL_CORE_FEATS,
   {
     id: "deadly-aim",
     name: "Deadly Aim",
@@ -380,14 +412,145 @@ export const CORE_FEATS: FeatDefinition[] = [
  */
 export const SAVAGE_COMPANY_FEATS: FeatDefinition[] = [];
 
+function withKnownParameterizedSemantics(feat: FeatDefinition): FeatDefinition {
+  const normalizedName = feat.name.trim().toLowerCase();
+  const weaponFeatPrerequisites: Partial<Record<string, string[]>> = {
+    "weapon focus": [],
+    "weapon specialization": ["Weapon Focus"],
+    "greater weapon focus": ["Weapon Focus"],
+    "greater weapon specialization": [
+      "Weapon Focus",
+      "Greater Weapon Focus",
+      "Weapon Specialization",
+    ],
+  };
+  const requiredWeaponFeats = weaponFeatPrerequisites[normalizedName];
+  if (requiredWeaponFeats) {
+    const prerequisites = [...feat.prerequisites];
+    for (const featName of requiredWeaponFeats) {
+      if (
+        !prerequisites.some(
+          (prerequisite) =>
+            prerequisite.type === "feat" &&
+            prerequisite.featName?.toLowerCase() === featName.toLowerCase(),
+        )
+      ) {
+        prerequisites.push({
+          type: "feat",
+          featName,
+          sameParameter: true,
+          description: `${featName} with selected weapon`,
+        });
+      }
+    }
+    return {
+      ...feat,
+      tags: [...new Set([...(feat.tags ?? []), "combat"])],
+      prerequisites: prerequisites.map((prerequisite) =>
+        prerequisite.type === "feat" &&
+        requiredWeaponFeats.some(
+          (featName) =>
+            featName.toLowerCase() === prerequisite.featName?.toLowerCase(),
+        )
+          ? { ...prerequisite, sameParameter: true }
+          : prerequisite,
+      ),
+      repeatable: true,
+      parameter: { kind: "weapon", label: "Weapon" },
+    };
+  }
+  if (normalizedName === "skill focus")
+    return {
+      ...feat,
+      repeatable: true,
+      parameter: { kind: "skill", label: "Skill" },
+    };
+  if (normalizedName === "spell focus")
+    return {
+      ...feat,
+      repeatable: true,
+      parameter: { kind: "spell-school", label: "School" },
+    };
+  if (normalizedName === "greater spell focus")
+    return {
+      ...feat,
+      repeatable: true,
+      parameter: { kind: "spell-school", label: "School" },
+      prerequisites: feat.prerequisites.map((prerequisite) =>
+        prerequisite.type === "feat" &&
+        prerequisite.featName?.trim().toLowerCase() === "spell focus"
+          ? { ...prerequisite, sameParameter: true }
+          : prerequisite,
+      ),
+    };
+  return feat;
+}
+
+function withoutSelfPrerequisite(feat: FeatDefinition): FeatDefinition {
+  const enhanced = withKnownParameterizedSemantics(feat);
+  const normalizedName = enhanced.name.trim().toLowerCase();
+  const prerequisites = enhanced.prerequisites.filter(
+    (prerequisite) =>
+      prerequisite.type !== "feat" ||
+      prerequisite.featName?.trim().toLowerCase() !== normalizedName,
+  );
+  return prerequisites.length === enhanced.prerequisites.length
+    ? enhanced
+    : { ...enhanced, prerequisites };
+}
+
+function mergeFeatDefinitions(
+  existing: FeatDefinition,
+  incoming: FeatDefinition,
+): FeatDefinition {
+  const prerequisites = [
+    ...existing.prerequisites,
+    ...incoming.prerequisites,
+  ].filter(
+    (prerequisite, index, all) =>
+      all.findIndex(
+        (candidate) =>
+          candidate.type === prerequisite.type &&
+          candidate.description.toLowerCase() ===
+            prerequisite.description.toLowerCase() &&
+          candidate.featName?.toLowerCase() ===
+            prerequisite.featName?.toLowerCase(),
+      ) === index,
+  );
+  const effects = [...existing.effects, ...incoming.effects].filter(
+    (effect, index, all) =>
+      all.findIndex(
+        (candidate) =>
+          candidate.target === effect.target &&
+          candidate.type === effect.type &&
+          candidate.value === effect.value &&
+          candidate.source.toLowerCase() === effect.source.toLowerCase(),
+      ) === index,
+  );
+  return withoutSelfPrerequisite({
+    ...existing,
+    ...incoming,
+    tags: [...new Set([...(existing.tags ?? []), ...(incoming.tags ?? [])])],
+    prerequisites,
+    effects,
+    repeatable: incoming.repeatable ?? existing.repeatable,
+    parameter: incoming.parameter ?? existing.parameter,
+    activatable: incoming.activatable ?? existing.activatable,
+    resourcePool: incoming.resourcePool ?? existing.resourcePool,
+  });
+}
+
 /** Merge one or more feat packs into a lookup keyed by lowercased name. */
 export function buildFeatRegistry(...packs: FeatDefinition[][]): FeatRegistry {
-  return Object.fromEntries(
-    buildCompendiumIndex(packs.flat()).all.map((feat) => [
-      feat.name.toLowerCase(),
-      feat,
-    ]),
-  );
+  const registry: FeatRegistry = {};
+  for (const rawFeat of packs.flat()) {
+    const feat = withoutSelfPrerequisite(rawFeat);
+    const key = feat.name.toLowerCase();
+    registry[key] = registry[key]
+      ? mergeFeatDefinitions(registry[key], feat)
+      : feat;
+  }
+  return registry;
 }
 
 /** Default registry: core + (empty) Savage Company pack. */
@@ -478,7 +641,8 @@ export function featQualifiesForGrant(
 
 function parameterizedFeatEffects(selection: ParsedFeatSelection): Modifier[] {
   const { feat, parameterValue } = selection;
-  if (feat.id === "weapon-focus") {
+  const normalizedFeatName = feat.name.trim().toLowerCase();
+  if (normalizedFeatName === "weapon focus") {
     const normalizedWeapon = normalizeWeaponChoice(parameterValue ?? "");
     if (!normalizedWeapon) return [];
     return [
@@ -490,7 +654,34 @@ function parameterizedFeatEffects(selection: ParsedFeatSelection): Modifier[] {
       },
     ];
   }
-  if (feat.id === "skill-focus") {
+  if (
+    normalizedFeatName === "weapon specialization" ||
+    normalizedFeatName === "greater weapon specialization"
+  ) {
+    const normalizedWeapon = normalizeWeaponChoice(parameterValue ?? "");
+    if (!normalizedWeapon) return [];
+    return [
+      {
+        target: `weapon.damage.${normalizedWeapon}`,
+        type: "untyped",
+        value: 2,
+        source: formatFeatSelection(feat.name, parameterValue),
+      },
+    ];
+  }
+  if (normalizedFeatName === "greater weapon focus") {
+    const normalizedWeapon = normalizeWeaponChoice(parameterValue ?? "");
+    if (!normalizedWeapon) return [];
+    return [
+      {
+        target: `weapon.attack.${normalizedWeapon}`,
+        type: "untyped",
+        value: 1,
+        source: formatFeatSelection(feat.name, parameterValue),
+      },
+    ];
+  }
+  if (normalizedFeatName === "skill focus") {
     const skillKey = normalizeSkillChoice(parameterValue ?? "");
     if (!skillKey) return [];
     return [
@@ -502,8 +693,34 @@ function parameterizedFeatEffects(selection: ParsedFeatSelection): Modifier[] {
       },
     ];
   }
+  if (
+    normalizedFeatName === "spell focus" ||
+    normalizedFeatName === "greater spell focus"
+  ) {
+    const school = parameterValue?.trim().toLowerCase();
+    if (!school) return [];
+    return [
+      {
+        target: `spell.dc.school.${school}`,
+        type: "untyped",
+        value: 1,
+        source: formatFeatSelection(feat.name, parameterValue),
+      },
+    ];
+  }
   return [];
 }
+
+const SPELL_SCHOOLS = [
+  "Abjuration",
+  "Conjuration",
+  "Divination",
+  "Enchantment",
+  "Evocation",
+  "Illusion",
+  "Necromancy",
+  "Transmutation",
+] as const;
 
 export function featParameterOptions(
   feat: FeatDefinition,
@@ -512,12 +729,13 @@ export function featParameterOptions(
   if (feat.parameter?.kind === "skill") {
     return SKILL_DEFINITIONS.map((skill) => skill.name);
   }
+  if (feat.parameter?.kind === "spell-school") return [...SPELL_SCHOOLS];
   if (feat.parameter?.kind === "weapon") {
     return [
       ...new Set(
         (availableWeaponNames ?? []).map((name) => name.trim()).filter(Boolean),
       ),
-    ].sort((a, b) => a.localeCompare(b));
+    ];
   }
   return [];
 }
@@ -550,7 +768,11 @@ export interface PrereqResult {
   unmet: Prerequisite[];
 }
 
-function prerequisiteMet(p: Prerequisite, ctx: FeatContext): boolean {
+function prerequisiteMet(
+  p: Prerequisite,
+  ctx: FeatContext,
+  parameterValue?: string,
+): boolean {
   switch (p.type) {
     case "bab":
       return ctx.baseAttackBonus >= (p.min ?? 0);
@@ -560,11 +782,18 @@ function prerequisiteMet(p: Prerequisite, ctx: FeatContext): boolean {
       return ctx.characterLevel >= (p.min ?? 0);
     case "feat": {
       const want = (p.featName ?? "").toLowerCase();
+      const wantedParameter = parameterValue?.trim().toLowerCase();
       return ctx.featNames.some((name) => {
         const lowered = name.toLowerCase();
-        if (lowered === want) return true;
+        if (!p.sameParameter && lowered === want) return true;
         const match = FEAT_SELECTION_RE.exec(name.trim());
-        return match?.[1]?.trim().toLowerCase() === want;
+        const baseMatches = match?.[1]?.trim().toLowerCase() === want;
+        if (!baseMatches) return false;
+        return (
+          !p.sameParameter ||
+          (!!wantedParameter &&
+            match?.[2]?.trim().toLowerCase() === wantedParameter)
+        );
       });
     }
   }
@@ -573,8 +802,17 @@ function prerequisiteMet(p: Prerequisite, ctx: FeatContext): boolean {
 export function checkPrerequisites(
   feat: FeatDefinition,
   ctx: FeatContext,
+  parameterValue?: string,
 ): PrereqResult {
-  const unmet = feat.prerequisites.filter((p) => !prerequisiteMet(p, ctx));
+  const featName = feat.name.trim().toLowerCase();
+  const unmet = feat.prerequisites.filter((p) => {
+    if (
+      p.type === "feat" &&
+      (p.featName ?? "").trim().toLowerCase() === featName
+    )
+      return false;
+    return !prerequisiteMet(p, ctx, parameterValue);
+  });
   return { met: unmet.length === 0, unmet };
 }
 

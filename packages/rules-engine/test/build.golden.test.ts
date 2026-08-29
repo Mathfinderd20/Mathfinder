@@ -220,6 +220,121 @@ describe("inventory math", () => {
     expect(sheet.skills.climb.total).toBe(5);
   });
 
+  it("derives unique AC profiles from equipped conditional-defense gear", () => {
+    const build = grukkLevel1();
+    build.equipment = [
+      {
+        name: "Bullet Ward",
+        equipped: true,
+        modifiers: [
+          {
+            target: "ac.vs.firearms",
+            type: "dodge",
+            value: 2,
+            source: "Bullet Ward",
+          },
+        ],
+      },
+      {
+        name: "Stowed Arrow Ward",
+        equipped: false,
+        modifiers: [
+          {
+            target: "ac.vs.ranged",
+            type: "dodge",
+            value: 4,
+            source: "Stowed Arrow Ward",
+          },
+        ],
+      },
+    ];
+
+    const sheet = computeSheet(buildCharacter(build));
+    expect(sheet.ac.normal.total).toBe(11);
+    expect(sheet.ac.contextual).toHaveLength(1);
+    expect(sheet.ac.contextual[0]).toMatchObject({
+      context: "firearms",
+      label: "vs Firearms",
+      normal: { total: 13 },
+      touch: { total: 13 },
+      flatFooted: { total: 10 },
+    });
+  });
+
+  it("uses armor speed profiles and surfaces conditional gear DR", () => {
+    const build = grukkLevel1();
+    build.equipment = [
+      {
+        name: "Shooters Plate",
+        equipped: true,
+        slot: "armor",
+        damageReductions: [
+          { value: 3, bypass: "—", appliesAgainst: "Firearms" },
+        ],
+        armor: {
+          category: "light",
+          acBonus: 3,
+          maxDexBonus: 6,
+          checkPenalty: 1,
+          speed30: 30,
+          speed20: 20,
+        },
+      },
+    ];
+
+    const sheet = computeSheet(buildCharacter(build));
+    expect(sheet.speed.total).toBe(40);
+    expect(sheet.damageReductions).toEqual([
+      expect.objectContaining({
+        label: "DR vs Firearms",
+        value: 3,
+        bypass: "—",
+        appliesAgainst: "Firearms",
+      }),
+    ]);
+    expect(sheet.damageReductions[0]?.breakdown[0]?.source).toBe(
+      "Shooters Plate",
+    );
+
+    build.equipment[0]!.equipped = false;
+    const unequippedSheet = computeSheet(buildCharacter(build));
+    expect(unequippedSheet.damageReductions).toEqual([]);
+    expect(unequippedSheet.speed.total).toBe(40);
+  });
+
+  it("retains a configured fraction of armor against ranged touch attacks", () => {
+    const build = grukkLevel1();
+    build.equipment = [
+      {
+        name: "Savage Plate",
+        equipped: true,
+        slot: "armor",
+        armor: {
+          category: "heavy",
+          acBonus: 6,
+          maxDexBonus: 4,
+          checkPenalty: -6,
+          speedPenalty: 5,
+          rangedTouchArmorFraction: 0.5,
+        },
+      },
+    ];
+
+    const sheet = computeSheet(buildCharacter(build));
+    expect(sheet.ac.normal.total).toBe(17);
+    expect(sheet.ac.touch.total).toBe(11);
+    expect(sheet.ac.contextual).toHaveLength(1);
+    expect(sheet.ac.contextual[0]).toMatchObject({
+      context: "ranged",
+      normal: { total: 17 },
+      touch: { total: 14 },
+      flatFooted: { total: 16 },
+    });
+    expect(
+      sheet.ac.contextual[0]?.touch.breakdown.map((entry) => entry.source),
+    ).toContain("Savage Plate (ranged touch defense)");
+  });
+
   it("applies equipped shield bonuses and penalties without acting like armor", () => {
     const build = grukkLevel1();
     build.equipment = [

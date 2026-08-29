@@ -7,7 +7,22 @@
  */
 
 export * from "./types";
-export { computeSheet, abilityModifier } from "./compute";
+export {
+  ALIGNMENTS,
+  ALIGNMENT_LABELS,
+  alignmentEthic,
+  alignmentMorality,
+  alignmentHasNeutralComponent,
+  isAlignment,
+  type Alignment,
+  type AlignmentEthic,
+  type AlignmentMorality,
+} from "./alignment";
+export {
+  computeSheet,
+  abilityModifier,
+  type ComputeSheetOptions,
+} from "./compute";
 export {
   buildCompendiumIndex,
   getCompendiumEntryById,
@@ -44,20 +59,36 @@ export {
 } from "./runtime";
 export { deriveAbilities } from "./abilities";
 export { deriveSkills, SKILL_DEFINITIONS, CLASS_SKILL_BONUS } from "./skills";
-export { deriveHitPoints, deriveSpeed } from "./vitals";
+export {
+  deriveDeathRules,
+  favoredClassBonusOptions,
+  type DeathRules,
+} from "./death-rules";
+export {
+  deriveHealthStatus,
+  deriveHitPoints,
+  deriveSpeed,
+  stabilizationCheck,
+  type HealthCondition,
+  type HealthStatus,
+  type StabilizationCheckResult,
+} from "./vitals";
 export { deriveWeapons } from "./weapons";
 export { deriveEncumbrance, loadThresholds, loadBand } from "./encumbrance";
 export {
   deriveSpellcasting,
   spellSaveDc,
+  spellSaveDcForSchool,
   bonusSpellSlots,
 } from "./spellcasting";
 export { renderSheet, explainStat } from "./format";
 export {
   applyCampaignRulesToWeapon,
   effectiveWeaponProficiencyGroup,
+  alignmentRestrictionsEnabled,
   firearmCostMultiplier,
   firearmRulesMode,
+  infantrymanGunTrainingPickCount,
   weaponUsesFirearmRules,
   type CampaignRules,
   type FirearmRulesMode,
@@ -66,6 +97,8 @@ export {
 // ---- Content: activatables ----
 export {
   collectActivatableEffects,
+  collectResourcePools,
+  resourcePoolMaximum,
   resolveActivatableSelections,
   groupActivatables,
   activatableModifiers,
@@ -75,6 +108,9 @@ export {
   activatableFeatsForDescriptor,
   type ActivatableEffect,
   type ActivatableResource,
+  type ResourcePoolDefinition,
+  type ResourcePoolMaximum,
+  type DerivedResourcePool,
   type ActivatableConflict,
   type ResolvedActivatables,
   type ActivationContext,
@@ -227,7 +263,9 @@ export {
   poorSaveBase,
   spellsByLevel,
   checkClassPrerequisites,
+  classAllowsAlignment,
   type ClassDefinition,
+  type ClassAlignmentRestriction,
   type ClassPrerequisite,
   type ClassPrerequisiteContext,
   type ClassRegistry,

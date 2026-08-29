@@ -6,6 +6,7 @@ import {
   type CharacterBuild,
 } from "../src/build/character";
 import { SAMPLE_CLASSES, type ClassRegistry } from "../src/build/classes";
+import { FEATS, type FeatRegistry } from "../src/content/feats";
 
 function baseBuild(): CharacterBuild {
   return {
@@ -56,6 +57,90 @@ const PRESTIGE_CLASSES: ClassRegistry = {
     ],
   },
 };
+
+const SELF_PREREQ_FEATS: FeatRegistry = {
+  ...FEATS,
+  "self-prereq-feat": {
+    id: "self-prereq-feat",
+    name: "Self Prereq Feat",
+    pack: "test",
+    description:
+      "Bad content feat that incorrectly names itself as a prerequisite.",
+    prerequisites: [
+      {
+        type: "feat",
+        featName: "Self Prereq Feat",
+        description: "Self Prereq Feat",
+      },
+    ],
+    effects: [],
+  },
+};
+
+describe("validateBuild level diagnostics", () => {
+  it("enforces class alignment restrictions and carries alignment to the sheet", () => {
+    const lawfulBarbarian = baseBuild();
+    lawfulBarbarian.alignment = "lawful-neutral";
+    lawfulBarbarian.levels = [{ className: "Barbarian", hitPointRoll: 12 }];
+
+    expect(validateBuild(lawfulBarbarian)).toContainEqual(
+      expect.objectContaining({
+        code: "class-alignment-restriction",
+        severity: "error",
+        level: 1,
+      }),
+    );
+
+    lawfulBarbarian.campaignRules = { ignoreAlignmentRestrictions: true };
+    expect(
+      validateBuild(lawfulBarbarian).some(
+        (issue) => issue.code === "class-alignment-restriction",
+      ),
+    ).toBe(false);
+
+    lawfulBarbarian.campaignRules = undefined;
+    lawfulBarbarian.alignment = "chaotic-neutral";
+    expect(
+      validateBuild(lawfulBarbarian).some(
+        (issue) => issue.code === "class-alignment-restriction",
+      ),
+    ).toBe(false);
+    expect(
+      computeSheet(buildCharacter(lawfulBarbarian)).descriptor.alignment,
+    ).toBe("chaotic-neutral");
+  });
+
+  it("enforces paladin and druid alignment restrictions", () => {
+    const build = baseBuild();
+    build.alignment = "neutral-good";
+    build.levels = [{ className: "Paladin", hitPointRoll: 10 }];
+    expect(validateBuild(build).map((issue) => issue.code)).toContain(
+      "class-alignment-restriction",
+    );
+
+    build.alignment = "lawful-good";
+    expect(validateBuild(build).map((issue) => issue.code)).not.toContain(
+      "class-alignment-restriction",
+    );
+
+    build.levels = [{ className: "Druid", hitPointRoll: 8 }];
+    expect(validateBuild(build).map((issue) => issue.code)).toContain(
+      "class-alignment-restriction",
+    );
+    build.alignment = "true-neutral";
+    expect(validateBuild(build).map((issue) => issue.code)).not.toContain(
+      "class-alignment-restriction",
+    );
+  });
+
+  it("rejects hit-point rolls outside the class hit die", () => {
+    const build = baseBuild();
+    build.levels[0]!.hitPointRoll = 11;
+    expect(validateBuild(build).map((issue) => issue.code)).toContain(
+      "invalid-hit-point-roll",
+    );
+  });
+});
 
 describe("validateBuild inventory diagnostics", () => {
   it("warns when the wishlist costs more than the available coin purse", () => {
@@ -189,6 +274,48 @@ describe("validateBuild inventory diagnostics", () => {
     expect(sheet.skills.perception?.total).toBe(4);
   });
 
+  it("rejects invalid parameterized feat choices", () => {
+    const build: CharacterBuild = {
+      ...baseBuild(),
+      levels: [
+        {
+          className: "Wizard",
+          hitPointRoll: 6,
+          feats: ["Spell Focus (Chronomancy)"],
+        },
+      ],
+    };
+    expect(
+      validateBuild(build).some(
+        (issue) => issue.code === "feat-parameter-invalid",
+      ),
+    ).toBe(true);
+  });
+
+  it("requires Greater Spell Focus to match an existing Spell Focus school", () => {
+    const build: CharacterBuild = {
+      ...baseBuild(),
+      levels: [
+        {
+          className: "Wizard",
+          hitPointRoll: 6,
+          feats: [
+            "Spell Focus (Conjuration)",
+            "Greater Spell Focus (Evocation)",
+          ],
+        },
+      ],
+    };
+    const issues = validateBuild(build);
+    expect(
+      issues.some(
+        (issue) =>
+          issue.code === "feat-prerequisites" &&
+          issue.message.includes("Greater Spell Focus (Evocation)"),
+      ),
+    ).toBe(true);
+  });
+
   it("flags missing feat parameters and duplicate non-repeatable feats", () => {
     const build: CharacterBuild = {
       ...baseBuild(),
@@ -207,6 +334,33 @@ describe("validateBuild inventory diagnostics", () => {
     expect(issues.some((issue) => issue.code === "duplicate-feat")).toBe(true);
   });
 
+  it("ignores self-referential feat prerequisites from bad content", () => {
+    const build: CharacterBuild = {
+      ...baseBuild(),
+      levels: [
+        {
+          className: "Fighter",
+          hitPointRoll: 10,
+          feats: ["Self Prereq Feat"],
+        },
+      ],
+    };
+    const issues = validateBuild(
+      build,
+      undefined,
+      undefined,
+      undefined,
+      SELF_PREREQ_FEATS,
+    );
+    expect(
+      issues.some(
+        (issue) =>
+          issue.code === "feat-prerequisites" &&
+          issue.message.includes("Self Prereq Feat"),
+      ),
+    ).toBe(false);
+  });
+
   it("flags unmet prestige-class prerequisites on first entry", () => {
     const build: CharacterBuild = {
       ...baseBuild(),
@@ -215,6 +369,45 @@ describe("validateBuild inventory diagnostics", () => {
     const issues = validateBuild(build, PRESTIGE_CLASSES, undefined);
     expect(
       issues.some((issue) => issue.code === "prestige-class-prerequisites"),
+    ).toBe(true);
+  });
+
+  it("accepts an ancestry-specific favored-class bonus and rejects unknown ones", () => {
+    const valid: CharacterBuild = {
+      ...baseBuild(),
+      race: {
+        name: "Half-Orc",
+        size: "medium",
+        favoredClassBonuses: [
+          {
+            id: "orc-fighter-death-threshold",
+            className: "Fighter",
+            label: "Orc resilience",
+            description: "Death threshold",
+            deathThresholdBonus: 2,
+          },
+        ],
+      },
+      favoredClassName: "Fighter",
+      levels: [
+        {
+          className: "Fighter",
+          hitPointRoll: 10,
+          favoredClass: "orc-fighter-death-threshold",
+        },
+      ],
+    };
+    expect(
+      validateBuild(valid, PRESTIGE_CLASSES).some(
+        (issue) => issue.code === "unknown-favored-class-bonus",
+      ),
+    ).toBe(false);
+
+    valid.levels[0]!.favoredClass = "invented-bonus";
+    expect(
+      validateBuild(valid, PRESTIGE_CLASSES).some(
+        (issue) => issue.code === "unknown-favored-class-bonus",
+      ),
     ).toBe(true);
   });
 

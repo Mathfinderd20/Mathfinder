@@ -100,6 +100,8 @@ if (normalized !== undefined) {
   if (!normalized || typeof normalized !== "object") {
     fail("normalized, when present, must be an object.");
   }
+  if (normalized.archetypes !== undefined)
+    assertArray(normalized.archetypes, "normalized.archetypes");
   if (normalized.spells !== undefined)
     assertArray(normalized.spells, "normalized.spells");
   if (normalized.armor !== undefined)
@@ -109,14 +111,48 @@ if (normalized !== undefined) {
   }
 }
 
+const archetypes = rulesDataSet.packs.flatMap((pack) => pack.archetypes ?? []);
+const archetypeIds = new Set();
+for (const archetype of archetypes) {
+  if (!archetype.id || !archetype.name || !archetype.baseClassName) {
+    fail(`Malformed archetype in pack ${archetype.pack ?? "<unknown>"}.`);
+  }
+  if (archetypeIds.has(archetype.id)) {
+    fail(`Duplicate archetype id: ${archetype.id}`);
+  }
+  archetypeIds.add(archetype.id);
+}
+
+const favoredClassBonuses = rulesDataSet.packs.flatMap((pack) =>
+  (pack.races ?? []).flatMap((race) =>
+    (race.favoredClassBonuses ?? []).map((bonus) => ({ race, bonus })),
+  ),
+);
+const favoredClassBonusIds = new Set();
+for (const { race, bonus } of favoredClassBonuses) {
+  if (!bonus.id || !bonus.className || !bonus.description) {
+    fail(`Malformed favored-class bonus on race ${race.name ?? race.id}.`);
+  }
+  const scopedId = `${race.id}:${bonus.id}`;
+  if (favoredClassBonusIds.has(scopedId)) {
+    fail(`Duplicate favored-class bonus id ${bonus.id} on race ${race.name}.`);
+  }
+  favoredClassBonusIds.add(scopedId);
+  if (bonus.automationStatus === "manual" && !bonus.sourceUrl) {
+    fail(`Manual favored-class bonus ${bonus.id} is missing sourceUrl.`);
+  }
+}
+
 const summary = {
   assetPath,
   sizeMb: Number((Buffer.byteLength(raw, "utf8") / (1024 * 1024)).toFixed(2)),
   sourceCount: rulesDataSet.sources.length,
   packCount: rulesDataSet.packs.length,
   classCount: countPackEntries(rulesDataSet.packs, "classes"),
+  archetypeCount: archetypes.length,
   featCount: countPackEntries(rulesDataSet.packs, "feats"),
   raceCount: countPackEntries(rulesDataSet.packs, "races"),
+  favoredClassBonusCount: favoredClassBonuses.length,
   spellCount: countPackEntries(rulesDataSet.packs, "spells"),
   weaponCount: countPackEntries(rulesDataSet.packs, "weapons"),
   magicItemCount: countPackEntries(rulesDataSet.packs, "magicItems"),

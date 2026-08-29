@@ -18,7 +18,7 @@ export function CharacterWorkspace() {
   const character = getCharacter(window.localStorage, characterId);
 
   useEffect(() => {
-    if (!character) return;
+    if (!getCharacter(window.localStorage, characterId)) return;
     let cancelled = false;
     setLoadedApp(null);
     setLoadError(undefined);

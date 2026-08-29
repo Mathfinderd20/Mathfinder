@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   buildCharacter,
+  classAllowsAlignment,
   computeSheet,
   featContextFromSheet,
   planLevelUp,
@@ -30,14 +31,18 @@ import {
   type SpellSuggestionChoice,
 } from "../buildSuggestions";
 import { displaySpellName } from "../spellLabels";
-import { featTitle, spellTitle } from "../rulesText";
+import { spellTitle } from "../rulesText";
 import { featSlotTag } from "../featSlots";
+import {
+  buildFavoredClassBonusOptions,
+  favoredClassBonusLabel,
+} from "../favoredClassBonusData";
 import {
   buildFeatPickerOptions,
   collectFeatWeaponNames,
   normalizeSelectedFeatSelection,
 } from "../featOptionData";
-import { CompendiumPicker } from "./CompendiumPicker";
+import { FeatSelectionPicker } from "./FeatSelectionPicker";
 import { Tooltip } from "./Tooltip";
 
 const ABILITIES: AbilityKey[] = ["str", "dex", "con", "int", "wis", "cha"];
@@ -177,9 +182,7 @@ export function LevelUpModal({
   const [abilityIncrease, setAbilityIncrease] = useState<
     AbilityKey | undefined
   >();
-  const [favoredClass, setFavoredClass] = useState<
-    "hp" | "skill" | undefined
-  >();
+  const [favoredClass, setFavoredClass] = useState<string>();
   const [selectedSpellSeeds, setSelectedSpellSeeds] = useState<
     Record<string, true>
   >({});
@@ -191,9 +194,17 @@ export function LevelUpModal({
     Math.min(plan.hitDie, hpValue || plan.averageHitPoints),
   );
   const resolvedClassName = RUNTIME_CLASSES[className]?.name ?? className;
+  const selectedClass = RUNTIME_CLASSES[className];
+  const classAlignmentAllowed =
+    !!selectedClass &&
+    classAllowsAlignment(selectedClass, build.alignment, build.campaignRules);
   const favoredClassEligible =
     !!build.favoredClassName &&
     build.favoredClassName.toLowerCase() === resolvedClassName.toLowerCase();
+  const levelFavoredClassBonusOptions = buildFavoredClassBonusOptions(
+    build.race,
+    resolvedClassName,
+  );
 
   const preview = useMemo(
     () =>
@@ -231,6 +242,7 @@ export function LevelUpModal({
           RUNTIME_CLASS_FEATURES,
           RUNTIME_ARCHETYPES,
         ),
+        { spellRegistry: RUNTIME_SPELLS },
       ),
     [build],
   );
@@ -244,16 +256,21 @@ export function LevelUpModal({
           RUNTIME_CLASS_FEATURES,
           RUNTIME_ARCHETYPES,
         ),
+        { spellRegistry: RUNTIME_SPELLS },
       ),
     [preview.build],
   );
   const selectedSkillNames = [...skills]
     .map((key) => SKILL_NAME.get(key) ?? key)
     .sort((a, b) => a.localeCompare(b));
-  const suggestedFeatNames = new Set(
-    plannerSuggestions.featChoicesBySlot.flatMap((slot) =>
-      slot.choices.map((choice) => choice.value.toLowerCase()),
-    ),
+  const suggestedFeatNames = useMemo(
+    () =>
+      new Set(
+        plannerSuggestions.featChoicesBySlot.flatMap((slot) =>
+          slot.choices.map((choice) => choice.value.toLowerCase()),
+        ),
+      ),
+    [plannerSuggestions.featChoicesBySlot],
   );
   const suggestedAbilities = new Set(
     plannerSuggestions.abilityChoices.map((choice) => choice.value),
@@ -274,6 +291,7 @@ export function LevelUpModal({
         classFeatures: RUNTIME_CLASS_FEATURES,
         archetypes: RUNTIME_ARCHETYPES,
         buildGuides: RUNTIME_BUILD_GUIDES,
+        plannerLevelIndexes: [],
       }),
     [preview.build, previewSheet.spellcasting],
   );
@@ -294,6 +312,10 @@ export function LevelUpModal({
     setSelectedFeats((prev) => prev.slice(0, plan.featSlots.length));
   }, [plan.featSlots.length]);
 
+  const availableFeatWeaponNames = useMemo(
+    () => collectFeatWeaponNames(preview.build, RUNTIME_WEAPONS),
+    [preview.build],
+  );
   const featOptionsBySlot = useMemo(() => {
     const ctx = featContextFromSheet(
       computeSheet(
@@ -304,11 +326,8 @@ export function LevelUpModal({
           RUNTIME_CLASS_FEATURES,
           RUNTIME_ARCHETYPES,
         ),
+        { spellRegistry: RUNTIME_SPELLS },
       ),
-    );
-    const availableWeaponNames = collectFeatWeaponNames(
-      preview.build,
-      RUNTIME_WEAPONS,
     );
     return plan.featSlots.map((slot, slotIndex) =>
       buildFeatPickerOptions({
@@ -317,11 +336,17 @@ export function LevelUpModal({
         grantKind: slot.kind,
         takenSelections: ctx.featNames,
         currentSelection: selectedFeats[slotIndex],
-        availableWeaponNames,
+        availableWeaponNames: availableFeatWeaponNames,
         suggestedFeatNames,
       }),
     );
-  }, [plan.featSlots, preview.build, selectedFeats, suggestedFeatNames]);
+  }, [
+    availableFeatWeaponNames,
+    plan.featSlots,
+    preview.build,
+    selectedFeats,
+    suggestedFeatNames,
+  ]);
 
   const spellSeedGroups: Array<{
     classKey: string;
@@ -379,6 +404,15 @@ export function LevelUpModal({
     .filter((entry): entry is LevelUpSpellSeedPlan => !!entry);
 
   const issues = validateLevelUpSelection(preview.plan, preview.selection);
+  if (!classAlignmentAllowed) {
+    issues.unshift({
+      severity: "error",
+      code: "class-alignment-restriction",
+      message:
+        selectedClass?.alignmentRestriction?.description ??
+        "This class does not allow the character's alignment.",
+    });
+  }
   const hasError = issues.some((i) => i.severity === "error");
 
   function commitHpInput(nextInput = hpInput) {
@@ -509,11 +543,22 @@ export function LevelUpModal({
             value={className}
             onChange={(e) => setClassName(e.target.value)}
           >
-            {CLASS_KEYS.map((key) => (
-              <option key={key} value={key}>
-                {RUNTIME_CLASSES[key]?.name ?? key}
-              </option>
-            ))}
+            {CLASS_KEYS.map((key) => {
+              const classDef = RUNTIME_CLASSES[key];
+              const allowed =
+                !!classDef &&
+                classAllowsAlignment(
+                  classDef,
+                  build.alignment,
+                  build.campaignRules,
+                );
+              return (
+                <option key={key} value={key} disabled={!allowed}>
+                  {classDef?.name ?? key}
+                  {allowed ? "" : " · alignment restricted"}
+                </option>
+              );
+            })}
           </select>
           <SuggestionCardRow
             title="Why these class picks"
@@ -624,21 +669,20 @@ export function LevelUpModal({
                       · {slot.source} · {featSlotTag(slot.kind)}
                     </span>
                   </span>
-                  <CompendiumPicker
+                  <FeatSelectionPicker
                     value={selectedFeat}
                     onChange={(value) =>
                       setSelectedFeats((prev) => {
                         const next = [...prev];
-                        next[slotIndex] = normalizeSelectedFeatSelection(
-                          RUNTIME_FEATS,
-                          value,
-                        );
+                        next[slotIndex] = value;
                         return next;
                       })
                     }
-                    options={options}
+                    featRegistry={RUNTIME_FEATS}
+                    grantKind={slot.kind}
+                    availableWeaponNames={availableFeatWeaponNames}
+                    allowedOptions={options}
                     placeholder="Search legal feat"
-                    tooltip={featTitle(selectedFeat)}
                   />
                   <SuggestionCardRow
                     title={`Why these ${slot.label.toLowerCase()} picks`}
@@ -678,44 +722,28 @@ export function LevelUpModal({
               choices={plannerSuggestions.favoredClassChoices}
               selectedValue={favoredClass ?? "none"}
               onPick={(value) =>
-                setFavoredClass(
-                  (value === "none" ? undefined : value) as
-                    | "hp"
-                    | "skill"
-                    | undefined,
-                )
+                setFavoredClass(value === "none" ? undefined : value)
               }
             />
             <div className="ability-picker">
-              <label
-                className={`pick ${favoredClass === undefined ? "on" : ""}`}
-              >
-                <input
-                  type="radio"
-                  name="fcb"
-                  checked={favoredClass === undefined}
-                  onChange={() => setFavoredClass(undefined)}
-                />
-                None
-              </label>
-              <label className={`pick ${favoredClass === "hp" ? "on" : ""}`}>
-                <input
-                  type="radio"
-                  name="fcb"
-                  checked={favoredClass === "hp"}
-                  onChange={() => setFavoredClass("hp")}
-                />
-                HP
-              </label>
-              <label className={`pick ${favoredClass === "skill" ? "on" : ""}`}>
-                <input
-                  type="radio"
-                  name="fcb"
-                  checked={favoredClass === "skill"}
-                  onChange={() => setFavoredClass("skill")}
-                />
-                Skill
-              </label>
+              {levelFavoredClassBonusOptions.map((option) => {
+                const value = option.value || undefined;
+                return (
+                  <label
+                    className={`pick ${favoredClass === value ? "on" : ""}`}
+                    key={option.value || "none"}
+                    title={option.description}
+                  >
+                    <input
+                      type="radio"
+                      name="fcb"
+                      checked={favoredClass === value}
+                      onChange={() => setFavoredClass(value)}
+                    />
+                    {option.label}
+                  </label>
+                );
+              })}
             </div>
           </div>
         ) : null}
@@ -860,8 +888,11 @@ export function LevelUpModal({
               <li>
                 Favored class bonus:{" "}
                 {favoredClassEligible
-                  ? (preview.selection.favoredClass?.toUpperCase() ??
-                    "none selected")
+                  ? favoredClassBonusLabel(
+                      build.race,
+                      resolvedClassName,
+                      preview.selection.favoredClass,
+                    )
                   : "not applicable"}
               </li>
               <li>

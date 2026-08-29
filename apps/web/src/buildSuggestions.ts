@@ -4,6 +4,7 @@ import {
   checkPrerequisites,
   computeSheet,
   featContextFromSheet,
+  favoredClassBonusOptions,
   listFeats,
   planLevelUp,
   type AbilityKey,
@@ -30,11 +31,7 @@ import {
 } from "./spellSuggestions";
 
 export type SuggestionSourceKind =
-  | "guide"
-  | "branch"
-  | "band"
-  | "heuristic"
-  | "system";
+  "guide" | "branch" | "band" | "heuristic" | "system";
 
 export interface PlannerSuggestionChoice<T extends string> {
   value: T;
@@ -65,7 +62,7 @@ export interface LevelPlannerSuggestions {
   classChoices: PlannerSuggestionChoice<string>[];
   featChoices: PlannerSuggestionChoice<string>[];
   featChoicesBySlot: PlannerFeatSlotSuggestions[];
-  favoredClassChoices: PlannerSuggestionChoice<"hp" | "skill" | "none">[];
+  favoredClassChoices: PlannerSuggestionChoice<string>[];
   abilityChoices: PlannerSuggestionChoice<AbilityKey>[];
   notes: PlannerSuggestionNote[];
 }
@@ -103,6 +100,24 @@ interface BuildSuggestionArgs {
   classFeatures: ClassFeatureRegistry;
   archetypes: Record<string, ArchetypeDefinitionLike>;
   buildGuides: BuildGuideDefinition[];
+  includeGuides?: boolean;
+  /** Zero-based planner rows to calculate. Omit to calculate all rows. */
+  plannerLevelIndexes?: readonly number[];
+}
+
+interface BuildSuggestionSharedData {
+  featList: FeatDefinition[];
+  featByName: Map<string, FeatDefinition>;
+}
+
+interface BuildSuggestionLevelCache {
+  previewSheet: ReturnType<typeof computeSheet>;
+  levelContext: ReturnType<typeof featContextFromSheet>;
+  weakestSave: "fort" | "ref" | "will";
+  classPrerequisiteContext: ReturnType<typeof featContextFromSheet> & {
+    skillRanks: Partial<Record<SkillKey, number>>;
+    classLevels: Map<string, number>;
+  };
 }
 
 interface GuideMatch {
@@ -135,6 +150,13 @@ interface BuildProfile {
   siegeFocus: boolean;
   frontliner: boolean;
   castingAbility?: AbilityKey;
+  weaponNames: string[];
+  hasMeleeWeapon: boolean;
+  hasRangedWeapon: boolean;
+  hasFinesseWeapon: boolean;
+  hasTwoHandedWeapon: boolean;
+  hasShield: boolean;
+  selectedFeatNames: Set<string>;
   archetypeText: string;
   raceText: string;
   matchedGuides: GuideMatch[];
@@ -143,6 +165,15 @@ interface BuildProfile {
 }
 
 const ABILITIES: AbilityKey[] = ["str", "dex", "con", "int", "wis", "cha"];
+const EMPTY_LEVEL_SUGGESTIONS: LevelPlannerSuggestions = {
+  guideChoices: [],
+  classChoices: [],
+  featChoices: [],
+  featChoicesBySlot: [],
+  favoredClassChoices: [],
+  abilityChoices: [],
+  notes: [],
+};
 
 function normalize(text: string | undefined) {
   return text?.trim().toLowerCase() ?? "";
@@ -479,7 +510,36 @@ function buildProfile(
   );
   const skillRankBase = dominantClass?.skillRanksPerLevel ?? 2;
   const spellcasting = dominantClass?.spellcasting;
-  const dexHigh = build.baseAbilityScores.dex >= build.baseAbilityScores.str;
+  const weapons = [
+    ...(build.weapons ?? []),
+    ...(build.equipment ?? [])
+      .filter((item) => item.equipped && item.weapon)
+      .map((item) => ({ name: item.name, ...item.weapon! })),
+  ];
+  const weaponNames = [...new Set(weapons.map((weapon) => weapon.name))];
+  const hasMeleeWeapon = weapons.some((weapon) => weapon.category === "melee");
+  const hasRangedWeapon = weapons.some(
+    (weapon) => weapon.category === "ranged",
+  );
+  const hasFinesseWeapon = weapons.some(
+    (weapon) =>
+      weapon.category === "melee" &&
+      (weapon.handedness === "light" ||
+        weapon.specialTags?.some((tag) => /finesse/i.test(tag))),
+  );
+  const selectedFeatNames = new Set(
+    [
+      build.race.choiceSelection?.bonusFeat,
+      ...build.levels
+        .slice(0, previewLevel)
+        .flatMap((level) => level.feats ?? []),
+    ]
+      .filter((feat): feat is string => !!feat)
+      .map((feat) => normalize(feat.replace(/\s*\([^)]*\)\s*$/, ""))),
+  );
+  const dexHigh =
+    currentAbilityScore(build, "dex", previewLevel) >=
+    currentAbilityScore(build, "str", previewLevel);
   const rangedKeywords =
     /gun|firearm|shot|sniper|scout|bow|ranged|rifle|pistol|musket/;
   const stealthKeywords = /covert|infiltrat|stealth|skirmish|scout|rogue/;
@@ -490,11 +550,16 @@ function buildProfile(
     dominantClass,
     topAbilities,
     meleeFocus:
-      !spellcasting &&
-      (build.baseAbilityScores.str >= build.baseAbilityScores.dex ||
-        (dominantClass?.bab === "full" && !rangedKeywords.test(archetypeText))),
+      hasMeleeWeapon ||
+      (!hasRangedWeapon &&
+        !spellcasting &&
+        (currentAbilityScore(build, "str", previewLevel) >=
+          currentAbilityScore(build, "dex", previewLevel) ||
+          (dominantClass?.bab === "full" &&
+            !rangedKeywords.test(archetypeText)))),
     rangedFocus:
-      dexHigh ||
+      hasRangedWeapon ||
+      (!hasMeleeWeapon && dexHigh) ||
       rangedKeywords.test(archetypeText) ||
       rangedKeywords.test(raceText) ||
       rangedKeywords.test(guideText),
@@ -520,6 +585,15 @@ function buildProfile(
       build.baseAbilityScores.str >= 14 ||
       build.baseAbilityScores.con >= 14,
     castingAbility: spellcasting?.castingAbility,
+    weaponNames,
+    hasMeleeWeapon,
+    hasRangedWeapon,
+    hasFinesseWeapon,
+    hasTwoHandedWeapon: weapons.some((weapon) => weapon.handedness === "two"),
+    hasShield: (build.equipment ?? []).some(
+      (item) => item.equipped && !!item.shield,
+    ),
+    selectedFeatNames,
     archetypeText,
     raceText,
     matchedGuides,
@@ -528,7 +602,10 @@ function buildProfile(
   };
 }
 
-function buildPreviewSheet(args: BuildSuggestionArgs, levelIndex: number) {
+function buildLevelCache(
+  args: BuildSuggestionArgs,
+  levelIndex: number,
+): BuildSuggestionLevelCache {
   const levels = args.build.levels
     .slice(0, levelIndex + 1)
     .map((level, index) =>
@@ -536,7 +613,7 @@ function buildPreviewSheet(args: BuildSuggestionArgs, levelIndex: number) {
         ? { ...level, feats: undefined, abilityIncrease: undefined }
         : level,
     );
-  return computeSheet(
+  const previewSheet = computeSheet(
     buildCharacter(
       { ...args.build, levels },
       args.classes,
@@ -544,7 +621,52 @@ function buildPreviewSheet(args: BuildSuggestionArgs, levelIndex: number) {
       args.classFeatures,
       args.archetypes,
     ),
+    { spellRegistry: args.spells },
   );
+  const levelContext = featContextFromSheet(previewSheet);
+  const runningSkillRanks = args.build.levels
+    .slice(0, levelIndex)
+    .reduce<Partial<Record<SkillKey, number>>>((acc, level) => {
+      for (const [skill, ranks] of Object.entries(level.skillRanks ?? {}) as [
+        SkillKey,
+        number,
+      ][]) {
+        acc[skill] = (acc[skill] ?? 0) + ranks;
+      }
+      return acc;
+    }, {});
+  const runningClassLevels = args.build.levels
+    .slice(0, levelIndex)
+    .reduce<Map<string, number>>((acc, level) => {
+      const key = level.className.toLowerCase();
+      acc.set(key, (acc.get(key) ?? 0) + 1);
+      return acc;
+    }, new Map<string, number>());
+  const saves: Array<["fort" | "ref" | "will", number]> = [
+    ["fort", previewSheet.saves.fort.total],
+    ["ref", previewSheet.saves.ref.total],
+    ["will", previewSheet.saves.will.total],
+  ];
+  return {
+    previewSheet,
+    levelContext,
+    weakestSave: saves.sort((a, b) => a[1] - b[1])[0]?.[0] ?? "will",
+    classPrerequisiteContext: {
+      ...levelContext,
+      skillRanks: runningSkillRanks,
+      classLevels: runningClassLevels,
+    },
+  };
+}
+
+function buildSharedSuggestionData(
+  feats: FeatRegistry,
+): BuildSuggestionSharedData {
+  const featList = listFeats(feats);
+  return {
+    featList,
+    featByName: new Map(featList.map((feat) => [normalize(feat.name), feat])),
+  };
 }
 
 function priorFeatNames(build: CharacterBuild, upToLevelIndex: number) {
@@ -598,47 +720,67 @@ function scoreFeat(
   )
     return null;
   const key = normalize(feat.name);
+  const featId = normalize(feat.id);
   if (taken.has(key) || !checkPrerequisites(feat, levelContext).met)
     return null;
   let score = effectScore(feat, profile, weakestSave);
-  let reason = "Generally useful.";
-  if (key === "power-attack") {
+  let reason = feat.description.trim() || "No mechanical summary is loaded.";
+  if (featId === "power-attack") {
     score +=
-      profile.meleeFocus && levelContext.abilityScores.str >= 13 ? 40 : -10;
-    reason = "Strong fit for a Strength-based frontliner.";
-  } else if (key === "deadly-aim") {
+      profile.hasMeleeWeapon && levelContext.abilityScores.str >= 13
+        ? profile.hasTwoHandedWeapon
+          ? 52
+          : 40
+        : -24;
+    reason = `Strength ${levelContext.abilityScores.str}, BAB +${levelContext.baseAttackBonus}, and ${profile.hasTwoHandedWeapon ? "a two-handed weapon" : "current melee gear"} support trading attack for scaling melee damage.`;
+  } else if (featId === "deadly-aim") {
     score +=
-      profile.rangedFocus && levelContext.abilityScores.dex >= 13 ? 40 : -10;
-    reason = "Great for Dex/ranged plans.";
-  } else if (key === "weapon-finesse") {
+      profile.hasRangedWeapon && levelContext.abilityScores.dex >= 13
+        ? 44
+        : -24;
+    reason = `Dexterity ${levelContext.abilityScores.dex}, BAB +${levelContext.baseAttackBonus}, and ${
+      profile.weaponNames
+        .filter((name) => profile.hasRangedWeapon && name)
+        .slice(0, 2)
+        .join("/") || "current ranged gear"
+    } support trading attack for scaling ranged damage.`;
+  } else if (featId === "weapon-finesse") {
+    if (!profile.hasFinesseWeapon) return null;
     score +=
-      levelContext.abilityScores.dex > levelContext.abilityScores.str ? 30 : -5;
-    reason = "Good when Dexterity is carrying more weight than Strength.";
-  } else if (key === "improved-initiative") {
+      levelContext.abilityScores.dex > levelContext.abilityScores.str
+        ? 44
+        : -18;
+    reason = `Dexterity ${levelContext.abilityScores.dex} exceeds Strength ${levelContext.abilityScores.str}; use Dex on eligible melee attack rolls.`;
+  } else if (featId === "weapon-focus") {
+    if (profile.weaponNames.length === 0) return null;
+    score += 32;
+    reason = `Adds +1 attack with a chosen current weapon: ${profile.weaponNames.slice(0, 3).join(", ")}.`;
+  } else if (featId === "improved-initiative") {
     score += 24 + (profile.stealthFocus || profile.rangedFocus ? 8 : 0);
-    reason = "Acting first is rarely a bad life choice.";
-  } else if (key === "toughness") {
+    reason =
+      "Adds +4 initiative; useful for acting before enemies in round one.";
+  } else if (featId === "toughness") {
     score += profile.frontliner ? 20 : 10;
-    reason = "Solid padding if the build expects to get hit for a living.";
-  } else if (key === "iron-will") {
+    reason = "Adds 3 HP now and +1 HP at every level after 3rd.";
+  } else if (featId === "iron-will") {
     score += weakestSave === "will" ? 26 : 8;
-    reason = "Helps patch a weak Will save.";
-  } else if (key === "great-fortitude") {
+    reason = `Will is the lowest projected save; this adds +2.`;
+  } else if (featId === "great-fortitude") {
     score += weakestSave === "fort" ? 26 : 8;
-    reason = "Helps patch a weak Fortitude save.";
-  } else if (key === "lightning-reflexes") {
+    reason = `Fortitude is the lowest projected save; this adds +2.`;
+  } else if (featId === "lightning-reflexes") {
     score += weakestSave === "ref" ? 26 : 8;
-    reason = "Helps patch a weak Reflex save.";
-  } else if (key === "master-craftsman") {
+    reason = `Reflex is the lowest projected save; this adds +2.`;
+  } else if (featId === "master-craftsman") {
     score += profile.craftFocus ? 34 : -8;
     reason = "Best for craft-heavy plans.";
-  } else if (key === "craft-construct") {
+  } else if (featId === "craft-construct") {
     score += profile.craftFocus ? 28 : -12;
     reason = "Only shines once a crafting plan already exists.";
-  } else if (key === "siege-engineer") {
+  } else if (featId === "siege-engineer") {
     score += profile.siegeFocus ? 36 : -10;
     reason = "Great if the build is telegraphing siege nonsense.";
-  } else if (key === "master-siege-engineer") {
+  } else if (featId === "master-siege-engineer") {
     score += profile.siegeFocus && taken.has("siege engineer") ? 38 : -12;
     reason = "A follow-up for siege specialists.";
   }
@@ -656,7 +798,7 @@ function bandFeatChoices(
   profile: BuildProfile,
   levelContext: ReturnType<typeof featContextFromSheet>,
   taken: Set<string>,
-  feats: FeatRegistry,
+  featByName: Map<string, FeatDefinition>,
   slotKind: FeatGrantKind,
 ) {
   const picks: PlannerSuggestionChoice<string>[] = [];
@@ -682,9 +824,7 @@ function bandFeatChoices(
   ];
   for (const source of bandSources) {
     source.priorities.forEach((featName, index) => {
-      const feat = Object.values(feats).find(
-        (entry) => normalize(entry.name) === normalize(featName),
-      );
+      const feat = featByName.get(normalize(featName));
       if (
         !feat ||
         taken.has(normalize(feat.name)) ||
@@ -712,16 +852,10 @@ function suggestFeatChoiceSlots(
   args: BuildSuggestionArgs,
   levelIndex: number,
   profile: BuildProfile,
+  shared: BuildSuggestionSharedData,
+  levelCache: BuildSuggestionLevelCache,
 ) {
-  const previewSheet = buildPreviewSheet(args, levelIndex);
-  const levelContext = featContextFromSheet(previewSheet);
   const reserved = new Set(priorFeatNames(args.build, levelIndex));
-  const saves: Array<["fort" | "ref" | "will", number]> = [
-    ["fort", previewSheet.saves.fort.total],
-    ["ref", previewSheet.saves.ref.total],
-    ["will", previewSheet.saves.will.total],
-  ];
-  const weakestSave = saves.sort((a, b) => a[1] - b[1])[0]?.[0] ?? "will";
   const plan = planLevelUp(
     { ...args.build, levels: args.build.levels.slice(0, levelIndex) },
     args.build.levels[levelIndex]?.className ?? "Fighter",
@@ -732,18 +866,18 @@ function suggestFeatChoiceSlots(
     const choices = uniqueTopChoices([
       ...bandFeatChoices(
         profile,
-        levelContext,
+        levelCache.levelContext,
         reserved,
-        args.feats,
+        shared.featByName,
         slot.kind,
       ),
-      ...listFeats(args.feats)
+      ...shared.featList
         .map((feat) =>
           scoreFeat(
             feat,
             profile,
-            levelContext,
-            weakestSave,
+            levelCache.levelContext,
+            levelCache.weakestSave,
             reserved,
             slot.kind,
           ),
@@ -776,7 +910,12 @@ function suggestAbilityChoices(profile: BuildProfile) {
     {
       value: primaryCombatAbility,
       label: primaryCombatAbility.toUpperCase(),
-      reason: "Primary combat stat keeps the build doing its job.",
+      reason:
+        primaryCombatAbility === "str"
+          ? "Strength improves melee attack and damage rolls."
+          : primaryCombatAbility === "dex"
+            ? "Dexterity improves ranged attacks, initiative, Reflex, and AC within armor limits."
+            : `${primaryCombatAbility.toUpperCase()} is currently the build's highest ability.`,
       score: 60,
     },
     {
@@ -849,7 +988,7 @@ function suggestAbilityChoices(profile: BuildProfile) {
       choiceWithMeta({
         value: profile.castingAbility,
         label: profile.castingAbility.toUpperCase(),
-        reason: "Main casting stat improves spells, DCs, or bonus slots.",
+        reason: `Raising ${profile.castingAbility.toUpperCase()} improves spell DCs and may unlock bonus spell slots.`,
         score: 58,
         sourceKind: "heuristic",
         sourceLabel: "Caster lane",
@@ -922,25 +1061,38 @@ function suggestFavoredClassChoices(
         }),
       ),
     ),
-  ] as PlannerSuggestionChoice<"hp" | "skill">[];
-  return uniqueTopChoices<"hp" | "skill" | "none">([
+  ] as PlannerSuggestionChoice<string>[];
+  const racialChoices = favoredClassBonusOptions(build.race, className).map(
+    (bonus) => ({
+      value: bonus.id,
+      label: bonus.label,
+      reason: bonus.description,
+      score: profile.frontliner ? 66 : 36,
+      sourceKind: "system" as const,
+      sourceLabel: build.race.name,
+    }),
+  );
+  return uniqueTopChoices<string>([
     ...guideChoices,
+    ...racialChoices,
     {
       value: "hp",
       label: "HP",
-      reason: "Extra hit points are the boring but effective answer.",
+      reason: "Adds exactly +1 maximum HP for this favored-class level.",
       score: hpScore,
     },
     {
       value: "skill",
       label: "Skill",
-      reason: "Skill ranks are juicy when the build leans utility-heavy.",
+      reason:
+        "Adds exactly +1 skill rank to spend for this favored-class level.",
       score: skillScore,
     },
     {
       value: "none",
       label: "None",
-      reason: "Leaving it blank is allowed, just a bit wasteful.",
+      reason:
+        "Claims no bonus for this level; choose only when intentionally leaving it unused.",
       score: 4,
     },
   ]);
@@ -952,44 +1104,12 @@ function scoreClassChoice(
   levelIndex: number,
   profile: BuildProfile,
   archetypes: Record<string, ArchetypeDefinitionLike>,
-  classes: Record<string, ClassDefinition>,
-  feats: FeatRegistry,
-  classFeatures: ClassFeatureRegistry,
+  classPrerequisiteContext: BuildSuggestionLevelCache["classPrerequisiteContext"],
 ) {
   let score = 0;
-  let reason = "Fits the current direction of the build.";
+  let reason = `${classDef.name} provides d${classDef.hitDie} HP, ${classDef.bab} BAB, ${classDef.skillRanksPerLevel} base skill ranks, and ${classDef.goodSaves.length ? `good ${classDef.goodSaves.join("/")} saves` : "no good saves"}.`;
   if (classDef.prerequisites?.length) {
-    const prefixBuild = {
-      ...build,
-      levels: build.levels.slice(0, levelIndex),
-    };
-    const prefixSheet = computeSheet(
-      buildCharacter(prefixBuild, classes, feats, classFeatures, archetypes),
-    );
-    const runningSkillRanks = prefixBuild.levels.reduce<
-      Partial<Record<SkillKey, number>>
-    >((acc, level) => {
-      for (const [skill, ranks] of Object.entries(level.skillRanks ?? {}) as [
-        SkillKey,
-        number,
-      ][]) {
-        acc[skill] = (acc[skill] ?? 0) + ranks;
-      }
-      return acc;
-    }, {});
-    const runningClassLevels = prefixBuild.levels.reduce<Map<string, number>>(
-      (acc, level) => {
-        const key = level.className.toLowerCase();
-        acc.set(key, (acc.get(key) ?? 0) + 1);
-        return acc;
-      },
-      new Map<string, number>(),
-    );
-    const unmet = checkClassPrerequisites(classDef, {
-      ...featContextFromSheet(prefixSheet),
-      skillRanks: runningSkillRanks,
-      classLevels: runningClassLevels,
-    });
+    const unmet = checkClassPrerequisites(classDef, classPrerequisiteContext);
     if (unmet.length > 0) {
       return choiceWithMeta({
         value: classDef.name,
@@ -1004,14 +1124,14 @@ function scoreClassChoice(
   const previousClass = build.levels[levelIndex - 1]?.className;
   if (normalize(previousClass) === normalize(classDef.name)) {
     score += 50;
-    reason = "Continuing the current class keeps progression clean.";
+    reason = `Continues ${classDef.name}: d${classDef.hitDie} HP, ${classDef.bab} BAB, ${classDef.skillRanksPerLevel} base skill ranks, and ${classDef.goodSaves.length ? `good ${classDef.goodSaves.join("/")} saves` : "no good saves"}.`;
   }
   if (normalize(build.favoredClassName) === normalize(classDef.name)) {
     score += 26;
     reason =
       normalize(previousClass) === normalize(classDef.name)
-        ? "Continuing the favored class keeps progression tidy."
-        : "Favored class support makes this an easy continuation pick.";
+        ? `Continues ${classDef.name} and remains eligible for this level's favored-class bonus.`
+        : `${classDef.name} is favored, so this level can claim +1 HP, +1 skill rank, or a loaded ancestry option.`;
   }
   if (selectedArchetypesForClass(build, classDef.name, archetypes).length > 0)
     score += 10;
@@ -1038,6 +1158,7 @@ function suggestClassChoices(
   args: BuildSuggestionArgs,
   levelIndex: number,
   profile: BuildProfile,
+  levelCache: BuildSuggestionLevelCache,
 ) {
   const guideChoices = [
     ...profile.activeBranches.flatMap(({ guide, branch, score }) =>
@@ -1077,9 +1198,7 @@ function suggestClassChoices(
           levelIndex,
           profile,
           args.archetypes,
-          args.classes,
-          args.feats,
-          args.classFeatures,
+          levelCache.classPrerequisiteContext,
         ),
       )
       .filter((choice) => choice.score > 0),
@@ -1187,20 +1306,46 @@ function suggestNotes(
       ),
     );
   }
-  if (profile.rangedFocus && !profile.meleeFocus) {
+  if (profile.weaponNames.length > 0) {
     notes.push(
       noteWithMeta(
-        "Read",
-        "Current stats/archetypes read as a ranged plan.",
-        "heuristic",
+        "Current gear",
+        `${profile.weaponNames.slice(0, 3).join(", ")} drive the combat recommendations${profile.hasShield ? "; the equipped shield favors one-handed/defensive choices" : profile.hasTwoHandedWeapon ? "; the two-handed setup raises the value of Strength damage scaling" : ""}.`,
+        "system",
+      ),
+    );
+  } else if (profile.meleeFocus || profile.rangedFocus) {
+    notes.push(
+      noteWithMeta(
+        "Missing gear",
+        "No weapon is selected, so combat recommendations rely on abilities and class rather than an actual loadout.",
+        "system",
       ),
     );
   }
-  if (profile.meleeFocus && !profile.rangedFocus) {
+  if (
+    profile.hasRangedWeapon &&
+    !profile.selectedFeatNames.has("deadly aim") &&
+    !profile.selectedFeatNames.has("point-blank shot")
+  ) {
     notes.push(
       noteWithMeta(
-        "Read",
-        "Current stats/class picks read as a melee plan.",
+        "Next gap",
+        "The equipped ranged weapon has no loaded ranged damage/accuracy feat supporting it yet.",
+        "heuristic",
+      ),
+    );
+  } else if (
+    profile.hasMeleeWeapon &&
+    !profile.selectedFeatNames.has("power attack") &&
+    !profile.selectedFeatNames.has("weapon finesse")
+  ) {
+    notes.push(
+      noteWithMeta(
+        "Next gap",
+        profile.hasFinesseWeapon
+          ? "Current melee gear can support either Strength damage scaling or Dexterity-based accuracy; the ability scores decide which is efficient."
+          : "Current melee gear has no loaded attack/damage style feat supporting it yet.",
         "heuristic",
       ),
     );
@@ -1267,12 +1412,13 @@ function guideSkillChoices(profile: BuildProfile) {
 function suggestCurrentLevelSkills(args: BuildSuggestionArgs) {
   const currentLevelIndex = Math.max(0, args.currentLevel - 1);
   const level = args.build.levels[currentLevelIndex];
+  const activeBuildGuides = args.includeGuides ? args.buildGuides : [];
   const profile = buildProfile(
     args.build,
     args.currentLevel,
     args.classes,
     args.archetypes,
-    args.buildGuides,
+    activeBuildGuides,
   );
   const classDef = classDefinitionByName(args.classes, level?.className);
   const fallback: SkillSuggestionChoice[] = [];
@@ -1386,12 +1532,13 @@ function suggestSpellsForCaster(
   caster: DerivedSpellcasting,
   args: BuildSuggestionArgs,
 ) {
+  const activeBuildGuides = args.includeGuides ? args.buildGuides : [];
   const profile = buildProfile(
     args.build,
     args.currentLevel,
     args.classes,
     args.archetypes,
-    args.buildGuides,
+    activeBuildGuides,
   );
   const classKey = normalize(caster.className);
   const out: Partial<Record<number, SpellSuggestionChoice[]>> = {};
@@ -1438,13 +1585,24 @@ function suggestSpellsForCaster(
 export function buildSuggestions(
   args: BuildSuggestionArgs,
 ): BuildSuggestionBundle {
+  const shared = buildSharedSuggestionData(args.feats);
+  const activeBuildGuides = args.includeGuides ? args.buildGuides : [];
+  const requestedLevels = new Set(
+    args.plannerLevelIndexes ?? Array.from({ length: 20 }, (_, index) => index),
+  );
+  const levelCaches = new Map(
+    [...requestedLevels]
+      .filter((levelIndex) => levelIndex >= 0 && levelIndex < 20)
+      .map((levelIndex) => [levelIndex, buildLevelCache(args, levelIndex)]),
+  );
   const planner = Array.from({ length: 20 }, (_, levelIndex) => {
+    if (!requestedLevels.has(levelIndex)) return EMPTY_LEVEL_SUGGESTIONS;
     const profile = buildProfile(
       args.build,
       levelIndex + 1,
       args.classes,
       args.archetypes,
-      args.buildGuides,
+      activeBuildGuides,
     );
     const levelBuild = {
       ...args.build,
@@ -1459,13 +1617,15 @@ export function buildSuggestions(
       args.archetypes,
     );
     const grantsAbilityIncrease = (levelIndex + 1) % 4 === 0;
+    const levelCache =
+      levelCaches.get(levelIndex) ?? buildLevelCache(args, levelIndex);
     const featChoicesBySlot =
       plan.featSlots.length > 0
-        ? suggestFeatChoiceSlots(args, levelIndex, profile)
+        ? suggestFeatChoiceSlots(args, levelIndex, profile, shared, levelCache)
         : [];
     return {
       guideChoices: suggestGuideChoices(profile),
-      classChoices: suggestClassChoices(args, levelIndex, profile),
+      classChoices: suggestClassChoices(args, levelIndex, profile, levelCache),
       featChoices: featChoicesBySlot[0]?.choices ?? [],
       featChoicesBySlot,
       favoredClassChoices: suggestFavoredClassChoices(

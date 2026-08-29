@@ -22,7 +22,7 @@ describe("Supabase client configuration", () => {
     });
   });
 
-  it("accepts the local Supabase URL and rejects unsafe remote HTTP", () => {
+  it("accepts local HTTP but rejects unsafe protocols and remote HTTP", () => {
     expect(
       readSupabaseConfig({
         VITE_SUPABASE_URL: "http://127.0.0.1:54321",
@@ -31,9 +31,21 @@ describe("Supabase client configuration", () => {
     ).toBeDefined();
     expect(
       readSupabaseConfig({
-        VITE_SUPABASE_URL: "http://example.com",
-        VITE_SUPABASE_PUBLISHABLE_KEY: "bad-key",
+        VITE_SUPABASE_URL: "http://localhost:54321",
+        VITE_SUPABASE_PUBLISHABLE_KEY: "local-key",
       }),
-    ).toBeUndefined();
+    ).toBeDefined();
+    for (const unsafeUrl of [
+      "http://example.com",
+      "ftp://127.0.0.1:54321",
+      "javascript:alert(1)",
+    ]) {
+      expect(
+        readSupabaseConfig({
+          VITE_SUPABASE_URL: unsafeUrl,
+          VITE_SUPABASE_PUBLISHABLE_KEY: "bad-key",
+        }),
+      ).toBeUndefined();
+    }
   });
 });

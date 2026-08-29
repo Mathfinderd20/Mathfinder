@@ -4,6 +4,7 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   AON_BASE_CLASSES,
+  AON_SUPPORTED_ARCHETYPE_CLASSES,
   AON_ARMOR_CATEGORIES,
   AON_MISC_EQUIPMENT_CATEGORIES,
   AON_WEAPON_PROFICIENCIES,
@@ -12,6 +13,8 @@ import {
   buildScrapedFeatRulesDataSet,
   buildUsableContentExport,
   openDatabase,
+  parseAonArchetypeDetail,
+  parseAonArchetypeLinks,
   parseAonClassFeatureDetails,
   parseAonClassFeatureLevels,
   parseAonFeatCategories,
@@ -134,6 +137,25 @@ describe("content-db", () => {
     expect(
       parsed.traitEntries?.find((entry) => entry.name === "Skilled")?.text,
     ).toContain("Diplomacy and Perception checks");
+
+    const favoredClassHtml = `<table id="MainContent_DataListTypes"><tr><td><h1 class="title">Goblin</h1><b>Source</b> Advanced Race Guide pg. 115<br/><b>Small</b><br/><b>Fast Speed</b> 30 feet<br/><h1 class="title">Goblin Favored Class Options</h1>Instead of the universal bonus.<br/><br/>The following options are available.<br/><br/><b>Alchemist</b> (<a>Advanced Race Guide pg. 115</a>): The alchemist gains fire resistance 1.<br/><b>Barbarian</b> (<a>Advanced Race Guide pg. 115</a>): Add +1/2 on critical hit confirmation rolls.</td></tr></table>`;
+    const favored = parseAonRaceDetail(
+      favoredClassHtml,
+      "https://www.aonprd.com/RacesDisplay.aspx?ItemName=Goblin",
+      "NonCore",
+    );
+    expect(favored.favoredClassBonuses).toEqual([
+      {
+        className: "Alchemist",
+        description: "The alchemist gains fire resistance 1.",
+        sources: ["Advanced Race Guide pg. 115"],
+      },
+      {
+        className: "Barbarian",
+        description: "Add +1/2 on critical hit confirmation rolls.",
+        sources: ["Advanced Race Guide pg. 115"],
+      },
+    ]);
   });
 
   it("normalizes scraped race traits into engine modifiers and class skills", () => {
@@ -449,6 +471,7 @@ describe("content-db", () => {
         name: "Power Attack",
         pack: "aon-scraped-feats",
         description: "Trade accuracy for damage.",
+        tags: ["combat"],
         prerequisites: [
           { type: "ability", ability: "str", min: 13, description: "Str 13" },
           { type: "bab", min: 1, description: "BAB +1" },
@@ -929,6 +952,7 @@ describe("content-db", () => {
       "https://example.test/improved-initiative",
       JSON.stringify({
         name: "Improved Initiative",
+        category: "Combat",
         benefit: "You get a +4 bonus on initiative checks.",
         description: "You get a +4 bonus on initiative checks.",
         sourceUrl: "https://example.test/improved-initiative",
@@ -1023,6 +1047,7 @@ describe("content-db", () => {
       .find((pack) => pack.id === "aon-scraped-magic-items")
       ?.magicItems.find((entry) => entry.name === "Cloak of Resistance +2");
 
+    expect(feat?.tags).toEqual(["combat"]);
     expect(feat?.effects).toEqual([
       {
         target: "init",
@@ -1199,6 +1224,53 @@ describe("content-db", () => {
         },
       ]),
     );
+  });
+
+  it("parses AoN archetype indexes and detail fixtures", () => {
+    expect(AON_SUPPORTED_ARCHETYPE_CLASSES).toContain("Fighter");
+    const indexHtml = `
+      <table><tr>
+        <td><a href="ArchetypeDisplay.aspx?FixedName=Fighter Archer">Archer</a></td>
+        <td>Bravery; Armor Training 1-4</td>
+        <td>A master of bows.</td>
+      </tr></table>`;
+    const links = parseAonArchetypeLinks(indexHtml);
+    expect(links).toEqual([
+      {
+        name: "Archer",
+        url: "https://www.aonprd.com/ArchetypeDisplay.aspx?FixedName=Fighter%20Archer",
+        replacementText: "Bravery; Armor Training 1-4",
+        description: "A master of bows.",
+      },
+    ]);
+
+    const detailHtml = `
+      <table id="MainContent_DataListTypes"><tr><td><span>
+        <h1 class="title">Archer</h1><b>Source</b>
+        <a href="https://paizo.com">Advanced Player's Guide pg. 104</a><br/>
+        The archer is dedicated to mastery of the bow.<br/><br/>
+        <b>Hawkeye (Ex)</b>: At 2nd level, an archer gains a bonus. This ability replaces bravery.<br/><br/>
+        <b>Trick Shot (Ex)</b>: At 3rd level, an archer gains trick shots. This ability alters armor training.<br/>
+      </span></td></tr></table>`;
+    const parsed = parseAonArchetypeDetail(
+      detailHtml,
+      links[0]!.url,
+      "Fighter",
+      links[0]!.description,
+      links[0]!.replacementText,
+    );
+    expect(parsed.name).toBe("Archer");
+    expect(parsed.baseClassName).toBe("Fighter");
+    expect(parsed.source).toBe("Advanced Player's Guide pg. 104");
+    expect(parsed.description).toBe(
+      "The archer is dedicated to mastery of the bow.",
+    );
+    expect(parsed.replaces).toEqual(["Bravery", "Armor Training 1-4"]);
+    expect(parsed.alters).toEqual(["armor training"]);
+    expect(parsed.features).toMatchObject([
+      { name: "Hawkeye", featureType: "Ex", level: 2 },
+      { name: "Trick Shot", featureType: "Ex", level: 3 },
+    ]);
   });
 
   it("parses AoN class feature levels and details fixtures", () => {

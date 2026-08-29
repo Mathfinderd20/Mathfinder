@@ -1,11 +1,20 @@
 import { useState } from "react";
-import type {
-  AbilityKey,
-  BreakdownEntry,
-  DerivedSheet,
-  DerivedStat,
-  InventoryEquipmentSlot,
+import {
+  ALIGNMENT_LABELS,
+  deriveHealthStatus,
+  SKILL_DEFINITIONS,
+  type AbilityKey,
+  type BreakdownEntry,
+  type DerivedSheet,
+  type DeathRules,
+  type DerivedStat,
+  type InventoryEquipmentSlot,
 } from "@mathfinder/rules-engine";
+import {
+  shouldDisplaySheetSkill,
+  skillMetadataTooltip,
+  skillTrainingFlag,
+} from "../skillPresentation";
 import type {
   AttackOutcome,
   SpellCastCounts,
@@ -21,7 +30,16 @@ import { featTitle, spellTitle } from "../rulesText";
 import { sign } from "../util";
 import { compatibleAmmoEntries } from "../ammoCatalog";
 import { weaponAmmoUxLabel } from "../weaponUx";
+import {
+  HealthTracker,
+  healthConditionLabel,
+  healthConditionTone,
+} from "./HealthTracker";
 import { Tooltip } from "./Tooltip";
+
+const SKILL_DEFINITION_BY_KEY = new Map(
+  SKILL_DEFINITIONS.map((skill) => [skill.key, skill] as const),
+);
 
 const ABILITY_ORDER: readonly AbilityKey[] = [
   "str",
@@ -89,8 +107,7 @@ function weaponRuntimeKey(
 
 function compactAttackHistory(
   entries:
-    | Array<{ at: string; outcome?: AttackOutcome; note?: string }>
-    | undefined,
+    Array<{ at: string; outcome?: AttackOutcome; note?: string }> | undefined,
 ) {
   return (
     (entries ?? [])
@@ -124,6 +141,29 @@ function statTooltip(stat: DerivedStat, raw?: boolean) {
     raw ? `${stat.total}` : sign(stat.total),
     stat.breakdown,
   );
+}
+
+function contextualAcTooltip(
+  profile: DerivedSheet["ac"]["contextual"][number],
+) {
+  return [
+    `${profile.label} AC`,
+    `Normal\n${statTooltip(profile.normal, true)}`,
+    `Touch\n${statTooltip(profile.touch, true)}`,
+    `Flat-Footed\n${statTooltip(profile.flatFooted, true)}`,
+  ].join("\n\n");
+}
+
+function damageReductionTooltip(
+  reduction: DerivedSheet["damageReductions"][number],
+) {
+  return [
+    `${reduction.label}: ${reduction.value}/${reduction.bypass}`,
+    `Applies against: ${reduction.appliesAgainst}`,
+    ...reduction.breakdown.map(
+      (entry) => `${entry.source}: ${entry.value}/${reduction.bypass}`,
+    ),
+  ].join("\n\n");
 }
 
 function weaponDamageTooltip(weapon: DerivedSheet["weapons"][number]) {
@@ -194,26 +234,6 @@ function hitPointTooltip(sheet: DerivedSheet) {
   if (sheet.hitPointDetails.miscHpTotal !== 0)
     parts.push(`Misc HP: ${sign(sheet.hitPointDetails.miscHpTotal)}`);
   return parts.join(" • ");
-}
-
-function hpStatusTooltip(
-  currentHp: number,
-  hpDamageTaken: number,
-  tempHp: number,
-  nonlethalDamage: number,
-  deathThreshold: number,
-  stable: boolean,
-  bleeding: boolean,
-) {
-  return [
-    `Current HP ${currentHp}`,
-    `Damage taken ${hpDamageTaken}`,
-    `Temp HP ${tempHp}`,
-    `Nonlethal ${nonlethalDamage}`,
-    `Death at ${deathThreshold}`,
-    `Stable ${stable ? "yes" : "no"}`,
-    `Bleeding ${bleeding ? "yes" : "no"}`,
-  ].join(" • ");
 }
 
 function wealthTooltip(
@@ -294,14 +314,20 @@ export function Sheet({
   tempHp,
   nonlethalDamage,
   stable,
-  bleeding,
+  deathRules,
+  fightOnSource,
+  diehardActive,
+  ferocityUsed,
   onApplyDamage,
   onApplyHealing,
+  onApplyHpLoss,
   onSetTempHp,
   onApplyNonlethal,
   onHealNonlethal,
   onSetStable,
-  onSetBleeding,
+  onSetDiehardActive,
+  onSetFerocityActive,
+  onSetFerocityUsed,
   onResetHp,
   spellCastCounts,
   onCastSpell,
@@ -324,14 +350,20 @@ export function Sheet({
   tempHp: number;
   nonlethalDamage: number;
   stable: boolean;
-  bleeding: boolean;
+  deathRules: DeathRules;
+  fightOnSource?: "diehard" | "orc" | "half-orc";
+  diehardActive: boolean;
+  ferocityUsed: boolean;
   onApplyDamage?: (amount: number, damageType?: string) => void;
   onApplyHealing?: (amount: number) => void;
+  onApplyHpLoss?: (amount: number) => void;
   onSetTempHp?: (amount: number) => void;
   onApplyNonlethal?: (amount: number) => void;
   onHealNonlethal?: (amount: number) => void;
   onSetStable?: (value: boolean) => void;
-  onSetBleeding?: (value: boolean) => void;
+  onSetDiehardActive?: (value: boolean) => void;
+  onSetFerocityActive?: (value: boolean) => void;
+  onSetFerocityUsed?: (value: boolean) => void;
   onResetHp?: () => void;
   spellCastCounts?: SpellCastCounts;
   onCastSpell?: (
@@ -387,9 +419,6 @@ export function Sheet({
   const [damageRollDrafts, setDamageRollDrafts] = useState<
     Record<string, string>
   >({});
-  const [damageInput, setDamageInput] = useState("");
-  const [damageTypeInput, setDamageTypeInput] = useState<string>("untyped");
-  const [healingInput, setHealingInput] = useState("");
   const [saveRollDrafts, setSaveRollDrafts] = useState<Record<string, string>>(
     {},
   );
@@ -398,15 +427,15 @@ export function Sheet({
   >({});
   const [initiativeRollDraft, setInitiativeRollDraft] = useState("");
   const [cmbRollDraft, setCmbRollDraft] = useState("");
-  const [tempHpInput, setTempHpInput] = useState("");
-  const [nonlethalInput, setNonlethalInput] = useState("");
-  const [nonlethalHealingInput, setNonlethalHealingInput] = useState("");
   const rankedSkills = Object.values(sheet.skills)
-    .filter((s) => s.ranks > 0 || s.isClassSkill)
+    .filter(shouldDisplaySheetSkill)
     .sort((a, b) => a.name.localeCompare(b.name));
 
   const { race, classes, archetypes, feats, features, suppressedFeatures } =
     sheet.descriptor;
+  const displayedFeatures = features.filter(
+    (feature) => !/^bonus feats?$/i.test(feature.name.trim()),
+  );
   const classLine = classes.map((c) => `${c.name} ${c.level}`).join(" / ");
   const archetypeLine = archetypes.map((a) => a.name).join(", ");
   const identity = [race, classLine, archetypeLine].filter(Boolean).join(" · ");
@@ -442,66 +471,20 @@ export function Sheet({
     return Number.isFinite(value) ? value : undefined;
   }
 
-  function applyDamage() {
-    const amount = Math.max(0, Number(damageInput) || 0);
-    if (amount <= 0) return;
-    onApplyDamage?.(
-      amount,
-      damageTypeInput === "untyped" ? undefined : damageTypeInput,
-    );
-    setDamageInput("");
-  }
-
-  function applyHealing() {
-    const amount = Math.max(0, Number(healingInput) || 0);
-    if (amount <= 0) return;
-    onApplyHealing?.(amount);
-    setHealingInput("");
-  }
-
-  function setTempHp() {
-    const amount = Math.max(0, Number(tempHpInput) || 0);
-    onSetTempHp?.(amount);
-    setTempHpInput("");
-  }
-
-  function applyNonlethal() {
-    const amount = Math.max(0, Number(nonlethalInput) || 0);
-    if (amount <= 0) return;
-    onApplyNonlethal?.(amount);
-    setNonlethalInput("");
-  }
-
-  function healNonlethal() {
-    const amount = Math.max(0, Number(nonlethalHealingInput) || 0);
-    if (amount <= 0) return;
-    onHealNonlethal?.(amount);
-    setNonlethalHealingInput("");
-  }
-
   function checkTotal(raw: string | undefined, modifier: number) {
     const roll = parsedRollTotal(raw);
     return roll === undefined ? undefined : roll + modifier;
   }
 
-  const deathThreshold = -sheet.abilities.con.score;
-  const status =
-    currentHp <= deathThreshold
-      ? { label: "Dead", tone: "dead" }
-      : currentHp < 0
-        ? {
-            label: stable ? "Stable" : bleeding ? "Dying · Bleeding" : "Dying",
-            tone: stable ? "warn" : "dead",
-          }
-        : nonlethalDamage > currentHp
-          ? { label: "Unconscious", tone: "warn" }
-          : currentHp === 0
-            ? { label: "Disabled", tone: "warn" }
-            : nonlethalDamage === currentHp && nonlethalDamage > 0
-              ? { label: "Staggered", tone: "warn" }
-              : bleeding
-                ? { label: "Bleeding", tone: "warn" }
-                : { label: "Okay-ish", tone: "ok" };
+  const healthStatus = deriveHealthStatus({
+    maxHp: sheet.hitPoints.total,
+    currentHp,
+    constitutionScore: sheet.abilities.con.score,
+    nonlethalDamage,
+    stable,
+    fightOn: !!fightOnSource,
+    deathThresholdBonus: deathRules.deathThresholdBonus,
+  });
 
   return (
     <div className="sheet paper-sheet">
@@ -513,23 +496,20 @@ export function Sheet({
           </div>
           <div className="sheet-meta-line">
             <span>{identity || "Unspecified heroics"}</span>
+            {sheet.descriptor.alignment ? (
+              <span>{ALIGNMENT_LABELS[sheet.descriptor.alignment]}</span>
+            ) : null}
             <span>Size: {sheet.size}</span>
             <Tooltip content={encumbranceTooltip(sheet.encumbrance)}>
               <span>Load: {sheet.encumbrance.band}</span>
             </Tooltip>
             <Tooltip
-              content={hpStatusTooltip(
-                currentHp,
-                hpDamageTaken,
-                tempHp,
-                nonlethalDamage,
-                deathThreshold,
-                stable,
-                bleeding,
-              )}
+              content={`Current HP ${currentHp} / ${sheet.hitPoints.total}\n\nDeath threshold ${healthStatus.deathThreshold} HP`}
             >
-              <span className={`tag hp-status ${status.tone}`}>
-                {status.label}
+              <span
+                className={`tag hp-status ${healthConditionTone(healthStatus.condition)}`}
+              >
+                {healthConditionLabel(healthStatus.condition)}
               </span>
             </Tooltip>
           </div>
@@ -597,6 +577,34 @@ export function Sheet({
                   </span>
                 </div>
               </Tooltip>
+              {sheet.ac.contextual.map((profile) => (
+                <Tooltip
+                  key={profile.context}
+                  content={contextualAcTooltip(profile)}
+                  className="mf-tooltip-anchor-block"
+                >
+                  <div className="summary-box ac-contextual">
+                    <span className="summary-label">AC {profile.label}</span>
+                    <span className="summary-value">
+                      {profile.normal.total}
+                    </span>
+                  </div>
+                </Tooltip>
+              ))}
+              {sheet.damageReductions.map((reduction) => (
+                <Tooltip
+                  key={reduction.id}
+                  content={damageReductionTooltip(reduction)}
+                  className="mf-tooltip-anchor-block"
+                >
+                  <div className="summary-box defense-contextual">
+                    <span className="summary-label">{reduction.label}</span>
+                    <span className="summary-value">
+                      {reduction.value}/{reduction.bypass}
+                    </span>
+                  </div>
+                </Tooltip>
+              ))}
               <Tooltip
                 content={hitPointTooltip(sheet)}
                 className="mf-tooltip-anchor-block"
@@ -720,122 +728,32 @@ export function Sheet({
                 </div>
               </Tooltip>
             </div>
-            <div className="weapon-history-note-row">
-              <label className="weapon-note-editor">
-                <span>Damage</span>
-                <input
-                  type="number"
-                  min={0}
-                  inputMode="numeric"
-                  placeholder="0"
-                  value={damageInput}
-                  onChange={(event) => setDamageInput(event.target.value)}
-                />
-              </label>
-              <label className="weapon-note-editor">
-                <span>Type</span>
-                <select
-                  value={damageTypeInput}
-                  onChange={(event) => setDamageTypeInput(event.target.value)}
-                >
-                  <option value="untyped">Untyped</option>
-                  <option value="physical">Physical</option>
-                  <option value="acid">Acid</option>
-                  <option value="cold">Cold</option>
-                  <option value="electricity">Electricity</option>
-                  <option value="fire">Fire</option>
-                  <option value="sonic">Sonic</option>
-                </select>
-              </label>
-              <button className="ghost small" onClick={applyDamage}>
-                Apply Damage
-              </button>
-              <label className="weapon-note-editor">
-                <span>Healing</span>
-                <input
-                  type="number"
-                  min={0}
-                  inputMode="numeric"
-                  placeholder="0"
-                  value={healingInput}
-                  onChange={(event) => setHealingInput(event.target.value)}
-                />
-              </label>
-              <button className="ghost small" onClick={applyHealing}>
-                Apply Healing
-              </button>
-              <label className="weapon-note-editor">
-                <span>Temp HP</span>
-                <input
-                  type="number"
-                  min={0}
-                  inputMode="numeric"
-                  placeholder="0"
-                  value={tempHpInput}
-                  onChange={(event) => setTempHpInput(event.target.value)}
-                />
-              </label>
-              <button className="ghost small" onClick={setTempHp}>
-                Set Temp
-              </button>
-              <label className="weapon-note-editor">
-                <span>Nonlethal</span>
-                <input
-                  type="number"
-                  min={0}
-                  inputMode="numeric"
-                  placeholder="0"
-                  value={nonlethalInput}
-                  onChange={(event) => setNonlethalInput(event.target.value)}
-                />
-              </label>
-              <button className="ghost small" onClick={applyNonlethal}>
-                Apply Nonlethal
-              </button>
-              <label className="weapon-note-editor">
-                <span>NL Heal</span>
-                <input
-                  type="number"
-                  min={0}
-                  inputMode="numeric"
-                  placeholder="0"
-                  value={nonlethalHealingInput}
-                  onChange={(event) =>
-                    setNonlethalHealingInput(event.target.value)
-                  }
-                />
-              </label>
-              <button className="ghost small" onClick={healNonlethal}>
-                Heal NL
-              </button>
-              <button
-                className={
-                  stable ? "ghost small active-template-choice" : "ghost small"
-                }
-                onClick={() => onSetStable?.(!stable)}
-              >
-                {stable ? "Stable " : "Stable"}
-              </button>
-              <button
-                className={
-                  bleeding
-                    ? "ghost small active-template-choice"
-                    : "ghost small"
-                }
-                onClick={() => onSetBleeding?.(!bleeding)}
-              >
-                {bleeding ? "Bleeding " : "Bleeding"}
-              </button>
-              <button className="ghost small" onClick={() => onResetHp?.()}>
-                Full Heal
-              </button>
-              <span className="weapon-crit">Damage Taken {hpDamageTaken}</span>
-              <span className="weapon-crit">Temp HP {tempHp}</span>
-              <span className="weapon-crit">Nonlethal {nonlethalDamage}</span>
-              <span className={`tag hp-status ${status.tone}`}>
-                {status.label}
-              </span>
-            </div>
+            <HealthTracker
+              maxHp={sheet.hitPoints.total}
+              currentHp={currentHp}
+              hpDamageTaken={hpDamageTaken}
+              tempHp={tempHp}
+              nonlethalDamage={nonlethalDamage}
+              constitutionScore={sheet.abilities.con.score}
+              stable={stable}
+              deathRules={deathRules}
+              fightOnSource={fightOnSource}
+              diehardActive={diehardActive}
+              ferocityUsed={ferocityUsed}
+              onApplyDamage={(amount, damageType) =>
+                onApplyDamage?.(amount, damageType)
+              }
+              onApplyHealing={(amount) => onApplyHealing?.(amount)}
+              onApplyHpLoss={(amount) => onApplyHpLoss?.(amount)}
+              onSetTempHp={(amount) => onSetTempHp?.(amount)}
+              onApplyNonlethal={(amount) => onApplyNonlethal?.(amount)}
+              onHealNonlethal={(amount) => onHealNonlethal?.(amount)}
+              onSetStable={(value) => onSetStable?.(value)}
+              onSetDiehardActive={(value) => onSetDiehardActive?.(value)}
+              onSetFerocityActive={(value) => onSetFerocityActive?.(value)}
+              onSetFerocityUsed={(value) => onSetFerocityUsed?.(value)}
+              onReset={() => onResetHp?.()}
+            />
           </section>
 
           <section className="panel paper-panel">
@@ -1436,52 +1354,79 @@ export function Sheet({
       <div className="sheet-sections sheet-sections-wide-right">
         <section className="panel paper-panel">
           <h2>Skills</h2>
-          <div className="skills paper-skill-grid">
-            {rankedSkills.map((s) => (
-              <Tooltip
-                key={s.key}
-                content={breakdownTooltip(sign(s.total), s.breakdown)}
-                className="mf-tooltip-anchor-block"
-              >
-                <div className="skill">
-                  <span className="skill-name">
-                    {s.name}
-                    {s.isClassSkill ? <span className="tag">class</span> : null}
-                    {s.trainedOnly && !s.usable ? (
-                      <span className="tag warn">untrained</span>
-                    ) : null}
-                  </span>
-                  <span className="skill-value">{sign(s.total)}</span>
+          <div className="skills single-column-skills paper-skill-grid">
+            {rankedSkills.map((skill) => {
+              const definition = SKILL_DEFINITION_BY_KEY.get(skill.key);
+              const metadata = skillMetadataTooltip({
+                ability: skill.ability,
+                isClassSkill: skill.isClassSkill,
+                trainedOnly: skill.trainedOnly,
+                usable: skill.usable,
+                armorCheckPenalty: definition?.armorCheckPenalty ?? false,
+              });
+              return (
+                <div className="skill" key={skill.key}>
+                  <Tooltip content={metadata} className="skill-name-tooltip">
+                    <span className="skill-name">
+                      <span className="skill-name-text">{skill.name}</span>
+                      <span className="skill-flags">
+                        {skill.isClassSkill ? (
+                          <span className="skill-flag">C</span>
+                        ) : null}
+                        <span
+                          className={`skill-flag ${skill.usable ? (skill.trainedOnly ? "" : "muted") : "warn"}`}
+                        >
+                          {skillTrainingFlag(skill.trainedOnly, skill.usable)}
+                        </span>
+                        {definition?.armorCheckPenalty ? (
+                          <span className="skill-flag">A</span>
+                        ) : null}
+                      </span>
+                    </span>
+                  </Tooltip>
+                  <Tooltip
+                    content={breakdownTooltip(
+                      sign(skill.total),
+                      skill.breakdown,
+                    )}
+                    className="skill-value-tooltip"
+                  >
+                    <span className="skill-value">{sign(skill.total)}</span>
+                  </Tooltip>
                   <label className="sheet-roll-entry skill-roll-entry-inline">
                     <input
                       type="number"
                       inputMode="numeric"
                       placeholder="d20"
-                      aria-label={`${s.name} d20 roll`}
-                      value={skillRollDrafts[s.key] ?? ""}
+                      aria-label={`${skill.name} d20 roll`}
+                      value={skillRollDrafts[skill.key] ?? ""}
                       onChange={(event) =>
                         setSkillRollDrafts((prev) => ({
                           ...prev,
-                          [s.key]: event.target.value,
+                          [skill.key]: event.target.value,
                         }))
                       }
                     />
                   </label>
                   <span className="sheet-roll-total">
-                    {checkTotal(skillRollDrafts[s.key], s.total) === undefined
+                    {checkTotal(skillRollDrafts[skill.key], skill.total) ===
+                    undefined
                       ? "—"
-                      : sign(checkTotal(skillRollDrafts[s.key], s.total) ?? 0)}
+                      : sign(
+                          checkTotal(skillRollDrafts[skill.key], skill.total) ??
+                            0,
+                        )}
                   </span>
                 </div>
-              </Tooltip>
-            ))}
+              );
+            })}
           </div>
         </section>
 
         <div className="sheet-stack">
           {archetypes.length > 0 ||
           feats.length > 0 ||
-          features.length > 0 ||
+          displayedFeatures.length > 0 ||
           suppressedFeatures.length > 0 ? (
             <section className="panel paper-panel">
               <h2>Feats & Special Abilities</h2>
@@ -1492,7 +1437,7 @@ export function Sheet({
                     <span className="chip-lvl">L{a.level}</span>
                   </span>
                 ))}
-                {features.map((f, i) => (
+                {displayedFeatures.map((f, i) => (
                   <span className="chip feature" key={`feat-${i}`}>
                     {f.name}
                     <span className="chip-lvl">L{f.level}</span>
@@ -1699,10 +1644,13 @@ export function Sheet({
                           ACP: {item.armor.checkPenalty ?? 0}
                         </span>
                         <span className="chip">
-                          Speed Penalty:{" "}
-                          {item.armor.speedPenalty
-                            ? `${sign(-item.armor.speedPenalty)} ft`
-                            : "—"}
+                          Speed:{" "}
+                          {item.armor.speed30 !== undefined ||
+                          item.armor.speed20 !== undefined
+                            ? `${item.armor.speed30 ?? "—"}/${item.armor.speed20 ?? "—"} ft profile`
+                            : item.armor.speedPenalty
+                              ? `${sign(-item.armor.speedPenalty)} ft`
+                              : "—"}
                         </span>
                       </div>
                     ) : null}
@@ -1888,6 +1836,23 @@ export function Sheet({
                         School: {displaySchoolName(c.specialistSchool)}
                       </span>
                     ) : null}
+                    {Object.entries(c.spellSaveDcBonusesBySchool)
+                      .filter(([, bonus]) => bonus.total !== 0)
+                      .map(([school, bonus]) => (
+                        <Tooltip
+                          key={`${classKey}-spell-dc-${school}`}
+                          content={bonus.breakdown
+                            .map(
+                              (entry) =>
+                                `${entry.source}: ${sign(entry.value)} ${entry.type}`,
+                            )
+                            .join("\n")}
+                        >
+                          <span className="chip">
+                            {displaySchoolName(school)} DC {sign(bonus.total)}
+                          </span>
+                        </Tooltip>
+                      ))}
                   </div>
                   <div className="spell-level-list">
                     {levels.map((level) => {

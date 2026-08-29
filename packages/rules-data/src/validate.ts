@@ -63,7 +63,12 @@ function validatePack(pack: RulesPack, path: string): ValidationIssue[] {
   pushDuplicateIssues(
     issues,
     `${path}.archetypes`,
-    archetypes.map((item) => item.name),
+    archetypes.map((item) => item.id),
+  );
+  pushDuplicateIssues(
+    issues,
+    `${path}.archetypes`,
+    archetypes.map((item) => `${item.baseClassName}:${item.name}`),
   );
   pushDuplicateIssues(
     issues,

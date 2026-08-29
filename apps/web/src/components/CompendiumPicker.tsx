@@ -1,7 +1,4 @@
-import {
-  searchCompendiumEntries,
-  type CompendiumEntry,
-} from "@mathfinder/rules-engine";
+import type { CompendiumEntry } from "@mathfinder/rules-engine";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Tooltip } from "./Tooltip";
 
@@ -20,11 +17,15 @@ interface CompendiumPickerProps {
   placeholder?: string;
   tooltip?: string;
   maxResults?: number;
+  commitMode?: "immediate" | "select";
+  resolveOptions?: (query: string) => CompendiumOption[];
+  inlineResults?: boolean;
 }
 
 interface IndexedCompendiumOption extends CompendiumEntry {
   tooltip?: string;
   searchText?: string | string[];
+  searchBlob: string;
 }
 
 const DEFAULT_MAX_RESULTS = 8;
@@ -36,48 +37,98 @@ export function CompendiumPicker({
   placeholder,
   tooltip,
   maxResults = DEFAULT_MAX_RESULTS,
+  commitMode = "immediate",
+  resolveOptions,
+  inlineResults = false,
 }: CompendiumPickerProps) {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState(value);
+  const [debouncedQuery, setDebouncedQuery] = useState(value);
 
   const indexedOptions = useMemo<IndexedCompendiumOption[]>(
     () =>
-      options.map((option) => ({
-        id: option.id,
-        name: option.name,
-        tooltip: option.tooltip,
-        searchText: option.searchText,
-        tags: option.tags,
-      })),
+      options.map((option) => {
+        const extraSearchText = Array.isArray(option.searchText)
+          ? option.searchText
+          : option.searchText
+            ? [option.searchText]
+            : [];
+        return {
+          id: option.id,
+          name: option.name,
+          tooltip: option.tooltip,
+          searchText: option.searchText,
+          tags: option.tags,
+          searchBlob: [
+            option.name,
+            option.id,
+            ...(option.tags ?? []),
+            ...extraSearchText,
+          ]
+            .join(" ")
+            .toLowerCase(),
+        };
+      }),
     [options],
   );
 
+  const selectedOptionPool = useMemo(() => {
+    if (!value.trim()) return [] as IndexedCompendiumOption[];
+    return resolveOptions ? resolveOptions(value) : indexedOptions;
+  }, [indexedOptions, resolveOptions, value]);
+
   const selectedOption = useMemo(
     () =>
-      indexedOptions.find(
+      selectedOptionPool.find(
         (option) => option.name.toLowerCase() === value.trim().toLowerCase(),
       ),
-    [indexedOptions, value],
+    [selectedOptionPool, value],
   );
 
-  const results = useMemo(
-    () =>
-      searchCompendiumEntries(indexedOptions, value, [
-        (option) => option.searchText,
-      ]).slice(0, maxResults),
-    [indexedOptions, maxResults, value],
-  );
+  const results = useMemo(() => {
+    if (!open && !debouncedQuery.trim()) return [] as IndexedCompendiumOption[];
+    if (resolveOptions)
+      return resolveOptions(debouncedQuery).slice(0, maxResults);
+    const search = debouncedQuery.trim().toLowerCase();
+    return (
+      search
+        ? indexedOptions.filter((option) => option.searchBlob.includes(search))
+        : indexedOptions
+    ).slice(0, maxResults);
+  }, [debouncedQuery, indexedOptions, maxResults, open, resolveOptions]);
 
-  const showResults = open && results.length > 0;
+  const showResults = open;
   const activeTooltip = selectedOption?.tooltip ?? tooltip;
 
   useEffect(() => {
+    if (!open) {
+      setQuery(value);
+      setDebouncedQuery(value);
+    }
+  }, [open, value]);
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => setDebouncedQuery(query), 100);
+    return () => window.clearTimeout(timeout);
+  }, [query]);
+
+  useEffect(() => {
+    if (commitMode !== "immediate" || query === value) return;
+    const timeout = window.setTimeout(() => onChange(query), 250);
+    return () => window.clearTimeout(timeout);
+  }, [commitMode, onChange, query, value]);
+
+  useEffect(() => {
     function handlePointerDown(event: MouseEvent) {
-      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+      if (!rootRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+        if (commitMode === "select") setQuery(value);
+      }
     }
     document.addEventListener("mousedown", handlePointerDown);
     return () => document.removeEventListener("mousedown", handlePointerDown);
-  }, []);
+  }, [commitMode, value]);
 
   return (
     <div ref={rootRef} className="searchable-picker">
@@ -85,44 +136,75 @@ export function CompendiumPicker({
         <input
           className="searchable-name-input"
           type="text"
-          value={value}
+          value={query}
           placeholder={placeholder}
           autoComplete="off"
           onFocus={() => setOpen(true)}
           onChange={(event) => {
-            onChange(event.target.value);
+            const nextQuery = event.target.value;
+            setQuery(nextQuery);
             setOpen(true);
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              const exact = results.find(
+                (option) =>
+                  option.name.toLowerCase() === query.trim().toLowerCase(),
+              );
+              const chosen = exact ?? results[0];
+              if (chosen) {
+                onChange(chosen.name);
+                setQuery(chosen.name);
+                setOpen(false);
+                event.preventDefault();
+              }
+            }
+            if (event.key === "Escape") {
+              setQuery(value);
+              setOpen(false);
+            }
+          }}
+          onBlur={() => {
+            if (commitMode === "select") setQuery(value);
+            else if (query !== value) onChange(query);
           }}
         />
       </Tooltip>
       {showResults ? (
-        <div className="searchable-picker-results">
-          {results.map((option) => {
-            const isSelected =
-              option.name.toLowerCase() === value.trim().toLowerCase();
-            return (
-              <button
-                key={option.id}
-                type="button"
-                className={`searchable-picker-option${isSelected ? " selected" : ""}`}
-                onMouseDown={(event) => event.preventDefault()}
-                onClick={() => {
-                  onChange(option.name);
-                  setOpen(false);
-                }}
-                title={option.tooltip}
-              >
-                <span className="searchable-picker-option-name">
-                  {option.name}
-                </span>
-                {option.tags?.length ? (
-                  <span className="searchable-picker-option-meta">
-                    {option.tags.join(" · ")}
+        <div
+          className={`searchable-picker-results${inlineResults ? " inline-results" : ""}`}
+        >
+          {results.length > 0 ? (
+            results.map((option) => {
+              const isSelected =
+                option.name.toLowerCase() === value.trim().toLowerCase();
+              return (
+                <button
+                  key={option.id}
+                  type="button"
+                  className={`searchable-picker-option${isSelected ? " selected" : ""}`}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => {
+                    onChange(option.name);
+                    setQuery(option.name);
+                    setOpen(false);
+                  }}
+                  title={option.tooltip}
+                >
+                  <span className="searchable-picker-option-name">
+                    {option.name}
                   </span>
-                ) : null}
-              </button>
-            );
-          })}
+                  {option.tags?.length ? (
+                    <span className="searchable-picker-option-meta">
+                      {option.tags.join(" · ")}
+                    </span>
+                  ) : null}
+                </button>
+              );
+            })
+          ) : (
+            <div className="searchable-picker-empty">No matches.</div>
+          )}
         </div>
       ) : null}
     </div>

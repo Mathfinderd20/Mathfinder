@@ -1,3 +1,9 @@
+import type { Alignment } from "../alignment";
+import {
+  alignmentRestrictionsEnabled,
+  type CampaignRules,
+} from "../campaign-rules";
+import { alignmentEthic, alignmentHasNeutralComponent } from "../alignment";
 import type {
   AbilityKey,
   ArmorCategory,
@@ -11,6 +17,11 @@ export type ArmorProficiency = Exclude<ArmorCategory, "none">;
 export type BabProgression = "full" | "three-quarter" | "half";
 export type SaveKind = "fort" | "ref" | "will";
 export type ShieldProficiency = "shield" | "tower-shield";
+
+export type ClassAlignmentRestriction =
+  | { type: "exact"; alignment: Alignment; description: string }
+  | { type: "nonlawful"; description: string }
+  | { type: "neutral-component"; description: string };
 
 export interface SpellcastingProgression {
   castingType: SpellcastingType;
@@ -71,7 +82,26 @@ export interface ClassDefinition {
   specificWeaponProficiencies?: string[];
   spellcasting?: SpellcastingProgression;
   isPrestigeClass?: boolean;
+  alignmentRestriction?: ClassAlignmentRestriction;
   prerequisites?: ClassPrerequisite[];
+}
+
+export function classAllowsAlignment(
+  classDef: ClassDefinition,
+  alignment: Alignment | undefined,
+  campaignRules?: CampaignRules | null,
+): boolean {
+  if (!alignmentRestrictionsEnabled(campaignRules)) return true;
+  const restriction = classDef.alignmentRestriction;
+  if (!restriction || !alignment) return true;
+  switch (restriction.type) {
+    case "exact":
+      return alignment === restriction.alignment;
+    case "nonlawful":
+      return alignmentEthic(alignment) !== "lawful";
+    case "neutral-component":
+      return alignmentHasNeutralComponent(alignment);
+  }
 }
 
 /** Base attack bonus contributed by `levels` levels of a given progression. */
@@ -187,6 +217,10 @@ export const SAMPLE_CLASSES: ClassRegistry = {
   },
   barbarian: {
     name: "Barbarian",
+    alignmentRestriction: {
+      type: "nonlawful",
+      description: "Barbarians must be nonlawful.",
+    },
     hitDie: 12,
     bab: "full",
     goodSaves: ["fort"],
@@ -366,6 +400,10 @@ export const SAMPLE_CLASSES: ClassRegistry = {
   },
   druid: {
     name: "Druid",
+    alignmentRestriction: {
+      type: "neutral-component",
+      description: "Druids must have at least one neutral alignment component.",
+    },
     hitDie: 8,
     bab: "three-quarter",
     goodSaves: ["fort", "will"],
@@ -514,6 +552,11 @@ export const SAMPLE_CLASSES: ClassRegistry = {
   },
   paladin: {
     name: "Paladin",
+    alignmentRestriction: {
+      type: "exact",
+      alignment: "lawful-good",
+      description: "Paladins must be lawful good.",
+    },
     hitDie: 10,
     bab: "full",
     goodSaves: ["fort", "will"],

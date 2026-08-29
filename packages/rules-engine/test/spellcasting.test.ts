@@ -5,7 +5,13 @@ import {
   type CharacterBuild,
   validateBuild,
 } from "../src/build/character";
-import { bonusSpellSlots, spellSaveDc, spellsByLevel } from "../src";
+import {
+  bonusSpellSlots,
+  SPELLS,
+  spellSaveDc,
+  spellSaveDcForSchool,
+  spellsByLevel,
+} from "../src";
 
 describe("spellcasting helpers", () => {
   it("computes spell save DCs from spell level and casting modifier", () => {
@@ -26,7 +32,103 @@ describe("spellcasting helpers", () => {
   });
 });
 
+describe("runtime spell registries", () => {
+  it("validates selected spells against the supplied runtime catalog", () => {
+    const build: CharacterBuild = {
+      name: "Catalog Caster",
+      race: { name: "Human", size: "medium", speed: 30 },
+      baseAbilityScores: {
+        str: 8,
+        dex: 12,
+        con: 12,
+        int: 10,
+        wis: 10,
+        cha: 18,
+      },
+      levels: [{ className: "Sorcerer", hitPointRoll: 6, feats: [] }],
+      spellSelections: {
+        sorcerer: { known: { 1: ["Runtime-Only Spell"] } },
+      },
+    };
+    const sheet = computeSheet(buildCharacter(build), {
+      spellRegistry: {
+        "runtime-only spell": {
+          id: "runtime-only-spell",
+          name: "Runtime-Only Spell",
+          pack: "test",
+          classes: [{ className: "sorcerer", level: 1 }],
+        },
+      },
+    });
+    expect(
+      sheet.spellcasting[0]?.selectionDiagnostics[1]?.unknownSpells,
+    ).toEqual([]);
+  });
+});
+
 describe("wizard spellcasting", () => {
+  it("applies Spell Focus only to the selected school's save DCs", () => {
+    const build: CharacterBuild = {
+      name: "Focused Caster",
+      race: { name: "Human", size: "medium", speed: 30 },
+      baseAbilityScores: {
+        str: 8,
+        dex: 14,
+        con: 12,
+        int: 18,
+        wis: 10,
+        cha: 10,
+      },
+      levels: [
+        {
+          className: "Wizard",
+          hitPointRoll: 6,
+          feats: ["Spell Focus (Evocation)", "Greater Spell Focus (Evocation)"],
+        },
+      ],
+    };
+    const caster = computeSheet(buildCharacter(build)).spellcasting[0]!;
+    expect(caster.spellSaveDcs[1]).toBe(15);
+    expect(caster.spellSaveDcBonusesBySchool.evocation?.total).toBe(2);
+    expect(spellSaveDcForSchool(caster, 1, "Evocation")).toBe(17);
+    expect(spellSaveDcForSchool(caster, 1, "Conjuration")).toBe(15);
+  });
+
+  it("uses the supplied runtime spell registry for selection diagnostics", () => {
+    const build: CharacterBuild = {
+      name: "Runtime Librarian",
+      race: { name: "Human", size: "medium", speed: 30 },
+      baseAbilityScores: {
+        str: 8,
+        dex: 14,
+        con: 12,
+        int: 18,
+        wis: 10,
+        cha: 10,
+      },
+      levels: [{ className: "Wizard", hitPointRoll: 6 }],
+      spellLibrary: { wizard: { 1: ["Audit Spell"] } },
+      spellSelections: { wizard: { prepared: { 1: ["Audit Spell"] } } },
+    };
+    const runtimeSpells = {
+      ...SPELLS,
+      "audit-spell": {
+        id: "audit-spell",
+        name: "Audit Spell",
+        pack: "audit",
+        classes: [{ className: "Wizard", level: 1 }],
+      },
+    };
+
+    const diagnostics = computeSheet(buildCharacter(build), {
+      spellRegistry: runtimeSpells,
+    }).spellcasting[0]!.selectionDiagnostics[1]!;
+
+    expect(diagnostics.availableSpellNames).toContain("Audit Spell");
+    expect(diagnostics.unknownSpells).toEqual([]);
+    expect(diagnostics.offListSpells).toEqual([]);
+  });
+
   it("derives prepared casting with prep capacity", () => {
     const build: CharacterBuild = {
       name: "Merisiel But Nerdier",

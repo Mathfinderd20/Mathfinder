@@ -147,6 +147,64 @@ describe("weapon damage derivation", () => {
     expect(longbow!.attack.total).toBe(3); // BAB 1 + Dex 2
   });
 
+  it("applies Strength penalties in full instead of multiplying them by handedness", () => {
+    const sheet = computeSheet(
+      input({
+        abilityScores: {
+          str: 6,
+          dex: 14,
+          con: 12,
+          int: 10,
+          wis: 10,
+          cha: 10,
+        },
+        weapons: [
+          {
+            name: "Greataxe",
+            category: "melee",
+            damageDice: "1d12",
+            handedness: "two",
+          },
+          {
+            name: "Off-hand Axe",
+            category: "melee",
+            damageDice: "1d6",
+            handedness: "off",
+          },
+        ],
+      }),
+    );
+    expect(sheet.weapons[0]?.damageDisplay).toBe("1d12-2");
+    expect(sheet.weapons[1]?.damageDisplay).toBe("1d6-2");
+  });
+
+  it("honors non-Strength damage ability overrides", () => {
+    const sheet = computeSheet(
+      input({
+        abilityScores: {
+          str: 10,
+          dex: 10,
+          con: 10,
+          int: 18,
+          wis: 10,
+          cha: 10,
+        },
+        weapons: [
+          {
+            name: "Mind Blade",
+            category: "melee",
+            damageDice: "1d8",
+            damageAbility: "int",
+          },
+        ],
+      }),
+    );
+    expect(sheet.weapons[0]?.damageDisplay).toBe("1d8+4");
+    expect(sheet.weapons[0]?.damageBreakdown).toContainEqual(
+      expect.objectContaining({ source: "Intelligence", value: 4 }),
+    );
+  });
+
   it("honors explicit Dexterity-to-damage overrides for ranged weapons", () => {
     const sheet = computeSheet(
       input({
@@ -238,7 +296,8 @@ describe("ammo and reload modeling", () => {
         ],
         inventoryItems: [
           {
-            name: "Bolts",
+            name: "Crossbow Ammunition",
+            ammoType: "Bolts",
             quantity: 12,
             weightEach: 0.1,
             totalWeight: 1.2,

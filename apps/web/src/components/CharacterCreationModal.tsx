@@ -1,0 +1,526 @@
+import {
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+import {
+  buildCharacter,
+  classAllowsAlignment,
+  computeSheet,
+  featContextFromSheet,
+  SKILL_DEFINITIONS,
+  type AbilityKey,
+  type Alignment,
+  type CharacterBuild,
+  type SkillKey,
+} from "@mathfinder/rules-engine";
+import {
+  RUNTIME_ARCHETYPES,
+  RUNTIME_CLASSES,
+  RUNTIME_CLASS_FEATURES,
+  RUNTIME_CLASS_OPTIONS,
+  RUNTIME_FEATS,
+  RUNTIME_RACE_OPTIONS,
+  RUNTIME_SPELLS,
+  RUNTIME_WEAPONS,
+} from "../content";
+import {
+  buildFeatPickerOptions,
+  collectFeatWeaponNames,
+} from "../featOptionData";
+import { plannedFeatSlotsForLevel } from "../featSlots";
+import { buildFavoredClassBonusOptions } from "../favoredClassBonusData";
+import { createFreshCharacterBuild } from "../features/characters/newCharacterBuild";
+import { AlignmentPicker } from "./AlignmentPicker";
+import { FeatSelectionPicker } from "./FeatSelectionPicker";
+
+const ABILITIES: AbilityKey[] = ["str", "dex", "con", "int", "wis", "cha"];
+const DEFAULT_SCORES: Record<AbilityKey, number> = {
+  str: 10,
+  dex: 10,
+  con: 10,
+  int: 10,
+  wis: 10,
+  cha: 10,
+};
+
+interface Props {
+  characterName: string;
+  onConfirm: (build: CharacterBuild) => void;
+  onClose: () => void;
+}
+
+function uniqueRaceOptions() {
+  const seen = new Set<string>();
+  return RUNTIME_RACE_OPTIONS.filter(([, race]) => {
+    const key = race.name.trim().toLowerCase();
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function classKeyForName(name: string) {
+  return (
+    Object.keys(RUNTIME_CLASSES).find(
+      (key) => RUNTIME_CLASSES[key]?.name.toLowerCase() === name.toLowerCase(),
+    ) ?? name.toLowerCase()
+  );
+}
+
+export function CharacterCreationModal({
+  characterName,
+  onConfirm,
+  onClose,
+}: Props) {
+  const raceOptions = useMemo(uniqueRaceOptions, []);
+  const defaultRaceKey =
+    raceOptions.find(([, race]) => race.name.toLowerCase() === "human")?.[0] ??
+    raceOptions[0]?.[0] ??
+    "human";
+  const defaultClassName =
+    RUNTIME_CLASS_OPTIONS.find((entry) => entry.name === "Fighter")?.name ??
+    RUNTIME_CLASS_OPTIONS[0]?.name ??
+    "Fighter";
+  const [raceKey, setRaceKey] = useState(defaultRaceKey);
+  const [alignment, setAlignment] = useState<Alignment>("true-neutral");
+  const [ignoreAlignmentRestrictions, setIgnoreAlignmentRestrictions] =
+    useState(false);
+  const [className, setClassName] = useState(defaultClassName);
+  const [abilityScores, setAbilityScores] =
+    useState<Record<AbilityKey, number>>(DEFAULT_SCORES);
+  const deferredAbilityScores = useDeferredValue(abilityScores);
+  const [flexibleAbility, setFlexibleAbility] = useState<AbilityKey>("str");
+  const [selectedSkills, setSelectedSkills] = useState<Set<SkillKey>>(
+    new Set(),
+  );
+  const [selectedFeats, setSelectedFeats] = useState<string[]>([]);
+  const [raceBonusFeat, setRaceBonusFeat] = useState("");
+  const [favoredClass, setFavoredClass] = useState<string | undefined>("hp");
+
+  const race =
+    RUNTIME_RACE_OPTIONS.find(([key]) => key === raceKey)?.[1] ??
+    raceOptions[0]?.[1];
+  const classKey = classKeyForName(className);
+  const classDefinition = RUNTIME_CLASSES[classKey];
+  const resolvedRace = race ?? RUNTIME_RACE_OPTIONS[0]![1];
+  const creationFavoredClassBonusOptions = buildFavoredClassBonusOptions(
+    resolvedRace,
+    className,
+  );
+  const hasFlexibleAbility = !!race?.choiceOptions?.flexibleAbilityBonus;
+  const hasRaceBonusFeat = !!race?.choiceOptions?.bonusFeat;
+
+  const createBuild = useCallback(
+    (scores: Record<AbilityKey, number>) => {
+      if (!race || !classDefinition) return undefined;
+      return createFreshCharacterBuild(characterName, race, {
+        className: classDefinition.name,
+        alignment,
+        hitPointRoll: classDefinition.hitDie,
+        baseAbilityScores: scores,
+        flexibleAbility: hasFlexibleAbility ? flexibleAbility : undefined,
+        raceBonusFeat: hasRaceBonusFeat ? raceBonusFeat : undefined,
+        skillRanks: Object.fromEntries(
+          [...selectedSkills].map((skill) => [skill, 1]),
+        ),
+        feats: selectedFeats,
+        favoredClass,
+        ignoreAlignmentRestrictions,
+      });
+    },
+    [
+      alignment,
+      characterName,
+      classDefinition,
+      favoredClass,
+      flexibleAbility,
+      hasFlexibleAbility,
+      hasRaceBonusFeat,
+      ignoreAlignmentRestrictions,
+      race,
+      raceBonusFeat,
+      selectedFeats,
+      selectedSkills,
+    ],
+  );
+  const draftBuild = useMemo(
+    () => createBuild(deferredAbilityScores),
+    [createBuild, deferredAbilityScores],
+  );
+
+  const previewSheet = useMemo(
+    () =>
+      draftBuild
+        ? computeSheet(
+            buildCharacter(
+              draftBuild,
+              RUNTIME_CLASSES,
+              RUNTIME_FEATS,
+              RUNTIME_CLASS_FEATURES,
+              RUNTIME_ARCHETYPES,
+            ),
+            { spellRegistry: RUNTIME_SPELLS },
+          )
+        : undefined,
+    [draftBuild],
+  );
+  const featSlots = useMemo(
+    () => (draftBuild ? plannedFeatSlotsForLevel(draftBuild, 0) : []),
+    [draftBuild],
+  );
+  const intelligenceScore =
+    previewSheet?.abilities.int.score ?? abilityScores.int;
+  const intelligenceModifier = Math.floor((intelligenceScore - 10) / 2);
+  const extraRaceSkillRanks = race?.choiceOptions?.extraSkillRanksPerLevel ?? 0;
+  const skillPoints = Math.max(
+    1,
+    (classDefinition?.skillRanksPerLevel ?? 0) +
+      intelligenceModifier +
+      extraRaceSkillRanks,
+  );
+  const remainingSkills = skillPoints - selectedSkills.size;
+  const classSkills = new Set(classDefinition?.classSkills ?? []);
+
+  useEffect(() => {
+    setSelectedSkills(
+      (previous) => new Set([...previous].slice(0, skillPoints)),
+    );
+  }, [skillPoints]);
+
+  useEffect(() => {
+    setSelectedFeats((previous) => previous.slice(0, featSlots.length));
+  }, [featSlots.length]);
+
+  useEffect(() => {
+    if (!hasRaceBonusFeat) setRaceBonusFeat("");
+  }, [hasRaceBonusFeat]);
+
+  const featContext = useMemo(
+    () => (previewSheet ? featContextFromSheet(previewSheet) : undefined),
+    [previewSheet],
+  );
+  const availableWeaponNames = useMemo(
+    () =>
+      draftBuild ? collectFeatWeaponNames(draftBuild, RUNTIME_WEAPONS) : [],
+    [draftBuild],
+  );
+  const resolveFeatOptions = useCallback(
+    (
+      grantKind: "general" | "fighter-bonus",
+      currentSelection: string | undefined,
+    ) => {
+      if (!featContext) return [];
+      return buildFeatPickerOptions({
+        featRegistry: RUNTIME_FEATS,
+        featContext,
+        grantKind,
+        takenSelections: [raceBonusFeat, ...selectedFeats].filter(Boolean),
+        currentSelection,
+        availableWeaponNames,
+      });
+    },
+    [availableWeaponNames, featContext, raceBonusFeat, selectedFeats],
+  );
+
+  const classAlignmentAllowed =
+    !!classDefinition &&
+    classAllowsAlignment(classDefinition, alignment, {
+      ignoreAlignmentRestrictions,
+    });
+  const missingRequiredFeat =
+    selectedFeats.filter(Boolean).length < featSlots.length ||
+    (hasRaceBonusFeat && !raceBonusFeat);
+  const canConfirm =
+    !!draftBuild &&
+    classAlignmentAllowed &&
+    remainingSkills >= 0 &&
+    !missingRequiredFeat;
+
+  function updateAbility(ability: AbilityKey, rawValue: string) {
+    const value = Math.max(7, Math.min(18, Number(rawValue) || 10));
+    setAbilityScores((previous) => ({ ...previous, [ability]: value }));
+  }
+
+  function toggleSkill(skill: SkillKey) {
+    setSelectedSkills((previous) => {
+      const next = new Set(previous);
+      if (next.has(skill)) next.delete(skill);
+      else if (next.size < skillPoints) next.add(skill);
+      return next;
+    });
+  }
+
+  return (
+    <div className="modal-backdrop">
+      <div className="modal" onClick={(event) => event.stopPropagation()}>
+        <h2>Create {characterName.trim() || "Unnamed Hero"} · Level 1</h2>
+        <p className="hint">
+          Make the decisions that define the character now. Everything remains
+          editable later on the Build page.
+        </p>
+
+        <div className="field">
+          <span>Ancestry</span>
+          <select
+            value={raceKey}
+            onChange={(event) => setRaceKey(event.target.value)}
+          >
+            {raceOptions.map(([key, option]) => (
+              <option key={key} value={key}>
+                {option.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="field compact alignment-field">
+          <span>Alignment</span>
+          <AlignmentPicker value={alignment} onChange={setAlignment} />
+        </div>
+
+        <label className="pick campaign-rule-pick">
+          <input
+            type="checkbox"
+            checked={ignoreAlignmentRestrictions}
+            onChange={(event) =>
+              setIgnoreAlignmentRestrictions(event.target.checked)
+            }
+          />
+          <span>
+            <strong>Ignore alignment restrictions</strong>
+            <span className="buff-desc">
+              House rule: all class alignment requirements are disabled.
+            </span>
+          </span>
+        </label>
+
+        <div className="field">
+          <span>Class</span>
+          <select
+            value={className}
+            onChange={(event) => setClassName(event.target.value)}
+          >
+            {RUNTIME_CLASS_OPTIONS.map((option) => {
+              const allowed = classAllowsAlignment(
+                RUNTIME_CLASSES[classKeyForName(option.name)]!,
+                alignment,
+                { ignoreAlignmentRestrictions },
+              );
+              return (
+                <option
+                  key={option.name}
+                  value={option.name}
+                  disabled={!allowed}
+                >
+                  {option.name} · d{option.hitDie}
+                  {allowed ? "" : " · alignment restricted"}
+                </option>
+              );
+            })}
+          </select>
+        </div>
+
+        <div className="field">
+          <span>Base ability scores</span>
+          <div className="ability-picker">
+            {ABILITIES.map((ability) => (
+              <label className="field compact" key={ability}>
+                <span>{ability.toUpperCase()}</span>
+                <input
+                  type="number"
+                  min={7}
+                  max={18}
+                  value={abilityScores[ability]}
+                  onChange={(event) =>
+                    updateAbility(ability, event.target.value)
+                  }
+                />
+              </label>
+            ))}
+          </div>
+        </div>
+
+        {hasFlexibleAbility ? (
+          <div className="field">
+            <span>Ancestry ability bonus</span>
+            <div className="ability-picker">
+              {ABILITIES.map((ability) => (
+                <label
+                  className={`pick ${flexibleAbility === ability ? "on" : ""}`}
+                  key={ability}
+                >
+                  <input
+                    type="radio"
+                    name="creation-flexible-ability"
+                    checked={flexibleAbility === ability}
+                    onChange={() => setFlexibleAbility(ability)}
+                  />
+                  +{race?.choiceOptions?.flexibleAbilityBonus?.value ?? 2}{" "}
+                  {ability.toUpperCase()}
+                </label>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        <div className="field">
+          <span>
+            Skill ranks — {remainingSkills} of {skillPoints} left
+            <span className="muted"> (class skills marked C)</span>
+          </span>
+          <div className="skill-picker">
+            {SKILL_DEFINITIONS.map((skill) => {
+              const selected = selectedSkills.has(skill.key);
+              return (
+                <label
+                  className={`pick ${selected ? "on" : ""}`}
+                  key={skill.key}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selected}
+                    disabled={!selected && remainingSkills <= 0}
+                    onChange={() => toggleSkill(skill.key)}
+                  />
+                  {skill.name} {classSkills.has(skill.key) ? "· C" : ""}
+                </label>
+              );
+            })}
+          </div>
+        </div>
+
+        {featSlots.map((slot, slotIndex) => {
+          const selected = selectedFeats[slotIndex] ?? "";
+          return (
+            <label className="field" key={`${slot.source}-${slotIndex}`}>
+              <span>{slot.label}</span>
+              <FeatSelectionPicker
+                value={selected}
+                onChange={(value) =>
+                  setSelectedFeats((previous) => {
+                    const next = [...previous];
+                    next[slotIndex] = value;
+                    return next;
+                  })
+                }
+                featRegistry={RUNTIME_FEATS}
+                grantKind={slot.kind}
+                availableWeaponNames={availableWeaponNames}
+                allowedOptions={resolveFeatOptions(slot.kind, selected)}
+                placeholder="Type to search legal feats"
+              />
+            </label>
+          );
+        })}
+
+        {hasRaceBonusFeat ? (
+          <label className="field">
+            <span>{race?.name} bonus feat</span>
+            <FeatSelectionPicker
+              value={raceBonusFeat}
+              onChange={setRaceBonusFeat}
+              featRegistry={RUNTIME_FEATS}
+              grantKind="general"
+              availableWeaponNames={availableWeaponNames}
+              allowedOptions={resolveFeatOptions("general", raceBonusFeat)}
+              placeholder="Type to search legal feats"
+            />
+          </label>
+        ) : null}
+
+        <div className="field">
+          <span>Favored class bonus</span>
+          <div className="ability-picker">
+            {creationFavoredClassBonusOptions.map((option) => {
+              const value = option.value || undefined;
+              return (
+                <label
+                  className={`pick ${favoredClass === value ? "on" : ""}`}
+                  key={option.value || "none"}
+                  title={option.description}
+                >
+                  <input
+                    type="radio"
+                    name="creation-favored-class"
+                    checked={favoredClass === value}
+                    onChange={() => setFavoredClass(value)}
+                  />
+                  {option.label}
+                </label>
+              );
+            })}
+          </div>
+        </div>
+
+        {previewSheet ? (
+          <section className="modal-preview">
+            <div className="modal-preview-header">
+              <strong>Level 1 preview</strong>
+              <span className="muted">
+                {race?.name} · {classDefinition?.name}
+              </span>
+            </div>
+            <div className="modal-preview-grid">
+              <div className="modal-preview-card">
+                <div className="modal-preview-label">Hit Points</div>
+                <div className="modal-preview-value">
+                  {previewSheet.hitPoints.total}
+                </div>
+                <div className="modal-preview-note">
+                  Maximum d{classDefinition?.hitDie} at level 1
+                </div>
+              </div>
+              <div className="modal-preview-card">
+                <div className="modal-preview-label">Armor Class</div>
+                <div className="modal-preview-value">
+                  {previewSheet.ac.normal.total}
+                </div>
+              </div>
+              <div className="modal-preview-card">
+                <div className="modal-preview-label">BAB</div>
+                <div className="modal-preview-value">
+                  +{previewSheet.baseAttackBonus}
+                </div>
+              </div>
+              <div className="modal-preview-card">
+                <div className="modal-preview-label">Feats</div>
+                <div className="modal-preview-value">
+                  {[raceBonusFeat, ...selectedFeats].filter(Boolean).length}
+                </div>
+              </div>
+            </div>
+          </section>
+        ) : null}
+
+        {!classAlignmentAllowed ? (
+          <p className="form-error">
+            {classDefinition?.alignmentRestriction?.description}
+          </p>
+        ) : null}
+        {missingRequiredFeat ? (
+          <p className="form-error">
+            Choose every granted feat before continuing.
+          </p>
+        ) : null}
+        <div className="modal-actions">
+          <button className="ghost" type="button" onClick={onClose}>
+            Back
+          </button>
+          <button
+            type="button"
+            disabled={!canConfirm}
+            onClick={() => {
+              const finalBuild = createBuild(abilityScores);
+              if (finalBuild) onConfirm(finalBuild);
+            }}
+          >
+            Create Character
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

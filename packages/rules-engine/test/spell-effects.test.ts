@@ -34,14 +34,15 @@ describe("spell effects registry", () => {
   it("looks up spell effects by spell name", () => {
     expect(getSpellEffectByName("Bless")?.id).toBe("spell-bless");
     expect(
-      resolveSpellEffect(getSpellEffectByName("Barkskin")!, testContext).modifiers[0]
-        ?.type,
+      resolveSpellEffect(getSpellEffectByName("Barkskin")!, testContext)
+        .modifiers[0]?.type,
     ).toBe("natural-armor");
   });
 
   it("applies bless, barkskin, and resistance through the shared modifier engine", () => {
     const mods = [
-      ...resolveSpellEffect(getSpellEffectByName("Bless")!, testContext).modifiers,
+      ...resolveSpellEffect(getSpellEffectByName("Bless")!, testContext)
+        .modifiers,
       ...resolveSpellEffect(getSpellEffectByName("Barkskin")!, testContext)
         .modifiers,
       ...resolveSpellEffect(getSpellEffectByName("Resistance")!, testContext)
@@ -58,8 +59,10 @@ describe("spell effects registry", () => {
 
   it("applies ability, morale, and speed spells to downstream stats", () => {
     const mods = [
-      ...resolveSpellEffect(getSpellEffectByName("Bull's Strength")!, testContext)
-        .modifiers,
+      ...resolveSpellEffect(
+        getSpellEffectByName("Bull's Strength")!,
+        testContext,
+      ).modifiers,
       ...resolveSpellEffect(getSpellEffectByName("Heroism")!, testContext)
         .modifiers,
       ...resolveSpellEffect(getSpellEffectByName("Longstrider")!, testContext)
@@ -74,7 +77,8 @@ describe("spell effects registry", () => {
 
   it("applies haste and true strike through the normal modifier engine", () => {
     const mods = [
-      ...resolveSpellEffect(getSpellEffectByName("Haste")!, testContext).modifiers,
+      ...resolveSpellEffect(getSpellEffectByName("Haste")!, testContext)
+        .modifiers,
       ...resolveSpellEffect(getSpellEffectByName("True Strike")!, testContext)
         .modifiers,
     ];
@@ -90,8 +94,10 @@ describe("spell effects registry", () => {
     const mods = [
       ...resolveSpellEffect(getSpellEffectByName("Mage Armor")!, testContext)
         .modifiers,
-      ...resolveSpellEffect(getSpellEffectByName("Shield of Faith")!, testContext)
-        .modifiers,
+      ...resolveSpellEffect(
+        getSpellEffectByName("Shield of Faith")!,
+        testContext,
+      ).modifiers,
       ...resolveSpellEffect(getSpellEffectByName("Barkskin")!, testContext)
         .modifiers,
       ...resolveSpellEffect(getSpellEffectByName("Shield")!, testContext)

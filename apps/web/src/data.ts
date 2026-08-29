@@ -127,9 +127,7 @@ export interface Buff {
   trackerMax?: number;
 }
 
-export function buildRuntimeBuffs(
-  context: SpellEffectRuntimeContext,
-): Buff[] {
+export function buildRuntimeBuffs(context: SpellEffectRuntimeContext): Buff[] {
   return SPELL_EFFECTS.map((effect) => {
     const resolved = resolveSpellEffect(effect, context);
     return {

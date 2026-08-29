@@ -1,37 +1,57 @@
-import type { CharacterBuild } from "@mathfinder/rules-engine";
+import type {
+  AbilityKey,
+  Alignment,
+  CharacterBuild,
+  SkillKey,
+} from "@mathfinder/rules-engine";
+
+interface FreshCharacterChoices {
+  className: string;
+  alignment: Alignment;
+  hitPointRoll: number;
+  baseAbilityScores: Record<AbilityKey, number>;
+  flexibleAbility?: AbilityKey;
+  raceBonusFeat?: string;
+  skillRanks?: Partial<Record<SkillKey, number>>;
+  feats?: string[];
+  favoredClass?: string;
+  ignoreAlignmentRestrictions?: boolean;
+}
 
 export function createFreshCharacterBuild(
   name: string,
-  humanRace: CharacterBuild["race"],
+  race: CharacterBuild["race"],
+  choices: FreshCharacterChoices,
 ): CharacterBuild {
+  const className = choices.className.trim();
   return {
     name: name.trim() || "Unnamed Hero",
+    alignment: choices.alignment,
     race: {
-      ...humanRace,
+      ...race,
       choiceSelection: {
-        flexibleAbility: "str",
+        flexibleAbility: choices.flexibleAbility,
+        bonusFeat: choices.raceBonusFeat?.trim() || undefined,
         alternateTraits: [],
       },
     },
-    favoredClassName: "Fighter",
-    baseAbilityScores: {
-      str: 10,
-      dex: 10,
-      con: 10,
-      int: 10,
-      wis: 10,
-      cha: 10,
-    },
+    favoredClassName: className,
+    baseAbilityScores: choices.baseAbilityScores,
     levels: [
       {
-        className: "Fighter",
-        hitPointRoll: 10,
-        skillRanks: {},
-        feats: [],
+        className,
+        hitPointRoll: Math.max(1, choices.hitPointRoll),
+        skillRanks: choices.skillRanks ?? {},
+        feats: choices.feats ?? [],
+        favoredClass: choices.favoredClass,
         modifiers: [],
       },
     ],
-    campaignRules: { firearmRules: "standard" },
+    campaignRules: {
+      firearmRules: "standard",
+      ignoreAlignmentRestrictions:
+        choices.ignoreAlignmentRestrictions || undefined,
+    },
     coinPurse: { pp: 0, gp: 0, sp: 0, cp: 0 },
     weapons: [],
     equipment: [],

@@ -1,23 +1,31 @@
 import {
+  ALIGNMENT_LABELS,
+  infantrymanGunTrainingPickCount,
   SKILL_DEFINITIONS,
   type AbilityKey,
+  type Alignment,
   type ArchetypeDefinitionLike,
   type CharacterBuild,
   type DerivedSpellcasting,
   type FirearmRulesMode,
   type SkillKey,
 } from "@mathfinder/rules-engine";
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { RUNTIME_FEATS, RUNTIME_WEAPONS } from "../content";
+import { collectFeatWeaponNames, collectFirearmNames } from "../featOptionData";
 import { featTitle } from "../rulesText";
 import type { SpellCastCounts } from "../runtimeState";
+import { skillMetadataTooltip, skillTrainingFlag } from "../skillPresentation";
 import { LevelProgressionPlanner } from "./LevelProgressionPlanner";
-import { GuidedBuildWizard } from "./GuidedBuildWizard";
 import type {
   LevelPlannerSuggestions,
   SkillSuggestionChoice,
   SpellSuggestionChoice,
 } from "../buildSuggestions";
+import { AlignmentPicker } from "./AlignmentPicker";
+import { ArchetypePicker } from "./ArchetypePicker";
 import { CompendiumPicker, type CompendiumOption } from "./CompendiumPicker";
+import { FeatSelectionPicker } from "./FeatSelectionPicker";
 import { SpellcastingManager } from "./SpellcastingManager";
 import { Tooltip } from "./Tooltip";
 
@@ -54,6 +62,7 @@ interface Props {
     name: string;
     hitDie: number;
     skillRanksPerLevel: number;
+    classSkills: SkillKey[];
   }>;
   archetypeOptionsByClass: Record<string, ArchetypeDefinitionLike[]>;
   featOptions: CompendiumOption[];
@@ -70,6 +79,7 @@ interface Props {
   schoolOptions: Array<{ id: string; name: string }>;
   spellCastCounts: SpellCastCounts;
   onUpdateName: (name: string) => void;
+  onUpdateAlignment: (alignment: Alignment) => void;
   onUpdateBaseAbilityScore: (ability: AbilityKey, value: number) => void;
   onUpdateRace: (raceKey: string) => void;
   onUpdateRaceFlexibleAbility: (ability: AbilityKey) => void;
@@ -78,6 +88,8 @@ interface Props {
   onUpdateFavoredClassName: (value: string) => void;
   onUpdateFirearmRulesMode: (value: FirearmRulesMode) => void;
   onUpdateClassArchetypes: (className: string, archetypeIds: string[]) => void;
+  onUpdateInfantrymanGunTraining: (weaponName: string) => void;
+  onUpdateIgnoreAlignmentRestrictions: (value: boolean) => void;
   onAddStructureLevel: () => void;
   onEnsureLevelCount: (count: number) => void;
   onSetCurrentLevel: (level: number) => void;
@@ -97,6 +109,7 @@ interface Props {
     value: string,
   ) => void;
   onApplyPlannerSuggestions: (levelIndex: number) => void;
+  onRequestPlannerSuggestions: (levelIndex: number) => void;
   onClearPlannedLevelChoices: (levelIndex: number) => void;
   onAddSelection: (classKey: string, mode: SpellMode, level: number) => void;
   onAppendSelection: (
@@ -199,8 +212,14 @@ export function BuildEditorTab(props: Props) {
   } = props;
 
   const [plannerOpen, setPlannerOpen] = useState(true);
+  const [coreSetupOpen, setCoreSetupOpen] = useState(true);
+  const [coreSetupAutoCollapsed, setCoreSetupAutoCollapsed] = useState(false);
   const currentLevelIndex = Math.max(0, currentLevel - 1);
   const currentLevelEntry = build.levels[currentLevelIndex];
+  const currentClassSkills = new Set(
+    classOptions.find((option) => option.name === currentLevelEntry?.className)
+      ?.classSkills ?? [],
+  );
   const raceChoiceOptions = effectiveRaceChoiceOptions(build.race);
   const raceBonusFeatOptions = useMemo(() => {
     const allowed = raceChoiceOptions.bonusFeat?.featOptions;
@@ -210,294 +229,375 @@ export function BuildEditorTab(props: Props) {
       allowedSet.has(option.name.toLowerCase()),
     );
   }, [featOptions, raceChoiceOptions.bonusFeat?.featOptions]);
+  const availableFeatWeaponNames = useMemo(
+    () => collectFeatWeaponNames(build, RUNTIME_WEAPONS),
+    [build],
+  );
+  const firearmNames = useMemo(
+    () => collectFirearmNames(build, RUNTIME_WEAPONS),
+    [build],
+  );
+  const infantrymanLevel = build.levels.filter(
+    (level) => level.className.toLowerCase() === "infantryman",
+  ).length;
+  const infantrymanGunTrainingPicks = infantrymanGunTrainingPickCount(
+    infantrymanLevel,
+    build.campaignRules,
+  );
+  const archetypeClasses = useMemo(
+    () =>
+      [...new Set(build.levels.map((level) => level.className))]
+        .sort((a, b) => a.localeCompare(b))
+        .map((className) => ({
+          className,
+          classKey: className.toLowerCase(),
+          archetypes: archetypeOptionsByClass[className.toLowerCase()] ?? [],
+        }))
+        .filter(({ archetypes }) => archetypes.length > 0),
+    [archetypeOptionsByClass, build.levels],
+  );
+  const coreSetupLooksConfigured =
+    abilityOrder.some((ability) => build.baseAbilityScores[ability] !== 10) ||
+    !!build.alignment ||
+    build.race.name.trim().toLowerCase() !== "human" ||
+    (build.levels[0]?.className.trim().toLowerCase() ?? "") !== "fighter" ||
+    !!build.favoredClassName ||
+    !!build.race.choiceSelection?.flexibleAbility ||
+    !!build.race.choiceSelection?.bonusFeat ||
+    (build.race.choiceSelection?.alternateTraits?.length ?? 0) > 0;
+  const coreSetupSummary = [
+    build.race.name,
+    build.alignment ? ALIGNMENT_LABELS[build.alignment] : "Alignment unset",
+    `L1 ${build.levels[0]?.className ?? "Fighter"}`,
+    build.favoredClassName ? `Favored ${build.favoredClassName}` : null,
+    abilityOrder
+      .map(
+        (ability) =>
+          `${ability.toUpperCase()} ${build.baseAbilityScores[ability]}`,
+      )
+      .join(" · "),
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  useEffect(() => {
+    if (coreSetupLooksConfigured && !coreSetupAutoCollapsed) {
+      setCoreSetupOpen(false);
+      setCoreSetupAutoCollapsed(true);
+    }
+  }, [coreSetupAutoCollapsed, coreSetupLooksConfigured]);
 
   return (
     <div className="build-page">
-      <GuidedBuildWizard
-        build={build}
-        currentLevel={currentLevel}
-        abilityOrder={abilityOrder}
-        raceOptions={raceOptions}
-        classOptions={classOptions}
-        plannerSuggestions={plannerSuggestions}
-        currentLevelSkillSuggestions={currentLevelSkillSuggestions}
-        onUpdateName={props.onUpdateName}
-        onUpdateRace={props.onUpdateRace}
-        onUpdateFavoredClassName={props.onUpdateFavoredClassName}
-        onUpdateFirearmRulesMode={props.onUpdateFirearmRulesMode}
-        onSetCurrentLevel={props.onSetCurrentLevel}
-        onUpdateBaseAbilityScore={props.onUpdateBaseAbilityScore}
-        onUpdateRaceFlexibleAbility={props.onUpdateRaceFlexibleAbility}
-        onUpdateLevelField={props.onUpdateLevelField}
-        onUpdateLevelSkillRank={props.onUpdateLevelSkillRank}
-        onApplyPlannerSuggestions={props.onApplyPlannerSuggestions}
-      />
       <section className="panel build-panel">
         <h2>Build Editor</h2>
         <p className="hint">
           This is the crunchy tab. Character construction lives here now; all
-          the inventory hoarding got kicked to Gear.
+          the inventory hoarding got kicked to Gear. The progression planner
+          below already bakes in guide suggestions, so we’re not doing the same
+          dance twice.
         </p>
 
-        <label className="field compact">
-          <span>Name</span>
-          <input
-            type="text"
-            value={build.name}
-            onChange={(e) =>
-              props.onUpdateName(e.target.value || "Unnamed Hero")
-            }
-          />
-        </label>
-
-        <div className="editor-grid">
-          {abilityOrder.map((ability) => (
-            <label className="field compact" key={ability}>
-              <span>{ability.toUpperCase()}</span>
-              <input
-                type="number"
-                min={1}
-                value={build.baseAbilityScores[ability]}
-                onChange={(e) =>
-                  props.onUpdateBaseAbilityScore(
-                    ability,
-                    Number(e.target.value) || 1,
-                  )
-                }
-              />
-            </label>
-          ))}
-        </div>
-
-        <div className="editor-section-head">
-          <h3>Race & Level Structure</h3>
-          <button className="ghost small" onClick={props.onAddStructureLevel}>
-            Add Level
-          </button>
-        </div>
-        <div className="editor-grid">
-          <label className="field compact">
-            <span>Race</span>
-            <select
-              value={
-                raceOptions.find(
-                  ([, race]) => race.name === build.race.name,
-                )?.[0] ?? "human"
-              }
-              onChange={(e) => props.onUpdateRace(e.target.value)}
-            >
-              {raceOptions.map(([key, race]) => (
-                <option key={key} value={key}>
-                  {race.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="field compact">
-            <span>Favored class</span>
-            <select
-              value={build.favoredClassName ?? ""}
-              onChange={(e) => props.onUpdateFavoredClassName(e.target.value)}
-            >
-              <option value="">None</option>
-              {classOptions.map((option) => (
-                <option key={`favored-${option.name}`} value={option.name}>
-                  {option.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="field compact">
-            <span>Firearm rules</span>
-            <select
-              value={build.campaignRules?.firearmRules ?? "standard"}
-              onChange={(e) =>
-                props.onUpdateFirearmRulesMode(
-                  e.target.value as FirearmRulesMode,
-                )
-              }
-            >
-              <option value="standard">Standard</option>
-              <option value="guns-everywhere">Guns Everywhere</option>
-            </select>
-          </label>
-        </div>
-        {Object.keys(raceChoiceOptions).length > 0 ||
-        build.race.alternateTraits?.length ? (
-          <div className="item-card">
-            <div className="editor-section-head tight">
-              <h3>Race Choices</h3>
-              <span className="skill-builder-meta">{build.race.name}</span>
+        <div className="item-card build-core-setup">
+          <div className="editor-section-head tight">
+            <div>
+              <h3>Core Build Setup</h3>
+              {!coreSetupOpen ? (
+                <div className="build-core-setup-summary">
+                  {coreSetupSummary}
+                </div>
+              ) : null}
             </div>
-            <div className="editor-grid">
-              {raceChoiceOptions.flexibleAbilityBonus ? (
+            <button
+              className="ghost small"
+              type="button"
+              onClick={() => setCoreSetupOpen((open) => !open)}
+            >
+              {coreSetupOpen ? "Collapse" : "Expand"}
+            </button>
+          </div>
+
+          {coreSetupOpen ? (
+            <>
+              <label className="field compact">
+                <span>Name</span>
+                <input
+                  type="text"
+                  value={build.name}
+                  onChange={(e) =>
+                    props.onUpdateName(e.target.value || "Unnamed Hero")
+                  }
+                />
+              </label>
+
+              <div className="field compact alignment-field">
+                <span>Alignment</span>
+                <AlignmentPicker
+                  value={build.alignment}
+                  onChange={props.onUpdateAlignment}
+                />
+              </div>
+
+              <div className="editor-grid">
+                {abilityOrder.map((ability) => (
+                  <label className="field compact" key={ability}>
+                    <span>{ability.toUpperCase()}</span>
+                    <input
+                      type="number"
+                      min={1}
+                      value={build.baseAbilityScores[ability]}
+                      onChange={(e) =>
+                        props.onUpdateBaseAbilityScore(
+                          ability,
+                          Number(e.target.value) || 1,
+                        )
+                      }
+                    />
+                  </label>
+                ))}
+              </div>
+
+              <div className="editor-section-head">
+                <h3>Race & Level Structure</h3>
+                <button
+                  className="ghost small"
+                  onClick={props.onAddStructureLevel}
+                >
+                  Add Level
+                </button>
+              </div>
+              <div className="editor-grid">
                 <label className="field compact">
-                  <span>
-                    Flexible +{raceChoiceOptions.flexibleAbilityBonus.value}
-                  </span>
+                  <span>Race</span>
                   <select
-                    value={build.race.choiceSelection?.flexibleAbility ?? ""}
-                    onChange={(e) =>
-                      props.onUpdateRaceFlexibleAbility(
-                        e.target.value as AbilityKey,
-                      )
+                    value={
+                      raceOptions.find(
+                        ([, race]) => race.name === build.race.name,
+                      )?.[0] ?? "human"
                     }
+                    onChange={(e) => props.onUpdateRace(e.target.value)}
                   >
-                    {(
-                      raceChoiceOptions.flexibleAbilityBonus.abilities ?? [
-                        ...abilityOrder,
-                      ]
-                    ).map((ability) => (
-                      <option key={`race-flex-${ability}`} value={ability}>
-                        {ability.toUpperCase()}
+                    {raceOptions.map(([key, race]) => (
+                      <option key={key} value={key}>
+                        {race.name}
                       </option>
                     ))}
                   </select>
                 </label>
-              ) : null}
-              {raceChoiceOptions.bonusFeat ? (
                 <label className="field compact">
-                  <span>Bonus feat</span>
-                  <CompendiumPicker
-                    value={build.race.choiceSelection?.bonusFeat ?? ""}
-                    onChange={props.onUpdateRaceBonusFeat}
-                    options={raceBonusFeatOptions}
-                    placeholder="Search feat"
-                    tooltip={featTitle(
-                      build.race.choiceSelection?.bonusFeat ?? "",
-                    )}
-                  />
+                  <span>Favored class</span>
+                  <select
+                    value={build.favoredClassName ?? ""}
+                    onChange={(e) =>
+                      props.onUpdateFavoredClassName(e.target.value)
+                    }
+                  >
+                    <option value="">None</option>
+                    {classOptions.map((option) => (
+                      <option
+                        key={`favored-${option.name}`}
+                        value={option.name}
+                      >
+                        {option.name}
+                      </option>
+                    ))}
+                  </select>
                 </label>
-              ) : null}
-            </div>
-            <div className="spell-sheet-meta">
-              {raceChoiceOptions.extraSkillRanksPerLevel ? (
-                <span className="chip">
-                  Extra skill ranks/level: +
-                  {raceChoiceOptions.extraSkillRanksPerLevel}
-                </span>
-              ) : null}
-              {build.race.choiceSelection?.bonusFeat ? (
-                <SearchableFeatChip
-                  featName={build.race.choiceSelection.bonusFeat}
-                />
-              ) : null}
-            </div>
-            {build.race.alternateTraits?.length ? (
-              <div className="race-alt-trait-list">
-                {build.race.alternateTraits.map((trait) => {
-                  const active = (
-                    build.race.choiceSelection?.alternateTraits ?? []
-                  ).some((id) => id.toLowerCase() === trait.id.toLowerCase());
-                  return (
-                    <label
-                      key={`race-alt-${trait.id}`}
-                      className={`pick ${active ? "on" : ""}`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={active}
-                        onChange={() =>
-                          props.onToggleRaceAlternateTrait(trait.id)
-                        }
-                      />
-                      <span>
-                        <strong>{trait.name}</strong>
-                        <span className="buff-desc">
-                          {trait.description}
-                          {trait.replaces?.length
-                            ? ` Replaces: ${trait.replaces.join(", ")}.`
-                            : ""}
-                        </span>
-                      </span>
-                    </label>
-                  );
-                })}
+                <label className="field compact">
+                  <span>Firearm rules</span>
+                  <select
+                    value={build.campaignRules?.firearmRules ?? "standard"}
+                    onChange={(e) =>
+                      props.onUpdateFirearmRulesMode(
+                        e.target.value as FirearmRulesMode,
+                      )
+                    }
+                  >
+                    <option value="standard">Standard</option>
+                    <option value="guns-everywhere">Guns Everywhere</option>
+                  </select>
+                </label>
+                <label className="pick campaign-rule-pick">
+                  <input
+                    type="checkbox"
+                    checked={
+                      build.campaignRules?.ignoreAlignmentRestrictions === true
+                    }
+                    onChange={(event) =>
+                      props.onUpdateIgnoreAlignmentRestrictions(
+                        event.target.checked,
+                      )
+                    }
+                  />
+                  <span>
+                    <strong>Ignore alignment restrictions</strong>
+                    <span className="buff-desc">
+                      House rule: classes do not enforce alignment requirements.
+                    </span>
+                  </span>
+                </label>
               </div>
-            ) : null}
-          </div>
+              {Object.keys(raceChoiceOptions).length > 0 ||
+              build.race.alternateTraits?.length ? (
+                <div className="item-card nested">
+                  <div className="editor-section-head tight">
+                    <h3>Race Choices</h3>
+                    <span className="skill-builder-meta">
+                      {build.race.name}
+                    </span>
+                  </div>
+                  <div className="editor-grid">
+                    {raceChoiceOptions.flexibleAbilityBonus ? (
+                      <label className="field compact">
+                        <span>
+                          Flexible +
+                          {raceChoiceOptions.flexibleAbilityBonus.value}
+                        </span>
+                        <select
+                          value={
+                            build.race.choiceSelection?.flexibleAbility ?? ""
+                          }
+                          onChange={(e) =>
+                            props.onUpdateRaceFlexibleAbility(
+                              e.target.value as AbilityKey,
+                            )
+                          }
+                        >
+                          {(
+                            raceChoiceOptions.flexibleAbilityBonus
+                              .abilities ?? [...abilityOrder]
+                          ).map((ability) => (
+                            <option
+                              key={`race-flex-${ability}`}
+                              value={ability}
+                            >
+                              {ability.toUpperCase()}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    ) : null}
+                    {raceChoiceOptions.bonusFeat ? (
+                      <label className="field compact">
+                        <span>Bonus feat</span>
+                        <FeatSelectionPicker
+                          value={build.race.choiceSelection?.bonusFeat ?? ""}
+                          onChange={props.onUpdateRaceBonusFeat}
+                          featRegistry={RUNTIME_FEATS}
+                          grantKind="general"
+                          availableWeaponNames={availableFeatWeaponNames}
+                          allowedOptions={raceBonusFeatOptions}
+                          placeholder="Search feat"
+                        />
+                      </label>
+                    ) : null}
+                  </div>
+                  <div className="spell-sheet-meta">
+                    {raceChoiceOptions.extraSkillRanksPerLevel ? (
+                      <span className="chip">
+                        Extra skill ranks/level: +
+                        {raceChoiceOptions.extraSkillRanksPerLevel}
+                      </span>
+                    ) : null}
+                    {build.race.choiceSelection?.bonusFeat ? (
+                      <SearchableFeatChip
+                        featName={build.race.choiceSelection.bonusFeat}
+                      />
+                    ) : null}
+                  </div>
+                  {build.race.alternateTraits?.length ? (
+                    <div className="race-alt-trait-list">
+                      {build.race.alternateTraits.map((trait) => {
+                        const active = (
+                          build.race.choiceSelection?.alternateTraits ?? []
+                        ).some(
+                          (id) => id.toLowerCase() === trait.id.toLowerCase(),
+                        );
+                        return (
+                          <label
+                            key={`race-alt-${trait.id}`}
+                            className={`pick ${active ? "on" : ""}`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={active}
+                              onChange={() =>
+                                props.onToggleRaceAlternateTrait(trait.id)
+                              }
+                            />
+                            <span>
+                              <strong>{trait.name}</strong>
+                              <span className="buff-desc">
+                                {trait.description}
+                                {trait.replaces?.length
+                                  ? ` Replaces: ${trait.replaces.join(", ")}.`
+                                  : ""}
+                              </span>
+                            </span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+            </>
+          ) : null}
+        </div>
+
+        {archetypeClasses.length > 0 ? (
+          <EditorSection title="Class Archetypes">
+            <div className="race-alt-trait-list">
+              {archetypeClasses.map(({ className, classKey, archetypes }) => (
+                <div
+                  key={`archetypes-${classKey}`}
+                  className="item-card nested"
+                >
+                  <ArchetypePicker
+                    className={className}
+                    archetypes={archetypes}
+                    selectedIds={build.classArchetypes?.[classKey] ?? []}
+                    onSelectionChange={(ids) =>
+                      props.onUpdateClassArchetypes(className, ids)
+                    }
+                  />
+                </div>
+              ))}
+            </div>
+          </EditorSection>
         ) : null}
 
-        <EditorSection title="Class Archetypes">
-          <div className="item-card">
-            <div className="editor-section-head tight">
-              <h3>Archetype Picks</h3>
-              <span className="skill-builder-meta">Per class in build</span>
+        {infantrymanGunTrainingPicks > 0 ? (
+          <EditorSection title="Infantryman Gun Training">
+            <div className="item-card">
+              <p className="hint">
+                Add Dexterity to damage with one selected firearm type.
+                {build.campaignRules?.firearmRules === "guns-everywhere"
+                  ? " Guns Everywhere grants this at Infantryman level 1."
+                  : " This becomes available at Infantryman level 5."}
+              </p>
+              {firearmNames.length > 0 ? (
+                <CompendiumPicker
+                  value={build.gunTrainingSelections?.infantryman?.[0] ?? ""}
+                  onChange={props.onUpdateInfantrymanGunTraining}
+                  options={firearmNames.map((name) => ({
+                    id: `infantryman-gun-training-${name.toLowerCase()}`,
+                    name,
+                    tooltip: `Gun Training: add Dexterity to damage with ${name}.`,
+                  }))}
+                  placeholder="Choose trained firearm"
+                  commitMode="select"
+                  maxResults={40}
+                />
+              ) : (
+                <p className="hint">
+                  Add a firearm to the character or load the firearm catalog to
+                  choose Gun Training.
+                </p>
+              )}
             </div>
-            <div className="race-alt-trait-list">
-              {[...new Set(build.levels.map((level) => level.className))]
-                .sort((a, b) => a.localeCompare(b))
-                .map((className) => {
-                  const classKey = className.toLowerCase();
-                  const archetypes = archetypeOptionsByClass[classKey] ?? [];
-                  const selected = new Set(
-                    (build.classArchetypes?.[classKey] ?? []).map((id) =>
-                      id.toLowerCase(),
-                    ),
-                  );
-                  return (
-                    <div
-                      key={`archetypes-${classKey}`}
-                      className="item-card nested"
-                    >
-                      <div className="editor-section-head tight">
-                        <h3>{className}</h3>
-                        <span className="skill-builder-meta">
-                          {archetypes.length} archetype
-                          {archetypes.length === 1 ? "" : "s"}
-                        </span>
-                      </div>
-                      {archetypes.length === 0 ? (
-                        <p className="hint">
-                          No runtime archetypes loaded for this class. Tragic,
-                          but concise.
-                        </p>
-                      ) : (
-                        <div className="race-alt-trait-list">
-                          {archetypes.map((archetype) => {
-                            const active = selected.has(
-                              archetype.id.toLowerCase(),
-                            );
-                            return (
-                              <label
-                                key={`class-archetype-${classKey}-${archetype.id}`}
-                                className={`pick ${active ? "on" : ""}`}
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={active}
-                                  onChange={() => {
-                                    const next = new Set(selected);
-                                    if (active)
-                                      next.delete(archetype.id.toLowerCase());
-                                    else next.add(archetype.id.toLowerCase());
-                                    props.onUpdateClassArchetypes(className, [
-                                      ...next,
-                                    ]);
-                                  }}
-                                />
-                                <span>
-                                  <strong>{archetype.name}</strong>
-                                  <span className="buff-desc">
-                                    {archetype.description}
-                                  </span>
-                                  {archetype.replaces?.length ? (
-                                    <span className="buff-desc">
-                                      Replaces: {archetype.replaces.join(", ")}.
-                                    </span>
-                                  ) : null}
-                                </span>
-                              </label>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-            </div>
-          </div>
-        </EditorSection>
+          </EditorSection>
+        ) : null}
 
         <section className="planner-builder">
           <div className="planner-builder-summary">
@@ -529,6 +629,7 @@ export function BuildEditorTab(props: Props) {
               onUpdateLevelField={props.onUpdateLevelField}
               onSetLevelFeat={props.onSetLevelFeat}
               onApplyPlannerSuggestions={props.onApplyPlannerSuggestions}
+              onRequestPlannerSuggestions={props.onRequestPlannerSuggestions}
               onClearPlannedLevelChoices={props.onClearPlannedLevelChoices}
             />
           ) : null}
@@ -601,26 +702,51 @@ export function BuildEditorTab(props: Props) {
                       skill.key,
                       currentLevelIndex,
                     );
+                    const isClassSkill = currentClassSkills.has(skill.key);
+                    const usable =
+                      !skill.trainedOnly ||
+                      totalSkillRanks(build, skill.key) > 0;
+                    const metadata = skillMetadataTooltip({
+                      ability: skill.ability,
+                      isClassSkill,
+                      trainedOnly: skill.trainedOnly,
+                      usable,
+                      armorCheckPenalty: skill.armorCheckPenalty,
+                      className: currentLevelEntry.className,
+                    });
                     return (
                       <div
                         className="skill-rank-row skill-rank-table-row"
                         key={`rank-${currentLevelIndex}-${skill.key}`}
                       >
-                        <span className="skill-rank-label">
-                          {skillName.get(skill.key) ?? skill.key}
-                        </span>
-                        <span className="skill-rank-meta" title="Ability">
+                        <Tooltip
+                          content={metadata}
+                          className="skill-rank-label-tooltip"
+                        >
+                          <span className="skill-rank-label skill-metadata-anchor">
+                            {skillName.get(skill.key) ?? skill.key}
+                          </span>
+                        </Tooltip>
+                        <span className="skill-rank-meta">
                           {skill.ability.toUpperCase()}
                         </span>
-                        <span className="skill-rank-flag" title="Trained only">
-                          {skill.trainedOnly ? "T" : ""}
-                        </span>
-                        <span
-                          className="skill-rank-flag"
-                          title="Armor check penalty applies"
-                        >
-                          {skill.armorCheckPenalty ? "A" : ""}
-                        </span>
+                        <Tooltip content={metadata}>
+                          <span className="skill-flags skill-rank-flags">
+                            <span
+                              className={`skill-flag ${isClassSkill ? "" : "muted"}`}
+                            >
+                              {isClassSkill ? "C" : "—"}
+                            </span>
+                            <span
+                              className={`skill-flag ${usable ? (skill.trainedOnly ? "" : "muted") : "warn"}`}
+                            >
+                              {skillTrainingFlag(skill.trainedOnly, usable)}
+                            </span>
+                            {skill.armorCheckPenalty ? (
+                              <span className="skill-flag">A</span>
+                            ) : null}
+                          </span>
+                        </Tooltip>
                         <input
                           aria-label={`${skillName.get(skill.key) ?? skill.key} ranks`}
                           title={`Max here: ${maxRanks}`}
