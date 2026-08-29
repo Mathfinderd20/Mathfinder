@@ -73,6 +73,7 @@ import { GearTab } from "./components/GearTab";
 import { RuntimeControlsPanel } from "./components/RuntimeControlsPanel";
 import { BuildSlotsPanel } from "./components/BuildSlotsPanel";
 import { ValidationPanel } from "./components/ValidationPanel";
+import { HoldToActivateButton } from "./components/HoldToActivateButton";
 import {
   buildSuggestions,
   type LevelPlannerSuggestions,
@@ -621,6 +622,10 @@ export function App({
     characterId ? runtimeStorageKey(characterId) : "mathfinder:web-runtime:v1",
   );
   const [leveling, setLeveling] = useState(false);
+  const [levelUpEffect, setLevelUpEffect] = useState<
+    "idle" | "holding" | "charged" | "celebrating"
+  >("idle");
+  const levelUpEffectTimer = useRef<number | undefined>(undefined);
   const [activeTab, setActiveTab] = useState<WorkspaceTab>(initialTab);
   const weaponOptions = useMemo(
     () => runtimeWeaponOptions(build),
@@ -634,6 +639,30 @@ export function App({
   function selectTab(tab: WorkspaceTab) {
     setActiveTab(tab);
     onTabChange?.(tab);
+  }
+
+  function clearLevelUpEffectTimer() {
+    if (levelUpEffectTimer.current !== undefined) {
+      window.clearTimeout(levelUpEffectTimer.current);
+      levelUpEffectTimer.current = undefined;
+    }
+  }
+
+  useEffect(
+    () => () => {
+      clearLevelUpEffectTimer();
+    },
+    [],
+  );
+
+  function openLevelUpFlow() {
+    clearLevelUpEffectTimer();
+    setLevelUpEffect("charged");
+    levelUpEffectTimer.current = window.setTimeout(() => {
+      levelUpEffectTimer.current = undefined;
+      setLevelUpEffect("idle");
+      setLeveling(true);
+    }, 320);
   }
 
   function confirmLevelUp(
@@ -679,6 +708,12 @@ export function App({
     );
     selectTab("build");
     setLeveling(false);
+    clearLevelUpEffectTimer();
+    setLevelUpEffect("celebrating");
+    levelUpEffectTimer.current = window.setTimeout(() => {
+      levelUpEffectTimer.current = undefined;
+      setLevelUpEffect("idle");
+    }, 700);
   }
 
   function advanceLevel() {
@@ -2345,8 +2380,27 @@ export function App({
     );
   }
 
+  const viewingLatestLevel = currentLevel >= build.levels.length;
+
   return (
-    <div className="app">
+    <div className={`app level-up-effect-${levelUpEffect}`}>
+      <div className="level-up-sheet-effect" aria-hidden="true">
+        <span className="level-up-aura" />
+        <span className="level-up-edge level-up-edge-top" />
+        <span className="level-up-edge level-up-edge-right" />
+        <span className="level-up-edge level-up-edge-bottom" />
+        <span className="level-up-edge level-up-edge-left" />
+        <span className="level-up-sigil level-up-sigil-tl">◇</span>
+        <span className="level-up-sigil level-up-sigil-tr">◇</span>
+        <span className="level-up-sigil level-up-sigil-br">◇</span>
+        <span className="level-up-sigil level-up-sigil-bl">◇</span>
+        <span className="level-up-celebration-sweep" />
+      </div>
+      <div className="level-up-status" role="status" aria-live="polite">
+        {levelUpEffect === "celebrating"
+          ? `Level ${build.levels.length} gained`
+          : ""}
+      </div>
       <header className="app-bar">
         <div className="brand">
           Mathfinder{" "}
@@ -2358,7 +2412,16 @@ export function App({
               ← Home
             </button>
           ) : null}
-          <button onClick={advanceLevel}>⬆ Level Up</button>
+          {viewingLatestLevel ? (
+            <HoldToActivateButton
+              disabled={leveling || levelUpEffect === "charged"}
+              onHoldStart={() => setLevelUpEffect("holding")}
+              onHoldCancel={() => setLevelUpEffect("idle")}
+              onComplete={openLevelUpFlow}
+            />
+          ) : (
+            <button onClick={advanceLevel}>→ Next Level</button>
+          )}
           <button
             className="ghost"
             disabled={currentLevel <= 1}
@@ -2612,7 +2675,10 @@ export function App({
           skillSuggestions={suggestionBundle.currentLevelSkills}
           skillSuggestionNotes={suggestionBundle.currentLevelSkillNotes}
           onConfirm={confirmLevelUp}
-          onClose={() => setLeveling(false)}
+          onClose={() => {
+            setLeveling(false);
+            setLevelUpEffect("idle");
+          }}
         />
       ) : null}
     </div>

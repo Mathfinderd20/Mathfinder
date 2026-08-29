@@ -487,8 +487,16 @@ export function LevelUpModal({
 
   return (
     <div className="modal-backdrop">
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <h2>Level Up &rarr; Level {plan.characterLevel}</h2>
+      <div
+        className="modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="level-up-modal-title"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 id="level-up-modal-title">
+          Level Up &rarr; Level {plan.characterLevel}
+        </h2>
         <p className="hint">
           Choose your next class level, feat, skills, and any stat increase,
           then review the preview before applying it.
@@ -497,6 +505,7 @@ export function LevelUpModal({
         <label className="field">
           <span>Class</span>
           <select
+            autoFocus
             value={className}
             onChange={(e) => setClassName(e.target.value)}
           >
