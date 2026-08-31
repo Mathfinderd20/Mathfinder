@@ -32,11 +32,6 @@ import { RuntimeControlsPanel } from "./components/RuntimeControlsPanel";
 import { BuildSlotsPanel } from "./components/BuildSlotsPanel";
 import { ValidationPanel } from "./components/ValidationPanel";
 import { HoldToActivateButton } from "./components/HoldToActivateButton";
-import {
-  buildSuggestions,
-  type LevelPlannerSuggestions,
-} from "./buildSuggestions";
-import type { RuntimeProfile } from "./runtimeInsights";
 import type { LevelPlannerSuggestions } from "./buildSuggestions";
 import { collectOwnedSpellNames } from "./runtimeInsights";
 import { normalizeFeatListLength, plannedFeatSlotsForLevel } from "./featSlots";
