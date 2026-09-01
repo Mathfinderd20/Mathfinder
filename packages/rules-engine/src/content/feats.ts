@@ -1,4 +1,8 @@
-import { buildCompendiumIndex, getCompendiumEntryByName } from "../compendium";
+import {
+  getCachedCompendiumIndex,
+  getCompendiumEntryByName,
+  type CompendiumIndex,
+} from "../compendium";
 import { SKILL_DEFINITIONS } from "../skills";
 import type { AbilityKey, DerivedSheet, Modifier, SkillKey } from "../types";
 import {
@@ -577,6 +581,14 @@ export const FEATS: FeatRegistry = buildFeatRegistry(
   SAVAGE_COMPANY_FEATS,
 );
 
+export function featCompendiumIndex(
+  registry: FeatRegistry,
+): CompendiumIndex<FeatDefinition> {
+  return getCachedCompendiumIndex(registry, () => Object.values(registry));
+}
+
+export const FEAT_INDEX = featCompendiumIndex(FEATS);
+
 export interface ParsedFeatSelection {
   feat: FeatDefinition;
   selectionName: string;
@@ -613,20 +625,15 @@ export function parseFeatSelection(
   selectionName: string,
 ): ParsedFeatSelection | undefined {
   const trimmed = selectionName.trim();
-  const exact = getCompendiumEntryByName(
-    buildCompendiumIndex(Object.values(registry)),
-    trimmed,
-  );
+  const index = featCompendiumIndex(registry);
+  const exact = getCompendiumEntryByName(index, trimmed);
   if (exact) return { feat: exact, selectionName: exact.name };
   const match = FEAT_SELECTION_RE.exec(trimmed);
   if (!match) return undefined;
   const baseName = match[1]?.trim();
   const parameterValue = match[2]?.trim();
   if (!baseName || !parameterValue) return undefined;
-  const feat = getCompendiumEntryByName(
-    buildCompendiumIndex(Object.values(registry)),
-    baseName,
-  );
+  const feat = getCompendiumEntryByName(index, baseName);
   if (!feat) return undefined;
   return {
     feat,

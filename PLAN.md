@@ -14,6 +14,7 @@ Move the app toward a data-driven architecture where content catalogs and runtim
 ### Current foundation in repo
 
 - Shared compendium primitives in `packages/rules-engine/src/compendium.ts`
+- Cached, collision-aware compendium indexes across feats, spells, weapons, class features, and magic items
 - Shared runtime primitives in `packages/rules-engine/src/runtime.ts`
 - Web runtime persistence migrated to the generic runtime snapshot shape
 - Existing content registries beginning to reuse shared compendium indexing helpers

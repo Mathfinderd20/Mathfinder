@@ -162,7 +162,7 @@ export function App({
     ensureLevelCount,
     setLevelFeat,
     updateLevelField,
-    updateLevelSkillRank,
+    updateTotalSkillRank,
   } = useLevelEditor(build, setBuild);
   const runtime = useRuntimeState(
     characterId ? runtimeStorageKey(characterId) : RUNTIME_STORAGE_KEY,
@@ -797,7 +797,7 @@ export function App({
               setCurrentLevel(clampCurrentLevel(level))
             }
             onUpdateLevelField={updateLevelField}
-            onUpdateLevelSkillRank={updateLevelSkillRank}
+            onUpdateTotalSkillRank={updateTotalSkillRank}
             onSetLevelFeat={setLevelFeat}
             onApplyPlannerSuggestions={(levelIndex) => {
               const guidedBundle = computeGuidedSuggestionBundle(build, [
@@ -854,8 +854,6 @@ export function App({
               Math.max(0, effectiveBuild.levels.length)
             ] ?? EMPTY_PLANNER_SUGGESTIONS
           }
-          skillSuggestions={suggestionBundle.currentLevelSkills}
-          skillSuggestionNotes={suggestionBundle.currentLevelSkillNotes}
           onConfirm={confirmLevelUp}
           onClose={() => {
             setLeveling(false);

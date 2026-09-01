@@ -6,6 +6,10 @@ import {
   normalizeFeatListLength,
   plannedFeatSlotsForLevel,
 } from "../featSlots";
+import {
+  allocateTotalSkillRanks,
+  continuedSkillRanksForLevel,
+} from "../skillRankProgression";
 
 type Level = CharacterBuild["levels"][number];
 
@@ -82,7 +86,15 @@ export function useLevelEditor(
       const lastClassName =
         nextLevels[nextLevels.length - 1]?.className ??
         previous.levels[previous.levels.length - 1]?.className;
-      nextLevels.push(makeDefaultLevelEntry(lastClassName));
+      const levelIndex = nextLevels.length;
+      const nextLevel = makeDefaultLevelEntry(lastClassName);
+      const preview = { ...previous, levels: [...nextLevels, nextLevel] };
+      nextLevel.skillRanks = continuedSkillRanksForLevel(
+        preview,
+        RUNTIME_CLASS_OPTIONS,
+        levelIndex,
+      );
+      nextLevels.push(nextLevel);
     }
     return { ...previous, levels: nextLevels };
   }
@@ -122,10 +134,9 @@ export function useLevelEditor(
   }
 
   function addStructureLevel() {
-    setBuild((previous) => ({
-      ...previous,
-      levels: [...previous.levels, makeDefaultLevelEntry()],
-    }));
+    setBuild((previous) =>
+      buildWithLevelCount(previous, previous.levels.length + 1),
+    );
   }
 
   function ensureLevelCount(count: number) {
@@ -147,21 +158,10 @@ export function useLevelEditor(
     }));
   }
 
-  function updateLevelSkillRank(
-    levelIndex: number,
-    skillKey: SkillKey,
-    value: number,
-  ) {
-    setBuild((previous) => ({
-      ...previous,
-      levels: previous.levels.map((level, itemIndex) => {
-        if (itemIndex !== levelIndex) return level;
-        const current = { ...(level.skillRanks ?? {}) };
-        if (value <= 0) delete current[skillKey];
-        else current[skillKey] = value;
-        return { ...level, skillRanks: current };
-      }),
-    }));
+  function updateTotalSkillRank(skillKey: SkillKey, value: number) {
+    setBuild((previous) =>
+      allocateTotalSkillRanks(previous, RUNTIME_CLASS_OPTIONS, skillKey, value),
+    );
   }
 
   return {
@@ -170,6 +170,6 @@ export function useLevelEditor(
     ensureLevelCount,
     setLevelFeat,
     updateLevelField,
-    updateLevelSkillRank,
+    updateTotalSkillRank,
   };
 }

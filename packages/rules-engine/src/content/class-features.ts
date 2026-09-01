@@ -1,4 +1,5 @@
 import type { ArmorCategory, Condition, LoadBand, Modifier } from "../types";
+import { getCachedCompendiumIndex, type CompendiumIndex } from "../compendium";
 import type { ActivatableEffect, ResourcePoolDefinition } from "./activatables";
 
 export interface ClassFeatureContext {
@@ -140,6 +141,16 @@ export const CLASS_FEATURES: ClassFeatureRegistry = buildClassFeatureRegistry(
   CORE_CLASS_FEATURES,
   SAVAGE_COMPANY_CLASS_FEATURES,
 );
+
+export function classFeatureCompendiumIndex(
+  registry: ClassFeatureRegistry,
+): CompendiumIndex<ClassFeatureDefinition> {
+  return getCachedCompendiumIndex(registry, () =>
+    Object.values(registry).flat(),
+  );
+}
+
+export const CLASS_FEATURE_INDEX = classFeatureCompendiumIndex(CLASS_FEATURES);
 
 export function classFeaturesGrantedAt(
   registry: ClassFeatureRegistry,

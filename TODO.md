@@ -108,10 +108,10 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 ## Next Bulldoze Order
 
 - [x] Parameterized feats (Weapon Focus weapon choice, Skill Focus skill choice)
-- [ ] Prestige-class prerequisite validation
+- [x] Prestige-class prerequisite validation
 - [~] Guided build wizard / smarter character-aware recommendation tuning
 - [~] Complete ancestry-specific favored-class bonuses — 731 AoN options across 49 scraped races are ingested with source URLs and available as manual selections; automate common effect families and ingest owner-authored Savage Company FCBs from the manuscript
-- [ ] Shared compendium/runtime normalization work from `PLAN.md`
+- [~] Shared compendium/runtime normalization work from `PLAN.md` — catalog indexes are standardized and cached; runtime mutation extraction and generic picker integration remain
 - [ ] Savage Company content ingestion breadth
 - [x] Campaign house-rule controls — Commonplace Guns and Guns Everywhere pricing, ignore alignment restrictions, and ignore encumbrance are live
 - [x] Complete selection-bearing feat UX/mechanics for Weapon Focus and Spell Focus; retain the generic parameter model for future selection-bearing feats

@@ -1,4 +1,8 @@
-import { buildCompendiumIndex, getCompendiumEntryByName } from "../compendium";
+import {
+  getCachedCompendiumIndex,
+  getCompendiumEntryByName,
+  type CompendiumIndex,
+} from "../compendium";
 
 export interface SpellClassLevel {
   className: string;
@@ -466,10 +470,7 @@ export function buildSpellRegistry(
   ...packs: SpellDefinition[][]
 ): SpellRegistry {
   return Object.fromEntries(
-    buildCompendiumIndex(packs.flat()).all.map((spell) => [
-      spell.name.toLowerCase(),
-      spell,
-    ]),
+    packs.flat().map((spell) => [spell.name.toLowerCase(), spell]),
   );
 }
 
@@ -478,14 +479,19 @@ export const SPELLS: SpellRegistry = buildSpellRegistry(
   SAVAGE_COMPANY_SPELLS,
 );
 
+export function spellCompendiumIndex(
+  registry: SpellRegistry,
+): CompendiumIndex<SpellDefinition> {
+  return getCachedCompendiumIndex(registry, () => Object.values(registry));
+}
+
+export const SPELL_INDEX = spellCompendiumIndex(SPELLS);
+
 export function getSpell(
   registry: SpellRegistry,
   name: string,
 ): SpellDefinition | undefined {
-  return getCompendiumEntryByName(
-    buildCompendiumIndex(Object.values(registry)),
-    name,
-  );
+  return getCompendiumEntryByName(spellCompendiumIndex(registry), name);
 }
 
 export function classSpellLevel(

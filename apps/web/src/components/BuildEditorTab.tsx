@@ -15,6 +15,12 @@ import { collectFeatWeaponNames } from "../featOptionData";
 import { featTitle } from "../rulesText";
 import type { SpellCastCounts } from "../runtimeState";
 import { skillMetadataTooltip, skillTrainingFlag } from "../skillPresentation";
+import {
+  effectiveRaceChoiceOptions,
+  totalAllocatedSkillRanks,
+  totalSkillRankBudget,
+  totalSkillRanks,
+} from "../skillRankProgression";
 import { LevelProgressionPlanner } from "./LevelProgressionPlanner";
 import type {
   LevelPlannerSuggestions,
@@ -29,27 +35,6 @@ import { SpellcastingManager } from "./SpellcastingManager";
 import { Tooltip } from "./Tooltip";
 
 type SpellMode = "prepared" | "known";
-
-function effectiveRaceChoiceOptions(race: CharacterBuild["race"]) {
-  const selectedIds = new Set(
-    (race.choiceSelection?.alternateTraits ?? []).map((id) => id.toLowerCase()),
-  );
-  const activeTraits = (race.alternateTraits ?? []).filter((trait) =>
-    selectedIds.has(trait.id.toLowerCase()),
-  );
-  const next = { ...(race.choiceOptions ?? {}) };
-  for (const trait of activeTraits) {
-    for (const key of trait.removeChoiceOptions ?? []) delete next[key];
-    if (trait.choiceOptions?.flexibleAbilityBonus !== undefined)
-      next.flexibleAbilityBonus = trait.choiceOptions.flexibleAbilityBonus;
-    if (trait.choiceOptions?.bonusFeat !== undefined)
-      next.bonusFeat = trait.choiceOptions.bonusFeat;
-    if (trait.choiceOptions?.extraSkillRanksPerLevel !== undefined)
-      next.extraSkillRanksPerLevel =
-        trait.choiceOptions.extraSkillRanksPerLevel;
-  }
-  return next;
-}
 
 interface Props {
   build: CharacterBuild;
@@ -98,11 +83,7 @@ interface Props {
     key: K,
     value: CharacterBuild["levels"][number][K],
   ) => void;
-  onUpdateLevelSkillRank: (
-    levelIndex: number,
-    skillKey: SkillKey,
-    value: number,
-  ) => void;
+  onUpdateTotalSkillRank: (skillKey: SkillKey, value: number) => void;
   onSetLevelFeat: (
     levelIndex: number,
     featIndex: number,
@@ -216,10 +197,15 @@ export function BuildEditorTab(props: Props) {
   const [coreSetupAutoCollapsed, setCoreSetupAutoCollapsed] = useState(false);
   const currentLevelIndex = Math.max(0, currentLevel - 1);
   const currentLevelEntry = build.levels[currentLevelIndex];
-  const currentClassSkills = new Set(
-    classOptions.find((option) => option.name === currentLevelEntry?.className)
-      ?.classSkills ?? [],
+  const characterClassSkills = new Set(
+    build.levels.flatMap(
+      (level) =>
+        classOptions.find((option) => option.name === level.className)
+          ?.classSkills ?? [],
+    ),
   );
+  const totalSkillBudget = totalSkillRankBudget(build, classOptions);
+  const allocatedSkillTotal = totalAllocatedSkillRanks(build);
   const raceChoiceOptions = effectiveRaceChoiceOptions(build.race);
   const raceBonusFeatOptions = useMemo(() => {
     const allowed = raceChoiceOptions.bonusFeat?.featOptions;
@@ -612,35 +598,29 @@ export function BuildEditorTab(props: Props) {
           ) : null}
         </section>
 
-        <EditorSection title="Current Level Skill Ranks">
+        <EditorSection title="Character Skill Ranks">
           {currentLevelEntry ? (
             <div className="item-card">
               <div className="editor-section-head tight">
-                <h3>
-                  Level {currentLevel} — {currentLevelEntry.className}
-                </h3>
+                <h3>Total ranks across {build.levels.length} levels</h3>
                 <span className="skill-builder-meta">
-                  {skillBudgetSummary(build, classOptions, currentLevelIndex)}
+                  Allocated {allocatedSkillTotal}/{totalSkillBudget} ·{" "}
+                  {Math.max(0, totalSkillBudget - allocatedSkillTotal)}{" "}
+                  unallocated
                 </span>
               </div>
               {currentLevelSkillSuggestions.length > 0 ? (
                 <>
                   <div className="planner-suggestions">
                     {currentLevelSkillSuggestions.map((suggestion) => {
-                      const maxRanks = remainingSkillCapacity(
+                      const currentRanks = totalSkillRanks(
                         build,
                         suggestion.key,
-                        currentLevelIndex,
                       );
-                      const currentRanks =
-                        currentLevelEntry.skillRanks?.[suggestion.key] ?? 0;
-                      const { unallocated } = skillBudgetForLevel(
-                        build,
-                        classOptions,
-                        currentLevelIndex,
-                      );
+                      const unallocated =
+                        totalSkillBudget - allocatedSkillTotal;
                       const canApply =
-                        unallocated > 0 && currentRanks < maxRanks;
+                        unallocated > 0 && currentRanks < build.levels.length;
                       return (
                         <button
                           key={`skill-suggestion-${suggestion.key}`}
@@ -649,10 +629,9 @@ export function BuildEditorTab(props: Props) {
                           title={suggestion.reason}
                           disabled={!canApply}
                           onClick={() =>
-                            props.onUpdateLevelSkillRank(
-                              currentLevelIndex,
+                            props.onUpdateTotalSkillRank(
                               suggestion.key,
-                              Math.min(maxRanks, currentRanks + 1),
+                              currentRanks + 1,
                             )
                           }
                         >
@@ -674,22 +653,16 @@ export function BuildEditorTab(props: Props) {
                 {SKILL_DEFINITIONS.slice()
                   .sort((a, b) => a.name.localeCompare(b.name))
                   .map((skill) => {
-                    const maxRanks = remainingSkillCapacity(
-                      build,
-                      skill.key,
-                      currentLevelIndex,
-                    );
-                    const isClassSkill = currentClassSkills.has(skill.key);
-                    const usable =
-                      !skill.trainedOnly ||
-                      totalSkillRanks(build, skill.key) > 0;
+                    const ranks = totalSkillRanks(build, skill.key);
+                    const isClassSkill = characterClassSkills.has(skill.key);
+                    const usable = !skill.trainedOnly || ranks > 0;
                     const metadata = skillMetadataTooltip({
                       ability: skill.ability,
                       isClassSkill,
                       trainedOnly: skill.trainedOnly,
                       usable,
                       armorCheckPenalty: skill.armorCheckPenalty,
-                      className: currentLevelEntry.className,
+                      className: "this build",
                     });
                     return (
                       <div
@@ -725,21 +698,17 @@ export function BuildEditorTab(props: Props) {
                           </span>
                         </Tooltip>
                         <input
-                          aria-label={`${skillName.get(skill.key) ?? skill.key} ranks`}
-                          title={`Max here: ${maxRanks}`}
+                          aria-label={`${skillName.get(skill.key) ?? skill.key} total character ranks`}
+                          title={`Total character ranks; maximum ${build.levels.length}`}
                           type="number"
                           min={0}
-                          max={maxRanks}
+                          max={build.levels.length}
                           step={1}
-                          value={currentLevelEntry.skillRanks?.[skill.key] ?? 0}
+                          value={ranks}
                           onChange={(e) =>
-                            props.onUpdateLevelSkillRank(
-                              currentLevelIndex,
+                            props.onUpdateTotalSkillRank(
                               skill.key,
-                              Math.max(
-                                0,
-                                Math.min(maxRanks, Number(e.target.value) || 0),
-                              ),
+                              Number(e.target.value),
                             )
                           }
                         />
@@ -783,113 +752,6 @@ export function BuildEditorTab(props: Props) {
       </section>
     </div>
   );
-}
-
-function allocatedSkillRanks(
-  skillRanks: Partial<Record<SkillKey, number>> | undefined,
-) {
-  return Object.values(skillRanks ?? {}).reduce<number>(
-    (sum, ranks) => sum + (ranks ?? 0),
-    0,
-  );
-}
-
-function abilityMod(score: number) {
-  return Math.floor((score - 10) / 2);
-}
-
-function racialAbilityBonus(build: CharacterBuild, ability: AbilityKey) {
-  const fixedBonus = (build.race.abilityModifiers ?? []).reduce(
-    (sum, mod) => (mod.target === ability ? sum + mod.value : sum),
-    0,
-  );
-  const choiceOptions = effectiveRaceChoiceOptions(build.race);
-  const flexibleBonus =
-    choiceOptions.flexibleAbilityBonus &&
-    build.race.choiceSelection?.flexibleAbility === ability
-      ? choiceOptions.flexibleAbilityBonus.value
-      : 0;
-  return fixedBonus + flexibleBonus;
-}
-
-function intScoreAtLevel(build: CharacterBuild, levelIndex: number) {
-  let score = build.baseAbilityScores.int + racialAbilityBonus(build, "int");
-  for (let i = 0; i <= levelIndex; i += 1) {
-    if (build.levels[i]?.abilityIncrease === "int") score += 1;
-  }
-  return score;
-}
-
-function skillBudgetForLevel(
-  build: CharacterBuild,
-  classOptions: Array<{
-    name: string;
-    hitDie: number;
-    skillRanksPerLevel: number;
-  }>,
-  levelIndex: number,
-) {
-  const level = build.levels[levelIndex];
-  if (!level) return { budget: 0, allocated: 0, unallocated: 0 };
-  const baseRanks =
-    classOptions.find((option) => option.name === level.className)
-      ?.skillRanksPerLevel ?? 0;
-  const intMod = abilityMod(intScoreAtLevel(build, levelIndex));
-  const isFavoredClassLevel =
-    !!build.favoredClassName &&
-    level.className.toLowerCase() === build.favoredClassName.toLowerCase();
-  const favoredSkill =
-    isFavoredClassLevel && level.favoredClass === "skill" ? 1 : 0;
-  const budget =
-    Math.max(1, baseRanks + intMod) +
-    favoredSkill +
-    Math.max(
-      0,
-      effectiveRaceChoiceOptions(build.race).extraSkillRanksPerLevel ?? 0,
-    );
-  const allocated = allocatedSkillRanks(level.skillRanks);
-  return { budget, allocated, unallocated: budget - allocated };
-}
-
-function totalSkillRanks(build: CharacterBuild, skillKey: SkillKey) {
-  return build.levels.reduce(
-    (sum, level) => sum + (level.skillRanks?.[skillKey] ?? 0),
-    0,
-  );
-}
-
-function remainingSkillCapacity(
-  build: CharacterBuild,
-  skillKey: SkillKey,
-  levelIndex: number,
-) {
-  const currentLevelRanks =
-    build.levels[levelIndex]?.skillRanks?.[skillKey] ?? 0;
-  return Math.max(
-    0,
-    build.levels.length -
-      (totalSkillRanks(build, skillKey) - currentLevelRanks),
-  );
-}
-
-function skillBudgetSummary(
-  build: CharacterBuild,
-  classOptions: Array<{
-    name: string;
-    hitDie: number;
-    skillRanksPerLevel: number;
-  }>,
-  levelIndex: number,
-) {
-  const { budget, allocated, unallocated } = skillBudgetForLevel(
-    build,
-    classOptions,
-    levelIndex,
-  );
-  const prefix = `Allocated ${allocated}/${budget}`;
-  return unallocated >= 0
-    ? `${prefix} · ${unallocated} unallocated`
-    : `${prefix} · ${Math.abs(unallocated)} over`;
 }
 
 function SearchableFeatChip({ featName }: { featName: string }) {
