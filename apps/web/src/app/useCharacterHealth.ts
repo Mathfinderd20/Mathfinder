@@ -4,16 +4,21 @@ import {
   deriveHealthStatus,
   type CharacterBuild,
   type DerivedSheet,
+  type RuntimeAction,
 } from "@mathfinder/rules-engine";
 import type { RuntimeStateController } from "../useRuntimeState";
-
-const HP_DAMAGE_RESOURCE_ID = "hp-damage";
-const TEMP_HP_RESOURCE_ID = "temp-hp";
-const NONLETHAL_DAMAGE_RESOURCE_ID = "nonlethal-damage";
-const STABLE_FLAG_ID = "stable";
-const DIEHARD_ACTIVE_FLAG_ID = "diehard-active";
-const FEROCITY_ACTIVE_FLAG_ID = "ferocity-active";
-const FEROCITY_USED_FLAG_ID = "ferocity-used";
+import {
+  DIEHARD_ACTIVE_FLAG_ID,
+  directHpLossRuntimeActions,
+  FEROCITY_ACTIVE_FLAG_ID,
+  FEROCITY_USED_FLAG_ID,
+  healingRuntimeActions,
+  HP_DAMAGE_RESOURCE_ID,
+  NONLETHAL_DAMAGE_RESOURCE_ID,
+  resetHealthRuntimeActions,
+  STABLE_FLAG_ID,
+  TEMP_HP_RESOURCE_ID,
+} from "../runtimeMutations";
 
 export function useCharacterHealth(
   build: CharacterBuild,
@@ -21,8 +26,14 @@ export function useCharacterHealth(
   resourceMaxes: Record<string, number>,
   runtime: RuntimeStateController,
 ) {
-  const { diehardActive, ferocityActive, ferocityUsed, setFlag, stable } =
-    runtime;
+  const {
+    applyActions,
+    diehardActive,
+    ferocityActive,
+    ferocityUsed,
+    setFlag,
+    stable,
+  } = runtime;
   const hpDamageTaken = Math.max(
     0,
     runtime.resourcesUsed[HP_DAMAGE_RESOURCE_ID] ?? 0,
@@ -57,12 +68,22 @@ export function useCharacterHealth(
       currentHp < 0 && currentHp > healthStatus.deathThreshold;
     const ferocityCanContinue =
       currentHp <= 0 && currentHp > healthStatus.deathThreshold;
+    const actions: RuntimeAction[] = [];
     if (belowZeroAndAlive && deathRules.automaticallyStabilizes && !stable)
-      setFlag(STABLE_FLAG_ID, true);
+      actions.push({ type: "set-flag", key: STABLE_FLAG_ID, value: true });
     if ((!belowZeroAndAlive || !deathRules.hasDiehard) && diehardActive)
-      setFlag(DIEHARD_ACTIVE_FLAG_ID, false);
+      actions.push({
+        type: "set-flag",
+        key: DIEHARD_ACTIVE_FLAG_ID,
+        value: false,
+      });
     if ((!ferocityCanContinue || !deathRules.ferocity) && ferocityActive)
-      setFlag(FEROCITY_ACTIVE_FLAG_ID, false);
+      actions.push({
+        type: "set-flag",
+        key: FEROCITY_ACTIVE_FLAG_ID,
+        value: false,
+      });
+    if (actions.length > 0) applyActions(actions);
   }, [
     currentHp,
     deathRules.automaticallyStabilizes,
@@ -71,7 +92,7 @@ export function useCharacterHealth(
     healthStatus.deathThreshold,
     diehardActive,
     ferocityActive,
-    setFlag,
+    applyActions,
     stable,
   ]);
 
@@ -118,18 +139,18 @@ export function useCharacterHealth(
   }
 
   function applyHealing(amount: number) {
-    const normalized = Math.max(0, amount);
-    if (normalized <= 0 || healthStatus.condition === "dead") return;
-    runtime.adjustResource(HP_DAMAGE_RESOURCE_ID, -normalized);
-    const nextHp = Math.min(sheet.hitPoints.total, currentHp + normalized);
-    setFlag(STABLE_FLAG_ID, nextHp < 0);
+    applyActions(
+      healingRuntimeActions({
+        amount,
+        currentHp,
+        maxHp: sheet.hitPoints.total,
+        dead: healthStatus.condition === "dead",
+      }),
+    );
   }
 
   function applyDirectHpLoss(amount: number) {
-    const normalized = Math.max(0, amount);
-    if (normalized <= 0) return;
-    runtime.adjustResource(HP_DAMAGE_RESOURCE_ID, normalized);
-    setFlag(STABLE_FLAG_ID, false);
+    applyActions(directHpLossRuntimeActions(amount));
   }
 
   function applyNonlethalDamage(amount: number) {
@@ -143,13 +164,7 @@ export function useCharacterHealth(
   }
 
   function resetHp() {
-    runtime.resetResource(HP_DAMAGE_RESOURCE_ID);
-    runtime.resetResource(TEMP_HP_RESOURCE_ID);
-    runtime.resetResource(NONLETHAL_DAMAGE_RESOURCE_ID);
-    setFlag(STABLE_FLAG_ID, false);
-    setFlag(DIEHARD_ACTIVE_FLAG_ID, false);
-    setFlag(FEROCITY_ACTIVE_FLAG_ID, false);
-    setFlag(FEROCITY_USED_FLAG_ID, false);
+    applyActions(resetHealthRuntimeActions());
   }
 
   return {

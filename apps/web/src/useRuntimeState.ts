@@ -31,6 +31,8 @@ export function useRuntimeState(storageKey: string) {
 
   const actions = useMemo(
     () => ({
+      applyActions: (runtimeActions: RuntimeAction[]) =>
+        dispatch({ type: "batch", actions: runtimeActions }),
       resetAll: () => dispatch({ type: "reset-all" }),
       setToggle: (id: string, value: boolean) =>
         dispatch({ type: "set-toggle", id, value }),
