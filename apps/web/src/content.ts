@@ -418,6 +418,7 @@ export function raceOptionsFromDataSet(
       classSkills: race.classSkills,
       weaponProficiencies: race.weaponProficiencies,
       specificWeaponProficiencies: race.specificWeaponProficiencies,
+      weaponFamiliarity: race.weaponFamiliarity,
       grantedWeapons: race.grantedWeapons,
       choiceOptions: race.choiceOptions,
       alternateTraits: race.alternateTraits,

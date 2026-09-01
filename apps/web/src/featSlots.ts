@@ -3,6 +3,7 @@ import type {
   FeatGrantKind,
   FeatGrantSlot,
 } from "@mathfinder/rules-engine";
+import { classBonusFeatSlot } from "@mathfinder/rules-engine";
 
 export function plannedFeatSlotsForLevel(
   build: CharacterBuild,
@@ -19,20 +20,14 @@ export function plannedFeatSlotsForLevel(
       source: `Level ${characterLevel}`,
     });
   }
-  if (level.className.trim().toLowerCase() === "fighter") {
-    const fighterLevel = build.levels
-      .slice(0, levelIndex + 1)
-      .filter(
-        (entry) => entry.className.trim().toLowerCase() === "fighter",
-      ).length;
-    if (fighterLevel === 1 || fighterLevel % 2 === 0) {
-      slots.push({
-        kind: "fighter-bonus",
-        label: "Fighter bonus feat",
-        source: `Fighter ${fighterLevel}`,
-      });
-    }
-  }
+  const normalizedClass = level.className.trim().toLowerCase();
+  const classLevel = build.levels
+    .slice(0, levelIndex + 1)
+    .filter(
+      (entry) => entry.className.trim().toLowerCase() === normalizedClass,
+    ).length;
+  const classBonusSlot = classBonusFeatSlot(level.className, classLevel);
+  if (classBonusSlot) slots.push(classBonusSlot);
   return slots;
 }
 

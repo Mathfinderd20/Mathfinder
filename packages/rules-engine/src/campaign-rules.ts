@@ -1,6 +1,7 @@
 import type { Weapon, WeaponProficiencyGroup } from "./types";
 
-export type FirearmRulesMode = "standard" | "guns-everywhere";
+export type FirearmRulesMode =
+  "standard" | "commonplace-guns" | "guns-everywhere";
 
 export interface CampaignRules {
   firearmRules?: FirearmRulesMode;
@@ -32,8 +33,18 @@ export function infantrymanGunTrainingPickCount(
   return classLevel >= minimumLevel ? 1 : 0;
 }
 
-export function firearmCostMultiplier(rules?: CampaignRules | null) {
-  return firearmRulesMode(rules) === "guns-everywhere" ? 0.1 : 1;
+export function firearmCostMultiplier(
+  rules?: CampaignRules | null,
+  weaponTechnology?: Weapon["weaponTechnology"],
+) {
+  const mode = firearmRulesMode(rules);
+  if (mode === "guns-everywhere") return 0.1;
+  // An omitted technology intentionally follows early-firearm pricing so
+  // callers can apply Commonplace Guns to firearm ammunition as one catalog.
+  if (mode === "commonplace-guns" && weaponTechnology !== "advanced") {
+    return 0.25;
+  }
+  return 1;
 }
 
 export function weaponUsesFirearmRules(
@@ -49,19 +60,17 @@ export function effectiveWeaponProficiencyGroup(
   weapon: Pick<Weapon, "proficiencyGroup" | "specialTags" | "firearmCategory">,
   rules?: CampaignRules | null,
 ): WeaponProficiencyGroup | undefined {
-  if (
-    firearmRulesMode(rules) === "guns-everywhere" &&
-    weaponUsesFirearmRules(weapon)
-  ) {
-    return "simple";
-  }
+  if (!weaponUsesFirearmRules(weapon)) return weapon.proficiencyGroup;
+  const mode = firearmRulesMode(rules);
+  if (mode === "guns-everywhere") return "simple";
+  if (mode === "commonplace-guns") return "martial";
   return weapon.proficiencyGroup;
 }
 
 export function applyCampaignRulesToWeapon<
   T extends Pick<
     Weapon,
-    "proficiencyGroup" | "specialTags" | "firearmCategory"
+    "proficiencyGroup" | "specialTags" | "firearmCategory" | "weaponTechnology"
   > & { costGp?: number },
 >(weapon: T, rules?: CampaignRules | null): T {
   if (!weaponUsesFirearmRules(weapon)) return weapon;
@@ -70,7 +79,11 @@ export function applyCampaignRulesToWeapon<
     proficiencyGroup: effectiveWeaponProficiencyGroup(weapon, rules),
     costGp:
       typeof weapon.costGp === "number"
-        ? Math.round(weapon.costGp * firearmCostMultiplier(rules) * 100) / 100
+        ? Math.round(
+            weapon.costGp *
+              firearmCostMultiplier(rules, weapon.weaponTechnology) *
+              100,
+          ) / 100
         : weapon.costGp,
   };
 }

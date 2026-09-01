@@ -7,9 +7,16 @@ import type {
 } from "../buildSuggestions";
 import { featSlotTag, plannedFeatSlotsForLevel } from "../featSlots";
 import { buildFavoredClassBonusOptions } from "../favoredClassBonusData";
-import { collectFeatWeaponNames } from "../featOptionData";
-import { RUNTIME_FEATS, RUNTIME_WEAPONS } from "../content";
+import { collectFeatWeaponNames, collectFirearmNames } from "../featOptionData";
+import {
+  RUNTIME_ARCHETYPES,
+  RUNTIME_CLASS_FEATURES,
+  RUNTIME_FEATS,
+  RUNTIME_WEAPONS,
+} from "../content";
+import { classAbilitiesGrantedAtLevel } from "../classAbilityProgression";
 import { FeatSelectionPicker } from "./FeatSelectionPicker";
+import { CompendiumPicker } from "./CompendiumPicker";
 
 interface LevelProgressionPlannerProps {
   build: CharacterBuild;
@@ -32,6 +39,7 @@ interface LevelProgressionPlannerProps {
   onApplyPlannerSuggestions: (levelIndex: number) => void;
   onRequestPlannerSuggestions: (levelIndex: number) => void;
   onClearPlannedLevelChoices: (levelIndex: number) => void;
+  onUpdateInfantrymanGunTraining: (weaponName: string) => void;
 }
 
 function SuggestionPreviewList({
@@ -86,14 +94,22 @@ export function LevelProgressionPlanner({
   onApplyPlannerSuggestions,
   onRequestPlannerSuggestions,
   onClearPlannedLevelChoices,
+  onUpdateInfantrymanGunTraining,
 }: LevelProgressionPlannerProps) {
   const availableWeaponNames = useMemo(
     () => collectFeatWeaponNames(build, RUNTIME_WEAPONS),
     [build],
   );
+  const firearmNames = useMemo(
+    () => collectFirearmNames(build, RUNTIME_WEAPONS),
+    [build],
+  );
   const [expandedLevels, setExpandedLevels] = useState<Record<number, boolean>>(
     {},
   );
+  const [expandedAbilityLevels, setExpandedAbilityLevels] = useState<
+    Record<number, boolean>
+  >({});
 
   return (
     <section className="planner-shell">
@@ -136,6 +152,7 @@ export function LevelProgressionPlanner({
               <th>Lvl</th>
               <th>Status</th>
               <th>Class</th>
+              <th>Class Abilities</th>
               <th>HP</th>
               <th>Feats</th>
               <th>Favored Bonus</th>
@@ -154,7 +171,6 @@ export function LevelProgressionPlanner({
                 const featSlots = isActive
                   ? plannedFeatSlotsForLevel(build, index)
                   : [];
-                const grantsFeat = featSlots.length > 0;
                 const grantsAbilityIncrease = levelNumber % 4 === 0;
                 const defaultClass =
                   build.levels[index - 1]?.className ??
@@ -187,7 +203,31 @@ export function LevelProgressionPlanner({
                 const rowExpanded = !!expandedLevels[index];
                 const hasGuidedSuggestions =
                   suggestions.guideChoices.length > 0;
-                return (
+                const classAbilities = isActive
+                  ? classAbilitiesGrantedAtLevel({
+                      build,
+                      levelIndex: index,
+                      classFeatures: RUNTIME_CLASS_FEATURES,
+                      archetypes: RUNTIME_ARCHETYPES,
+                    })
+                  : [];
+                const abilitiesExpanded = !!expandedAbilityLevels[index];
+                const classAbilityFeatSlotIndex = classAbilities.some(
+                  (ability) => ability.name.toLowerCase() === "bonus feat",
+                )
+                  ? featSlots.findIndex(
+                      (slot) =>
+                        slot.label.toLowerCase() ===
+                        `${levelClassName.toLowerCase()} bonus feat`,
+                    )
+                  : -1;
+                const visibleFeatSlots = featSlots
+                  .map((slot, featIndex) => ({ slot, featIndex }))
+                  .filter(
+                    ({ featIndex }) => featIndex !== classAbilityFeatSlotIndex,
+                  );
+                const grantsFeat = visibleFeatSlots.length > 0;
+                return [
                   <tr
                     key={`planner-row-${index + 1}`}
                     className={
@@ -222,6 +262,33 @@ export function LevelProgressionPlanner({
                         <span className="planner-empty">—</span>
                       )}
                     </td>
+                    <td className="planner-class-abilities-cell">
+                      {classAbilities.length > 0 ? (
+                        <button
+                          className="planner-ability-toggle"
+                          type="button"
+                          aria-expanded={abilitiesExpanded}
+                          title={classAbilities
+                            .map((ability) => ability.name)
+                            .join(", ")}
+                          onClick={() =>
+                            setExpandedAbilityLevels((previous) => ({
+                              ...previous,
+                              [index]: !previous[index],
+                            }))
+                          }
+                        >
+                          <span>{classAbilities[0]?.name}</span>
+                          {classAbilities.length > 1 ? (
+                            <span className="planner-ability-count">
+                              +{classAbilities.length - 1}
+                            </span>
+                          ) : null}
+                        </button>
+                      ) : (
+                        <span className="planner-empty">—</span>
+                      )}
+                    </td>
                     <td>
                       {isActive ? (
                         <input
@@ -245,7 +312,7 @@ export function LevelProgressionPlanner({
                     <td>
                       {isActive && grantsFeat ? (
                         <div className="planner-feat-slots">
-                          {featSlots.map((slot, featIndex) => {
+                          {visibleFeatSlots.map(({ slot, featIndex }) => {
                             const selectedFeat = level.feats?.[featIndex] ?? "";
                             return (
                               <div
@@ -434,8 +501,87 @@ export function LevelProgressionPlanner({
                         <span className="planner-empty">—</span>
                       )}
                     </td>
-                  </tr>
-                );
+                  </tr>,
+                  abilitiesExpanded ? (
+                    <tr
+                      key={`planner-ability-detail-${index + 1}`}
+                      className="planner-ability-detail-row"
+                    >
+                      <td colSpan={10}>
+                        <div className="planner-ability-detail-grid">
+                          {classAbilities.map((ability) => {
+                            const isGunTraining =
+                              levelClassName.toLowerCase() === "infantryman" &&
+                              ability.name.toLowerCase() === "gun training";
+                            const isBonusFeat =
+                              ability.name.toLowerCase() === "bonus feat" &&
+                              classAbilityFeatSlotIndex >= 0;
+                            return (
+                              <article
+                                className="planner-ability-card"
+                                key={ability.id}
+                              >
+                                <div className="planner-ability-card-head">
+                                  <strong>{ability.name}</strong>
+                                  <span>{ability.source}</span>
+                                </div>
+                                <p>{ability.description}</p>
+                                {isGunTraining ? (
+                                  <label className="field compact">
+                                    <span>Trained firearm</span>
+                                    <CompendiumPicker
+                                      value={
+                                        build.gunTrainingSelections
+                                          ?.infantryman?.[0] ?? ""
+                                      }
+                                      onChange={onUpdateInfantrymanGunTraining}
+                                      options={firearmNames.map((name) => ({
+                                        id: `planner-gun-training-${name.toLowerCase()}`,
+                                        name,
+                                        tooltip: `Gun Training: add Dexterity to damage with ${name}.`,
+                                      }))}
+                                      placeholder="Choose trained firearm"
+                                      commitMode="select"
+                                      maxResults={40}
+                                    />
+                                  </label>
+                                ) : null}
+                                {isBonusFeat ? (
+                                  <label className="field compact">
+                                    <span>Select bonus feat</span>
+                                    <FeatSelectionPicker
+                                      value={
+                                        level?.feats?.[
+                                          classAbilityFeatSlotIndex
+                                        ] ?? ""
+                                      }
+                                      onChange={(value) =>
+                                        onSetLevelFeat(
+                                          index,
+                                          classAbilityFeatSlotIndex,
+                                          value,
+                                        )
+                                      }
+                                      featRegistry={RUNTIME_FEATS}
+                                      grantKind={
+                                        featSlots[classAbilityFeatSlotIndex]
+                                          ?.kind ?? "general"
+                                      }
+                                      availableWeaponNames={
+                                        availableWeaponNames
+                                      }
+                                      placeholder="Choose bonus feat"
+                                    />
+                                  </label>
+                                ) : null}
+                              </article>
+                            );
+                          })}
+                        </div>
+                      </td>
+                    </tr>
+                  ) : null,
+                ];
               },
             )}
           </tbody>

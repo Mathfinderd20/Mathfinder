@@ -32,6 +32,66 @@ describe("build normalization", () => {
 });
 
 describe("campaign equipment pricing", () => {
+  it("reprices early and advanced firearms across campaign modes", () => {
+    RUNTIME_WEAPONS.push(
+      {
+        id: "test-early-pistol",
+        name: "Early Pistol",
+        category: "ranged",
+        proficiencyGroup: "exotic",
+        damageDice: "1d8",
+        firearmCategory: "one-handed",
+        weaponTechnology: "early",
+        weightLb: 4,
+        costGp: 1_000,
+      },
+      {
+        id: "test-advanced-rifle",
+        name: "Advanced Rifle",
+        category: "ranged",
+        proficiencyGroup: "exotic",
+        damageDice: "1d10",
+        firearmCategory: "two-handed",
+        weaponTechnology: "advanced",
+        weightLb: 8,
+        costGp: 5_000,
+      },
+    );
+    try {
+      const source = build();
+      source.equipment = RUNTIME_WEAPONS.slice(-2).map((weapon) => ({
+        itemTemplateId: weapon.id,
+        name: weapon.name,
+        costGp: weapon.costGp,
+        weapon: { category: "ranged", damageDice: weapon.damageDice },
+      }));
+
+      const commonplace = syncTemplatedWeaponsToCampaignRules({
+        ...source,
+        campaignRules: { firearmRules: "commonplace-guns" },
+      });
+      expect(commonplace.equipment?.map((item) => item.costGp)).toEqual([
+        250, 5_000,
+      ]);
+      const everywhere = syncTemplatedWeaponsToCampaignRules({
+        ...commonplace,
+        campaignRules: { firearmRules: "guns-everywhere" },
+      });
+      expect(everywhere.equipment?.map((item) => item.costGp)).toEqual([
+        100, 500,
+      ]);
+      const standard = syncTemplatedWeaponsToCampaignRules({
+        ...everywhere,
+        campaignRules: undefined,
+      });
+      expect(standard.equipment?.map((item) => item.costGp)).toEqual([
+        1_000, 5_000,
+      ]);
+    } finally {
+      RUNTIME_WEAPONS.splice(-2, 2);
+    }
+  });
+
   it("reprices templated firearms reversibly from their canonical cost", () => {
     RUNTIME_WEAPONS.push({
       id: "test-campaign-pistol",

@@ -37,6 +37,7 @@ import {
 import {
   weaponAmmoUxLabel,
   weaponAvailabilityMatches,
+  weaponTemplateLabel,
   type WeaponAvailabilityFilter,
 } from "../weaponUx";
 import { compatibleAmmoEntries } from "../ammoCatalog";
@@ -843,7 +844,7 @@ export function GearTab(props: Props) {
                     <option value="">Custom / select template…</option>
                     {filteredWeaponOptions.map((option) => (
                       <option key={option.id} value={option.id}>
-                        {option.name}
+                        {weaponTemplateLabel(option)}
                       </option>
                     ))}
                   </select>
@@ -2144,7 +2145,7 @@ function renderEquipmentCard({
                   <option value="">Custom / select template…</option>
                   {weaponOptions.map((option) => (
                     <option key={option.id} value={option.id}>
-                      {option.name}
+                      {weaponTemplateLabel(option)}
                     </option>
                   ))}
                 </select>

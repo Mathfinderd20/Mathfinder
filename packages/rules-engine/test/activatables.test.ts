@@ -163,6 +163,74 @@ describe("resource pools", () => {
     ]);
   });
 
+  it("adds Extra Grit to the pool maximum and calculation", () => {
+    const pools = collectResourcePools({
+      descriptor: {
+        classes: [{ name: "Infantryman", level: 1 }],
+        archetypes: [],
+        feats: [{ name: "Extra Grit", level: 1 }],
+        features: [{ name: "Grit", level: 1 }],
+        suppressedFeatures: [],
+      },
+      classFeatureRegistry: {
+        infantryman: [
+          {
+            id: "grit-feature",
+            name: "Grit",
+            className: "infantryman",
+            level: 1,
+            pack: "test",
+            description: "Gain grit.",
+            effects: [],
+            resourcePool: {
+              id: "infantryman-grit",
+              name: "Grit",
+              unit: "grit",
+              description: "Spend grit on deeds.",
+              maximum: { ability: "wis", minimum: 1 },
+            },
+          },
+        ],
+      },
+      featRegistry: {
+        "extra grit": {
+          id: "extra-grit",
+          name: "Extra Grit",
+          pack: "test",
+          description: "Gain 2 grit.",
+          prerequisites: [],
+          effects: [],
+          resourcePoolBonuses: [
+            {
+              poolId: "infantryman-grit",
+              value: 2,
+              source: "Extra Grit",
+            },
+          ],
+        },
+      },
+      context: {
+        baseAttackBonus: 1,
+        characterLevel: 1,
+        abilityModifiers: { str: 0, dex: 0, con: 0, int: 0, wis: 3, cha: 0 },
+        classLevels: { infantryman: 1 },
+      },
+    });
+
+    expect(pools[0]).toMatchObject({
+      max: 5,
+      calculation: {
+        rawTotal: 5,
+        minimum: 1,
+        total: 5,
+        contributions: [
+          { label: "WIS modifier", value: 3 },
+          { label: "Extra Grit", value: 2 },
+        ],
+      },
+    });
+  });
+
   it("enforces the grit minimum when Wisdom is low", () => {
     expect(
       resourcePoolMaximum(

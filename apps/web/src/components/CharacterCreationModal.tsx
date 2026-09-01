@@ -9,7 +9,6 @@ import {
   buildCharacter,
   classAllowsAlignment,
   computeSheet,
-  featContextFromSheet,
   SKILL_DEFINITIONS,
   type AbilityKey,
   type Alignment,
@@ -27,7 +26,7 @@ import {
   RUNTIME_WEAPONS,
 } from "../content";
 import {
-  buildFeatPickerOptions,
+  buildFeatBaseEligibilityOptions,
   collectFeatWeaponNames,
 } from "../featOptionData";
 import { plannedFeatSlotsForLevel } from "../featSlots";
@@ -201,31 +200,38 @@ export function CharacterCreationModal({
     if (!hasRaceBonusFeat) setRaceBonusFeat("");
   }, [hasRaceBonusFeat]);
 
-  const featContext = useMemo(
-    () => (previewSheet ? featContextFromSheet(previewSheet) : undefined),
-    [previewSheet],
-  );
   const availableWeaponNames = useMemo(
     () =>
       draftBuild ? collectFeatWeaponNames(draftBuild, RUNTIME_WEAPONS) : [],
     [draftBuild],
+  );
+  const featOptionCache = useMemo(
+    () => new Map<string, ReturnType<typeof buildFeatBaseEligibilityOptions>>(),
+    [],
   );
   const resolveFeatOptions = useCallback(
     (
       grantKind: "general" | "fighter-bonus",
       currentSelection: string | undefined,
     ) => {
-      if (!featContext) return [];
-      return buildFeatPickerOptions({
+      const cacheKey = [
+        grantKind,
+        currentSelection?.trim().toLowerCase() ?? "",
+        raceBonusFeat,
+        ...selectedFeats,
+      ].join("\u0000");
+      const cached = featOptionCache.get(cacheKey);
+      if (cached) return cached;
+      const options = buildFeatBaseEligibilityOptions({
         featRegistry: RUNTIME_FEATS,
-        featContext,
         grantKind,
         takenSelections: [raceBonusFeat, ...selectedFeats].filter(Boolean),
         currentSelection,
-        availableWeaponNames,
       });
+      featOptionCache.set(cacheKey, options);
+      return options;
     },
-    [availableWeaponNames, featContext, raceBonusFeat, selectedFeats],
+    [featOptionCache, raceBonusFeat, selectedFeats],
   );
 
   const classAlignmentAllowed =

@@ -706,6 +706,26 @@ function effectScore(
   }, 0);
 }
 
+function featDependsOnOwnSpellcasting(feat: FeatDefinition) {
+  const id = normalize(feat.id);
+  const name = normalize(feat.name);
+  const tags = new Set((feat.tags ?? []).map(normalize));
+  const text = normalize(`${feat.name} ${feat.description}`);
+  return (
+    tags.has("metamagic") ||
+    feat.parameter?.kind === "spell-school" ||
+    [
+      "combat-casting",
+      "spell-mastery",
+      "spell-penetration",
+      "greater-spell-penetration",
+    ].some((key) => id === key || name === key.replaceAll("-", " ")) ||
+    /spells? you cast|when you cast|casting (?:a |your )?spells?|your caster level|concentration checks? (?:made )?to cast/.test(
+      text,
+    )
+  );
+}
+
 function scoreFeat(
   feat: FeatDefinition,
   profile: BuildProfile,
@@ -714,6 +734,7 @@ function scoreFeat(
   taken: Set<string>,
   slotKind: FeatGrantKind,
 ) {
+  if (!profile.casterFocus && featDependsOnOwnSpellcasting(feat)) return null;
   if (
     slotKind === "fighter-bonus" &&
     !(feat.tags ?? []).some((tag) => tag.toLowerCase() === "combat")
@@ -828,6 +849,7 @@ function bandFeatChoices(
       if (
         !feat ||
         taken.has(normalize(feat.name)) ||
+        (!profile.casterFocus && featDependsOnOwnSpellcasting(feat)) ||
         !checkPrerequisites(feat, levelContext).met ||
         (slotKind === "fighter-bonus" &&
           !(feat.tags ?? []).some((tag) => tag.toLowerCase() === "combat"))

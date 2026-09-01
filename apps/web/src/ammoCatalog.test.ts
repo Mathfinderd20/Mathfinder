@@ -24,4 +24,10 @@ describe("campaign-aware ammunition pricing", () => {
     expect(ammoUsesFirearmRules("arrow")).toBe(false);
     expect(ammoStackCostGp("arrow", rules)).toBe(0.05);
   });
+
+  it("uses Commonplace Guns pricing for firearm ammunition", () => {
+    const rules = { firearmRules: "commonplace-guns" as const };
+    expect(ammoStackCostGp("bullet", rules)).toBe(2.5);
+    expect(ammoStackCostGp("arrow", rules)).toBe(0.05);
+  });
 });

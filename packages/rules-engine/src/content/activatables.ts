@@ -42,31 +42,79 @@ export interface ResourcePoolDefinition {
   maximum: ResourcePoolMaximum;
 }
 
+export interface ResourcePoolBonusDefinition {
+  poolId: string;
+  value: number;
+  source: string;
+}
+
+export interface ResourcePoolContribution {
+  label: string;
+  value: number;
+}
+
+export interface ResourcePoolCalculation {
+  contributions: ResourcePoolContribution[];
+  rawTotal: number;
+  minimum: number;
+  total: number;
+}
+
 export interface DerivedResourcePool {
   id: string;
   name: string;
   unit: string;
   description: string;
   max: number;
+  calculation: ResourcePoolCalculation;
+}
+
+export function resourcePoolCalculation(
+  pool: ResourcePoolDefinition,
+  context: ActivationContext,
+  bonuses: ResourcePoolContribution[] = [],
+): ResourcePoolCalculation {
+  const maximum = pool.maximum;
+  const contributions: ResourcePoolContribution[] = [];
+  if (maximum.base) contributions.push({ label: "Base", value: maximum.base });
+  if (maximum.ability) {
+    const multiplier = maximum.abilityMultiplier ?? 1;
+    const abilityModifier = context.abilityModifiers?.[maximum.ability] ?? 0;
+    contributions.push({
+      label: `${maximum.ability.toUpperCase()} modifier${multiplier === 1 ? "" : ` × ${multiplier}`}`,
+      value: abilityModifier * multiplier,
+    });
+  }
+  if (maximum.className) {
+    const multiplier = maximum.classLevelMultiplier ?? 0;
+    const classLevel =
+      context.classLevels?.[maximum.className.toLowerCase()] ?? 0;
+    contributions.push({
+      label: `${maximum.className} levels${multiplier === 1 ? "" : ` × ${multiplier}`}`,
+      value: classLevel * multiplier,
+    });
+  }
+  contributions.push(...bonuses);
+  const rawTotal = Math.floor(
+    contributions.reduce(
+      (total, contribution) => total + contribution.value,
+      0,
+    ),
+  );
+  const minimum = maximum.minimum ?? 0;
+  return {
+    contributions,
+    rawTotal,
+    minimum,
+    total: Math.max(minimum, rawTotal),
+  };
 }
 
 export function resourcePoolMaximum(
   pool: ResourcePoolDefinition,
   context: ActivationContext,
 ) {
-  const maximum = pool.maximum;
-  const abilityValue = maximum.ability
-    ? (context.abilityModifiers?.[maximum.ability] ?? 0) *
-      (maximum.abilityMultiplier ?? 1)
-    : 0;
-  const classLevel = maximum.className
-    ? (context.classLevels?.[maximum.className.toLowerCase()] ?? 0)
-    : 0;
-  const classValue = classLevel * (maximum.classLevelMultiplier ?? 0);
-  return Math.max(
-    maximum.minimum ?? 0,
-    Math.floor((maximum.base ?? 0) + abilityValue + classValue),
-  );
+  return resourcePoolCalculation(pool, context).total;
 }
 
 /** A limited-use resource pool, e.g. Rage rounds/day. */
@@ -253,6 +301,17 @@ export function collectResourcePools(args: {
   const featNames = new Set(
     args.descriptor.feats.map((feat) => feat.name.toLowerCase()),
   );
+  const featCounts = args.descriptor.feats.reduce<Record<string, number>>(
+    (counts, feat) => {
+      const name = feat.name.toLowerCase();
+      counts[name] = (counts[name] ?? 0) + 1;
+      return counts;
+    },
+    {},
+  );
+  const activeFeats = Object.values(args.featRegistry).filter((feat) =>
+    featNames.has(feat.name.toLowerCase()),
+  );
   const definitions = [
     ...Object.values(args.classFeatureRegistry)
       .flat()
@@ -263,10 +322,8 @@ export function collectResourcePools(args: {
           !suppressedNames.has(feature.name.toLowerCase()),
       )
       .map((feature) => feature.resourcePool!),
-    ...Object.values(args.featRegistry)
-      .filter(
-        (feat) => !!feat.resourcePool && featNames.has(feat.name.toLowerCase()),
-      )
+    ...activeFeats
+      .filter((feat) => !!feat.resourcePool)
       .map((feat) => feat.resourcePool!),
   ];
   const seen = new Set<string>();
@@ -276,13 +333,32 @@ export function collectResourcePools(args: {
       seen.add(definition.id);
       return true;
     })
-    .map((definition) => ({
-      id: definition.id,
-      name: definition.name,
-      unit: definition.unit,
-      description: definition.description,
-      max: resourcePoolMaximum(definition, args.context),
-    }))
+    .map((definition) => {
+      const bonuses = activeFeats.flatMap((feat) =>
+        (feat.resourcePoolBonuses ?? [])
+          .filter((bonus) => bonus.poolId === definition.id)
+          .map((bonus) => {
+            const count = featCounts[feat.name.toLowerCase()] ?? 1;
+            return {
+              label: count > 1 ? `${bonus.source} × ${count}` : bonus.source,
+              value: bonus.value * count,
+            };
+          }),
+      );
+      const calculation = resourcePoolCalculation(
+        definition,
+        args.context,
+        bonuses,
+      );
+      return {
+        id: definition.id,
+        name: definition.name,
+        unit: definition.unit,
+        description: definition.description,
+        max: calculation.total,
+        calculation,
+      };
+    })
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 

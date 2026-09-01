@@ -144,6 +144,26 @@ describe("levelUp to level 2", () => {
   });
 });
 
+describe("repeatable parameterless feats", () => {
+  it("preserves and validates multiple Extra Grit acquisitions", () => {
+    const build = grukkLevel1();
+    build.levels[0]!.feats = ["Extra Grit", "Extra Grit"];
+
+    const descriptor = buildCharacter(build).descriptor;
+
+    expect(descriptor).toBeDefined();
+    expect(
+      descriptor?.feats.filter((feat) => feat.name === "Extra Grit"),
+    ).toEqual([
+      { name: "Extra Grit", level: 1 },
+      { name: "Extra Grit", level: 1 },
+    ]);
+    expect(validateBuild(build).map((issue) => issue.code)).not.toContain(
+      "duplicate-feat",
+    );
+  });
+});
+
 describe("inventory math", () => {
   it("auto-sums carried weight and total cost from equipment quantities", () => {
     const build = grukkLevel1();
@@ -487,6 +507,86 @@ describe("race-granted build choices", () => {
         .find((weapon) => weapon.name === "Longsword")
         ?.attack.breakdown.some((entry) => entry.source === "Nonproficient"),
     ).toBe(false);
+  });
+
+  it("automates Half-Orc Intimidating and weapon familiarity", () => {
+    const build = grukkLevel1();
+    build.baseAbilityScores.cha = 10;
+    build.levels[0]!.className = "Wizard";
+    build.levels[0]!.skillRanks = {};
+    build.race.traits = [
+      {
+        target: "skill.intimidate",
+        type: "racial",
+        value: 2,
+        source: "Intimidating",
+      },
+    ];
+    build.race.weaponFamiliarity = {
+      source: "Weapon Familiarity",
+      specificWeapons: ["Greataxe", "Falchion"],
+      martialWeaponNameIncludes: ["orc"],
+    };
+    build.weapons = [
+      {
+        name: "Greataxe",
+        category: "melee",
+        proficiencyGroup: "martial",
+        damageDice: "1d12",
+      },
+      {
+        name: "Orc double axe",
+        category: "melee",
+        proficiencyGroup: "exotic",
+        damageDice: "1d8",
+      },
+    ];
+
+    const wizardSheet = computeSheet(buildCharacter(build));
+    expect(wizardSheet.skills.intimidate.total).toBe(2);
+    expect(
+      wizardSheet.weapons[0]?.attack.breakdown.some(
+        (entry) => entry.source === "Nonproficient",
+      ),
+    ).toBe(false);
+    expect(
+      wizardSheet.weapons[1]?.attack.breakdown.some(
+        (entry) => entry.source === "Nonproficient",
+      ),
+    ).toBe(true);
+
+    build.levels[0]!.className = "Fighter";
+    const fighterSheet = computeSheet(buildCharacter(build));
+    expect(
+      fighterSheet.weapons[1]?.attack.breakdown.some(
+        (entry) => entry.source === "Nonproficient",
+      ),
+    ).toBe(false);
+  });
+
+  it("removes Intimidating when an alternate racial trait replaces it", () => {
+    const build = grukkLevel1();
+    build.baseAbilityScores.cha = 10;
+    build.levels[0]!.skillRanks = {};
+    build.race.traits = [
+      {
+        target: "skill.intimidate",
+        type: "racial",
+        value: 2,
+        source: "Intimidating",
+      },
+    ];
+    build.race.alternateTraits = [
+      {
+        id: "toothy",
+        name: "Toothy",
+        description: "Gain a bite attack.",
+        replaces: ["Intimidating"],
+      },
+    ];
+    build.race.choiceSelection = { alternateTraits: ["toothy"] };
+
+    expect(computeSheet(buildCharacter(build)).skills.intimidate.total).toBe(0);
   });
 });
 

@@ -4,6 +4,7 @@ import type { AbilityKey, DerivedSheet, Modifier, SkillKey } from "../types";
 import {
   babStep,
   type ActivatableEffect,
+  type ResourcePoolBonusDefinition,
   type ResourcePoolDefinition,
 } from "./activatables";
 import { ADDITIONAL_CORE_FEATS } from "./core-feats-additional";
@@ -46,6 +47,8 @@ export interface FeatDefinition {
   activatable?: ActivatableEffect;
   /** Optional always-available tracked pool granted by this feat. */
   resourcePool?: ResourcePoolDefinition;
+  /** Additive bonuses to a pool granted elsewhere, e.g. Extra Grit. */
+  resourcePoolBonuses?: ResourcePoolBonusDefinition[];
 }
 
 export type FeatGrantKind = "general" | "fighter-bonus";
@@ -356,6 +359,19 @@ export const CORE_FEATS: FeatDefinition[] = [
   },
   ...ADDITIONAL_CORE_FEATS,
   {
+    id: "extra-grit",
+    name: "Extra Grit",
+    pack: "core",
+    description:
+      "Gain 2 extra grit points at the start of each day and increase maximum grit by 2.",
+    prerequisites: [],
+    repeatable: true,
+    effects: [],
+    resourcePoolBonuses: [
+      { poolId: "infantryman-grit", value: 2, source: "Extra Grit" },
+    ],
+  },
+  {
     id: "deadly-aim",
     name: "Deadly Aim",
     pack: "core",
@@ -537,6 +553,8 @@ function mergeFeatDefinitions(
     parameter: incoming.parameter ?? existing.parameter,
     activatable: incoming.activatable ?? existing.activatable,
     resourcePool: incoming.resourcePool ?? existing.resourcePool,
+    resourcePoolBonuses:
+      incoming.resourcePoolBonuses ?? existing.resourcePoolBonuses,
   });
 }
 

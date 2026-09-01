@@ -100,6 +100,7 @@ export {
   collectActivatableEffects,
   collectResourcePools,
   resourcePoolMaximum,
+  resourcePoolCalculation,
   resolveActivatableSelections,
   groupActivatables,
   activatableModifiers,
@@ -114,6 +115,9 @@ export {
   type ActivatableRequirements,
   type ResourcePoolDefinition,
   type ResourcePoolMaximum,
+  type ResourcePoolBonusDefinition,
+  type ResourcePoolCalculation,
+  type ResourcePoolContribution,
   type DerivedResourcePool,
   type ActivatableConflict,
   type ResolvedActivatables,
@@ -222,6 +226,7 @@ export {
   type EquipmentMagicItemTemplate,
 } from "./content/magic-items";
 // ---- Build / level-up layer ----
+export { classBonusFeatSlot } from "./build/feat-grants";
 export {
   buildCharacter,
   levelUp,

@@ -10,6 +10,7 @@ import type {
   ActivatableResourceCost,
   DerivedResourcePool,
 } from "@mathfinder/rules-engine";
+import { Tooltip } from "./Tooltip";
 
 interface ActivatableView {
   id: string;
@@ -49,6 +50,7 @@ function ResourceControls({
   onAdjustResource,
   onResetResource,
   poolMode = false,
+  mathTooltip,
 }: {
   featureId: string;
   resourceMaxes: Record<string, number>;
@@ -57,6 +59,7 @@ function ResourceControls({
   onAdjustResource: (id: string, delta: number, max?: number) => void;
   onResetResource: (id: string) => void;
   poolMode?: boolean;
+  mathTooltip?: string;
 }) {
   const max = resourceMaxes[featureId];
   if (max === undefined) return null;
@@ -65,9 +68,11 @@ function ResourceControls({
   const label = resourceLabels[featureId] ?? "left";
   return (
     <div className="resource-row">
-      <span className="resource-label">
-        {remaining}/{max} {label}
-      </span>
+      <Tooltip content={mathTooltip}>
+        <span className="resource-label" tabIndex={mathTooltip ? 0 : undefined}>
+          {remaining}/{max} {label}
+        </span>
+      </Tooltip>
       <div className="resource-buttons">
         <button
           className="ghost small"
@@ -90,6 +95,20 @@ function ResourceControls({
       </div>
     </div>
   );
+}
+
+export function resourcePoolMathTooltip(pool: DerivedResourcePool) {
+  const terms = pool.calculation.contributions.map((contribution, index) => {
+    const sign = contribution.value < 0 ? "− " : index > 0 ? "+ " : "";
+    return `${sign}${contribution.label} ${Math.abs(contribution.value)}`;
+  });
+  const equation = `${terms.join(" ")} = ${pool.calculation.rawTotal}`;
+  const minimumApplied = pool.calculation.rawTotal < pool.calculation.minimum;
+  return `${pool.name} maximum: ${equation}.${
+    minimumApplied
+      ? ` Minimum ${pool.calculation.minimum} applies, for ${pool.max}.`
+      : ` Total ${pool.max}.`
+  }`;
 }
 
 export function activatableResourceFailure(
@@ -422,6 +441,7 @@ export function RuntimeControlsPanel({
                 onAdjustResource={onAdjustResource}
                 onResetResource={onResetResource}
                 poolMode
+                mathTooltip={resourcePoolMathTooltip(pool)}
               />
             </div>
           ))}

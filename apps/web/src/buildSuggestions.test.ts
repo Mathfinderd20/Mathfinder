@@ -12,6 +12,7 @@ import {
   FEATS,
   SAMPLE_CLASSES,
   type CharacterBuild,
+  type FeatRegistry,
 } from "@mathfinder/rules-engine";
 
 const fighter = SAMPLE_CLASSES.fighter!;
@@ -32,13 +33,14 @@ const build: CharacterBuild = {
 function suggestions(
   plannerLevelIndexes: readonly number[],
   targetBuild: CharacterBuild = build,
+  extraFeats: FeatRegistry = {},
 ) {
   return buildSuggestions({
     build: targetBuild,
     currentLevel: 1,
     sheetSpellcasting: [],
     classes: { ...SAMPLE_CLASSES, ...RUNTIME_CLASSES },
-    feats: { ...FEATS, ...RUNTIME_FEATS },
+    feats: { ...FEATS, ...RUNTIME_FEATS, ...extraFeats },
     spells: RUNTIME_SPELLS,
     classFeatures: RUNTIME_CLASS_FEATURES,
     archetypes: RUNTIME_ARCHETYPES,
@@ -101,6 +103,28 @@ describe("focused build suggestions", () => {
         (choice) => choice.value === "Weapon Finesse",
       ),
     ).toBe(false);
+  });
+
+  it("does not recommend spellcasting-dependent feats to non-casters", () => {
+    const spellFeat = {
+      id: "overclock-spell",
+      name: "Overclock Spell",
+      pack: "test",
+      description: "When you cast a spell, become implausibly punctual.",
+      prerequisites: [],
+      tags: ["metamagic"],
+      effects: Array.from({ length: 12 }, () => ({
+        target: "init" as const,
+        type: "untyped" as const,
+        value: 1,
+        source: "Overclock Spell",
+      })),
+    };
+
+    expect(
+      suggestions([0], build, { [spellFeat.id]: spellFeat }).planner[0]!
+        .featChoices,
+    ).not.toContainEqual(expect.objectContaining({ value: spellFeat.name }));
   });
 
   it("can skip planner projections while retaining non-planner suggestions", () => {

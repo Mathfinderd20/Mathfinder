@@ -1,4 +1,10 @@
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
 
 interface Props {
   durationMs?: number;
@@ -21,22 +27,22 @@ export function HoldToActivateButton({
   const timerRef = useRef<number | undefined>(undefined);
   const holdingRef = useRef(false);
 
-  function clearTimer() {
+  const clearTimer = useCallback(() => {
     if (timerRef.current !== undefined) {
       window.clearTimeout(timerRef.current);
       timerRef.current = undefined;
     }
-  }
+  }, []);
 
-  function cancelHold() {
+  const cancelHold = useCallback(() => {
     if (!holdingRef.current) return;
     clearTimer();
     holdingRef.current = false;
     setHolding(false);
     onHoldCancel?.();
-  }
+  }, [clearTimer, onHoldCancel]);
 
-  function startHold() {
+  const startHold = useCallback(() => {
     if (disabled || holdingRef.current) return;
     holdingRef.current = true;
     setHolding(true);
@@ -47,18 +53,18 @@ export function HoldToActivateButton({
       setHolding(false);
       onComplete();
     }, durationMs);
-  }
+  }, [disabled, durationMs, onComplete, onHoldStart]);
 
   useEffect(
     () => () => {
       clearTimer();
     },
-    [],
+    [clearTimer],
   );
 
   useEffect(() => {
     if (disabled) cancelHold();
-  }, [disabled]);
+  }, [cancelHold, disabled]);
 
   useEffect(() => {
     function cancelInterruptedHold() {
@@ -73,7 +79,7 @@ export function HoldToActivateButton({
       window.removeEventListener("blur", cancelInterruptedHold);
       document.removeEventListener("visibilitychange", cancelHiddenHold);
     };
-  });
+  }, [cancelHold]);
 
   return (
     <button

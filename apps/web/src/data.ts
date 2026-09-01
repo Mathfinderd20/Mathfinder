@@ -23,6 +23,7 @@ export const SAMPLE_RACES: Record<string, CharacterBuild["race"]> =
         classSkills: race.classSkills,
         weaponProficiencies: race.weaponProficiencies,
         specificWeaponProficiencies: race.specificWeaponProficiencies,
+        weaponFamiliarity: race.weaponFamiliarity,
         grantedWeapons: race.grantedWeapons,
         choiceOptions: race.choiceOptions,
         alternateTraits: race.alternateTraits,
@@ -41,20 +42,11 @@ const javelinTemplate = getWeapon("javelin");
 export const initialBuild: CharacterBuild = {
   name: "Grukk",
   race: {
+    ...SAMPLE_RACES["half-orc"]!,
     id: "half-orc",
-    name: "Half-Orc",
-    size: "medium",
-    speed: 30,
-    abilityModifiers: [],
-    choiceOptions: {
-      flexibleAbilityBonus: { value: 2 },
-    },
     choiceSelection: {
       flexibleAbility: "str",
     },
-    notes: [
-      "Orc Ferocity, Intimidating, and weapon familiarity are not automated yet.",
-    ],
   },
   favoredClassName: "Barbarian",
   coinPurse: { pp: 0, gp: 12, sp: 5, cp: 0 },

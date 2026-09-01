@@ -65,3 +65,15 @@ export function weaponAmmoUxLabel(weapon: WeaponLike) {
   if (ammoType === "shotgun shell") return "Pellets or slugs";
   return undefined;
 }
+
+export function weaponTemplateLabel(
+  weapon: Pick<WeaponDefinition, "name" | "costGp" | "weightLb">,
+) {
+  const cost = new Intl.NumberFormat("en-US", {
+    maximumFractionDigits: 2,
+  }).format(weapon.costGp);
+  const weight = new Intl.NumberFormat("en-US", {
+    maximumFractionDigits: 2,
+  }).format(weapon.weightLb);
+  return `${weapon.name} — ${cost} gp · ${weight} lb`;
+}

@@ -1,7 +1,9 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
+import type { DerivedResourcePool } from "@mathfinder/rules-engine";
 import {
   activatableResourceFailure,
+  resourcePoolMathTooltip,
   RuntimeControlsPanel,
 } from "./RuntimeControlsPanel";
 
@@ -24,13 +26,7 @@ const haste = {
 
 function renderPanel(
   ownedSpellNames: string[],
-  resourcePools: Array<{
-    id: string;
-    name: string;
-    unit: string;
-    description: string;
-    max: number;
-  }> = [],
+  resourcePools: DerivedResourcePool[] = [],
 ) {
   return renderToStaticMarkup(
     <RuntimeControlsPanel
@@ -111,6 +107,12 @@ describe("RuntimeControlsPanel", () => {
           unit: "grit",
           description: "Spend grit on deeds.",
           max: 3,
+          calculation: {
+            contributions: [{ label: "WIS modifier", value: 3 }],
+            rawTotal: 3,
+            minimum: 1,
+            total: 3,
+          },
         },
       ],
     );
@@ -119,5 +121,26 @@ describe("RuntimeControlsPanel", () => {
     expect(html).toContain("Spend");
     expect(html).toContain("Regain");
     expect(html).not.toContain("Grit (ability)");
+  });
+
+  it("explains grit maximum math for hover and keyboard focus", () => {
+    expect(
+      resourcePoolMathTooltip({
+        id: "infantryman-grit",
+        name: "Grit",
+        unit: "grit",
+        description: "Spend grit on deeds.",
+        max: 5,
+        calculation: {
+          contributions: [
+            { label: "WIS modifier", value: 3 },
+            { label: "Extra Grit", value: 2 },
+          ],
+          rawTotal: 5,
+          minimum: 1,
+          total: 5,
+        },
+      }),
+    ).toBe("Grit maximum: WIS modifier 3 + Extra Grit 2 = 5. Total 5.");
   });
 });
