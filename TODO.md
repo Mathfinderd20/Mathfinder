@@ -111,7 +111,7 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 - [x] Prestige-class prerequisite validation
 - [~] Guided build wizard / smarter character-aware recommendation tuning
 - [~] Complete ancestry-specific favored-class bonuses — 731 AoN options across 49 scraped races are ingested with source URLs and available as manual selections; automate common effect families and ingest owner-authored Savage Company FCBs from the manuscript
-- [~] Shared compendium/runtime normalization work from `PLAN.md` — catalog indexes are standardized and cached, and runtime mutations are behind shared reducers plus focused web helpers; generic picker integration and tracker definitions remain
+- [~] Shared compendium/runtime normalization work from `PLAN.md` — catalog indexes are standardized and cached, the generic picker uses shared search, and runtime mutations are behind shared reducers plus focused web helpers; tracker definitions and persistence versioning remain
 - [ ] Savage Company content ingestion breadth
 - [x] Campaign house-rule controls — Commonplace Guns and Guns Everywhere pricing, ignore alignment restrictions, and ignore encumbrance are live
 - [x] Complete selection-bearing feat UX/mechanics for Weapon Focus and Spell Focus; retain the generic parameter model for future selection-bearing feats

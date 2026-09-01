@@ -1,13 +1,13 @@
-import type { CompendiumEntry } from "@mathfinder/rules-engine";
+import {
+  searchCompendiumEntries,
+  type CompendiumEntry,
+} from "@mathfinder/rules-engine";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Tooltip } from "./Tooltip";
 
-export interface CompendiumOption {
-  id: string;
-  name: string;
+export interface CompendiumOption extends CompendiumEntry {
   searchText?: string | string[];
   tooltip?: string;
-  tags?: string[];
 }
 
 interface CompendiumPickerProps {
@@ -22,13 +22,16 @@ interface CompendiumPickerProps {
   inlineResults?: boolean;
 }
 
-interface IndexedCompendiumOption extends CompendiumEntry {
-  tooltip?: string;
-  searchText?: string | string[];
-  searchBlob: string;
-}
-
 const DEFAULT_MAX_RESULTS = 8;
+
+export function searchCompendiumOptions(
+  options: readonly CompendiumOption[],
+  query: string,
+): CompendiumOption[] {
+  return searchCompendiumEntries(options, query, [
+    (option) => option.searchText,
+  ]);
+}
 
 export function CompendiumPicker({
   value,
@@ -46,37 +49,10 @@ export function CompendiumPicker({
   const [query, setQuery] = useState(value);
   const [debouncedQuery, setDebouncedQuery] = useState(value);
 
-  const indexedOptions = useMemo<IndexedCompendiumOption[]>(
-    () =>
-      options.map((option) => {
-        const extraSearchText = Array.isArray(option.searchText)
-          ? option.searchText
-          : option.searchText
-            ? [option.searchText]
-            : [];
-        return {
-          id: option.id,
-          name: option.name,
-          tooltip: option.tooltip,
-          searchText: option.searchText,
-          tags: option.tags,
-          searchBlob: [
-            option.name,
-            option.id,
-            ...(option.tags ?? []),
-            ...extraSearchText,
-          ]
-            .join(" ")
-            .toLowerCase(),
-        };
-      }),
-    [options],
-  );
-
   const selectedOptionPool = useMemo(() => {
-    if (!value.trim()) return [] as IndexedCompendiumOption[];
-    return resolveOptions ? resolveOptions(value) : indexedOptions;
-  }, [indexedOptions, resolveOptions, value]);
+    if (!value.trim()) return [] as CompendiumOption[];
+    return resolveOptions ? resolveOptions(value) : options;
+  }, [options, resolveOptions, value]);
 
   const selectedOption = useMemo(
     () =>
@@ -87,16 +63,14 @@ export function CompendiumPicker({
   );
 
   const results = useMemo(() => {
-    if (!open && !debouncedQuery.trim()) return [] as IndexedCompendiumOption[];
+    if (!open && !debouncedQuery.trim()) return [] as CompendiumOption[];
     if (resolveOptions)
       return resolveOptions(debouncedQuery).slice(0, maxResults);
-    const search = debouncedQuery.trim().toLowerCase();
-    return (
-      search
-        ? indexedOptions.filter((option) => option.searchBlob.includes(search))
-        : indexedOptions
-    ).slice(0, maxResults);
-  }, [debouncedQuery, indexedOptions, maxResults, open, resolveOptions]);
+    return searchCompendiumOptions(options, debouncedQuery).slice(
+      0,
+      maxResults,
+    );
+  }, [debouncedQuery, maxResults, open, options, resolveOptions]);
 
   const showResults = open;
   const activeTooltip = selectedOption?.tooltip ?? tooltip;
