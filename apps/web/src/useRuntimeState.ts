@@ -1,4 +1,9 @@
-import { useEffect, useMemo, useReducer } from "react";
+import {
+  accountStorage,
+  cacheWritable,
+  cacheGeneration,
+} from "./lib/accountCache";
+import { useEffect, useMemo, useReducer, useRef } from "react";
 import {
   getSpellEffectByName,
   reduceRuntimeState,
@@ -18,16 +23,25 @@ export function useRuntimeState(storageKey: string) {
     () => {
       if (typeof window === "undefined") return createAppRuntimeState();
       try {
-        return loadAppRuntimeState(window.localStorage.getItem(storageKey));
+        return loadAppRuntimeState(accountStorage.getItem(storageKey));
       } catch {
         return createAppRuntimeState();
       }
     },
   );
 
+  const previousState = useRef(state);
+  const mountedGeneration = useRef(cacheGeneration());
   useEffect(() => {
     if (typeof window === "undefined") return;
-    window.localStorage.setItem(storageKey, JSON.stringify(state));
+    if (
+      previousState.current === state ||
+      !cacheWritable() ||
+      mountedGeneration.current !== cacheGeneration()
+    )
+      return;
+    previousState.current = state;
+    accountStorage.setItem(storageKey, JSON.stringify(state));
     window.dispatchEvent(
       new CustomEvent(LOCAL_DATA_CHANGED_EVENT, {
         detail: { resource: "runtime", storageKey },

@@ -1,6 +1,8 @@
+import { accountStorage } from "../../lib/accountCache";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { getCharacter } from "./characterRepository";
+import { useCloudConnection } from "../../lib/useCloudConnection";
 
 type WorkspaceTab = "sheet" | "gear" | "build";
 
@@ -9,16 +11,17 @@ function workspaceTab(value: string | undefined): WorkspaceTab {
 }
 
 export function CharacterWorkspace() {
+  const connection = useCloudConnection();
   const { characterId = "", tab } = useParams();
   const navigate = useNavigate();
   const [LoadedApp, setLoadedApp] = useState<
     typeof import("../../App").App | null
   >(null);
   const [loadError, setLoadError] = useState<string>();
-  const character = getCharacter(window.localStorage, characterId);
+  const character = getCharacter(accountStorage, characterId);
 
   useEffect(() => {
-    if (!getCharacter(window.localStorage, characterId)) return;
+    if (!getCharacter(accountStorage, characterId)) return;
     let cancelled = false;
     setLoadedApp(null);
     setLoadError(undefined);
@@ -85,14 +88,23 @@ export function CharacterWorkspace() {
   }
 
   return (
-    <LoadedApp
-      key={characterId}
-      characterId={characterId}
-      initialTab={workspaceTab(tab)}
-      onHome={() => navigate("/")}
-      onTabChange={(nextTab) =>
-        navigate(`/characters/${characterId}/${nextTab}`)
+    <fieldset
+      className="application-fields"
+      disabled={
+        !!character.ownerId &&
+        "userId" in connection &&
+        character.ownerId !== connection.userId
       }
-    />
+    >
+      <LoadedApp
+        key={characterId}
+        characterId={characterId}
+        initialTab={workspaceTab(tab)}
+        onHome={() => navigate("/")}
+        onTabChange={(nextTab) =>
+          navigate(`/characters/${characterId}/${nextTab}`)
+        }
+      />
+    </fieldset>
   );
 }

@@ -1,3 +1,4 @@
+import { accountStorage } from "../../lib/accountCache";
 import type { CharacterBuild } from "@mathfinder/rules-engine";
 
 export const CHARACTER_STORE_KEY = "mathfinder:characters:v1";
@@ -119,7 +120,7 @@ function readStore(storage: StorageLike): CharacterStore | undefined {
 
 function writeStore(storage: StorageLike, store: CharacterStore) {
   storage.setItem(CHARACTER_STORE_KEY, JSON.stringify(store));
-  if (typeof window !== "undefined" && storage === window.localStorage) {
+  if (typeof window !== "undefined" && storage === accountStorage) {
     window.dispatchEvent(
       new CustomEvent(LOCAL_DATA_CHANGED_EVENT, {
         detail: { resource: "characters" },

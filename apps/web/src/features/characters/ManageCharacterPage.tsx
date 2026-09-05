@@ -1,5 +1,7 @@
+import { accountStorage } from "../../lib/accountCache";
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { useCloudConnection } from "../../lib/useCloudConnection";
 import { removeCharacterFromCampaigns } from "../campaigns/campaignRepository";
 import {
   deleteCharacter,
@@ -12,14 +14,20 @@ import "../home/home-responsive.css";
 import "./character-management.css";
 
 export function ManageCharacterPage() {
+  const connection = useCloudConnection();
   const { characterId = "" } = useParams();
   const navigate = useNavigate();
-  const character = getCharacter(window.localStorage, characterId);
+  const character = getCharacter(accountStorage, characterId);
   const [name, setName] = useState(character?.name ?? "");
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [error, setError] = useState<string>();
 
-  if (!character) {
+  if (
+    !character ||
+    (character.ownerId &&
+      "userId" in connection &&
+      character.ownerId !== connection.userId)
+  ) {
     return (
       <main className="route-message">
         <span className="route-message-kicker">Character not found</span>
@@ -35,7 +43,7 @@ export function ManageCharacterPage() {
     event.preventDefault();
     setError(undefined);
     try {
-      renameCharacter(window.localStorage, characterId, name);
+      renameCharacter(accountStorage, characterId, name);
       navigate("/", { replace: true });
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Rename failed.");
@@ -43,9 +51,9 @@ export function ManageCharacterPage() {
   }
 
   function confirmDelete() {
-    removeCharacterFromCampaigns(window.localStorage, characterId);
-    deleteCharacter(window.localStorage, characterId);
-    window.localStorage.removeItem(runtimeStorageKey(characterId));
+    removeCharacterFromCampaigns(accountStorage, characterId);
+    deleteCharacter(accountStorage, characterId);
+    accountStorage.removeItem(runtimeStorageKey(characterId));
     navigate("/", { replace: true });
   }
 

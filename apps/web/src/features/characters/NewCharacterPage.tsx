@@ -1,3 +1,4 @@
+import { accountStorage } from "../../lib/accountCache";
 import { useState, type ComponentType, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import type { CharacterBuild } from "@mathfinder/rules-engine";
@@ -41,7 +42,7 @@ export function NewCharacterPage() {
   }
 
   function finishCreation(build: CharacterBuild) {
-    const character = createCharacter(window.localStorage, build);
+    const character = createCharacter(accountStorage, build);
     navigate(`/characters/${character.id}/build`, { replace: true });
   }
 

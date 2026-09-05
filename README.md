@@ -43,9 +43,10 @@ required application dependency: the web app displays a blocking server error
 when configuration is missing, startup cannot connect, or synchronization
 fails.
 
-When Supabase is configured, the web app signs into an anonymous development
-account, reconciles the browser cache with the database, and keeps characters,
-campaigns, assignments, and solo runtime state synchronized. Set
+The app requires Google or email-link sign-in through Supabase. Characters,
+campaigns, assignments, and solo runtime state are cached per account for
+read-only outage access and synchronized when connected. See
+[authentication setup and recovery](./AUTHENTICATION.md). Set
 `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` in
 `apps/web/.env.local`; local defaults are documented in `.env.example`.
 

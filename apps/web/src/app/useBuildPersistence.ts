@@ -1,9 +1,15 @@
+import {
+  accountStorage,
+  cacheGeneration,
+  cacheWritable,
+} from "../lib/accountCache";
 import { useEffect, useRef, useState } from "react";
 import type { CharacterBuild } from "@mathfinder/rules-engine";
 import { initialBuild } from "../data";
 import {
   getCharacter,
   saveCharacter,
+  LOCAL_DATA_CHANGED_EVENT,
   type StorageLike,
 } from "../features/characters/characterRepository";
 import {
@@ -24,7 +30,7 @@ export interface SavedBuildSlot {
 
 function browserStorage(storage?: StorageLike) {
   if (storage) return storage;
-  return typeof window === "undefined" ? undefined : window.localStorage;
+  return typeof window === "undefined" ? undefined : accountStorage;
 }
 
 export function loadCurrentBuild(
@@ -114,6 +120,7 @@ export function loadBuildSlots(
 }
 
 export function useBuildPersistence(characterId?: string) {
+  const mountedGeneration = useRef(cacheGeneration());
   const [build, setBuild] = useState<CharacterBuild>(() =>
     loadCurrentBuild(characterId),
   );
@@ -131,49 +138,52 @@ export function useBuildPersistence(characterId?: string) {
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
+      if (!cacheWritable() || mountedGeneration.current !== cacheGeneration())
+        return;
       if (characterId) {
         const snapshot = JSON.stringify({ build, currentLevel });
         if (snapshot === persistedCharacterSnapshot.current) return;
         persistedCharacterSnapshot.current = snapshot;
-        saveCharacter(window.localStorage, characterId, build, currentLevel);
+        saveCharacter(accountStorage, characterId, build, currentLevel);
         return;
       }
-      window.localStorage.setItem(
-        CURRENT_BUILD_STORAGE_KEY,
-        JSON.stringify(build),
-      );
-      window.localStorage.setItem(CURRENT_LEVEL_STORAGE_KEY, `${currentLevel}`);
+      accountStorage.setItem(CURRENT_BUILD_STORAGE_KEY, JSON.stringify(build));
+      accountStorage.setItem(CURRENT_LEVEL_STORAGE_KEY, `${currentLevel}`);
     }, 300);
     return () => window.clearTimeout(timeout);
   }, [build, characterId, currentLevel]);
 
   useEffect(() => {
     function flushPendingPersistence() {
+      if (!cacheWritable() || mountedGeneration.current !== cacheGeneration())
+        return;
       const pending = pendingPersistence.current;
       if (characterId) {
         const snapshot = JSON.stringify(pending);
         if (snapshot === persistedCharacterSnapshot.current) return;
         persistedCharacterSnapshot.current = snapshot;
         saveCharacter(
-          window.localStorage,
+          accountStorage,
           characterId,
           pending.build,
           pending.currentLevel,
         );
         return;
       }
-      window.localStorage.setItem(
+      accountStorage.setItem(
         CURRENT_BUILD_STORAGE_KEY,
         JSON.stringify(pending.build),
       );
-      window.localStorage.setItem(
+      accountStorage.setItem(
         CURRENT_LEVEL_STORAGE_KEY,
         `${pending.currentLevel}`,
       );
     }
     window.addEventListener("pagehide", flushPendingPersistence);
+    window.addEventListener("mathfinder:flush", flushPendingPersistence);
     return () => {
       window.removeEventListener("pagehide", flushPendingPersistence);
+      window.removeEventListener("mathfinder:flush", flushPendingPersistence);
       flushPendingPersistence();
     };
   }, [characterId]);
@@ -185,10 +195,11 @@ export function useBuildPersistence(characterId?: string) {
   }, [build.levels.length]);
 
   useEffect(() => {
-    window.localStorage.setItem(
+    accountStorage.setItem(
       BUILD_SLOTS_STORAGE_KEY,
       JSON.stringify(savedBuildSlots),
     );
+    window.dispatchEvent(new CustomEvent(LOCAL_DATA_CHANGED_EVENT));
   }, [savedBuildSlots]);
 
   function buildSlotLabel() {
