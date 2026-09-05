@@ -9,6 +9,7 @@ const STORE_VERSION = 1;
 export interface CampaignRecord {
   id: string;
   ownerId?: string;
+  joinCode?: string;
   name: string;
   description?: string;
   role: "gm" | "player";
@@ -66,13 +67,19 @@ function readStore(storage: StorageLike): CampaignStore | undefined {
       return undefined;
     }
     const fallback = new Date(0).toISOString();
-    const campaigns = parsed.campaigns.filter(
-      (campaign): campaign is CampaignRecord =>
-        !!campaign &&
-        typeof campaign.id === "string" &&
-        typeof campaign.name === "string" &&
-        (campaign.role === "gm" || campaign.role === "player"),
-    );
+    const campaigns = parsed.campaigns
+      .filter(
+        (campaign): campaign is CampaignRecord =>
+          !!campaign &&
+          typeof campaign.id === "string" &&
+          typeof campaign.name === "string" &&
+          (campaign.role === "gm" || campaign.role === "player"),
+      )
+      .map((campaign) => ({
+        ...campaign,
+        joinCode:
+          typeof campaign.joinCode === "string" ? campaign.joinCode : undefined,
+      }));
     const campaignIds = new Set(campaigns.map((campaign) => campaign.id));
     return {
       version: STORE_VERSION,

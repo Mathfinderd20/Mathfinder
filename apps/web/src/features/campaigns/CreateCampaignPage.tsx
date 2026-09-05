@@ -2,18 +2,24 @@ import { accountStorage } from "../../lib/accountCache";
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { listCharacters } from "../characters/characterRepository";
-import { createCampaign } from "./campaignRepository";
+import { useCloudConnection } from "../../lib/useCloudConnection";
+import { createSharedCampaign } from "./campaignService";
 import "../home/home.css";
 import "../home/home-responsive.css";
 import "./campaign.css";
 
 export function CreateCampaignPage() {
   const navigate = useNavigate();
-  const characters = listCharacters(accountStorage);
+  const connection = useCloudConnection();
+  const userId = "userId" in connection ? connection.userId : undefined;
+  const characters = listCharacters(accountStorage).filter(
+    (character) => !character.ownerId || character.ownerId === userId,
+  );
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [characterIds, setCharacterIds] = useState<string[]>([]);
   const [error, setError] = useState<string>();
+  const [creating, setCreating] = useState(false);
 
   function toggleCharacter(characterId: string) {
     setCharacterIds((current) =>
@@ -23,11 +29,12 @@ export function CreateCampaignPage() {
     );
   }
 
-  function submit(event: FormEvent) {
+  async function submit(event: FormEvent) {
     event.preventDefault();
     setError(undefined);
+    setCreating(true);
     try {
-      const campaign = createCampaign(accountStorage, {
+      const campaign = await createSharedCampaign({
         name,
         description,
         characterIds,
@@ -35,6 +42,8 @@ export function CreateCampaignPage() {
       navigate(`/campaigns/${campaign.id}`, { replace: true });
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Creation failed.");
+    } finally {
+      setCreating(false);
     }
   }
 
@@ -94,7 +103,9 @@ export function CreateCampaignPage() {
               <Link className="text-link" to="/">
                 Cancel
               </Link>
-              <button type="submit">Create campaign</button>
+              <button disabled={creating} type="submit">
+                {creating ? "Creating…" : "Create campaign"}
+              </button>
             </div>
           </form>
         </section>

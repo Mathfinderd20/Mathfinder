@@ -23,6 +23,18 @@ const authSql = (
     "utf8",
   )
 ).toLowerCase();
+const campaignJoinSql = (
+  await readFile(
+    "supabase/migrations/20260905043000_add_reusable_campaign_join_codes.sql",
+    "utf8",
+  )
+).toLowerCase();
+const campaignDeactivateSql = (
+  await readFile(
+    "supabase/migrations/20260905044000_end_access_for_inactive_campaigns.sql",
+    "utf8",
+  )
+).toLowerCase();
 for (const fragment of [
   "as restrictive for all to authenticated",
   "is_anonymous",
@@ -31,6 +43,16 @@ for (const fragment of [
 ]) {
   if (!authSql.includes(fragment))
     missing.push(`Permanent-account contract: ${fragment}`);
+}
+for (const fragment of [
+  "create or replace function public.is_campaign_member",
+  "campaign.archived_at is null",
+  "create function public.deactivate_campaign",
+  "only an active campaign gm",
+]) {
+  if (!campaignDeactivateSql.includes(fragment)) {
+    missing.push(`Inactive campaign contract: ${fragment}`);
+  }
 }
 for (const table of tables) {
   if (!authSql.includes(`'${table}'`))
@@ -57,6 +79,19 @@ const requiredFragments = [
 ];
 for (const fragment of requiredFragments) {
   if (!sql.includes(fragment)) missing.push(fragment);
+}
+for (const fragment of [
+  "add column join_code",
+  "create function public.preview_campaign_by_code",
+  "create function public.create_campaign_with_characters",
+  "create function public.join_campaign_by_code",
+  "for update",
+  "c.owner_id = auth.uid()",
+  "c.archived_at is null",
+]) {
+  if (!campaignJoinSql.includes(fragment)) {
+    missing.push(`Reusable campaign ID contract: ${fragment}`);
+  }
 }
 
 if (missing.length) {

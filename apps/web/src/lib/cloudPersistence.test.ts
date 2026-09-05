@@ -262,6 +262,35 @@ describe("authenticated persistence", () => {
       pending: false,
     });
   });
+  it("loads the reusable campaign ID into the account cache", async () => {
+    mocks.rows.campaigns = [
+      {
+        id: "campaign-a",
+        owner_id: "user-a",
+        join_code: "ABCD1234EF567890ABCD",
+        name: "The Long Road",
+        description: null,
+        created_at: "2026-09-05T00:00:00Z",
+        updated_at: "2026-09-05T00:00:00Z",
+        archived_at: null,
+      },
+    ];
+    mocks.rows.campaign_members = [
+      { campaign_id: "campaign-a", user_id: "user-a", role: "gm" },
+    ];
+    mocks.rows.campaign_characters = [];
+    const cloud = await import("./cloudPersistence");
+    const cache = await import("./accountCache");
+    await cloud.initializeCloudPersistence();
+    const stored = JSON.parse(
+      cache.accountStorage.getItem("mathfinder:campaigns:v1")!,
+    );
+    expect(stored.campaigns[0]).toMatchObject({
+      id: "campaign-a",
+      joinCode: "ABCD1234EF567890ABCD",
+      role: "gm",
+    });
+  });
   it("clears the previous account from memory before loading another", async () => {
     const cloud = await import("./cloudPersistence");
     const cache = await import("./accountCache");

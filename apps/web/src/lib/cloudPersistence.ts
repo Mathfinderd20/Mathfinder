@@ -280,6 +280,7 @@ async function loadCloud(expected: number) {
       campaigns: campaigns.map((r) => ({
         id: r.id,
         ownerId: r.owner_id,
+        joinCode: r.join_code,
         name: r.name,
         description: r.description ?? undefined,
         role: roles.get(r.id) ?? "player",

@@ -1,30 +1,48 @@
 import { accountStorage } from "../../lib/accountCache";
 import { useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { useCloudConnection } from "../../lib/useCloudConnection";
 import { listCharacters } from "../characters/characterRepository";
+import { characterIdsForCampaign, getCampaign } from "./campaignRepository";
 import {
-  characterIdsForCampaign,
-  getCampaign,
-  setCampaignCharacterAssignment,
-} from "./campaignRepository";
+  deactivateSharedCampaign,
+  formatCampaignCode,
+  setSharedCampaignCharacter,
+} from "./campaignService";
 import "../home/home.css";
 import "../home/home-responsive.css";
 import "./campaign.css";
 
 export function CampaignPage() {
   const { campaignId = "" } = useParams();
+  const navigate = useNavigate();
+  const connection = useCloudConnection();
+  const userId = "userId" in connection ? connection.userId : undefined;
   const campaign = getCampaign(accountStorage, campaignId);
   const characters = listCharacters(accountStorage);
-  const [assignedIds, setAssignedIds] = useState(() =>
+  const assignedIds = new Set(
     characterIdsForCampaign(accountStorage, campaignId),
   );
+  const assignedCharacters = characters.filter((character) =>
+    assignedIds.has(character.id),
+  );
+  const ownedCharacters = characters.filter(
+    (character) => !character.ownerId || character.ownerId === userId,
+  );
+  const availableOwnedCharacters = ownedCharacters.filter(
+    (character) => !assignedIds.has(character.id),
+  );
+  const [workingId, setWorkingId] = useState<string>();
+  const [error, setError] = useState<string>();
+  const [copied, setCopied] = useState(false);
+  const [confirmingDeactivate, setConfirmingDeactivate] = useState(false);
 
   if (!campaign) {
     return (
       <main className="route-message">
         <span className="route-message-kicker">Campaign not found</span>
         <h1>This table has packed up.</h1>
-        <p>The campaign may have been removed or belongs to another device.</p>
+        <p>The campaign may be inactive or you may no longer be a member.</p>
         <Link className="button-link" to="/">
           Return home
         </Link>
@@ -32,19 +50,43 @@ export function CampaignPage() {
     );
   }
 
-  function toggleAssignment(characterId: string) {
-    const assigned = !assignedIds.includes(characterId);
-    setCampaignCharacterAssignment(
-      accountStorage,
-      campaignId,
-      characterId,
-      assigned,
-    );
-    setAssignedIds((current) =>
-      assigned
-        ? [characterId, ...current]
-        : current.filter((id) => id !== characterId),
-    );
+  async function setAssignment(characterId: string, assigned: boolean) {
+    setWorkingId(characterId);
+    setError(undefined);
+    try {
+      await setSharedCampaignCharacter(campaignId, characterId, assigned);
+    } catch (cause) {
+      setError(
+        cause instanceof Error ? cause.message : "Character update failed.",
+      );
+    } finally {
+      setWorkingId(undefined);
+    }
+  }
+
+  async function copyCode() {
+    if (!campaign?.joinCode) return;
+    try {
+      await navigator.clipboard.writeText(
+        formatCampaignCode(campaign.joinCode),
+      );
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1600);
+    } catch {
+      setError("Copy failed. Select the campaign ID and copy it manually.");
+    }
+  }
+
+  async function deactivate() {
+    setWorkingId("campaign");
+    setError(undefined);
+    try {
+      await deactivateSharedCampaign(campaignId);
+      navigate("/", { replace: true });
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Deactivation failed.");
+      setWorkingId(undefined);
+    }
   }
 
   return (
@@ -71,18 +113,38 @@ export function CampaignPage() {
           </p>
         </section>
 
+        {campaign.role === "gm" && campaign.joinCode ? (
+          <section className="campaign-code-panel">
+            <div>
+              <span className="eyebrow">Reusable campaign ID</span>
+              <h2>{formatCampaignCode(campaign.joinCode)}</h2>
+              <p>
+                Share this with players. It works until the campaign is
+                deactivated.
+              </p>
+            </div>
+            <button className="ghost" onClick={() => void copyCode()}>
+              {copied ? "Copied" : "Copy ID"}
+            </button>
+          </section>
+        ) : null}
+
         <section className="dashboard-section">
           <div className="section-heading">
             <div>
               <span className="eyebrow">Party roster</span>
-              <h2>Characters</h2>
+              <h2>Linked characters</h2>
             </div>
-            <span className="level-chip">{assignedIds.length} assigned</span>
+            <span className="level-chip">
+              {assignedCharacters.length} linked
+            </span>
           </div>
-          {characters.length ? (
+          {assignedCharacters.length ? (
             <div className="assignment-list">
-              {characters.map((character) => {
-                const assigned = assignedIds.includes(character.id);
+              {assignedCharacters.map((character) => {
+                const owned =
+                  !character.ownerId || character.ownerId === userId;
+                const canRemove = campaign.role === "gm" || owned;
                 return (
                   <div className="assignment-row" key={character.id}>
                     <span className="character-emblem" aria-hidden="true">
@@ -90,14 +152,30 @@ export function CampaignPage() {
                     </span>
                     <div>
                       <strong>{character.name}</strong>
-                      <small>Level {character.currentLevel}</small>
+                      <small>
+                        Level {character.currentLevel} ·{" "}
+                        {owned ? "Your character" : "Player character"}
+                      </small>
                     </div>
-                    <button
-                      className={assigned ? "ghost" : undefined}
-                      onClick={() => toggleAssignment(character.id)}
-                    >
-                      {assigned ? "Remove" : "Add to campaign"}
-                    </button>
+                    <div className="assignment-actions">
+                      <Link
+                        className="button-link secondary"
+                        to={`/characters/${character.id}/sheet`}
+                      >
+                        View sheet
+                      </Link>
+                      {canRemove ? (
+                        <button
+                          className="ghost"
+                          disabled={workingId === character.id}
+                          onClick={() =>
+                            void setAssignment(character.id, false)
+                          }
+                        >
+                          {workingId === character.id ? "Removing…" : "Remove"}
+                        </button>
+                      ) : null}
+                    </div>
                   </div>
                 );
               })}
@@ -105,24 +183,86 @@ export function CampaignPage() {
           ) : (
             <div className="empty-state">
               <div>
-                <h3>No characters available</h3>
-                <p>Create a character, then return here to assign them.</p>
+                <h3>No characters linked</h3>
+                <p>Players can link their characters when they join.</p>
               </div>
-              <Link className="button-link" to="/characters/new">
-                Create character
-              </Link>
             </div>
+          )}
+          {error ? <p className="form-error">{error}</p> : null}
+        </section>
+
+        <section className="dashboard-section">
+          <div className="section-heading">
+            <div>
+              <span className="eyebrow">Your roster</span>
+              <h2>Add another character</h2>
+            </div>
+          </div>
+          {availableOwnedCharacters.length ? (
+            <div className="assignment-list">
+              {availableOwnedCharacters.map((character) => (
+                <div className="assignment-row" key={character.id}>
+                  <span className="character-emblem" aria-hidden="true">
+                    {character.name.slice(0, 1).toUpperCase() || "?"}
+                  </span>
+                  <div>
+                    <strong>{character.name}</strong>
+                    <small>Level {character.currentLevel}</small>
+                  </div>
+                  <button
+                    disabled={workingId === character.id}
+                    onClick={() => void setAssignment(character.id, true)}
+                  >
+                    {workingId === character.id ? "Adding…" : "Add to campaign"}
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="campaign-muted">
+              All of your available characters are already linked.
+            </p>
           )}
         </section>
 
-        <section className="dashboard-section backend-notice">
-          <span className="eyebrow">Shared play</span>
-          <h2>Invitations come next</h2>
-          <p>
-            This campaign is local to this browser. Supabase Auth and secure
-            invitations will turn it into a shared table in the backend phase.
-          </p>
-        </section>
+        {campaign.role === "gm" ? (
+          <section className="danger-zone campaign-danger-zone">
+            <div>
+              <span className="eyebrow">Campaign controls</span>
+              <h2>Deactivate campaign</h2>
+              <p>
+                Removes the campaign from every member’s dashboard and disables
+                its campaign ID. Existing character builds are not deleted.
+              </p>
+            </div>
+            {confirmingDeactivate ? (
+              <div className="danger-actions">
+                <button
+                  className="ghost"
+                  onClick={() => setConfirmingDeactivate(false)}
+                >
+                  Keep active
+                </button>
+                <button
+                  className="danger-button"
+                  disabled={workingId === "campaign"}
+                  onClick={() => void deactivate()}
+                >
+                  {workingId === "campaign"
+                    ? "Deactivating…"
+                    : "Yes, deactivate"}
+                </button>
+              </div>
+            ) : (
+              <button
+                className="danger-button"
+                onClick={() => setConfirmingDeactivate(true)}
+              >
+                Deactivate campaign
+              </button>
+            )}
+          </section>
+        ) : null}
       </main>
     </div>
   );

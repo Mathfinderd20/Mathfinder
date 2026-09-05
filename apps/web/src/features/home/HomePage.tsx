@@ -1,5 +1,6 @@
 import { accountStorage } from "../../lib/accountCache";
 import { Link } from "react-router-dom";
+import { useCloudConnection } from "../../lib/useCloudConnection";
 import { listCharacters } from "../characters/characterRepository";
 import { summarizeCharacter } from "../characters/characterSummary";
 import {
@@ -40,7 +41,11 @@ const QUICK_ACTIONS = [
 ] as const;
 
 export function HomePage() {
-  const characters = listCharacters(accountStorage);
+  const connection = useCloudConnection();
+  const userId = "userId" in connection ? connection.userId : undefined;
+  const characters = listCharacters(accountStorage).filter(
+    (character) => !character.ownerId || character.ownerId === userId,
+  );
   const campaigns = listCampaigns(accountStorage);
   const characterCampaigns = new Map(
     characters.map((character) => [
@@ -165,10 +170,7 @@ export function HomePage() {
               </span>
               <div>
                 <h3>No campaigns yet</h3>
-                <p>
-                  Start a campaign as GM or join one when shared invitations
-                  come online.
-                </p>
+                <p>Start a campaign as GM or join one with a campaign ID.</p>
               </div>
               <div className="empty-actions">
                 <Link className="button-link" to="/campaigns/new">
