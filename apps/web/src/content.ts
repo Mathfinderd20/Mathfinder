@@ -5,6 +5,7 @@ import {
   equipmentMagicItemTemplate,
   getFeat,
   getSpell,
+  invalidateCompendiumIndex,
   type ArchetypeDefinitionLike,
   type CharacterBuild,
   type ClassDefinition,
@@ -380,6 +381,7 @@ function replaceRecord<T extends object>(target: T, source: T) {
     delete (target as Record<string, unknown>)[key];
   }
   Object.assign(target, source);
+  invalidateCompendiumIndex(target);
 }
 
 function replaceArray<T>(target: T[], source: T[]) {
@@ -418,6 +420,7 @@ export function raceOptionsFromDataSet(
       classSkills: race.classSkills,
       weaponProficiencies: race.weaponProficiencies,
       specificWeaponProficiencies: race.specificWeaponProficiencies,
+      weaponFamiliarity: race.weaponFamiliarity,
       grantedWeapons: race.grantedWeapons,
       choiceOptions: race.choiceOptions,
       alternateTraits: race.alternateTraits,

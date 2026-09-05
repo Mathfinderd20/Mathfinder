@@ -6,10 +6,12 @@ import {
   type WeaponDefinition,
 } from "@mathfinder/rules-engine";
 import {
+  buildFeatBaseEligibilityOptions,
   buildFeatPickerOptions,
   buildLooseFeatSearchOptions,
   collectFeatWeaponNames,
   collectFirearmNames,
+  collectOwnedFirearmNames,
 } from "./featOptionData";
 
 const FEAT_CONTEXT: FeatContext = {
@@ -34,6 +36,22 @@ describe("parameterized feat picker options", () => {
         { id: "axe", name: "Axe" },
       ] as WeaponDefinition[]),
     ).toEqual(["Custom Service Rifle", "Pistol"]);
+    expect(collectOwnedFirearmNames(build)).toEqual(["Custom Service Rifle"]);
+  });
+
+  it("does not eagerly expand parameterized feats for the creation modal", () => {
+    const options = buildFeatBaseEligibilityOptions({
+      featRegistry: FEATS,
+      grantKind: "general",
+      takenSelections: [],
+    });
+
+    expect(
+      options.filter((option) => option.name === "Weapon Focus"),
+    ).toHaveLength(1);
+    expect(
+      options.some((option) => option.name.startsWith("Weapon Focus (")),
+    ).toBe(false);
   });
 
   it("puts the character's own guns before the global weapon catalog", () => {

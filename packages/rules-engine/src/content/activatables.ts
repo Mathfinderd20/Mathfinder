@@ -1,4 +1,11 @@
-import type { AbilityKey, Modifier, SheetDescriptor } from "../types";
+import type {
+  AbilityKey,
+  ArmorCategory,
+  Condition,
+  LoadBand,
+  Modifier,
+  SheetDescriptor,
+} from "../types";
 import type { ClassFeatureRegistry } from "./class-features";
 import type { FeatRegistry } from "./feats";
 
@@ -12,6 +19,9 @@ export interface ActivationContext {
   characterLevel: number;
   abilityModifiers?: Record<AbilityKey, number>;
   classLevels?: Record<string, number>;
+  armorCategory?: ArmorCategory;
+  loadBand?: LoadBand;
+  conditions?: Condition[];
 }
 
 /** Serializable scaling for pools such as grit, ki, panache, or arcane pool. */
@@ -32,31 +42,79 @@ export interface ResourcePoolDefinition {
   maximum: ResourcePoolMaximum;
 }
 
+export interface ResourcePoolBonusDefinition {
+  poolId: string;
+  value: number;
+  source: string;
+}
+
+export interface ResourcePoolContribution {
+  label: string;
+  value: number;
+}
+
+export interface ResourcePoolCalculation {
+  contributions: ResourcePoolContribution[];
+  rawTotal: number;
+  minimum: number;
+  total: number;
+}
+
 export interface DerivedResourcePool {
   id: string;
   name: string;
   unit: string;
   description: string;
   max: number;
+  calculation: ResourcePoolCalculation;
+}
+
+export function resourcePoolCalculation(
+  pool: ResourcePoolDefinition,
+  context: ActivationContext,
+  bonuses: ResourcePoolContribution[] = [],
+): ResourcePoolCalculation {
+  const maximum = pool.maximum;
+  const contributions: ResourcePoolContribution[] = [];
+  if (maximum.base) contributions.push({ label: "Base", value: maximum.base });
+  if (maximum.ability) {
+    const multiplier = maximum.abilityMultiplier ?? 1;
+    const abilityModifier = context.abilityModifiers?.[maximum.ability] ?? 0;
+    contributions.push({
+      label: `${maximum.ability.toUpperCase()} modifier${multiplier === 1 ? "" : ` × ${multiplier}`}`,
+      value: abilityModifier * multiplier,
+    });
+  }
+  if (maximum.className) {
+    const multiplier = maximum.classLevelMultiplier ?? 0;
+    const classLevel =
+      context.classLevels?.[maximum.className.toLowerCase()] ?? 0;
+    contributions.push({
+      label: `${maximum.className} levels${multiplier === 1 ? "" : ` × ${multiplier}`}`,
+      value: classLevel * multiplier,
+    });
+  }
+  contributions.push(...bonuses);
+  const rawTotal = Math.floor(
+    contributions.reduce(
+      (total, contribution) => total + contribution.value,
+      0,
+    ),
+  );
+  const minimum = maximum.minimum ?? 0;
+  return {
+    contributions,
+    rawTotal,
+    minimum,
+    total: Math.max(minimum, rawTotal),
+  };
 }
 
 export function resourcePoolMaximum(
   pool: ResourcePoolDefinition,
   context: ActivationContext,
 ) {
-  const maximum = pool.maximum;
-  const abilityValue = maximum.ability
-    ? (context.abilityModifiers?.[maximum.ability] ?? 0) *
-      (maximum.abilityMultiplier ?? 1)
-    : 0;
-  const classLevel = maximum.className
-    ? (context.classLevels?.[maximum.className.toLowerCase()] ?? 0)
-    : 0;
-  const classValue = classLevel * (maximum.classLevelMultiplier ?? 0);
-  return Math.max(
-    maximum.minimum ?? 0,
-    Math.floor((maximum.base ?? 0) + abilityValue + classValue),
-  );
+  return resourcePoolCalculation(pool, context).total;
 }
 
 /** A limited-use resource pool, e.g. Rage rounds/day. */
@@ -65,6 +123,16 @@ export interface ActivatableResource {
   unit: string;
   /** Maximum pool size given the character context. */
   max: (ctx: ActivationContext) => number;
+}
+
+export interface ActivatableResourceCost {
+  poolId: string;
+  amount: number;
+}
+
+export interface ActivatableRequirements {
+  maximumArmorCategory?: ArmorCategory;
+  maximumLoadBand?: LoadBand;
 }
 
 export interface ActivatableEffect {
@@ -79,6 +147,47 @@ export interface ActivatableEffect {
   group?: string;
   /** Optional limited-use resource pool, e.g. Rage rounds/day. */
   resource?: ActivatableResource;
+  /** Cost paid from a standalone tracked pool when activated. */
+  resourceCost?: ActivatableResourceCost;
+  /** Serializable activation legality gates. */
+  requirements?: ActivatableRequirements;
+}
+
+const ARMOR_RANK: Record<ArmorCategory, number> = {
+  none: 0,
+  light: 1,
+  medium: 2,
+  heavy: 3,
+};
+const LOAD_RANK: Record<LoadBand, number> = {
+  light: 0,
+  medium: 1,
+  heavy: 2,
+  overloaded: 3,
+};
+
+export function activatableRequirementFailure(
+  effect: ActivatableEffect,
+  context: ActivationContext,
+): string | undefined {
+  const requirements = effect.requirements;
+  if (!requirements) return undefined;
+  if (
+    requirements.maximumArmorCategory &&
+    context.armorCategory &&
+    ARMOR_RANK[context.armorCategory] >
+      ARMOR_RANK[requirements.maximumArmorCategory]
+  ) {
+    return `requires ${requirements.maximumArmorCategory} armor or lighter`;
+  }
+  if (
+    requirements.maximumLoadBand &&
+    context.loadBand &&
+    LOAD_RANK[context.loadBand] > LOAD_RANK[requirements.maximumLoadBand]
+  ) {
+    return `requires a ${requirements.maximumLoadBand} load or lighter`;
+  }
+  return undefined;
 }
 
 /** Resolve an activatable's max resource pool, or undefined if it has none. */
@@ -192,6 +301,17 @@ export function collectResourcePools(args: {
   const featNames = new Set(
     args.descriptor.feats.map((feat) => feat.name.toLowerCase()),
   );
+  const featCounts = args.descriptor.feats.reduce<Record<string, number>>(
+    (counts, feat) => {
+      const name = feat.name.toLowerCase();
+      counts[name] = (counts[name] ?? 0) + 1;
+      return counts;
+    },
+    {},
+  );
+  const activeFeats = Object.values(args.featRegistry).filter((feat) =>
+    featNames.has(feat.name.toLowerCase()),
+  );
   const definitions = [
     ...Object.values(args.classFeatureRegistry)
       .flat()
@@ -202,10 +322,8 @@ export function collectResourcePools(args: {
           !suppressedNames.has(feature.name.toLowerCase()),
       )
       .map((feature) => feature.resourcePool!),
-    ...Object.values(args.featRegistry)
-      .filter(
-        (feat) => !!feat.resourcePool && featNames.has(feat.name.toLowerCase()),
-      )
+    ...activeFeats
+      .filter((feat) => !!feat.resourcePool)
       .map((feat) => feat.resourcePool!),
   ];
   const seen = new Set<string>();
@@ -215,13 +333,32 @@ export function collectResourcePools(args: {
       seen.add(definition.id);
       return true;
     })
-    .map((definition) => ({
-      id: definition.id,
-      name: definition.name,
-      unit: definition.unit,
-      description: definition.description,
-      max: resourcePoolMaximum(definition, args.context),
-    }))
+    .map((definition) => {
+      const bonuses = activeFeats.flatMap((feat) =>
+        (feat.resourcePoolBonuses ?? [])
+          .filter((bonus) => bonus.poolId === definition.id)
+          .map((bonus) => {
+            const count = featCounts[feat.name.toLowerCase()] ?? 1;
+            return {
+              label: count > 1 ? `${bonus.source} × ${count}` : bonus.source,
+              value: bonus.value * count,
+            };
+          }),
+      );
+      const calculation = resourcePoolCalculation(
+        definition,
+        args.context,
+        bonuses,
+      );
+      return {
+        id: definition.id,
+        name: definition.name,
+        unit: definition.unit,
+        description: definition.description,
+        max: calculation.total,
+        calculation,
+      };
+    })
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 
@@ -237,6 +374,10 @@ export function resolveActivatableSelections(args: {
   const conflicts: ActivatableConflict[] = [];
 
   for (const item of picked) {
+    if (args.context && activatableRequirementFailure(item, args.context)) {
+      suppressed.push(item);
+      continue;
+    }
     if (!item.group) {
       active.push(item);
       continue;

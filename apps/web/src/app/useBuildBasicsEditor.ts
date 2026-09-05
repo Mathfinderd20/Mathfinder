@@ -5,7 +5,9 @@ import type {
   CharacterBuild,
   FirearmRulesMode,
 } from "@mathfinder/rules-engine";
+import { infantrymanGunTrainingPickCount } from "@mathfinder/rules-engine";
 import { RUNTIME_ARCHETYPES, RUNTIME_RACES } from "../content";
+import { collectOwnedFirearmNames } from "../featOptionData";
 import {
   materializeRaceChoice,
   syncTemplatedWeaponsToCampaignRules,
@@ -14,7 +16,9 @@ import {
 export function campaignRulesOrUndefined(
   rules: NonNullable<CharacterBuild["campaignRules"]>,
 ) {
-  return rules.firearmRules || rules.ignoreAlignmentRestrictions
+  return rules.firearmRules ||
+    rules.ignoreAlignmentRestrictions ||
+    rules.ignoreEncumbrance
     ? rules
     : undefined;
 }
@@ -37,6 +41,40 @@ export function withIgnoreAlignmentRestrictions(
   if (value) campaignRules.ignoreAlignmentRestrictions = true;
   else delete campaignRules.ignoreAlignmentRestrictions;
   return campaignRulesOrUndefined(campaignRules);
+}
+
+export function withIgnoreEncumbrance(
+  current: CharacterBuild["campaignRules"],
+  value: boolean,
+) {
+  const campaignRules = { ...(current ?? {}) };
+  if (value) campaignRules.ignoreEncumbrance = true;
+  else delete campaignRules.ignoreEncumbrance;
+  return campaignRulesOrUndefined(campaignRules);
+}
+
+export function withDefaultInfantrymanGunTraining(
+  build: CharacterBuild,
+  ownedFirearmNames: string[],
+): CharacterBuild {
+  const infantrymanLevel = build.levels.filter(
+    (level) => level.className.toLowerCase() === "infantryman",
+  ).length;
+  if (
+    infantrymanGunTrainingPickCount(infantrymanLevel, build.campaignRules) <
+      1 ||
+    (build.gunTrainingSelections?.infantryman?.length ?? 0) > 0 ||
+    ownedFirearmNames.length !== 1
+  ) {
+    return build;
+  }
+  return {
+    ...build,
+    gunTrainingSelections: {
+      ...(build.gunTrainingSelections ?? {}),
+      infantryman: ownedFirearmNames,
+    },
+  };
 }
 
 export function useBuildBasicsEditor(
@@ -131,12 +169,16 @@ export function useBuildBasicsEditor(
   }
 
   function updateFirearmRulesMode(value: FirearmRulesMode) {
-    setBuild((previous) =>
-      syncTemplatedWeaponsToCampaignRules({
+    setBuild((previous) => {
+      const synced = syncTemplatedWeaponsToCampaignRules({
         ...previous,
         campaignRules: withFirearmRulesMode(previous.campaignRules, value),
-      }),
-    );
+      });
+      return withDefaultInfantrymanGunTraining(
+        synced,
+        collectOwnedFirearmNames(synced),
+      );
+    });
   }
 
   function updateIgnoreAlignmentRestrictions(value: boolean) {
@@ -146,6 +188,13 @@ export function useBuildBasicsEditor(
         previous.campaignRules,
         value,
       ),
+    }));
+  }
+
+  function updateIgnoreEncumbrance(value: boolean) {
+    setBuild((previous) => ({
+      ...previous,
+      campaignRules: withIgnoreEncumbrance(previous.campaignRules, value),
     }));
   }
 
@@ -193,6 +242,7 @@ export function useBuildBasicsEditor(
     updateFavoredClassName,
     updateFirearmRulesMode,
     updateIgnoreAlignmentRestrictions,
+    updateIgnoreEncumbrance,
     updateInfantrymanGunTraining,
     updateRace,
     updateRaceBonusFeat,

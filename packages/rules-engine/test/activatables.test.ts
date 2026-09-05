@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   activatableModifiers,
+  activatableRequirementFailure,
   babStep,
   collectResourcePools,
   groupActivatables,
@@ -33,6 +34,65 @@ const PA: ActivatableEffect = {
     { target: "attack", type: "untyped", value: -1, source: "Power Attack" },
   ],
 };
+
+describe("activatable requirements", () => {
+  const deed: ActivatableEffect = {
+    id: "dodge",
+    name: "Dodge",
+    description: "A deed.",
+    effects: [],
+    requirements: {
+      maximumArmorCategory: "medium",
+      maximumLoadBand: "medium",
+    },
+  };
+
+  it("reports armor and load failures", () => {
+    expect(
+      activatableRequirementFailure(deed, {
+        baseAttackBonus: 1,
+        characterLevel: 1,
+        armorCategory: "heavy",
+        loadBand: "light",
+      }),
+    ).toBe("requires medium armor or lighter");
+    expect(
+      activatableRequirementFailure(deed, {
+        baseAttackBonus: 1,
+        characterLevel: 1,
+        armorCategory: "light",
+        loadBand: "heavy",
+      }),
+    ).toBe("requires a medium load or lighter");
+  });
+
+  it("suppresses an already-selected deed when requirements become illegal", () => {
+    const resolved = resolveActivatableSelections({
+      available: [deed],
+      selected: { dodge: true },
+      context: {
+        baseAttackBonus: 1,
+        characterLevel: 1,
+        armorCategory: "heavy",
+        loadBand: "light",
+      },
+    });
+    expect(resolved.active).toEqual([]);
+    expect(resolved.suppressed.map((effect) => effect.id)).toEqual(["dodge"]);
+    expect(resolved.modifiers).toEqual([]);
+  });
+
+  it("accepts medium armor and an effectively light ignored load", () => {
+    expect(
+      activatableRequirementFailure(deed, {
+        baseAttackBonus: 1,
+        characterLevel: 1,
+        armorCategory: "medium",
+        loadBand: "light",
+      }),
+    ).toBeUndefined();
+  });
+});
 
 describe("resource pools", () => {
   it("derives serializable ability- and class-scaled maximums", () => {
@@ -101,6 +161,74 @@ describe("resource pools", () => {
     expect(pools).toEqual([
       expect.objectContaining({ id: "infantryman-grit", name: "Grit", max: 3 }),
     ]);
+  });
+
+  it("adds Extra Grit to the pool maximum and calculation", () => {
+    const pools = collectResourcePools({
+      descriptor: {
+        classes: [{ name: "Infantryman", level: 1 }],
+        archetypes: [],
+        feats: [{ name: "Extra Grit", level: 1 }],
+        features: [{ name: "Grit", level: 1 }],
+        suppressedFeatures: [],
+      },
+      classFeatureRegistry: {
+        infantryman: [
+          {
+            id: "grit-feature",
+            name: "Grit",
+            className: "infantryman",
+            level: 1,
+            pack: "test",
+            description: "Gain grit.",
+            effects: [],
+            resourcePool: {
+              id: "infantryman-grit",
+              name: "Grit",
+              unit: "grit",
+              description: "Spend grit on deeds.",
+              maximum: { ability: "wis", minimum: 1 },
+            },
+          },
+        ],
+      },
+      featRegistry: {
+        "extra grit": {
+          id: "extra-grit",
+          name: "Extra Grit",
+          pack: "test",
+          description: "Gain 2 grit.",
+          prerequisites: [],
+          effects: [],
+          resourcePoolBonuses: [
+            {
+              poolId: "infantryman-grit",
+              value: 2,
+              source: "Extra Grit",
+            },
+          ],
+        },
+      },
+      context: {
+        baseAttackBonus: 1,
+        characterLevel: 1,
+        abilityModifiers: { str: 0, dex: 0, con: 0, int: 0, wis: 3, cha: 0 },
+        classLevels: { infantryman: 1 },
+      },
+    });
+
+    expect(pools[0]).toMatchObject({
+      max: 5,
+      calculation: {
+        rawTotal: 5,
+        minimum: 1,
+        total: 5,
+        contributions: [
+          { label: "WIS modifier", value: 3 },
+          { label: "Extra Grit", value: 2 },
+        ],
+      },
+    });
   });
 
   it("enforces the grit minimum when Wisdom is low", () => {

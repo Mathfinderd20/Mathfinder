@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import {
+  activatableRequirementFailure,
   activatableResourceMax,
   buildCharacter,
   collectActivatableEffects,
@@ -62,6 +63,9 @@ export function useDerivedSheet(args: {
           entry.level,
         ]),
       ),
+      armorCategory: input.armorCategory,
+      loadBand: baseSheet.encumbrance.band,
+      conditions: input.conditions,
     };
     const spellEffectContext: SpellEffectRuntimeContext = {
       characterLevel: baseSheet.level,
@@ -92,6 +96,15 @@ export function useDerivedSheet(args: {
         resourceMaxes[buff.id] = buff.trackerMax;
       if (buff.trackerLabel) resourceLabels[buff.id] = buff.trackerLabel;
     }
+    const activatableBlockedReasons = Object.fromEntries(
+      activatableFeatures.flatMap((feature) => {
+        const reason = activatableRequirementFailure(
+          feature,
+          activationContext,
+        );
+        return reason ? [[feature.id, reason]] : [];
+      }),
+    );
     const resolvedActivatables = resolveActivatableSelections({
       available: activatableFeatures,
       selected: activeBuffs,
@@ -113,6 +126,7 @@ export function useDerivedSheet(args: {
       sheet: computeSheet(withBuffs, { spellRegistry: RUNTIME_SPELLS }),
       activatableGroups: groupActivatables(activatableFeatures),
       activatableConflicts: resolvedActivatables.conflicts,
+      activatableBlockedReasons,
       resourceMaxes,
       resourceLabels,
       resourcePools,

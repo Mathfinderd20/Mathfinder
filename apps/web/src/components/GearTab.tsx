@@ -37,6 +37,7 @@ import {
 import {
   weaponAmmoUxLabel,
   weaponAvailabilityMatches,
+  weaponTemplateLabel,
   type WeaponAvailabilityFilter,
 } from "../weaponUx";
 import { compatibleAmmoEntries } from "../ammoCatalog";
@@ -400,8 +401,8 @@ export function GearTab(props: Props) {
         <EditorSection title="Gear Overview">
           <label className="field compact">
             <span>
-              Manual carried weight (lb){" "}
-              <span className="muted">optional override</span>
+              Total carried weight override (lb){" "}
+              <span className="muted">leave blank for gear + coins</span>
             </span>
             <input
               type="number"
@@ -843,7 +844,7 @@ export function GearTab(props: Props) {
                     <option value="">Custom / select template…</option>
                     {filteredWeaponOptions.map((option) => (
                       <option key={option.id} value={option.id}>
-                        {option.name}
+                        {weaponTemplateLabel(option)}
                       </option>
                     ))}
                   </select>
@@ -1859,7 +1860,11 @@ function renderEquipmentCard({
               onClick={() =>
                 props.onUpdateEquipment(
                   index,
-                  applyEquipmentUsePreset(item, preset.id),
+                  applyEquipmentUsePreset(
+                    item,
+                    preset.id,
+                    props.build.campaignRules,
+                  ),
                 )
               }
             >
@@ -2140,7 +2145,7 @@ function renderEquipmentCard({
                   <option value="">Custom / select template…</option>
                   {weaponOptions.map((option) => (
                     <option key={option.id} value={option.id}>
-                      {option.name}
+                      {weaponTemplateLabel(option)}
                     </option>
                   ))}
                 </select>

@@ -26,6 +26,16 @@ export function collectFirearmNames(
   runtimeWeapons: WeaponDefinition[],
 ): string[] {
   const names = [
+    ...collectOwnedFirearmNames(build),
+    ...runtimeWeapons
+      .filter(weaponUsesFirearmRules)
+      .map((weapon) => weapon.name),
+  ];
+  return [...new Set(names.map((name) => name.trim()).filter(Boolean))];
+}
+
+export function collectOwnedFirearmNames(build: CharacterBuild): string[] {
+  const names = [
     ...(build.race.grantedWeapons ?? [])
       .filter(weaponUsesFirearmRules)
       .map((weapon) => weapon.name),
@@ -42,9 +52,6 @@ export function collectFirearmNames(
           }),
       )
       .map((item) => item.name),
-    ...runtimeWeapons
-      .filter(weaponUsesFirearmRules)
-      .map((weapon) => weapon.name),
   ];
   return [...new Set(names.map((name) => name.trim()).filter(Boolean))];
 }
@@ -92,6 +99,42 @@ interface LooseFeatSearchOptionsArgs {
   grantKind: FeatGrantKind;
   availableWeaponNames?: string[];
   query?: string;
+}
+
+/**
+ * Build only the base-feat eligibility list needed by FeatSelectionPicker.
+ * Unlike buildFeatPickerOptions, this deliberately does not expand every
+ * parameterized feat across the weapon catalog before the user searches.
+ */
+export function buildFeatBaseEligibilityOptions({
+  featRegistry,
+  grantKind,
+  takenSelections,
+  currentSelection,
+}: Pick<
+  BuildFeatPickerOptionsArgs,
+  "featRegistry" | "grantKind" | "takenSelections" | "currentSelection"
+>): CompendiumOption[] {
+  const normalizedCurrent = currentSelection?.trim().toLowerCase() ?? "";
+  const taken = takenSelections.filter(
+    (selection) => selection.trim().toLowerCase() !== normalizedCurrent,
+  );
+  return listFeats(featRegistry)
+    .filter((feat) => featQualifiesForGrant(feat, grantKind))
+    .filter((feat) =>
+      feat.repeatable
+        ? true
+        : !taken.some(
+            (selection) =>
+              featSelectionBaseName(selection) === feat.name.toLowerCase(),
+          ),
+    )
+    .map((feat) => ({
+      id: feat.id,
+      name: feat.name,
+      tooltip: featTitle(feat.name),
+      tags: [grantKind, ...(feat.tags ?? [])],
+    }));
 }
 
 export function buildFeatPickerOptions({

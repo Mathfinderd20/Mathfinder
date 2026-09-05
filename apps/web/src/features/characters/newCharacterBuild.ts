@@ -16,6 +16,7 @@ interface FreshCharacterChoices {
   feats?: string[];
   favoredClass?: string;
   ignoreAlignmentRestrictions?: boolean;
+  ignoreEncumbrance?: boolean;
 }
 
 export function createFreshCharacterBuild(
@@ -51,10 +52,10 @@ export function createFreshCharacterBuild(
       firearmRules: "standard",
       ignoreAlignmentRestrictions:
         choices.ignoreAlignmentRestrictions || undefined,
+      ignoreEncumbrance: choices.ignoreEncumbrance || undefined,
     },
     coinPurse: { pp: 0, gp: 0, sp: 0, cp: 0 },
     weapons: [],
     equipment: [],
-    carriedWeight: 0,
   };
 }

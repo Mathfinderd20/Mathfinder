@@ -181,6 +181,17 @@ describe("rules-data dataset", () => {
     });
     expect(
       infantrymanFeatures?.find(
+        (feature) => feature.id === "infantryman-dodge-step-l1",
+      )?.activatable,
+    ).toMatchObject({
+      resourceCost: { poolId: "infantryman-grit", amount: 1 },
+      requirements: {
+        maximumArmorCategory: "medium",
+        maximumLoadBand: "medium",
+      },
+    });
+    expect(
+      infantrymanFeatures?.find(
         (feature) => feature.id === "infantryman-rally-l17",
       ),
     ).toMatchObject({

@@ -21,6 +21,18 @@ describe("runtime reducer + helpers", () => {
     expect(resetLedger({ arrow: 4 })).toEqual({});
   });
 
+  it("applies related runtime mutations as one reducer transaction", () => {
+    const state = reduceRuntimeState(createRuntimeStateSnapshot(), {
+      type: "batch",
+      actions: [
+        { type: "adjust-resource", id: "hp-damage", delta: 5 },
+        { type: "set-flag", key: "stable", value: false },
+      ],
+    });
+    expect(state.resources["hp-damage"]).toBe(5);
+    expect(state.flags.stable).toBe(false);
+  });
+
   it("records and undoes weapon attacks with ammo + events", () => {
     const recorded = recordWeaponAttack({
       history: {},

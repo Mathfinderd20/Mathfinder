@@ -1,4 +1,8 @@
-import { buildCompendiumIndex, getCompendiumEntryById } from "../../compendium";
+import {
+  buildCompendiumIndex,
+  getCompendiumEntryById,
+  getCompendiumEntryByName,
+} from "../../compendium";
 import type { EquipmentMagicItemTemplate, MagicItemDefinition } from "./shared";
 import { BODY_ITEMS } from "./slot-body";
 import { CHEST_ITEMS } from "./slot-chest";
@@ -37,13 +41,19 @@ export const CORE_MAGIC_ITEMS: MagicItemDefinition[] = [
 
 export const MAGIC_ITEMS: MagicItemDefinition[] = [...CORE_MAGIC_ITEMS];
 
-const MAGIC_ITEM_INDEX = buildCompendiumIndex(MAGIC_ITEMS);
+export const MAGIC_ITEM_INDEX = buildCompendiumIndex(MAGIC_ITEMS);
 
 export const MAGIC_ITEMS_BY_ID: Record<string, MagicItemDefinition> =
   MAGIC_ITEM_INDEX.byId;
 
 export function getMagicItem(id: string): MagicItemDefinition | undefined {
   return getCompendiumEntryById(MAGIC_ITEM_INDEX, id);
+}
+
+export function getMagicItemByName(
+  name: string,
+): MagicItemDefinition | undefined {
+  return getCompendiumEntryByName(MAGIC_ITEM_INDEX, name);
 }
 
 export function equipmentMagicItemTemplate(

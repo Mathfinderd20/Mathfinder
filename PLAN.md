@@ -14,8 +14,15 @@ Move the app toward a data-driven architecture where content catalogs and runtim
 ### Current foundation in repo
 
 - Shared compendium primitives in `packages/rules-engine/src/compendium.ts`
+- Cached, collision-aware compendium indexes across feats, spells, weapons, class features, and magic items
 - Shared runtime primitives in `packages/rules-engine/src/runtime.ts`
 - Web runtime persistence migrated to the generic runtime snapshot shape
+- Runtime mutations use shared reducer actions, including atomic batches for
+  multi-field domain transitions
+- Health and combat runtime orchestration is extracted from `App.tsx` into
+  focused, tested hooks and mutation helpers
+- The reusable web compendium picker delegates metadata and rules-text matching
+  to the shared compendium search helper
 - Existing content registries beginning to reuse shared compendium indexing helpers
 
 ### Phased next work
@@ -48,8 +55,9 @@ Move the app toward a data-driven architecture where content catalogs and runtim
 
 ### Immediate best next slice
 
-1. Add compendium index helpers to feats/spells/weapons/class-features consistently
-2. Extract web runtime mutation helpers out of `App.tsx`
-3. Build a generic searchable picker component using shared compendium search
+1. Introduce tracker definitions for resources, ledgers, histories, and toggles
+2. Add persisted runtime migration versioning before shared backend sync
+3. Migrate remaining bespoke catalog filters to shared compendium search where it
+   improves consistency without flattening domain-specific ranking
 
 Because if every subsystem invents its own registry, tracker, and search behavior, we are just speedrunning elegant inconsistency.

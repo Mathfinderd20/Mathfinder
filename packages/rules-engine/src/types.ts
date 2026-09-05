@@ -263,12 +263,20 @@ export interface FavoredClassBonusDefinition {
   deathThresholdBonus?: number;
 }
 
+export interface WeaponFamiliarityProfile {
+  source: string;
+  specificWeapons?: string[];
+  /** Racial weapon-name fragments whose exotic proficiency is treated as martial. */
+  martialWeaponNameIncludes?: string[];
+}
+
 export interface RaceMetadata {
   movementModes?: Partial<Record<MovementMode, number>>;
   senses?: SenseProfile;
   resistances?: Partial<Record<EnergyType, number>>;
   ferocity?: FerocityMode;
   favoredClassBonuses?: FavoredClassBonusDefinition[];
+  weaponFamiliarity?: WeaponFamiliarityProfile;
   notes?: string[];
 }
 
@@ -299,6 +307,7 @@ export interface RaceAlternateTrait {
   classSkills?: SkillKey[];
   weaponProficiencies?: WeaponProficiencyGroup[];
   specificWeaponProficiencies?: string[];
+  weaponFamiliarity?: WeaponFamiliarityProfile;
   grantedWeapons?: Weapon[];
   movementModes?: Partial<Record<MovementMode, number>>;
   senses?: SenseProfile;
@@ -399,7 +408,11 @@ export interface Encumbrance {
   lightMax: number;
   mediumMax: number;
   heavyMax: number;
+  /** Effective band after campaign rules. */
   band: LoadBand;
+  /** Rules-derived band before a house rule ignores its penalties. */
+  actualBand: LoadBand;
+  ignored: boolean;
 }
 
 export interface InventorySummary {
@@ -606,6 +619,8 @@ export interface CharacterInput {
   armorCategory?: ArmorCategory;
   /** Total carried weight in pounds for encumbrance. */
   carriedWeight?: number;
+  /** Preserve weight/thresholds but treat the effective load as light. */
+  ignoreEncumbrance?: boolean;
   /** Inventory aggregate for UI/reporting. */
   inventory?: InventorySummary;
   /** Inventory line items for display/reporting. */

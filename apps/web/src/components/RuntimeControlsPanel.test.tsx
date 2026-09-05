@@ -1,6 +1,11 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { RuntimeControlsPanel } from "./RuntimeControlsPanel";
+import type { DerivedResourcePool } from "@mathfinder/rules-engine";
+import {
+  activatableResourceFailure,
+  resourcePoolMathTooltip,
+  RuntimeControlsPanel,
+} from "./RuntimeControlsPanel";
 
 const NOOP = () => undefined;
 const fighterProfile = {
@@ -21,18 +26,13 @@ const haste = {
 
 function renderPanel(
   ownedSpellNames: string[],
-  resourcePools: Array<{
-    id: string;
-    name: string;
-    unit: string;
-    description: string;
-    max: number;
-  }> = [],
+  resourcePools: DerivedResourcePool[] = [],
 ) {
   return renderToStaticMarkup(
     <RuntimeControlsPanel
       activatableGroups={{ ungrouped: [], grouped: {} }}
       activatableConflicts={[]}
+      activatableBlockedReasons={{}}
       activeBuffs={{}}
       resourcesUsed={{}}
       resourceMaxes={Object.fromEntries(
@@ -55,6 +55,37 @@ function renderPanel(
   );
 }
 
+describe("activatable resource costs", () => {
+  const deed = {
+    id: "dodge",
+    name: "Dodge",
+    description: "Spend grit.",
+    resourceCost: { poolId: "infantryman-grit", amount: 1 },
+  };
+
+  it("blocks a deed when its pool is empty", () => {
+    expect(
+      activatableResourceFailure(
+        deed,
+        { "infantryman-grit": 1 },
+        { "infantryman-grit": 1 },
+        { "infantryman-grit": "grit" },
+      ),
+    ).toBe("requires 1 grit (0 remaining)");
+  });
+
+  it("allows a deed while enough resource remains", () => {
+    expect(
+      activatableResourceFailure(
+        deed,
+        { "infantryman-grit": 2 },
+        { "infantryman-grit": 1 },
+        { "infantryman-grit": "grit" },
+      ),
+    ).toBeUndefined();
+  });
+});
+
 describe("RuntimeControlsPanel", () => {
   it("does not promote unowned spells on a fighter by default", () => {
     const html = renderPanel([]);
@@ -76,6 +107,12 @@ describe("RuntimeControlsPanel", () => {
           unit: "grit",
           description: "Spend grit on deeds.",
           max: 3,
+          calculation: {
+            contributions: [{ label: "WIS modifier", value: 3 }],
+            rawTotal: 3,
+            minimum: 1,
+            total: 3,
+          },
         },
       ],
     );
@@ -84,5 +121,26 @@ describe("RuntimeControlsPanel", () => {
     expect(html).toContain("Spend");
     expect(html).toContain("Regain");
     expect(html).not.toContain("Grit (ability)");
+  });
+
+  it("explains grit maximum math for hover and keyboard focus", () => {
+    expect(
+      resourcePoolMathTooltip({
+        id: "infantryman-grit",
+        name: "Grit",
+        unit: "grit",
+        description: "Spend grit on deeds.",
+        max: 5,
+        calculation: {
+          contributions: [
+            { label: "WIS modifier", value: 3 },
+            { label: "Extra Grit", value: 2 },
+          ],
+          rawTotal: 5,
+          minimum: 1,
+          total: 5,
+        },
+      }),
+    ).toBe("Grit maximum: WIS modifier 3 + Extra Grit 2 = 5. Total 5.");
   });
 });

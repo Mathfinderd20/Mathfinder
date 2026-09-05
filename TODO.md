@@ -62,14 +62,14 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 - [x] Conditional requirement / illegal-state suppression scaffold (Fast Movement blocked by armor/load)
 - [x] Suppression reasons surfaced in the sheet (e.g. Fast Movement suppressed: medium armor)
 - [x] Fatigue state + Rage legality suppression
-- [ ] Broaden conditional legality (more armor/load restrictions, class-feature gates, etc.)
+- [~] Broaden conditional legality — serializable activatable armor/load gates and Infantryman's Dodge enforcement are live; expand to additional class features, archetypes, feats, and conditions
 - [x] Equipment/inventory engine: item quantities, costs, auto weight, equipped flags, armor metadata, slots, containers, coin/ammo/component tracking, purchase validation, and sheet itemization are all live
 - [~] Prerequisite validation for prestige classes, archetypes — archetype legality/conflict validation is live; prestige-class prerequisites still pending
 - [x] Parameterized feats (Weapon Focus weapon choice, Skill Focus skill choice)
 - [x] Complete parameterized-feat picker and mechanical coverage for Weapon Focus, Skill Focus, Spell Focus, and Greater Spell Focus — runtime scraped feat overrides retain parameter semantics; weapon choices affect only matching attacks, school choices affect only matching spell save DCs, and Greater Spell Focus requires the same school
 - [x] Add a campaign house-rule toggle that disables alignment restrictions and alignment-based validation across character creation, level-up, build validation, and persisted campaign rules
-- [ ] Complete Guns Everywhere economics by applying the ruleset's firearm and ammunition price changes throughout catalogs, purchases, and existing templated equipment
-- [ ] Add a campaign house-rule toggle to ignore encumbrance and suppress load-based penalties/restrictions without deleting inventory weight
+- [x] Complete firearm campaign economics — Guns Everywhere uses reversible canonical 10% pricing; Commonplace Guns uses 25% for early firearms and firearm ammunition while advanced firearms retain canonical prices
+- [x] Add a campaign house-rule toggle to ignore encumbrance — carried weight, thresholds, and actual load remain visible while the effective load is light for penalties and feature restrictions
 
 ## Phase 3 — Character Builder UX
 
@@ -108,12 +108,12 @@ Living checklist. Check things off as we go. Newest insights bubble up into the 
 ## Next Bulldoze Order
 
 - [x] Parameterized feats (Weapon Focus weapon choice, Skill Focus skill choice)
-- [ ] Prestige-class prerequisite validation
+- [x] Prestige-class prerequisite validation
 - [~] Guided build wizard / smarter character-aware recommendation tuning
 - [~] Complete ancestry-specific favored-class bonuses — 731 AoN options across 49 scraped races are ingested with source URLs and available as manual selections; automate common effect families and ingest owner-authored Savage Company FCBs from the manuscript
-- [ ] Shared compendium/runtime normalization work from `PLAN.md`
+- [~] Shared compendium/runtime normalization work from `PLAN.md` — catalog indexes are standardized and cached, the generic picker uses shared search, and runtime mutations are behind shared reducers plus focused web helpers; tracker definitions and persistence versioning remain
 - [ ] Savage Company content ingestion breadth
-- [~] Campaign house-rule controls — ignore alignment restrictions is live; complete Guns Everywhere pricing and optionally ignore encumbrance
+- [x] Campaign house-rule controls — Commonplace Guns and Guns Everywhere pricing, ignore alignment restrictions, and ignore encumbrance are live
 - [x] Complete selection-bearing feat UX/mechanics for Weapon Focus and Spell Focus; retain the generic parameter model for future selection-bearing feats
 
 ## Ingestion Research

@@ -27,9 +27,9 @@ import {
   type LevelPlannerSuggestions,
   type PlannerSuggestionChoice,
   type PlannerSuggestionNote,
-  type SkillSuggestionChoice,
   type SpellSuggestionChoice,
 } from "../buildSuggestions";
+import { continuedSkillKeys } from "../skillRankProgression";
 import { displaySpellName } from "../spellLabels";
 import { spellTitle } from "../rulesText";
 import { featSlotTag } from "../featSlots";
@@ -146,8 +146,6 @@ export interface LevelUpSpellSeedPlan {
 interface Props {
   build: CharacterBuild;
   plannerSuggestions: LevelPlannerSuggestions;
-  skillSuggestions: SkillSuggestionChoice[];
-  skillSuggestionNotes: string[];
   onConfirm: (
     selection: LevelUpSelection,
     spellSeedPlans: LevelUpSpellSeedPlan[],
@@ -159,8 +157,6 @@ interface Props {
 export function LevelUpModal({
   build,
   plannerSuggestions,
-  skillSuggestions,
-  skillSuggestionNotes,
   onConfirm,
   onClose,
 }: Props) {
@@ -188,6 +184,10 @@ export function LevelUpModal({
   >({});
 
   const remaining = plan.skillPoints - skills.size;
+  const continuedSkills = useMemo(
+    () => continuedSkillKeys(build, build.levels.length, plan.skillPoints),
+    [build, plan.skillPoints],
+  );
 
   const hp = Math.max(
     1,
@@ -275,10 +275,6 @@ export function LevelUpModal({
   const suggestedAbilities = new Set(
     plannerSuggestions.abilityChoices.map((choice) => choice.value),
   );
-  const suggestedSkills = skillSuggestions.filter((choice) =>
-    plan.classSkills.includes(choice.key),
-  );
-
   const modalSuggestionBundle = useMemo(
     () =>
       buildSuggestions({
@@ -433,24 +429,8 @@ export function LevelUpModal({
     });
   }
 
-  function applySuggestedSkill(key: SkillKey) {
-    setSkills((prev) => {
-      if (prev.has(key) || prev.size >= plan.skillPoints) return prev;
-      const next = new Set(prev);
-      next.add(key);
-      return next;
-    });
-  }
-
-  function applyTopSkillSuggestions() {
-    setSkills((prev) => {
-      const next = new Set(prev);
-      for (const suggestion of suggestedSkills) {
-        if (next.size >= plan.skillPoints) break;
-        next.add(suggestion.key);
-      }
-      return next;
-    });
+  function continuePreviousSkills() {
+    setSkills(new Set(continuedSkills));
   }
 
   function toggleSpellSeed(classKey: string, level: number, spellName: string) {
@@ -521,8 +501,16 @@ export function LevelUpModal({
 
   return (
     <div className="modal-backdrop">
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <h2>Level Up &rarr; Level {plan.characterLevel}</h2>
+      <div
+        className="modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="level-up-modal-title"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 id="level-up-modal-title">
+          Level Up &rarr; Level {plan.characterLevel}
+        </h2>
         <p className="hint">
           Choose your next class level, feat, skills, and any stat increase,
           then review the preview before applying it.
@@ -531,6 +519,7 @@ export function LevelUpModal({
         <label className="field">
           <span>Class</span>
           <select
+            autoFocus
             value={className}
             onChange={(e) => setClassName(e.target.value)}
           >
@@ -584,40 +573,18 @@ export function LevelUpModal({
             Skill ranks &mdash; {remaining} of {plan.skillPoints} left
             <span className="muted"> (max +1 per skill)</span>
           </span>
-          {suggestedSkills.length > 0 ? (
-            <>
-              <div className="planner-suggestions modal-guidance-chips">
-                <button
-                  type="button"
-                  className="ghost tiny planner-suggestion-chip"
-                  onClick={applyTopSkillSuggestions}
-                >
-                  Fill Suggested
-                </button>
-                {suggestedSkills.map((choice) => (
-                  <button
-                    key={`skill-suggestion-${choice.key}`}
-                    type="button"
-                    className={`ghost tiny planner-suggestion-chip ${skills.has(choice.key) ? "active" : ""}`}
-                    title={choice.reason}
-                    disabled={skills.has(choice.key) || remaining <= 0}
-                    onClick={() => applySuggestedSkill(choice.key)}
-                  >
-                    + {SKILL_NAME.get(choice.key) ?? choice.key}
-                  </button>
-                ))}
-              </div>
-              {skillSuggestionNotes.length > 0 ? (
-                <ul className="planner-suggestion-notes compact">
-                  {skillSuggestionNotes.map((note) => (
-                    <li key={`levelup-skill-note-${note}`}>{note}</li>
-                  ))}
-                </ul>
-              ) : null}
-            </>
-          ) : null}
+          <div className="planner-suggestions modal-guidance-chips">
+            <button
+              type="button"
+              className="ghost tiny planner-suggestion-chip"
+              disabled={continuedSkills.length === 0}
+              onClick={continuePreviousSkills}
+            >
+              Continue previous skills
+            </button>
+          </div>
           <div className="skill-picker">
-            {plan.classSkills
+            {SKILL_DEFINITIONS.map((skill) => skill.key)
               .slice()
               .sort((a, b) =>
                 (SKILL_NAME.get(a) ?? a).localeCompare(SKILL_NAME.get(b) ?? b),

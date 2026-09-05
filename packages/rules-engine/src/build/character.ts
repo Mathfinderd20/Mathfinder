@@ -2,6 +2,7 @@ import { abilityModifier } from "../abilities";
 import { computeSheet } from "../compute";
 import {
   effectiveWeaponProficiencyGroup,
+  encumbranceRulesEnabled,
   infantrymanGunTrainingPickCount,
 } from "../campaign-rules";
 import type {
@@ -33,6 +34,7 @@ import {
   type ClassRegistry,
   type SaveKind,
 } from "./classes";
+import { classBonusFeatSlot } from "./feat-grants";
 import {
   checkPrerequisites,
   featContextFromSheet,
@@ -190,6 +192,11 @@ function activeRaceAlternateTraits(race: RaceChoice): RaceAlternateTrait[] {
 
 function resolveRaceChoice(race: RaceChoice): RaceChoice {
   const activeTraits = activeRaceAlternateTraits(race);
+  const replacedTraits = new Set(
+    activeTraits
+      .flatMap((trait) => trait.replaces ?? [])
+      .map(normalizeWeaponName),
+  );
   let choiceOptions = { ...(race.choiceOptions ?? {}) };
   for (const trait of activeTraits) {
     choiceOptions = mergeChoiceOptions(
@@ -209,7 +216,9 @@ function resolveRaceChoice(race: RaceChoice): RaceChoice {
       ...activeTraits.flatMap((trait) => trait.abilityModifiers ?? []),
     ],
     traits: [
-      ...(race.traits ?? []),
+      ...(race.traits ?? []).filter(
+        (trait) => !replacedTraits.has(normalizeWeaponName(trait.source)),
+      ),
       ...activeTraits.flatMap((trait) => trait.traits ?? []),
     ],
     classSkills: [
@@ -249,6 +258,13 @@ function resolveRaceChoice(race: RaceChoice): RaceChoice {
       race.resistances,
       ...activeTraits.map((trait) => trait.resistances),
     ),
+    ferocity: replacedTraits.has("orc ferocity") ? undefined : race.ferocity,
+    weaponFamiliarity: replacedTraits.has(
+      normalizeWeaponName(race.weaponFamiliarity?.source ?? ""),
+    )
+      ? undefined
+      : (activeTraits.find((trait) => trait.weaponFamiliarity)
+          ?.weaponFamiliarity ?? race.weaponFamiliarity),
     notes: [
       ...(race.notes ?? []),
       ...activeTraits.map(
@@ -366,15 +382,41 @@ function weaponDamageAbilityOverridesForBuild(
   return overrides;
 }
 
+function effectiveWeaponGroupForBuild(
+  weapon: Weapon,
+  campaignRules?: CharacterBuild["campaignRules"],
+  familiarity?: RaceChoice["weaponFamiliarity"],
+) {
+  const normalizedName = normalizeWeaponName(weapon.name);
+  const effectiveGroup = effectiveWeaponProficiencyGroup(weapon, campaignRules);
+  return effectiveGroup === "exotic" &&
+    familiarity?.martialWeaponNameIncludes?.some((fragment) =>
+      normalizedName.includes(normalizeWeaponName(fragment)),
+    )
+    ? "martial"
+    : effectiveGroup;
+}
+
 function isWeaponProficient(
   weapon: Weapon,
   weaponProficiencies: ReadonlySet<"simple" | "martial" | "exotic">,
   specificWeaponProficiencies: ReadonlySet<string>,
   campaignRules?: CharacterBuild["campaignRules"],
+  familiarity?: RaceChoice["weaponFamiliarity"],
 ): boolean {
-  if (specificWeaponProficiencies.has(normalizeWeaponName(weapon.name)))
+  const normalizedName = normalizeWeaponName(weapon.name);
+  if (
+    specificWeaponProficiencies.has(normalizedName) ||
+    familiarity?.specificWeapons?.some(
+      (name) => normalizeWeaponName(name) === normalizedName,
+    )
+  )
     return true;
-  const effectiveGroup = effectiveWeaponProficiencyGroup(weapon, campaignRules);
+  const effectiveGroup = effectiveWeaponGroupForBuild(
+    weapon,
+    campaignRules,
+    familiarity,
+  );
   if (effectiveGroup) return weaponProficiencies.has(effectiveGroup);
   return true;
 }
@@ -928,7 +970,12 @@ export function buildCharacter(
       ? coinWeight(build.coinPurse)
       : 0);
   const carriedWeight = build.carriedWeight ?? derivedCarriedWeight;
-  const encumbrance = deriveEncumbrance(baseStr, carriedWeight);
+  const ignoreEncumbrance = !encumbranceRulesEnabled(build.campaignRules);
+  const encumbrance = deriveEncumbrance(
+    baseStr,
+    carriedWeight,
+    ignoreEncumbrance,
+  );
   const weaponProficiencies = new Set<"simple" | "martial" | "exotic">(
     activeRace.weaponProficiencies ?? [],
   );
@@ -1197,6 +1244,7 @@ export function buildCharacter(
       weaponProficiencies,
       specificWeaponProficiencies,
       build.campaignRules,
+      activeRace.weaponFamiliarity,
     ),
   }));
 
@@ -1377,6 +1425,24 @@ export function buildCharacter(
     }
     return out;
   };
+  const dedupeFeatAcquisitions = (
+    items: NamedAcquisition[],
+  ): NamedAcquisition[] => {
+    const seen = new Set<string>();
+    const out: NamedAcquisition[] = [];
+    for (const item of items) {
+      const parsed = parseFeatSelection(featRegistry, item.name);
+      if (parsed?.feat.repeatable && !parsed.feat.parameter) {
+        out.push(item);
+        continue;
+      }
+      const key = `${item.level}::${item.name.toLowerCase()}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(item);
+    }
+    return out;
+  };
   const dedupeSuppressed = (
     items: SuppressedAcquisition[],
   ): SuppressedAcquisition[] => {
@@ -1395,7 +1461,7 @@ export function buildCharacter(
     alignment: build.alignment,
     classes,
     archetypes: dedupeAcquisitions(archetypes),
-    feats: dedupeAcquisitions(feats),
+    feats: dedupeFeatAcquisitions(feats),
     features: dedupeAcquisitions(features),
     suppressedFeatures: dedupeSuppressed(autoSuppressedFeatures),
   };
@@ -1407,6 +1473,7 @@ export function buildCharacter(
       resistances: activeRace.resistances,
       ferocity: activeRace.ferocity,
       favoredClassBonuses: activeRace.favoredClassBonuses,
+      weaponFamiliarity: activeRace.weaponFamiliarity,
       notes: [...(activeRace.notes ?? []), ...raceChoiceNotes(activeRace)],
     },
     descriptor,
@@ -1418,6 +1485,7 @@ export function buildCharacter(
     baseSaves,
     armorCategory,
     carriedWeight,
+    ignoreEncumbrance,
     inventory: equipmentInventory,
     inventoryItems: equipmentInventoryItems,
     maxDexBonus,
@@ -1832,7 +1900,8 @@ export function validateBuild(
           continue;
         }
         const duplicate = parsed.feat.repeatable
-          ? chosenFeatSelections.some(
+          ? !!parsed.feat.parameter &&
+            chosenFeatSelections.some(
               (selection) =>
                 selection.toLowerCase() === featSelection.toLowerCase(),
             )
@@ -1934,11 +2003,13 @@ export function validateBuild(
         weaponProficiencies,
         specificWeaponProficiencies,
         build.campaignRules,
+        activeRace.weaponFamiliarity,
       )
     ) {
-      const effectiveGroup = effectiveWeaponProficiencyGroup(
+      const effectiveGroup = effectiveWeaponGroupForBuild(
         weapon,
         build.campaignRules,
+        activeRace.weaponFamiliarity,
       );
       const groupLabel = effectiveGroup ? `${effectiveGroup} ` : "";
       issues.push({
@@ -2296,16 +2367,10 @@ function featSlotsForClassLevel(
       source: `Level ${characterLevel}`,
     });
   }
-  if (normalizedClass === "fighter") {
-    const nextFighterLevel = (classLevelCounts(build).get("fighter") ?? 0) + 1;
-    if (nextFighterLevel === 1 || nextFighterLevel % 2 === 0) {
-      slots.push({
-        kind: "fighter-bonus",
-        label: "Fighter bonus feat",
-        source: `Fighter ${nextFighterLevel}`,
-      });
-    }
-  }
+  const nextClassLevel =
+    (classLevelCounts(build).get(normalizedClass) ?? 0) + 1;
+  const classBonusSlot = classBonusFeatSlot(className, nextClassLevel);
+  if (classBonusSlot) slots.push(classBonusSlot);
   return slots;
 }
 

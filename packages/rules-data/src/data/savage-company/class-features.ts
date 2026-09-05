@@ -42,7 +42,7 @@ export const SAVAGE_COMPANY_CLASS_FEATURES: ClassFeatureDefinition[] = [
     level: 1,
     pack: PACK,
     description:
-      "Spend 1 grit as an immediate action to move 5 feet and gain +2 AC against the triggering ranged attack. Medium-or-lighter armor/load restrictions are currently manual.",
+      "Spend 1 grit as an immediate action to move 5 feet and gain +2 AC against the triggering ranged attack. Requires medium-or-lighter armor and load.",
     effects: [],
     activatable: {
       id: "infantryman-dodge-step",
@@ -50,6 +50,11 @@ export const SAVAGE_COMPANY_CLASS_FEATURES: ClassFeatureDefinition[] = [
       description:
         "+2 dodge AC against the triggering ranged attack; costs 1 grit.",
       group: "infantryman-dodge",
+      resourceCost: { poolId: "infantryman-grit", amount: 1 },
+      requirements: {
+        maximumArmorCategory: "medium",
+        maximumLoadBand: "medium",
+      },
       effects: [
         {
           target: "ac.vs.ranged",
@@ -67,7 +72,7 @@ export const SAVAGE_COMPANY_CLASS_FEATURES: ClassFeatureDefinition[] = [
     level: 1,
     pack: PACK,
     description:
-      "Spend 1 grit as an immediate action to drop prone and gain +4 AC against the triggering ranged attack. Medium-or-lighter armor/load restrictions are currently manual.",
+      "Spend 1 grit as an immediate action to drop prone and gain +4 AC against the triggering ranged attack. Requires medium-or-lighter armor and load.",
     effects: [],
     activatable: {
       id: "infantryman-dodge-prone",
@@ -75,6 +80,11 @@ export const SAVAGE_COMPANY_CLASS_FEATURES: ClassFeatureDefinition[] = [
       description:
         "+4 dodge AC against the triggering ranged attack; costs 1 grit.",
       group: "infantryman-dodge",
+      resourceCost: { poolId: "infantryman-grit", amount: 1 },
+      requirements: {
+        maximumArmorCategory: "medium",
+        maximumLoadBand: "medium",
+      },
       effects: [
         {
           target: "ac.vs.ranged",

@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { CharacterBuild } from "@mathfinder/rules-engine";
-import { RUNTIME_ARMOR } from "../content";
-import { materializeRaceChoice, normalizeBuild } from "./buildNormalization";
+import { RUNTIME_ARMOR, RUNTIME_WEAPONS } from "../content";
+import {
+  materializeRaceChoice,
+  normalizeBuild,
+  syncTemplatedWeaponsToCampaignRules,
+} from "./buildNormalization";
 
 function build(): CharacterBuild {
   return {
@@ -18,6 +22,159 @@ function build(): CharacterBuild {
     levels: [{ className: "Fighter", hitPointRoll: 10 }],
   };
 }
+
+describe("build normalization", () => {
+  it("removes the legacy zero weight override so gear and coins can count", () => {
+    const source = build();
+    source.carriedWeight = 0;
+    expect(normalizeBuild(source).carriedWeight).toBeUndefined();
+  });
+});
+
+describe("campaign equipment pricing", () => {
+  it("reprices early and advanced firearms across campaign modes", () => {
+    RUNTIME_WEAPONS.push(
+      {
+        id: "test-early-pistol",
+        name: "Early Pistol",
+        category: "ranged",
+        proficiencyGroup: "exotic",
+        damageDice: "1d8",
+        firearmCategory: "one-handed",
+        weaponTechnology: "early",
+        weightLb: 4,
+        costGp: 1_000,
+      },
+      {
+        id: "test-advanced-rifle",
+        name: "Advanced Rifle",
+        category: "ranged",
+        proficiencyGroup: "exotic",
+        damageDice: "1d10",
+        firearmCategory: "two-handed",
+        weaponTechnology: "advanced",
+        weightLb: 8,
+        costGp: 5_000,
+      },
+    );
+    try {
+      const source = build();
+      source.equipment = RUNTIME_WEAPONS.slice(-2).map((weapon) => ({
+        itemTemplateId: weapon.id,
+        name: weapon.name,
+        costGp: weapon.costGp,
+        weapon: { category: "ranged", damageDice: weapon.damageDice },
+      }));
+
+      const commonplace = syncTemplatedWeaponsToCampaignRules({
+        ...source,
+        campaignRules: { firearmRules: "commonplace-guns" },
+      });
+      expect(commonplace.equipment?.map((item) => item.costGp)).toEqual([
+        250, 5_000,
+      ]);
+      const everywhere = syncTemplatedWeaponsToCampaignRules({
+        ...commonplace,
+        campaignRules: { firearmRules: "guns-everywhere" },
+      });
+      expect(everywhere.equipment?.map((item) => item.costGp)).toEqual([
+        100, 500,
+      ]);
+      const standard = syncTemplatedWeaponsToCampaignRules({
+        ...everywhere,
+        campaignRules: undefined,
+      });
+      expect(standard.equipment?.map((item) => item.costGp)).toEqual([
+        1_000, 5_000,
+      ]);
+    } finally {
+      RUNTIME_WEAPONS.splice(-2, 2);
+    }
+  });
+
+  it("reprices templated firearms reversibly from their canonical cost", () => {
+    RUNTIME_WEAPONS.push({
+      id: "test-campaign-pistol",
+      name: "Campaign Pistol",
+      category: "ranged",
+      proficiencyGroup: "exotic",
+      damageDice: "1d8",
+      critMultiplier: 4,
+      firearmCategory: "one-handed",
+      weightLb: 4,
+      costGp: 1_000,
+    });
+    try {
+      const source = build();
+      source.equipment = [
+        {
+          itemTemplateId: "test-campaign-pistol",
+          name: "Campaign Pistol",
+          costGp: 1_000,
+          weapon: { category: "ranged", damageDice: "1d8" },
+        },
+      ];
+      source.campaignRules = { firearmRules: "guns-everywhere" };
+      const discounted = syncTemplatedWeaponsToCampaignRules(source);
+      expect(discounted.equipment?.[0]?.costGp).toBe(100);
+      expect(
+        syncTemplatedWeaponsToCampaignRules(discounted).equipment?.[0]?.costGp,
+      ).toBe(100);
+      expect(
+        syncTemplatedWeaponsToCampaignRules({
+          ...discounted,
+          campaignRules: undefined,
+        }).equipment?.[0]?.costGp,
+      ).toBe(1_000);
+    } finally {
+      RUNTIME_WEAPONS.pop();
+    }
+  });
+
+  it("leaves custom ammunition pricing untouched", () => {
+    const source = build();
+    source.campaignRules = { firearmRules: "guns-everywhere" };
+    source.equipment = [
+      {
+        name: "Experimental Slugs",
+        ammoType: "experimental slug",
+        quantity: 3,
+        costGp: 42,
+        weight: 2,
+      },
+    ];
+    expect(
+      syncTemplatedWeaponsToCampaignRules(source).equipment?.[0],
+    ).toMatchObject({ costGp: 42, weight: 2 });
+  });
+
+  it("reprices catalog ammunition reversibly without compounding discounts", () => {
+    const source = build();
+    source.equipment = [
+      {
+        name: "Bullets",
+        ammoType: "bullet",
+        quantity: 10,
+        costGp: 100,
+        weight: 1,
+      },
+    ];
+    source.campaignRules = { firearmRules: "guns-everywhere" };
+    const discounted = syncTemplatedWeaponsToCampaignRules(source);
+    expect(discounted.equipment?.[0]).toMatchObject({
+      quantity: 10,
+      costGp: 1,
+      weight: 0.1,
+    });
+    const discountedAgain = syncTemplatedWeaponsToCampaignRules(discounted);
+    expect(discountedAgain.equipment?.[0]?.costGp).toBe(1);
+    const restored = syncTemplatedWeaponsToCampaignRules({
+      ...discountedAgain,
+      campaignRules: undefined,
+    });
+    expect(restored.equipment?.[0]?.costGp).toBe(10);
+  });
+});
 
 describe("equipment normalization", () => {
   it("upgrades manually named catalog armor so saved builds gain new mechanics", () => {

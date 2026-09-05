@@ -218,7 +218,7 @@ export const CORE_WEAPONS: WeaponDefinition[] = [
 
 export const WEAPONS: WeaponDefinition[] = [...CORE_WEAPONS];
 
-const WEAPON_INDEX = buildCompendiumIndex(WEAPONS);
+export const WEAPON_INDEX = buildCompendiumIndex(WEAPONS);
 
 export const WEAPONS_BY_ID: Record<string, WeaponDefinition> =
   WEAPON_INDEX.byId;

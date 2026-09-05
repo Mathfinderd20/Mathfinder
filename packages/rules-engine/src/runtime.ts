@@ -80,6 +80,7 @@ export interface RuntimeStateSnapshot {
 }
 
 export type RuntimeAction =
+  | { type: "batch"; actions: RuntimeAction[] }
   | { type: "reset-all" }
   | { type: "set-toggle"; id: string; value: boolean }
   | { type: "set-exclusive-toggle-group"; ids: string[]; activeId?: string }
@@ -513,6 +514,12 @@ export function reduceRuntimeState(
   const eventHistoryLimit =
     options?.eventHistoryLimit ?? DEFAULT_RUNTIME_EVENT_HISTORY_LIMIT;
   switch (action.type) {
+    case "batch":
+      return action.actions.reduce(
+        (current, nestedAction) =>
+          reduceRuntimeState(current, nestedAction, { eventHistoryLimit }),
+        state,
+      );
     case "reset-all":
       return createRuntimeStateSnapshot();
     case "set-toggle": {

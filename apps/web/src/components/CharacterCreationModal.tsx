@@ -9,7 +9,6 @@ import {
   buildCharacter,
   classAllowsAlignment,
   computeSheet,
-  featContextFromSheet,
   SKILL_DEFINITIONS,
   type AbilityKey,
   type Alignment,
@@ -27,7 +26,7 @@ import {
   RUNTIME_WEAPONS,
 } from "../content";
 import {
-  buildFeatPickerOptions,
+  buildFeatBaseEligibilityOptions,
   collectFeatWeaponNames,
 } from "../featOptionData";
 import { plannedFeatSlotsForLevel } from "../featSlots";
@@ -88,6 +87,7 @@ export function CharacterCreationModal({
   const [alignment, setAlignment] = useState<Alignment>("true-neutral");
   const [ignoreAlignmentRestrictions, setIgnoreAlignmentRestrictions] =
     useState(false);
+  const [ignoreEncumbrance, setIgnoreEncumbrance] = useState(false);
   const [className, setClassName] = useState(defaultClassName);
   const [abilityScores, setAbilityScores] =
     useState<Record<AbilityKey, number>>(DEFAULT_SCORES);
@@ -129,6 +129,7 @@ export function CharacterCreationModal({
         feats: selectedFeats,
         favoredClass,
         ignoreAlignmentRestrictions,
+        ignoreEncumbrance,
       });
     },
     [
@@ -140,6 +141,7 @@ export function CharacterCreationModal({
       hasFlexibleAbility,
       hasRaceBonusFeat,
       ignoreAlignmentRestrictions,
+      ignoreEncumbrance,
       race,
       raceBonusFeat,
       selectedFeats,
@@ -198,31 +200,38 @@ export function CharacterCreationModal({
     if (!hasRaceBonusFeat) setRaceBonusFeat("");
   }, [hasRaceBonusFeat]);
 
-  const featContext = useMemo(
-    () => (previewSheet ? featContextFromSheet(previewSheet) : undefined),
-    [previewSheet],
-  );
   const availableWeaponNames = useMemo(
     () =>
       draftBuild ? collectFeatWeaponNames(draftBuild, RUNTIME_WEAPONS) : [],
     [draftBuild],
+  );
+  const featOptionCache = useMemo(
+    () => new Map<string, ReturnType<typeof buildFeatBaseEligibilityOptions>>(),
+    [],
   );
   const resolveFeatOptions = useCallback(
     (
       grantKind: "general" | "fighter-bonus",
       currentSelection: string | undefined,
     ) => {
-      if (!featContext) return [];
-      return buildFeatPickerOptions({
+      const cacheKey = [
+        grantKind,
+        currentSelection?.trim().toLowerCase() ?? "",
+        raceBonusFeat,
+        ...selectedFeats,
+      ].join("\u0000");
+      const cached = featOptionCache.get(cacheKey);
+      if (cached) return cached;
+      const options = buildFeatBaseEligibilityOptions({
         featRegistry: RUNTIME_FEATS,
-        featContext,
         grantKind,
         takenSelections: [raceBonusFeat, ...selectedFeats].filter(Boolean),
         currentSelection,
-        availableWeaponNames,
       });
+      featOptionCache.set(cacheKey, options);
+      return options;
     },
-    [availableWeaponNames, featContext, raceBonusFeat, selectedFeats],
+    [featOptionCache, raceBonusFeat, selectedFeats],
   );
 
   const classAlignmentAllowed =
@@ -293,6 +302,20 @@ export function CharacterCreationModal({
             <strong>Ignore alignment restrictions</strong>
             <span className="buff-desc">
               House rule: all class alignment requirements are disabled.
+            </span>
+          </span>
+        </label>
+
+        <label className="pick campaign-rule-pick">
+          <input
+            type="checkbox"
+            checked={ignoreEncumbrance}
+            onChange={(event) => setIgnoreEncumbrance(event.target.checked)}
+          />
+          <span>
+            <strong>Ignore encumbrance</strong>
+            <span className="buff-desc">
+              Keep weight visible but ignore load penalties and restrictions.
             </span>
           </span>
         </label>

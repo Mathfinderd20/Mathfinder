@@ -62,9 +62,19 @@ export function buildSpellCompendiumOptions(
     source?: string;
     sourceUrl?: string;
   }>,
+  classNames?: string[],
 ): SpellCompendiumOption[] {
-  return spellOptions.map((spell) => {
+  const classKeys = new Set((classNames ?? []).map(normalize).filter(Boolean));
+  return spellOptions.flatMap((spell) => {
     const fullSpell = getRuntimeSpell(spell.name);
+    if (
+      classKeys.size > 0 &&
+      !fullSpell?.classes.some((entry) =>
+        classKeys.has(normalize(entry.className)),
+      )
+    ) {
+      return [];
+    }
     const metaTag = spellMetaTag(fullSpell);
     const tagList = spellTags(fullSpell);
     const schoolTag = fullSpell?.school?.trim() ?? "";

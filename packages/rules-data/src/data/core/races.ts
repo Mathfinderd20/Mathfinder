@@ -256,6 +256,20 @@ export const CORE_RACES: RaceDefinition[] = [
     choiceOptions: {
       flexibleAbilityBonus: { value: 2 },
     },
+    traits: [
+      {
+        target: "skill.intimidate",
+        type: "racial",
+        value: 2,
+        source: "Intimidating",
+        pack: "core",
+      },
+    ],
+    weaponFamiliarity: {
+      source: "Weapon Familiarity",
+      specificWeapons: ["Greataxe", "Falchion"],
+      martialWeaponNameIncludes: ["orc"],
+    },
     alternateTraits: [
       {
         id: "sacred-tattoo",
@@ -289,7 +303,6 @@ export const CORE_RACES: RaceDefinition[] = [
         ],
       },
     ],
-    notes: ["Intimidating and weapon familiarity are not automated yet."],
   },
   {
     id: "orc",
@@ -328,6 +341,11 @@ export const CORE_RACES: RaceDefinition[] = [
       },
     ],
     ferocity: "orc",
+    weaponFamiliarity: {
+      source: "Weapon Familiarity",
+      specificWeapons: ["Greataxe", "Falchion"],
+      martialWeaponNameIncludes: ["orc"],
+    },
     favoredClassBonuses: [
       {
         id: "orc-fighter-death-threshold",
@@ -338,9 +356,7 @@ export const CORE_RACES: RaceDefinition[] = [
         deathThresholdBonus: 2,
       },
     ],
-    notes: [
-      "Ferocity is automated; light sensitivity and weapon familiarity are not automated yet.",
-    ],
+    notes: ["Ferocity is automated; light sensitivity is not automated yet."],
   },
   {
     id: "halfling",

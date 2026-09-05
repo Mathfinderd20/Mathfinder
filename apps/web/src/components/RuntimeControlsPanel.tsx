@@ -6,12 +6,17 @@ import {
   type RuntimeProfile,
   type RuntimeTacticalCategory,
 } from "../runtimeInsights";
-import type { DerivedResourcePool } from "@mathfinder/rules-engine";
+import type {
+  ActivatableResourceCost,
+  DerivedResourcePool,
+} from "@mathfinder/rules-engine";
+import { Tooltip } from "./Tooltip";
 
 interface ActivatableView {
   id: string;
   name: string;
   description: string;
+  resourceCost?: ActivatableResourceCost;
 }
 
 interface RuntimeControlsPanelProps {
@@ -20,6 +25,7 @@ interface RuntimeControlsPanelProps {
     grouped: Record<string, ActivatableView[]>;
   };
   activatableConflicts: Array<{ group: string; ids: string[] }>;
+  activatableBlockedReasons: Record<string, string>;
   activeBuffs: Record<string, boolean>;
   resourcesUsed: Record<string, number>;
   resourceMaxes: Record<string, number>;
@@ -44,6 +50,7 @@ function ResourceControls({
   onAdjustResource,
   onResetResource,
   poolMode = false,
+  mathTooltip,
 }: {
   featureId: string;
   resourceMaxes: Record<string, number>;
@@ -52,6 +59,7 @@ function ResourceControls({
   onAdjustResource: (id: string, delta: number, max?: number) => void;
   onResetResource: (id: string) => void;
   poolMode?: boolean;
+  mathTooltip?: string;
 }) {
   const max = resourceMaxes[featureId];
   if (max === undefined) return null;
@@ -60,9 +68,11 @@ function ResourceControls({
   const label = resourceLabels[featureId] ?? "left";
   return (
     <div className="resource-row">
-      <span className="resource-label">
-        {remaining}/{max} {label}
-      </span>
+      <Tooltip content={mathTooltip}>
+        <span className="resource-label" tabIndex={mathTooltip ? 0 : undefined}>
+          {remaining}/{max} {label}
+        </span>
+      </Tooltip>
       <div className="resource-buttons">
         <button
           className="ghost small"
@@ -87,6 +97,37 @@ function ResourceControls({
   );
 }
 
+export function resourcePoolMathTooltip(pool: DerivedResourcePool) {
+  const terms = pool.calculation.contributions.map((contribution, index) => {
+    const sign = contribution.value < 0 ? "− " : index > 0 ? "+ " : "";
+    return `${sign}${contribution.label} ${Math.abs(contribution.value)}`;
+  });
+  const equation = `${terms.join(" ")} = ${pool.calculation.rawTotal}`;
+  const minimumApplied = pool.calculation.rawTotal < pool.calculation.minimum;
+  return `${pool.name} maximum: ${equation}.${
+    minimumApplied
+      ? ` Minimum ${pool.calculation.minimum} applies, for ${pool.max}.`
+      : ` Total ${pool.max}.`
+  }`;
+}
+
+export function activatableResourceFailure(
+  feature: ActivatableView,
+  resourceMaxes: Record<string, number>,
+  resourcesUsed: Record<string, number>,
+  resourceLabels: Record<string, string>,
+) {
+  const cost = feature.resourceCost;
+  if (!cost) return undefined;
+  const max = resourceMaxes[cost.poolId];
+  const label = resourceLabels[cost.poolId] ?? "resource";
+  if (max === undefined) return `${label} pool is unavailable`;
+  const remaining = Math.max(0, max - (resourcesUsed[cost.poolId] ?? 0));
+  return remaining < cost.amount
+    ? `requires ${cost.amount} ${label} (${remaining} remaining)`
+    : undefined;
+}
+
 const TACTICAL_CATEGORIES: RuntimeTacticalCategory[] = [
   "offense",
   "defense",
@@ -97,6 +138,7 @@ const TACTICAL_CATEGORIES: RuntimeTacticalCategory[] = [
 export function RuntimeControlsPanel({
   activatableGroups,
   activatableConflicts,
+  activatableBlockedReasons,
   activeBuffs,
   resourcesUsed,
   resourceMaxes,
@@ -256,6 +298,44 @@ export function RuntimeControlsPanel({
   );
   const rageActive = !!activeBuffs.rage;
 
+  function activationFailure(feature: ActivatableView) {
+    return (
+      activatableBlockedReasons[feature.id] ??
+      activatableResourceFailure(
+        feature,
+        resourceMaxes,
+        resourcesUsed,
+        resourceLabels,
+      )
+    );
+  }
+
+  function spendActivationCost(feature: ActivatableView) {
+    const cost = feature.resourceCost;
+    if (!cost) return;
+    onAdjustResource(cost.poolId, cost.amount, resourceMaxes[cost.poolId]);
+  }
+
+  function setActivatable(feature: ActivatableView, value: boolean) {
+    if (value) {
+      if (activationFailure(feature)) return;
+      spendActivationCost(feature);
+    }
+    onSetToggle(feature.id, value);
+  }
+
+  function selectActivatableGroup(
+    items: ActivatableView[],
+    feature: ActivatableView,
+  ) {
+    if (activationFailure(feature)) return;
+    spendActivationCost(feature);
+    onSetExclusiveToggleGroup(
+      items.map((item) => item.id),
+      feature.id,
+    );
+  }
+
   function applyTogglePreset(
     effectIds: string[],
     activatableIds: string[] = [],
@@ -361,6 +441,7 @@ export function RuntimeControlsPanel({
                 onAdjustResource={onAdjustResource}
                 onResetResource={onResetResource}
                 poolMode
+                mathTooltip={resourcePoolMathTooltip(pool)}
               />
             </div>
           ))}
@@ -372,18 +453,22 @@ export function RuntimeControlsPanel({
           {resourceActivatables.map((feature) => {
             const max = resourceMaxes[feature.id];
             const used = resourcesUsed[feature.id] ?? 0;
-            const activationBlocked =
-              max !== undefined && used >= max && !activeBuffs[feature.id];
+            const blockedReason =
+              activationFailure(feature) ??
+              (max !== undefined && used >= max && !activeBuffs[feature.id]
+                ? "resource exhausted"
+                : undefined);
             return (
               <div className="buff-block" key={feature.id}>
                 <label className="buff">
                   <input
                     type="checkbox"
                     disabled={
-                      activationBlocked || (feature.id === "rage" && fatigued)
+                      (!activeBuffs[feature.id] && !!blockedReason) ||
+                      (feature.id === "rage" && fatigued)
                     }
                     checked={!!activeBuffs[feature.id]}
-                    onChange={(e) => onSetToggle(feature.id, e.target.checked)}
+                    onChange={(e) => setActivatable(feature, e.target.checked)}
                   />
                   <span>
                     <strong>{feature.name} (ability)</strong>
@@ -391,7 +476,9 @@ export function RuntimeControlsPanel({
                       {feature.description}
                       {feature.id === "rage" && fatigued
                         ? " Currently blocked by fatigue."
-                        : ""}
+                        : blockedReason
+                          ? ` Blocked: ${blockedReason}.`
+                          : ""}
                     </span>
                   </span>
                 </label>
@@ -417,12 +504,20 @@ export function RuntimeControlsPanel({
                 <label className="buff">
                   <input
                     type="checkbox"
+                    disabled={
+                      !activeBuffs[feature.id] && !!activationFailure(feature)
+                    }
                     checked={!!activeBuffs[feature.id]}
-                    onChange={(e) => onSetToggle(feature.id, e.target.checked)}
+                    onChange={(e) => setActivatable(feature, e.target.checked)}
                   />
                   <span>
                     <strong>{feature.name} (ability)</strong>
-                    <span className="buff-desc">{feature.description}</span>
+                    <span className="buff-desc">
+                      {feature.description}
+                      {activationFailure(feature)
+                        ? ` Blocked: ${activationFailure(feature)}.`
+                        : ""}
+                    </span>
                   </span>
                 </label>
               </div>
@@ -433,35 +528,37 @@ export function RuntimeControlsPanel({
       {Object.entries(activatableGroups.grouped).map(([group, items]) => (
         <div className="mode-group" key={group}>
           <div className="mode-title">{group.replace(/-/g, " ")}</div>
-          {items.map((feature) => (
-            <div className="buff-block" key={feature.id}>
-              <label className="buff">
-                <input
-                  type="radio"
-                  name={`mode-${group}`}
-                  checked={!!activeBuffs[feature.id]}
-                  onChange={() =>
-                    onSetExclusiveToggleGroup(
-                      items.map((item) => item.id),
-                      feature.id,
-                    )
-                  }
+          {items.map((feature) => {
+            const blockedReason = activationFailure(feature);
+            return (
+              <div className="buff-block" key={feature.id}>
+                <label className="buff">
+                  <input
+                    type="radio"
+                    name={`mode-${group}`}
+                    disabled={!activeBuffs[feature.id] && !!blockedReason}
+                    checked={!!activeBuffs[feature.id]}
+                    onChange={() => selectActivatableGroup(items, feature)}
+                  />
+                  <span>
+                    <strong>{feature.name} (ability)</strong>
+                    <span className="buff-desc">
+                      {feature.description}
+                      {blockedReason ? ` Blocked: ${blockedReason}.` : ""}
+                    </span>
+                  </span>
+                </label>
+                <ResourceControls
+                  featureId={feature.id}
+                  resourceMaxes={resourceMaxes}
+                  resourceLabels={resourceLabels}
+                  resourcesUsed={resourcesUsed}
+                  onAdjustResource={onAdjustResource}
+                  onResetResource={onResetResource}
                 />
-                <span>
-                  <strong>{feature.name} (ability)</strong>
-                  <span className="buff-desc">{feature.description}</span>
-                </span>
-              </label>
-              <ResourceControls
-                featureId={feature.id}
-                resourceMaxes={resourceMaxes}
-                resourceLabels={resourceLabels}
-                resourcesUsed={resourcesUsed}
-                onAdjustResource={onAdjustResource}
-                onResetResource={onResetResource}
-              />
-            </div>
-          ))}
+              </div>
+            );
+          })}
           <button
             className="ghost small"
             onClick={() =>

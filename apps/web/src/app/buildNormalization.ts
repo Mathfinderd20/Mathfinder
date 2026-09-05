@@ -5,6 +5,12 @@ import {
   type CharacterBuild,
 } from "@mathfinder/rules-engine";
 import {
+  ammoCatalogEntry,
+  ammoStackCostGp,
+  ammoStackName,
+  ammoStackWeightLb,
+} from "../ammoCatalog";
+import {
   RUNTIME_ARCHETYPES,
   RUNTIME_ARMOR,
   RUNTIME_MUNDANE_EQUIPMENT,
@@ -263,6 +269,8 @@ export function normalizeBuild(build: CharacterBuild): CharacterBuild {
     ...build,
     race: normalizedRace,
     classArchetypes: normalizedArchetypes,
+    // Legacy fresh builds wrote a zero total-weight override, masking gear/coins.
+    carriedWeight: build.carriedWeight === 0 ? undefined : build.carriedWeight,
     equipment: build.equipment?.map(normalizeEquipmentItem),
   };
 }
@@ -324,7 +332,15 @@ export function syncTemplatedWeaponsToCampaignRules(
         item.itemTemplateId && item.weapon
           ? weaponById.get(item.itemTemplateId)
           : undefined;
-      if (!template) return item;
+      if (!template) {
+        if (!item.ammoType || !ammoCatalogEntry(item.ammoType)) return item;
+        return {
+          ...item,
+          name: ammoStackName(item.ammoType),
+          weight: ammoStackWeightLb(item.ammoType),
+          costGp: ammoStackCostGp(item.ammoType, build.campaignRules),
+        };
+      }
       const weaponTemplate = equipmentWeaponTemplate(template);
       return {
         ...item,

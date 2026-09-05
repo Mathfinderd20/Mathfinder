@@ -1,9 +1,14 @@
-import { buildCompendiumIndex, getCompendiumEntryByName } from "../compendium";
+import {
+  getCachedCompendiumIndex,
+  getCompendiumEntryByName,
+  type CompendiumIndex,
+} from "../compendium";
 import { SKILL_DEFINITIONS } from "../skills";
 import type { AbilityKey, DerivedSheet, Modifier, SkillKey } from "../types";
 import {
   babStep,
   type ActivatableEffect,
+  type ResourcePoolBonusDefinition,
   type ResourcePoolDefinition,
 } from "./activatables";
 import { ADDITIONAL_CORE_FEATS } from "./core-feats-additional";
@@ -46,6 +51,8 @@ export interface FeatDefinition {
   activatable?: ActivatableEffect;
   /** Optional always-available tracked pool granted by this feat. */
   resourcePool?: ResourcePoolDefinition;
+  /** Additive bonuses to a pool granted elsewhere, e.g. Extra Grit. */
+  resourcePoolBonuses?: ResourcePoolBonusDefinition[];
 }
 
 export type FeatGrantKind = "general" | "fighter-bonus";
@@ -356,6 +363,19 @@ export const CORE_FEATS: FeatDefinition[] = [
   },
   ...ADDITIONAL_CORE_FEATS,
   {
+    id: "extra-grit",
+    name: "Extra Grit",
+    pack: "core",
+    description:
+      "Gain 2 extra grit points at the start of each day and increase maximum grit by 2.",
+    prerequisites: [],
+    repeatable: true,
+    effects: [],
+    resourcePoolBonuses: [
+      { poolId: "infantryman-grit", value: 2, source: "Extra Grit" },
+    ],
+  },
+  {
     id: "deadly-aim",
     name: "Deadly Aim",
     pack: "core",
@@ -537,6 +557,8 @@ function mergeFeatDefinitions(
     parameter: incoming.parameter ?? existing.parameter,
     activatable: incoming.activatable ?? existing.activatable,
     resourcePool: incoming.resourcePool ?? existing.resourcePool,
+    resourcePoolBonuses:
+      incoming.resourcePoolBonuses ?? existing.resourcePoolBonuses,
   });
 }
 
@@ -558,6 +580,14 @@ export const FEATS: FeatRegistry = buildFeatRegistry(
   CORE_FEATS,
   SAVAGE_COMPANY_FEATS,
 );
+
+export function featCompendiumIndex(
+  registry: FeatRegistry,
+): CompendiumIndex<FeatDefinition> {
+  return getCachedCompendiumIndex(registry, () => Object.values(registry));
+}
+
+export const FEAT_INDEX = featCompendiumIndex(FEATS);
 
 export interface ParsedFeatSelection {
   feat: FeatDefinition;
@@ -595,20 +625,15 @@ export function parseFeatSelection(
   selectionName: string,
 ): ParsedFeatSelection | undefined {
   const trimmed = selectionName.trim();
-  const exact = getCompendiumEntryByName(
-    buildCompendiumIndex(Object.values(registry)),
-    trimmed,
-  );
+  const index = featCompendiumIndex(registry);
+  const exact = getCompendiumEntryByName(index, trimmed);
   if (exact) return { feat: exact, selectionName: exact.name };
   const match = FEAT_SELECTION_RE.exec(trimmed);
   if (!match) return undefined;
   const baseName = match[1]?.trim();
   const parameterValue = match[2]?.trim();
   if (!baseName || !parameterValue) return undefined;
-  const feat = getCompendiumEntryByName(
-    buildCompendiumIndex(Object.values(registry)),
-    baseName,
-  );
+  const feat = getCompendiumEntryByName(index, baseName);
   if (!feat) return undefined;
   return {
     feat,

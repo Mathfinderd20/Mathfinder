@@ -54,6 +54,11 @@ describe("raceOptionsFromDataSet", () => {
       size: "medium" as const,
       speed: 30,
       abilityModifiers: [],
+      weaponFamiliarity: {
+        source: "Weapon Familiarity",
+        specificWeapons: ["Greataxe"],
+        martialWeaponNameIncludes: ["orc"],
+      },
       favoredClassBonuses: withFavoredBonus
         ? [
             {
@@ -77,5 +82,10 @@ describe("raceOptionsFromDataSet", () => {
     expect(races.human?.name).toBe("Human");
     expect(races["scrape-aon-human"]?.name).toBe("Human");
     expect(races.human?.favoredClassBonuses?.[0]?.id).toBe("human-fighter");
+    expect(races.human?.weaponFamiliarity).toEqual({
+      source: "Weapon Familiarity",
+      specificWeapons: ["Greataxe"],
+      martialWeaponNameIncludes: ["orc"],
+    });
   });
 });
