@@ -3,9 +3,9 @@ import { HomePage } from "../features/home/HomePage";
 import { CharacterWorkspace } from "../features/characters/CharacterWorkspace";
 import { NewCharacterPage } from "../features/characters/NewCharacterPage";
 import { ManageCharacterPage } from "../features/characters/ManageCharacterPage";
-import { CampaignPlaceholderPage } from "../features/campaigns/CampaignPlaceholderPage";
 import { CreateCampaignPage } from "../features/campaigns/CreateCampaignPage";
 import { CampaignPage } from "../features/campaigns/CampaignPage";
+import { JoinCampaignPage } from "../features/campaigns/JoinCampaignPage";
 import { useCloudConnection } from "../lib/useCloudConnection";
 import { ServerErrorPage } from "./ServerErrorPage";
 import { SignInPage } from "../features/auth/SignInPage";
@@ -131,10 +131,7 @@ function ApplicationRoutes() {
         element={<CharacterWorkspace />}
       />
       <Route path="/campaigns/new" element={<CreateCampaignPage />} />
-      <Route
-        path="/campaigns/join"
-        element={<CampaignPlaceholderPage mode="join" />}
-      />
+      <Route path="/campaigns/join" element={<JoinCampaignPage />} />
       <Route path="/campaigns/:campaignId" element={<CampaignPage />} />
       <Route path="*" element={<Navigate replace to="/" />} />
     </Routes>

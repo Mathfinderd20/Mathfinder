@@ -93,6 +93,70 @@
   margin-left: auto;
 }
 
+.assignment-actions {
+  display: flex !important;
+  grid-auto-flow: column;
+  gap: 8px !important;
+  align-items: center;
+  margin-left: auto;
+}
+
+.assignment-actions button {
+  margin-left: 0;
+}
+
+.campaign-code-panel {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 28px;
+  padding: 24px;
+  border: 1px solid rgba(226, 173, 111, 0.42);
+  border-radius: 16px;
+  background: rgba(42, 34, 29, 0.72);
+}
+
+.campaign-code-panel h2 {
+  margin: 6px 0;
+  color: var(--home-gold);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: clamp(20px, 4vw, 30px);
+  letter-spacing: 0.08em;
+}
+
+.campaign-code-panel p,
+.campaign-muted,
+.campaign-danger-zone p {
+  margin: 0;
+  color: var(--home-muted);
+  line-height: 1.6;
+}
+
+.campaign-danger-zone {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  justify-content: space-between;
+  margin: 28px 0;
+  padding: 24px;
+  border: 1px solid rgba(190, 75, 65, 0.5);
+  border-radius: 16px;
+  background: rgba(82, 31, 27, 0.22);
+}
+
+.campaign-danger-zone h2 {
+  margin: 4px 0 8px;
+  font-family: Georgia, serif;
+  font-weight: 500;
+}
+
+.danger-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
 .backend-notice {
   padding: 24px;
   border: 1px solid var(--home-line);
@@ -115,5 +179,21 @@
   .assignment-row button {
     width: 100%;
     margin-left: 62px;
+  }
+
+  .assignment-actions,
+  .campaign-code-panel,
+  .campaign-danger-zone {
+    width: 100%;
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .assignment-actions {
+    margin-left: 62px;
+  }
+
+  .assignment-actions button {
+    margin-left: 0;
   }
 }
