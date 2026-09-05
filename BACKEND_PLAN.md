@@ -100,6 +100,11 @@ Runtime rules content should continue to ship as a validated, versioned, cacheab
 
 ## Authentication
 
+Implementation update (September 2026): `AUTHENTICATION.md` supersedes the guest
+mode and local-import proposals below. Permanent accounts are required;
+IndexedDB provides account-scoped, read-only outage viewing. Anonymous login
+and silent local-record import have been removed.
+
 Supabase Auth is the authentication system. Google is a provider used through Supabase Auth, not a separate authentication stack.
 
 ```text

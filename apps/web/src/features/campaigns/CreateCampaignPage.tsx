@@ -1,3 +1,4 @@
+import { accountStorage } from "../../lib/accountCache";
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { listCharacters } from "../characters/characterRepository";
@@ -8,7 +9,7 @@ import "./campaign.css";
 
 export function CreateCampaignPage() {
   const navigate = useNavigate();
-  const characters = listCharacters(window.localStorage);
+  const characters = listCharacters(accountStorage);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [characterIds, setCharacterIds] = useState<string[]>([]);
@@ -26,7 +27,7 @@ export function CreateCampaignPage() {
     event.preventDefault();
     setError(undefined);
     try {
-      const campaign = createCampaign(window.localStorage, {
+      const campaign = createCampaign(accountStorage, {
         name,
         description,
         characterIds,

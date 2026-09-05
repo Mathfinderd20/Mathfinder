@@ -1,0 +1,52 @@
+.auth-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: #101827;
+  color: #edf2f7;
+}
+.auth-card {
+  width: min(100%, 460px);
+  padding: 32px;
+  background: #1c2739;
+  border: 1px solid #445269;
+  border-radius: 16px;
+}
+.auth-card form {
+  display: grid;
+  gap: 12px;
+  margin-top: 24px;
+}
+.auth-card input {
+  padding: 12px;
+  font: inherit;
+}
+.auth-card button {
+  padding: 12px 18px;
+  cursor: pointer;
+}
+.auth-card small {
+  color: #bac8dc;
+}
+.connection-banner {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 20px;
+  color: #e9f1ff;
+  background: #24334a;
+}
+.connection-banner[data-offline="true"] {
+  background: #503c16;
+}
+.connection-banner button {
+  padding: 6px 10px;
+}
+.application-fields {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}

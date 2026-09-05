@@ -22,8 +22,8 @@ export function ServerErrorPage({ message }: ServerErrorPageProps) {
           Mathfinder cannot reach Supabase.
         </h1>
         <p style={{ color: "#e5e7eb", lineHeight: 1.6 }}>
-          Your data cannot be loaded or saved right now. Mathfinder has stopped
-          to prevent you from accidentally working with stale local data.
+          We could not load your account and there is no usable saved copy for
+          this session. Check your connection and try again.
         </p>
         <pre
           style={{

@@ -1,3 +1,4 @@
+import { accountStorage } from "../../lib/accountCache";
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { listCharacters } from "../characters/characterRepository";
@@ -12,10 +13,10 @@ import "./campaign.css";
 
 export function CampaignPage() {
   const { campaignId = "" } = useParams();
-  const campaign = getCampaign(window.localStorage, campaignId);
-  const characters = listCharacters(window.localStorage);
+  const campaign = getCampaign(accountStorage, campaignId);
+  const characters = listCharacters(accountStorage);
   const [assignedIds, setAssignedIds] = useState(() =>
-    characterIdsForCampaign(window.localStorage, campaignId),
+    characterIdsForCampaign(accountStorage, campaignId),
   );
 
   if (!campaign) {
@@ -34,7 +35,7 @@ export function CampaignPage() {
   function toggleAssignment(characterId: string) {
     const assigned = !assignedIds.includes(characterId);
     setCampaignCharacterAssignment(
-      window.localStorage,
+      accountStorage,
       campaignId,
       characterId,
       assigned,
@@ -53,14 +54,16 @@ export function CampaignPage() {
           <span className="home-brand-mark">M</span>
           <span>Mathfinder</span>
         </Link>
-        <span className="edition-chip">Game Master</span>
+        <span className="edition-chip">
+          {campaign.role === "gm" ? "Game Master" : "Player"}
+        </span>
       </header>
       <main className="home-main campaign-page-main">
         <Link className="text-link" to="/">
           ← Back to dashboard
         </Link>
         <section className="campaign-hero">
-          <span className="eyebrow">Local campaign</span>
+          <span className="eyebrow">Campaign</span>
           <h1>{campaign.name}</h1>
           <p>
             {campaign.description ||

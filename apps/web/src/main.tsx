@@ -99,16 +99,6 @@ window.addEventListener("unhandledrejection", (event) => {
 
 async function bootstrap() {
   const { initializeCloudPersistence } = await import("./lib/cloudPersistence");
-  const connection = await initializeCloudPersistence();
-  if (connection.status !== "connected") {
-    const detail =
-      connection.status === "disabled"
-        ? "Supabase server configuration is missing."
-        : connection.status === "error"
-          ? connection.message
-          : "The Supabase server did not become ready.";
-    throw new Error(detail);
-  }
   const { AppRouter } = await import("./app/AppRouter");
   createRoot(appRoot).render(
     <StrictMode>
@@ -117,6 +107,10 @@ async function bootstrap() {
       </AppErrorBoundary>
     </StrictMode>,
   );
+  void initializeCloudPersistence();
+  if (import.meta.env.PROD && "serviceWorker" in navigator) {
+    void navigator.serviceWorker.register("/sw.js").catch(console.warn);
+  }
 }
 
 void bootstrap().catch((error) => {

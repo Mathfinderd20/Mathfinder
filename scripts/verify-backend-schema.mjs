@@ -17,6 +17,25 @@ const tables = [
 ];
 
 const missing = [];
+const authSql = (
+  await readFile(
+    "supabase/migrations/20260905040000_require_permanent_accounts.sql",
+    "utf8",
+  )
+).toLowerCase();
+for (const fragment of [
+  "as restrictive for all to authenticated",
+  "is_anonymous",
+  "is false",
+  "before update on public.character_runtime_states",
+]) {
+  if (!authSql.includes(fragment))
+    missing.push(`Permanent-account contract: ${fragment}`);
+}
+for (const table of tables) {
+  if (!authSql.includes(`'${table}'`))
+    missing.push(`Permanent-account restriction on ${table}`);
+}
 for (const table of tables) {
   if (!sql.includes(`create table public.${table}`)) {
     missing.push(`table public.${table}`);

@@ -1,3 +1,4 @@
+import { accountStorage } from "../../lib/accountCache";
 import { Link } from "react-router-dom";
 import { listCharacters } from "../characters/characterRepository";
 import { summarizeCharacter } from "../characters/characterSummary";
@@ -39,12 +40,12 @@ const QUICK_ACTIONS = [
 ] as const;
 
 export function HomePage() {
-  const characters = listCharacters(window.localStorage);
-  const campaigns = listCampaigns(window.localStorage);
+  const characters = listCharacters(accountStorage);
+  const campaigns = listCampaigns(accountStorage);
   const characterCampaigns = new Map(
     characters.map((character) => [
       character.id,
-      campaignsForCharacter(window.localStorage, character.id),
+      campaignsForCharacter(accountStorage, character.id),
     ]),
   );
 
@@ -61,8 +62,8 @@ export function HomePage() {
         <div className="local-profile">
           <span className="status-dot" aria-hidden="true" />
           <span>
-            Cloud adventurer
-            <small>Synced with Supabase</small>
+            Your account
+            <small>Characters and campaigns</small>
           </span>
         </div>
       </header>
@@ -119,7 +120,7 @@ export function HomePage() {
             <div className="character-grid">
               {campaigns.map((campaign) => {
                 const characterCount = characterIdsForCampaign(
-                  window.localStorage,
+                  accountStorage,
                   campaign.id,
                 ).length;
                 return (
@@ -130,16 +131,20 @@ export function HomePage() {
                       </span>
                       <div className="character-identity">
                         <h3>{campaign.name}</h3>
-                        <p>{campaign.description || "Local campaign"}</p>
+                        <p>{campaign.description || "Campaign"}</p>
                       </div>
-                      <span className="level-chip">Game Master</span>
+                      <span className="level-chip">
+                        {campaign.role === "gm" ? "Game Master" : "Player"}
+                      </span>
                     </div>
                     <div className="character-meta">
                       <span>
                         {characterCount} character
                         {characterCount === 1 ? "" : "s"}
                       </span>
-                      <span>Saved on this device</span>
+                      <span>
+                        {campaign.role === "gm" ? "Your table" : "Joined table"}
+                      </span>
                     </div>
                     <div className="character-actions">
                       <Link
@@ -159,7 +164,7 @@ export function HomePage() {
                 ◇
               </span>
               <div>
-                <h3>No campaigns on this device yet</h3>
+                <h3>No campaigns yet</h3>
                 <p>
                   Start a campaign as GM or join one when shared invitations
                   come online.
