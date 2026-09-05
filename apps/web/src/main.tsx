@@ -98,6 +98,17 @@ window.addEventListener("unhandledrejection", (event) => {
 });
 
 async function bootstrap() {
+  const { initializeCloudPersistence } = await import("./lib/cloudPersistence");
+  const connection = await initializeCloudPersistence();
+  if (connection.status !== "connected") {
+    const detail =
+      connection.status === "disabled"
+        ? "Supabase server configuration is missing."
+        : connection.status === "error"
+          ? connection.message
+          : "The Supabase server did not become ready.";
+    throw new Error(detail);
+  }
   const { AppRouter } = await import("./app/AppRouter");
   createRoot(appRoot).render(
     <StrictMode>
@@ -110,9 +121,10 @@ async function bootstrap() {
 
 void bootstrap().catch((error) => {
   console.error("Mathfinder bootstrap failed", error);
-  const message =
-    error instanceof Error
-      ? `${error.name}: ${error.message}\n\n${error.stack ?? ""}`
-      : String(error);
-  renderShell("Mathfinder failed to start", message, "error");
+  const message = error instanceof Error ? error.message : String(error);
+  renderShell(
+    "Mathfinder server error",
+    `Unable to connect to the Mathfinder server. Your data cannot be loaded or saved right now.\n\n${message}\n\nConfirm Supabase is running, then refresh this page.`,
+    "error",
+  );
 });

@@ -6,6 +6,7 @@ import {
   type RuntimeAction,
 } from "@mathfinder/rules-engine";
 import { createAppRuntimeState, loadAppRuntimeState } from "./runtimeState";
+import { LOCAL_DATA_CHANGED_EVENT } from "./features/characters/characterRepository";
 
 export function useRuntimeState(storageKey: string) {
   const [state, dispatch] = useReducer(
@@ -27,6 +28,11 @@ export function useRuntimeState(storageKey: string) {
   useEffect(() => {
     if (typeof window === "undefined") return;
     window.localStorage.setItem(storageKey, JSON.stringify(state));
+    window.dispatchEvent(
+      new CustomEvent(LOCAL_DATA_CHANGED_EVENT, {
+        detail: { resource: "runtime", storageKey },
+      }),
+    );
   }, [state, storageKey]);
 
   const actions = useMemo(

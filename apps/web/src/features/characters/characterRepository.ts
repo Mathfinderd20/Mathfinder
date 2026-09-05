@@ -5,11 +5,13 @@ export const LEGACY_BUILD_KEY = "mathfinder:web-build:v1";
 export const LEGACY_LEVEL_KEY = "mathfinder:web-current-level:v1";
 export const LEGACY_SLOTS_KEY = "mathfinder:web-build-slots:v1";
 export const LEGACY_RUNTIME_KEY = "mathfinder:web-runtime:v1";
+export const LOCAL_DATA_CHANGED_EVENT = "mathfinder:local-data-changed";
 
 const STORE_VERSION = 1;
 
 export interface CharacterRecord {
   id: string;
+  ownerId?: string;
   name: string;
   build: CharacterBuild;
   currentLevel: number;
@@ -81,6 +83,8 @@ function normalizeRecord(value: unknown): CharacterRecord | undefined {
   const createdAt = validTimestamp(candidate.createdAt, fallbackTimestamp);
   return {
     id: candidate.id,
+    ownerId:
+      typeof candidate.ownerId === "string" ? candidate.ownerId : undefined,
     name:
       candidate.build.name.trim() || candidate.name?.trim() || "Unnamed Hero",
     build: candidate.build,
@@ -115,6 +119,13 @@ function readStore(storage: StorageLike): CharacterStore | undefined {
 
 function writeStore(storage: StorageLike, store: CharacterStore) {
   storage.setItem(CHARACTER_STORE_KEY, JSON.stringify(store));
+  if (typeof window !== "undefined" && storage === window.localStorage) {
+    window.dispatchEvent(
+      new CustomEvent(LOCAL_DATA_CHANGED_EVENT, {
+        detail: { resource: "characters" },
+      }),
+    );
+  }
 }
 
 function buildFingerprint(build: CharacterBuild) {

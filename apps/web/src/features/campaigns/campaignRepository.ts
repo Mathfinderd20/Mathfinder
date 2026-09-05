@@ -1,4 +1,5 @@
 import type { StorageLike } from "../characters/characterRepository";
+import { LOCAL_DATA_CHANGED_EVENT } from "../characters/characterRepository";
 
 export const CAMPAIGN_STORE_KEY = "mathfinder:campaigns:v1";
 
@@ -6,6 +7,7 @@ const STORE_VERSION = 1;
 
 export interface CampaignRecord {
   id: string;
+  ownerId?: string;
   name: string;
   description?: string;
   role: "gm" | "player";
@@ -91,6 +93,13 @@ function readStore(storage: StorageLike): CampaignStore | undefined {
 
 function writeStore(storage: StorageLike, store: CampaignStore) {
   storage.setItem(CAMPAIGN_STORE_KEY, JSON.stringify(store));
+  if (typeof window !== "undefined" && storage === window.localStorage) {
+    window.dispatchEvent(
+      new CustomEvent(LOCAL_DATA_CHANGED_EVENT, {
+        detail: { resource: "campaigns" },
+      }),
+    );
+  }
 }
 
 function initializeStore(

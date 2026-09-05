@@ -38,7 +38,16 @@ See [`CONTENT_PIPELINE.md`](./CONTENT_PIPELINE.md) for the real source-of-truth 
 
 ## Shared backend workflow
 
-Supabase configuration and migrations live under `supabase/`. Local characters and campaigns continue to work when Supabase is not configured.
+Supabase configuration and migrations live under `supabase/`. Supabase is a
+required application dependency: the web app displays a blocking server error
+when configuration is missing, startup cannot connect, or synchronization
+fails.
+
+When Supabase is configured, the web app signs into an anonymous development
+account, reconciles the browser cache with the database, and keeps characters,
+campaigns, assignments, and solo runtime state synchronized. Set
+`VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` in
+`apps/web/.env.local`; local defaults are documented in `.env.example`.
 
 Useful commands:
 

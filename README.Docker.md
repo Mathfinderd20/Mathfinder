@@ -6,6 +6,10 @@ From the repository root, build and start the app:
 docker compose up --build -d
 ```
 
+The Compose build connects to the linked hosted Supabase project by default.
+Override `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` to target a
+different project or the local development stack.
+
 Open http://localhost:5173. To stop it, run `docker compose down`.
 Node builds the app, then Nginx serves the built files on container port 5173.
 Character and campaign URLs support direct navigation and refresh.
@@ -42,11 +46,9 @@ http://localhost:5174 instead.
 
 ## Local data and shared campaigns
 
-By default the image runs in local-only mode. Character data is stored in the
-browser's local storage, so use the same browser and address to keep accessing
-it. Clearing browser site data removes local records.
-
-Cloud accounts and shared campaigns require a reachable Supabase backend.
+The application requires a reachable Supabase backend. It displays a blocking
+server error instead of falling back to stale browser-only data when Supabase
+is unavailable.
 To enable them, pass its public frontend configuration when building:
 
 ```sh

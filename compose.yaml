@@ -3,5 +3,8 @@ services:
     image: joshdabomb/mathfinder-server:latest
     build:
       context: .
+      args:
+        VITE_SUPABASE_URL: ${VITE_SUPABASE_URL:-https://guronltdufvmnwnjqggd.supabase.co}
+        VITE_SUPABASE_PUBLISHABLE_KEY: ${VITE_SUPABASE_PUBLISHABLE_KEY:-sb_publishable_JBB1eLVox6DlzkwoP4z_hw_SfuBK65e}
     ports:
       - "127.0.0.1:5173:5173"

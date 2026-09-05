@@ -58,14 +58,11 @@ export function HomePage() {
             <small>Pathfinder 1e companion</small>
           </span>
         </Link>
-        <div
-          className="local-profile"
-          title="Cloud accounts arrive with Supabase"
-        >
+        <div className="local-profile">
           <span className="status-dot" aria-hidden="true" />
           <span>
-            Local adventurer
-            <small>Saved on this device</small>
+            Cloud adventurer
+            <small>Synced with Supabase</small>
           </span>
         </div>
       </header>
@@ -268,7 +265,7 @@ export function HomePage() {
       </main>
       <footer className="home-footer">
         <span>Mathfinder</span>
-        <span>Local-first · Cloud sync planned</span>
+        <span>Supabase connected</span>
       </footer>
     </div>
   );

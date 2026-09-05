@@ -6,8 +6,22 @@ import { ManageCharacterPage } from "../features/characters/ManageCharacterPage"
 import { CampaignPlaceholderPage } from "../features/campaigns/CampaignPlaceholderPage";
 import { CreateCampaignPage } from "../features/campaigns/CreateCampaignPage";
 import { CampaignPage } from "../features/campaigns/CampaignPage";
+import { useCloudConnection } from "../lib/useCloudConnection";
+import { ServerErrorPage } from "./ServerErrorPage";
 
 export function AppRouter() {
+  const cloud = useCloudConnection();
+  if (cloud.status === "error") {
+    return <ServerErrorPage message={cloud.message} />;
+  }
+  if (cloud.status === "disabled") {
+    return (
+      <ServerErrorPage message="Supabase server configuration is missing." />
+    );
+  }
+  if (cloud.status === "connecting") {
+    return <main className="route-message">Connecting to Supabase…</main>;
+  }
   return (
     <BrowserRouter>
       <Routes>
