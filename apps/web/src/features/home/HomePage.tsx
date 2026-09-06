@@ -1,3 +1,4 @@
+import { HeaderProfile } from "../../components/ProfileMenu";
 import { accountStorage } from "../../lib/accountCache";
 import { Link } from "react-router-dom";
 import { useCloudConnection } from "../../lib/useCloudConnection";
@@ -64,13 +65,7 @@ export function HomePage() {
             <small>Pathfinder 1e companion</small>
           </span>
         </Link>
-        <div className="local-profile">
-          <span className="status-dot" aria-hidden="true" />
-          <span>
-            Your account
-            <small>Characters and campaigns</small>
-          </span>
-        </div>
+        <HeaderProfile />
       </header>
 
       <main className="home-main">

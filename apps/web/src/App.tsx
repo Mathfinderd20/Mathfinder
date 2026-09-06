@@ -1,3 +1,4 @@
+import { HeaderProfile } from "./components/ProfileMenu";
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import {
   applyLevelUp,
@@ -580,6 +581,7 @@ export function App({
             ↩ Undo Level
           </button>
         </div>
+        <HeaderProfile />
       </header>
 
       <div className="tab-bar">

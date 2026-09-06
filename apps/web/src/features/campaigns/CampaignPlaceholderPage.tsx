@@ -1,3 +1,4 @@
+import { HeaderProfile } from "../../components/ProfileMenu";
 import { Link } from "react-router-dom";
 import "../home/home.css";
 import "../home/home-responsive.css";
@@ -17,6 +18,7 @@ export function CampaignPlaceholderPage({
           <span className="home-brand-mark">M</span>
           <span>Mathfinder</span>
         </Link>
+        <HeaderProfile />
       </header>
       <main className="form-page">
         <section className="form-card">

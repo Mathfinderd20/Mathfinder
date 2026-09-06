@@ -1,3 +1,4 @@
+import { HeaderProfile } from "../../components/ProfileMenu";
 import { accountStorage } from "../../lib/accountCache";
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
@@ -99,6 +100,7 @@ export function CampaignPage() {
         <span className="edition-chip">
           {campaign.role === "gm" ? "Game Master" : "Player"}
         </span>
+        <HeaderProfile />
       </header>
       <main className="home-main campaign-page-main">
         <Link className="text-link" to="/">

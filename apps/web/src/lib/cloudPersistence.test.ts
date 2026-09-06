@@ -154,19 +154,39 @@ describe("authenticated persistence", () => {
     expect(mocks.mutations).toEqual([]);
     expect(mocks.cache).toMatchObject({ userId: "user-a", version: 1 });
   });
-  it("preserves cached viewing and blocks writes during a network outage", async () => {
+  it("caches offline edits, restores them after reload, and syncs on reconnection", async () => {
     const cloud = await import("./cloudPersistence");
     const cache = await import("./accountCache");
     await cloud.initializeCloudPersistence();
-    const before = cache.currentEntries();
     mocks.authError = new Error("Failed to fetch");
     await cloud.reconnect();
     expect(cloud.getCloudConnectionState().status).toBe("offline");
-    cache.accountStorage.setItem("test", "must not save");
-    expect(cache.currentEntries()).toEqual(before);
+    const key = "mathfinder:characters:v1";
+    const value = JSON.parse(cache.accountStorage.getItem(key)!);
+    value.characters[0].name = "Offline hero";
+    value.characters[0].build.name = "Offline hero";
+    cache.accountStorage.setItem(key, JSON.stringify(value));
+    window.dispatchEvent(new Event("mathfinder:local-data-changed"));
+    await vi.advanceTimersByTimeAsync(600);
+    expect(mocks.mutations).toEqual([]);
+    expect(mocks.cache).toMatchObject({
+      entries: { [key]: expect.stringContaining("Offline hero") },
+    });
+    vi.resetModules();
+    vi.stubGlobal("window", new EventTarget());
+    const restored = await import("./cloudPersistence");
+    await restored.initializeCloudPersistence();
+    expect(restored.getCloudConnectionState()).toMatchObject({
+      status: "offline",
+      pending: true,
+    });
     mocks.authError = null;
-    await cloud.reconnect();
-    expect(cloud.getCloudConnectionState().status).toBe("connected");
+    await restored.reconnect();
+    expect(restored.getCloudConnectionState()).toMatchObject({
+      status: "connected",
+      pending: false,
+    });
+    expect(mocks.rows.characters![0]!.name).toBe("Offline hero");
   });
   it("rejects invalid sessions instead of using an offline fallback", async () => {
     const cloud = await import("./cloudPersistence");

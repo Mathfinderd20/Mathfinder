@@ -33,6 +33,7 @@ export type CloudConnectionState =
       message: string;
       cachedAt: string;
       pending: boolean;
+      syncing?: boolean;
       generation: number;
     }
   | { status: "error"; message: string };
@@ -77,7 +78,7 @@ export function isConnectionFailure(error: unknown): boolean {
 }
 function status(online: boolean, text = "") {
   if (!user) return;
-  setCacheWritable(online);
+  setCacheWritable(!busy);
   publish({
     status: online ? "connected" : "offline",
     userId: user.id,
@@ -85,6 +86,7 @@ function status(online: boolean, text = "") {
     message: text,
     cachedAt,
     pending: hasChanges(),
+    syncing: busy,
     generation,
   });
 }
@@ -397,7 +399,7 @@ export async function reconnect() {
   clearTimeout(timer);
   busy = true;
   const expected = epoch;
-  if (cachedAt) status(false, "Reconnecting…");
+  if (cachedAt) status(state.status === "connected", "Reconnecting…");
   else setCacheWritable(false);
   try {
     const verified = await supabase.auth.getUser();
@@ -431,7 +433,11 @@ export async function reconnect() {
       status(false, message(error));
     else publish({ status: "error", message: message(error) });
   } finally {
-    if (epoch === expected) busy = false;
+    if (epoch === expected) {
+      busy = false;
+      if (state.status === "connected" || state.status === "offline")
+        status(state.status === "connected", state.message);
+    }
   }
 }
 async function activate(next?: User) {
@@ -516,18 +522,28 @@ export async function initializeCloudPersistence() {
       }, 0);
   });
   window.addEventListener(LOCAL_DATA_CHANGED_EVENT, () => {
-    if (state.status !== "connected" || !user || !hasChanges()) return;
-    status(true, "Saving…");
+    if (
+      (state.status !== "connected" && state.status !== "offline") ||
+      !user ||
+      !hasChanges()
+    )
+      return;
+    const online = state.status === "connected";
+    status(
+      online,
+      online ? "Saving…" : "Changes saved in this browser; waiting to sync.",
+    );
     void persist().catch((error) =>
       status(false, `Browser cache failed: ${message(error)}`),
     );
     clearTimeout(timer);
-    timer = setTimeout(() => void reconnect(), 500);
+    if (online) timer = setTimeout(() => void reconnect(), 500);
   });
   window.addEventListener("online", () => void reconnect());
   window.addEventListener("offline", () => {
     window.dispatchEvent(new Event("mathfinder:flush"));
-    if (user && cachedAt) status(false, "Connection lost. Viewing saved data.");
+    if (user && cachedAt)
+      status(false, "Connection lost. Changes will sync when you’re online.");
   });
   setInterval(() => {
     if (user && !busy && state.status === "offline") void reconnect();

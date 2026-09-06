@@ -1,3 +1,4 @@
+import { HeaderProfile } from "../../components/ProfileMenu";
 import { accountStorage } from "../../lib/accountCache";
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
@@ -64,6 +65,7 @@ export function ManageCharacterPage() {
           <span className="home-brand-mark">M</span>
           <span>Mathfinder</span>
         </Link>
+        <HeaderProfile />
       </header>
       <main className="form-page character-management-page">
         <div className="management-stack">

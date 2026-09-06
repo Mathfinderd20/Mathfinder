@@ -10,12 +10,8 @@ import { useCloudConnection } from "../lib/useCloudConnection";
 import { ServerErrorPage } from "./ServerErrorPage";
 import { SignInPage } from "../features/auth/SignInPage";
 import { safeReturnPath } from "../features/auth/authNavigation";
-import {
-  reconnect,
-  signOut,
-  exportUnsyncedCopy,
-  reloadServerCopy,
-} from "../lib/cloudPersistence";
+import { ProfileMenu } from "../components/ProfileMenu";
+import { reconnect } from "../lib/cloudPersistence";
 import { Link, useLocation } from "react-router-dom";
 
 function ProtectedApplication() {
@@ -46,59 +42,25 @@ function ProtectedApplication() {
       />
     );
   const offline = cloud.status === "offline";
-  const blocked = offline && /\/(new|manage|join)$/.test(location.pathname);
+  const blocked = offline && /\/campaigns\/(new|join)$/.test(location.pathname);
   return (
     <>
-      <aside
-        className="connection-banner"
-        data-offline={offline}
-        aria-live="polite"
-      >
-        <span>{cloud.name}</span>
-        <span>
-          {offline
-            ? `Read-only saved copy · ${new Date(cloud.cachedAt).toLocaleString()}`
-            : cloud.pending
-              ? "Saving changes…"
-              : "Synced"}
-        </span>
-        {cloud.message && <span>{cloud.message}</span>}
-        {offline && (
-          <button onClick={() => void reconnect()}>Retry connection</button>
-        )}
-        {cloud.pending && (
-          <>
-            <button onClick={exportUnsyncedCopy}>Export unsynced copy</button>
-            <button
-              onClick={() => {
-                if (
-                  window.confirm(
-                    "Discard unsynced changes and load the server copy? Export them first if you want to keep them.",
-                  )
-                )
-                  void reloadServerCopy();
-              }}
-            >
-              Load server copy
-            </button>
-          </>
-        )}
-        <button
-          onClick={() => {
-            if (
-              !cloud.pending ||
-              window.confirm(
-                "Signing out removes unsynced changes from this device. Export them first. Continue?",
-              )
-            )
-              void signOut();
-          }}
+      {offline && (
+        <aside
+          className="connection-banner"
+          data-offline="true"
+          aria-live="polite"
         >
-          Sign out
-        </button>
-      </aside>
+          <span>
+            You’re offline. Changes are stored in this browser and will sync to
+            your account when the connection is reestablished.
+          </span>
+          <button onClick={() => void reconnect()}>Retry connection</button>
+        </aside>
+      )}
       {blocked ? (
         <main className="route-message">
+          <ProfileMenu cloud={cloud} />
           <h1>Available when connected</h1>
           <p>You can still view saved characters and campaigns.</p>
           <Link to="/">Back to characters</Link>
@@ -106,7 +68,7 @@ function ProtectedApplication() {
       ) : (
         <fieldset
           className="application-fields"
-          disabled={offline}
+          disabled={cloud.syncing}
           key={`${cloud.userId}:${cloud.generation}`}
         >
           <ApplicationRoutes />

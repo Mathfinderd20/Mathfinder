@@ -1,3 +1,4 @@
+import { HeaderProfile } from "../../components/ProfileMenu";
 import { accountStorage } from "../../lib/accountCache";
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
@@ -54,6 +55,7 @@ export function CreateCampaignPage() {
           <span className="home-brand-mark">M</span>
           <span>Mathfinder</span>
         </Link>
+        <HeaderProfile />
       </header>
       <main className="form-page">
         <section className="form-card campaign-form-card">
