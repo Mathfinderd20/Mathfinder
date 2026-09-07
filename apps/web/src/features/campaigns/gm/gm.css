@@ -235,6 +235,17 @@ body:has(.gm-page) {
   gap: 20px;
   align-items: start;
 }
+.gm-notes-workspace {
+  grid-template-columns: minmax(260px, 30%) minmax(0, 1fr);
+}
+.gm-notes-workspace .gm-rail {
+  grid-column: 1;
+  grid-row: 1;
+}
+.gm-notes-workspace .gm-notebook {
+  grid-column: 2;
+  grid-row: 1;
+}
 .gm-sheet {
   padding: 27px;
   border: 1px solid var(--gm-line);

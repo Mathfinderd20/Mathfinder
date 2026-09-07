@@ -407,6 +407,14 @@ body {
   grid-template-columns: minmax(0, 1fr) 42px;
 }
 
+.workspace-frame.no-side-rail {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.workspace-frame.no-side-rail .workspace-main {
+  padding-right: 28px;
+}
+
 .workspace-main {
   min-width: 0;
   padding: 14px 16px 48px 28px;
@@ -1440,9 +1448,9 @@ body {
 /* Build */
 .build-summary {
   display: grid;
-  grid-template-columns: 1fr auto auto;
+  grid-template-columns: minmax(280px, 1fr) auto auto;
   align-items: center;
-  gap: 24px;
+  gap: 18px;
   padding: 14px 16px;
 }
 
@@ -1450,71 +1458,147 @@ body {
   font-size: 26px;
 }
 
-.build-summary p,
-.build-completion span {
+.build-summary p {
   color: var(--mock-muted);
   font-size: 12px;
 }
 
-.build-completion {
-  display: grid;
-  padding-left: 18px;
-  border-left: 2px solid var(--mock-green);
+.foundation-chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
 }
 
-.build-completion strong {
-  color: var(--mock-green);
-}
-
-.level-timeline {
+.foundation-chips span {
   display: grid;
-  grid-template-columns: repeat(12, minmax(78px, 1fr));
-  gap: 1px;
-  overflow-x: auto;
-  padding: 10px;
-  background: rgba(0, 0, 0, 0.1);
-}
-
-.level-timeline button {
-  display: grid;
-  min-height: 88px;
-  align-content: start;
-  justify-items: start;
   gap: 2px;
-  padding: 8px;
-  text-align: left;
-  background: #181d1e;
+  padding: 6px 9px;
+  border: 1px solid var(--mock-line);
+  border-radius: 4px;
+  color: var(--mock-muted);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
-.level-timeline button > span {
-  display: grid;
-  width: 22px;
-  height: 22px;
-  place-items: center;
-  border-radius: 50%;
-  color: #17130d;
-  background: var(--mock-gold);
+.foundation-chips b {
+  color: var(--mock-ink);
+  font-size: 11px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.build-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.level-up-button {
+  color: #18140e !important;
+  background: var(--mock-gold) !important;
+}
+
+.vertical-progression {
+  overflow: hidden;
+}
+
+.vertical-progression > summary,
+.monster-stack > summary {
+  display: flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 13px;
+  border-bottom: 1px solid var(--mock-line);
+  cursor: pointer;
+  list-style: none;
+}
+
+.vertical-progression > summary::-webkit-details-marker,
+.monster-stack > summary::-webkit-details-marker {
+  display: none;
+}
+
+.vertical-progression > summary::after,
+.monster-stack > summary::after {
+  color: var(--mock-gold);
+  content: "−";
+  font-size: 18px;
+}
+
+.vertical-progression:not([open]) > summary::after,
+.monster-stack:not([open]) > summary::after {
+  content: "+";
+}
+
+.vertical-progression > summary > span,
+.monster-stack > summary > span {
+  margin-left: auto;
+  color: var(--mock-muted);
   font-size: 11px;
 }
 
-.level-timeline button small {
-  color: var(--mock-muted);
-  font-size: 10px;
-}
-
-.level-timeline button.future {
-  opacity: 0.5;
-}
-
-.level-timeline button.active {
-  border-color: var(--mock-gold-bright);
-  box-shadow: 0 0 0 1px var(--mock-gold-bright);
-}
-
-.build-detail-grid {
+.progression-list {
   display: grid;
-  grid-template-columns: 1.3fr 0.7fr;
+  padding: 7px 11px 10px;
+}
+
+.progression-list button {
+  position: relative;
+  display: grid;
+  grid-template-columns: 74px 110px 110px minmax(180px, 1fr) auto;
+  align-items: center;
   gap: 12px;
+  min-height: 43px;
+  padding: 7px 10px;
+  border: 0;
+  border-bottom: 1px solid var(--mock-line);
+  border-radius: 0;
+  text-align: left;
+  background: transparent;
+}
+
+.progression-list button::before {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 2px;
+  width: 2px;
+  background: rgba(221, 185, 120, 0.38);
+  content: "";
+}
+
+.progression-list button:hover,
+.progression-list button.active {
+  background: rgba(221, 185, 120, 0.06);
+}
+
+.progression-list button.active {
+  box-shadow: inset 3px 0 var(--mock-gold);
+}
+
+.progression-list button.active::before {
+  background: var(--mock-gold-bright);
+}
+
+.progression-index {
+  color: var(--mock-gold-bright);
+  font-size: 11px;
+}
+
+.progression-list button > span:nth-of-type(2),
+.progression-list button small {
+  color: var(--mock-muted);
+  font-size: 11px;
+}
+
+.progression-list button em {
+  color: var(--mock-gold);
+  font-size: 18px;
+  font-style: normal;
 }
 
 .choice-grid,
@@ -1582,6 +1666,10 @@ body {
   grid-template-columns: minmax(600px, 1fr) 300px;
   align-items: start;
   gap: 12px;
+}
+
+.monster-stack {
+  overflow: hidden;
 }
 
 .build-stack {
@@ -1734,7 +1822,8 @@ body {
 
 .detail-drawer > header,
 .target-dialog > header,
-.save-dialog > header {
+.save-dialog > header,
+.level-up-dialog > header {
   display: flex;
   align-items: start;
   justify-content: space-between;
@@ -1745,13 +1834,15 @@ body {
 
 .detail-drawer > header h2,
 .target-dialog > header h2,
-.save-dialog > header h2 {
+.save-dialog > header h2,
+.level-up-dialog > header h2 {
   font-size: 27px;
 }
 
 .detail-drawer > header > button,
 .target-dialog > header > button,
-.save-dialog > header > button {
+.save-dialog > header > button,
+.level-up-dialog > header > button {
   width: 32px;
   height: 32px;
   padding: 0;
@@ -1930,7 +2021,8 @@ body {
 }
 
 .target-dialog,
-.save-dialog {
+.save-dialog,
+.level-up-dialog {
   width: min(660px, 100%);
   max-height: calc(100vh - 40px);
   overflow-y: auto;
@@ -1939,6 +2031,107 @@ body {
   padding: 18px;
   background: #191e20;
   box-shadow: 0 30px 90px rgba(0, 0, 0, 0.62);
+}
+
+.level-up-dialog {
+  width: min(760px, 100%);
+}
+
+.level-up-dialog > header p {
+  margin-top: 4px;
+  color: var(--mock-muted);
+  font-size: 12px;
+}
+
+.level-up-steps {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 1px;
+  margin: 14px 0;
+  padding: 0;
+  background: var(--mock-line);
+  list-style: none;
+}
+
+.level-up-steps li {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px;
+  color: var(--mock-muted);
+  background: #151a1c;
+  font-size: 11px;
+}
+
+.level-up-steps li.active {
+  color: var(--mock-ink);
+  background: rgba(221, 185, 120, 0.1);
+}
+
+.level-up-steps b {
+  display: grid;
+  width: 21px;
+  height: 21px;
+  place-items: center;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  color: var(--mock-gold);
+  font-size: 10px;
+}
+
+.level-up-body h3 {
+  margin-top: 2px;
+  font-size: 22px;
+}
+
+.level-up-body > p {
+  margin: 3px 0 14px;
+  color: var(--mock-muted);
+  font-size: 12px;
+}
+
+.level-up-body > label {
+  display: grid;
+  gap: 5px;
+  color: var(--mock-muted);
+  font-size: 10px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.class-options {
+  display: grid;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.class-options button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  text-align: left;
+  background: rgba(0, 0, 0, 0.12);
+}
+
+.class-options button.selected {
+  border-color: var(--mock-gold);
+  background: rgba(221, 185, 120, 0.07);
+}
+
+.class-options button > span {
+  display: grid;
+  gap: 2px;
+}
+
+.class-options small {
+  color: var(--mock-muted);
+  font-size: 11px;
+}
+
+.class-options button > b {
+  color: var(--mock-gold);
+  font-size: 11px;
 }
 
 .target-dialog > header p {
@@ -2019,7 +2212,8 @@ body {
 }
 
 .target-dialog footer,
-.save-dialog footer {
+.save-dialog footer,
+.level-up-dialog footer {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
@@ -2283,6 +2477,15 @@ body {
   .casting-header .quiet-button {
     grid-column: 1 / -1;
   }
+
+  .build-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .foundation-chips,
+  .build-actions {
+    justify-content: flex-start;
+  }
 }
 
 @media (max-width: 580px) {
@@ -2427,5 +2630,22 @@ body {
 
   .target-summary {
     display: grid;
+  }
+
+  .progression-list button {
+    grid-template-columns: 66px 1fr auto;
+  }
+
+  .progression-list button > span:nth-of-type(2),
+  .progression-list button small {
+    display: none;
+  }
+
+  .level-up-steps li {
+    justify-content: center;
+  }
+
+  .level-up-steps li span {
+    display: none;
   }
 }

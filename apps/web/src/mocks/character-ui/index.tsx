@@ -164,9 +164,11 @@ function App() {
   const [targeting, setTargeting] = useState(false);
   const [saveAttempt, setSaveAttempt] = useState(false);
   const [healthOpen, setHealthOpen] = useState(false);
+  const [leveling, setLeveling] = useState(false);
   const [toast, setToast] = useState<string>();
   const character = SCENARIOS[scenario];
   const gm = scenario === "monster";
+  const tabHasRail = tab === "character" || tab === "inventory" || tab === "magic";
 
   function chooseScenario(next: ScenarioKey) {
     setScenario(next);
@@ -233,7 +235,7 @@ function App() {
         ))}
       </nav>
 
-      <div className={`workspace-frame ${railOpen ? "rail-is-open" : "rail-is-closed"}`}>
+      <div className={`workspace-frame ${tabHasRail ? railOpen ? "rail-is-open" : "rail-is-closed" : "no-side-rail"}`}>
         <main className="workspace-main">
           {tab === "character" ? (
             <CharacterTab
@@ -246,14 +248,14 @@ function App() {
           {tab === "notes" ? <NotesTab gm={gm} /> : null}
           {tab === "inventory" ? <InventoryTab scenario={scenario} onToast={showToast} /> : null}
           {tab === "magic" ? <MagicTab scenario={scenario} onTarget={() => setTargeting(true)} /> : null}
-          {tab === "build" ? <BuildTab scenario={scenario} onToast={showToast} /> : null}
+          {tab === "build" ? <BuildTab scenario={scenario} onToast={showToast} onLevelUp={() => setLeveling(true)} /> : null}
         </main>
 
         {tab === "inventory" ? (
           <InventoryRail open={railOpen} onToggle={() => setRailOpen((value) => !value)} />
         ) : tab === "magic" ? (
           <MagicRail open={railOpen} onToggle={() => setRailOpen((value) => !value)} />
-        ) : (
+        ) : tab === "character" ? (
           <EffectsRail
             gm={gm}
             open={railOpen}
@@ -263,7 +265,7 @@ function App() {
             onSave={() => setSaveAttempt(true)}
             onToast={showToast}
           />
-        )}
+        ) : null}
       </div>
 
       {detail ? <StatDrawer gm={gm} stat={detail} onClose={() => setDetail(undefined)} onToast={showToast} /> : null}
@@ -271,6 +273,7 @@ function App() {
       {targeting ? <TargetDialog onClose={() => setTargeting(false)} onCast={() => { setTargeting(false); showToast("Spell sent to 3 affected character sheets"); }} /> : null}
       {saveAttempt ? <SaveDialog onClose={() => setSaveAttempt(false)} onResolve={() => { setSaveAttempt(false); showToast("Will save succeeded · Hold Person removed"); }} /> : null}
       {healthOpen ? <HealthDrawer scenario={scenario} onClose={() => setHealthOpen(false)} onToast={showToast} /> : null}
+      {leveling ? <LevelUpDialog scenario={scenario} onClose={() => setLeveling(false)} onContinue={() => { setLeveling(false); showToast("Level-up workflow opened at hit points"); }} /> : null}
       {toast ? <div className="mock-toast" role="status">{toast}</div> : null}
     </div>
   );
@@ -396,20 +399,20 @@ function CharacterTab({ gm, scenario, onDetail, onHealth }: { gm: boolean; scena
 }
 
 function EffectsRail({ gm, open, sections, onToggle, onSection, onSave, onToast }: { gm: boolean; open: boolean; sections: Record<RailSectionKey, boolean>; onToggle: () => void; onSection: (key: RailSectionKey) => void; onSave: () => void; onToast: (message: string) => void }) {
-  if (!open) return <aside className="collapsed-rail"><button onClick={onToggle} aria-label="Open abilities and effects rail"><span>‹</span><b>Abilities & effects</b><i>3</i></button></aside>;
+  if (!open) return <aside className="collapsed-rail"><button onClick={onToggle} aria-label="Open abilities and effects rail"><span>‹</span><b>Abilities &amp; Effects</b><i>3</i></button></aside>;
   return (
     <aside className="side-rail effects-rail">
-      <header className="rail-heading"><div><span className="eyebrow">At the table</span><h2>Abilities & effects</h2></div><button onClick={onToggle} aria-label="Collapse abilities and effects rail">›</button></header>
+      <header className="rail-heading"><div><span className="eyebrow">At the table</span><h2>Abilities &amp; Effects</h2></div><button onClick={onToggle} aria-label="Collapse abilities and effects rail">›</button></header>
       <label className="rail-search"><span>Search</span><input placeholder="Ability, condition, source…" /></label>
-      <RailSection title="Active now" count={3} open={sections.active} onToggle={() => onSection("active")}>
+      <RailSection title="Active Now" count={3} open={sections.active} onToggle={() => onSection("active")}>
         <EffectCard title="Hunter’s Bond" source="Ranger · player" tone="active" action={<button onClick={() => onToast("Hunter’s Bond ended")}>End</button>}><p>Allies gain +2 against Seren’s quarry.</p><span>8 rounds remaining</span></EffectCard>
         <EffectCard title="Bless" source="Brann Ironwood · spell" tone="active" action={<button onClick={() => onToast("Bless removed by its source")}>Remove</button>}><p>+1 morale bonus on attacks and fear saves.</p><span>Source may remove</span></EffectCard>
       </RailSection>
-      <RailSection title="My abilities" count={5} open={sections.abilities} onToggle={() => onSection("abilities")}>
+      <RailSection title="My Abilities" count={5} open={sections.abilities} onToggle={() => onSection("abilities")}>
         <EffectCard title="Deadly Aim" source="Feat · player" action={<label className="switch"><input type="checkbox" /><span /></label>}><p>Trade ranged accuracy for damage.</p></EffectCard>
         <EffectCard title="Favored Terrain" source="Ranger · passive" action={<button onClick={() => onToast("Terrain selector opened")}>Apply</button>}><p>Choose the terrain currently in play.</p></EffectCard>
       </RailSection>
-      <RailSection title="Effects & conditions" count={1} open={sections.effects} onToggle={() => onSection("effects")}>
+      <RailSection title="Effects & Conditions" count={1} open={sections.effects} onToggle={() => onSection("effects")}>
         <EffectCard title="Hold Person" source="Hollow Warden · Will DC 18" tone="danger" action={<button onClick={onSave}>Attempt save</button>}><p>Paralyzed. Attempt another Will save at the end of each turn.</p><span>{gm ? "GM may remove at any time" : "You or the source may remove"}</span></EffectCard>
         {gm ? <button className="rail-primary" onClick={() => onToast("Modifier composer opened")}>+ Add effect or modifier</button> : null}
       </RailSection>
@@ -516,17 +519,59 @@ function MagicTab({ scenario, onTarget }: { scenario: ScenarioKey; onTarget: () 
 }
 
 function MagicRail({ open, onToggle }: { open: boolean; onToggle: () => void }) {
-  if (!open) return <aside className="collapsed-rail"><button onClick={onToggle}><span>‹</span><b>Magic search</b></button></aside>;
-  return <aside className="side-rail magic-rail"><header className="rail-heading"><div><span className="eyebrow">Every source</span><h2>Find magic</h2></div><button onClick={onToggle}>›</button></header><label className="rail-search"><span>Search</span><input placeholder="Spell, school, source…" /></label><div className="filter-stack"><label>Source<select><option>All casting sources</option><option>Cleric 5</option><option>Wizard 5</option><option>Granted / SLA</option></select></label><label>Level<select><option>All levels</option><option>Can cast now</option><option>0</option><option>1</option><option>2</option><option>3</option></select></label><label>Status<select><option>All statuses</option><option>Prepared</option><option>Available</option><option>Spent</option></select></label><label>School<select><option>All schools</option><option>Conjuration</option><option>Divination</option><option>Evocation</option></select></label></div><div className="rail-callout"><strong>13 spells ready</strong><p>Across 2 casting sources</p></div><button className="rail-primary">Prepare & manage spells</button></aside>;
+  if (!open) return <aside className="collapsed-rail"><button onClick={onToggle}><span>‹</span><b>Magic Search</b></button></aside>;
+  return <aside className="side-rail magic-rail"><header className="rail-heading"><div><span className="eyebrow">Every source</span><h2>Find Magic</h2></div><button onClick={onToggle}>›</button></header><label className="rail-search"><span>Search</span><input placeholder="Spell, school, source…" /></label><div className="filter-stack"><label>Source<select><option>All casting sources</option><option>Cleric 5</option><option>Wizard 5</option><option>Granted / SLA</option></select></label><label>Level<select><option>All levels</option><option>Can cast now</option><option>0</option><option>1</option><option>2</option><option>3</option></select></label><label>Status<select><option>All statuses</option><option>Prepared</option><option>Available</option><option>Spent</option></select></label><label>School<select><option>All schools</option><option>Conjuration</option><option>Divination</option><option>Evocation</option></select></label></div><div className="rail-callout"><strong>13 spells ready</strong><p>Across 2 casting sources</p></div><button className="rail-primary">Prepare &amp; manage spells</button></aside>;
 }
 
-function BuildTab({ scenario, onToast }: { scenario: ScenarioKey; onToast: (message: string) => void }) {
+function BuildTab({ scenario, onToast, onLevelUp }: { scenario: ScenarioKey; onToast: (message: string) => void; onLevelUp: () => void }) {
+  const multiclass = scenario === "multiclass";
+  const currentLevel = multiclass ? 10 : 7;
+  const [selectedLevel, setSelectedLevel] = useState(currentLevel);
   if (scenario === "monster") return <MonsterBuild onToast={onToast} />;
+  const progression = multiclass
+    ? [
+        [1, "Cleric", 1, "Domains · feat · skills"],
+        [2, "Wizard", 1, "Arcane school · spellbook"],
+        [3, "Cleric", 2, "Channel energy · 2nd-level slots"],
+        [4, "Wizard", 2, "Ability score +1 · arcane discovery"],
+        [5, "Cleric", 3, "Feat · 2nd-level divine spells"],
+        [6, "Wizard", 3, "3rd-level arcane spells"],
+        [7, "Cleric", 4, "Channel energy 3d6 · domain power"],
+        [8, "Wizard", 4, "Ability score +1 · school power"],
+        [9, "Cleric", 5, "Feat · 3rd-level divine spells"],
+        [10, "Wizard", 5, "Bonus feat · 3rd-level arcane spells"],
+      ]
+    : [
+        [1, "Ranger", 1, "Favored enemy · feat · skills"],
+        [2, "Ranger", 2, "Combat style feat"],
+        [3, "Ranger", 3, "Endurance · favored terrain"],
+        [4, "Ranger", 4, "Ability score +1 · hunter’s bond"],
+        [5, "Ranger", 5, "Second favored enemy · feat"],
+        [6, "Ranger", 6, "Combat style feat"],
+        [7, "Ranger", 7, "Woodland stride · feat"],
+      ];
+  const selected = progression.find(([level]) => level === selectedLevel) ?? progression[progression.length - 1]!;
   return (
     <div className="build-mock-page">
-      <section className="build-summary mock-panel"><div><span className="eyebrow">Character foundation</span><h2>{scenario === "multiclass" ? "Cleric 5 / Wizard 5" : "Ranger 7"}</h2><p>Half-elf · Neutral Good · 7 of 20 levels planned</p></div><div className="build-completion"><strong>Complete</strong><span>No unresolved choices</span></div><button onClick={() => onToast("Foundation editor opened")}>Edit foundation</button></section>
-      <section className="level-map mock-panel"><header className="panel-heading"><h2>Level progression</h2><button>Plan to level 20</button></header><div className="level-timeline">{Array.from({ length: 12 }, (_, index) => index + 1).map((level) => <button key={level} className={level === 7 ? "active" : level < 7 ? "complete" : "future"}><span>{level}</span><strong>{level <= 7 ? "Ranger" : "Planned"}</strong><small>{level === 1 ? "Feat · skills" : level === 4 ? "Ability +1" : level === 7 ? "Feat · favored terrain" : ""}</small></button>)}</div></section>
-      <div className="build-detail-grid"><Section title="Level 7 · Ranger"><div className="choice-grid"><label>Class<select><option>Ranger</option></select></label><label>Hit points<input defaultValue="8" /></label><label>Favored class bonus<select><option>+1 hit point</option></select></label><label>Feat<select><option>Manyshot</option></select></label></div><div className="resolved-choice"><span>Class feature</span><strong>Woodland Stride</strong><small>Move through natural undergrowth at normal speed.</small></div></Section><Section title="Foundation & rules"><div className="build-links"><button>Ability scores <span>18 · 17 · 14 · 12 · 16 · 13</span></button><button>Ancestry choices <span>Half-elf · complete</span></button><button>Archetypes <span>Horizon walker</span></button><button>Campaign rules <span>Standard firearms</span></button></div></Section></div>
+      <section className="build-summary mock-panel">
+        <div><span className="eyebrow">Character progression</span><h2>{multiclass ? "Level 10 · Cleric 5 / Wizard 5" : "Level 7 · Ranger 7"}</h2><p>{multiclass ? "Human · Lawful Neutral" : "Half-elf · Neutral Good"} · All current choices resolved</p></div>
+        <div className="foundation-chips"><span>Scores <b>{multiclass ? "10 · 14 · 12 · 18 · 18 · 11" : "18 · 17 · 14 · 12 · 16 · 13"}</b></span><span>Ancestry <b>{multiclass ? "Human" : "Half-elf"}</b></span></div>
+        <div className="build-actions"><button onClick={() => onToast("Build Library opened with class, feat, skill, and spell filters")}>Browse build options</button><button className="level-up-button" onClick={onLevelUp}>Level Up</button></div>
+      </section>
+      <details className="vertical-progression mock-panel" open>
+        <summary><div><span className="eyebrow">Top to bottom</span><h2>Level progression</h2></div><span>{currentLevel} character levels · select a line to inspect</span></summary>
+        <div className="progression-list">
+          {progression.map(([level, className, classLevel, detail]) => (
+            <button key={level} className={selectedLevel === level ? "active" : ""} onClick={() => setSelectedLevel(level as number)}>
+              <span className="progression-index">Level {level}</span><strong>{className}</strong><span>{className} {classLevel}</span><small>{detail}</small><em>›</em>
+            </button>
+          ))}
+        </div>
+      </details>
+      <Section title={`Level ${selected[0]} · ${selected[1]} ${selected[2]}`}>
+        <div className="choice-grid"><label>Class<select defaultValue={selected[1]}><option>{selected[1]}</option></select></label><label>Hit points<input defaultValue={selected[1] === "Wizard" ? "5" : "8"} /></label><label>Favored class bonus<select><option>+1 hit point</option><option>+1 skill rank</option></select></label><label>Feat or choice<select><option>{selected[3]}</option></select></label></div>
+        <div className="resolved-choice"><span>Resolved grants</span><strong>{selected[3]}</strong><small>This level’s class, choices, and derived changes remain editable without losing the visible progression.</small></div>
+      </Section>
     </div>
   );
 }
@@ -539,11 +584,20 @@ function MonsterBuild({ onToast }: { onToast: (message: string) => void }) {
     { kind: "Class levels", name: "Rogue 2", meta: "Two class levels · CR +2", detail: "Sneak attack +1d6 · evasion · rogue talents" },
   ];
   return (
-    <div className="monster-build-page">
-      <section className="monster-stack mock-panel"><header className="panel-heading"><div><span className="eyebrow">Composable actor build</span><h2>Build stack</h2></div><button onClick={() => onToast("Build layer menu opened")}>+ Add layer</button></header><div className="build-stack">{layers.map((layer, index) => <article key={layer.name}><span className="layer-number">{index + 1}</span><div><small>{layer.kind}</small><h3>{layer.name}</h3><p>{layer.meta}</p><em>{layer.detail}</em></div><div className="layer-actions"><button>Configure</button>{index > 0 ? <button>Remove</button> : <button>View source</button>}</div></article>)}</div></section>
-      <aside className="derived-preview mock-panel"><span className="eyebrow">Final derived actor</span><h2>CR 11</h2><p>The Sanguine Owlbear</p><dl><div><dt>Hit Dice</dt><dd>7d8 + 2d8</dd></div><div><dt>Hit points</dt><dd>118</dd></div><div><dt>Armor class</dt><dd>28</dd></div><div><dt>Base attack</dt><dd>+9</dd></div><div><dt>Fort / Ref / Will</dt><dd>+12 / +15 / +10</dd></div><div><dt>Special abilities</dt><dd>11</dd></div></dl><button>Review all calculations</button><div className="validation-ok">✓ All build choices resolved</div></aside>
+    <div className="build-mock-page">
+      <section className="build-summary mock-panel"><div><span className="eyebrow">Actor progression</span><h2>CR 11 · 9 Hit Dice / class levels</h2><p>Codex creature extended through racial HD, a template, and class levels</p></div><div className="build-actions"><button onClick={() => onToast("Codex browser opened")}>Browse codex</button><button className="level-up-button" onClick={() => onToast("Build layer menu opened")}>+ Add HD, Template, or Class</button></div></section>
+      <div className="monster-build-page">
+        <details className="monster-stack mock-panel" open><summary className="panel-heading"><div><span className="eyebrow">Top to bottom</span><h2>Build stack</h2></div><span>4 layers · collapse</span></summary><div className="build-stack">{layers.map((layer, index) => <article key={layer.name}><span className="layer-number">{index + 1}</span><div><small>{layer.kind}</small><h3>{layer.name}</h3><p>{layer.meta}</p><em>{layer.detail}</em></div><div className="layer-actions"><button>Configure</button>{index > 0 ? <button>Remove</button> : <button>View source</button>}</div></article>)}</div></details>
+        <aside className="derived-preview mock-panel"><span className="eyebrow">Final derived actor</span><h2>CR 11</h2><p>The Sanguine Owlbear</p><dl><div><dt>Hit Dice</dt><dd>7d8 + 2d8</dd></div><div><dt>Hit points</dt><dd>118</dd></div><div><dt>Armor class</dt><dd>28</dd></div><div><dt>Base attack</dt><dd>+9</dd></div><div><dt>Fort / Ref / Will</dt><dd>+12 / +15 / +10</dd></div><div><dt>Special abilities</dt><dd>11</dd></div></dl><button>Review all calculations</button><div className="validation-ok">✓ All build choices resolved</div></aside>
+      </div>
     </div>
   );
+}
+
+function LevelUpDialog({ scenario, onClose, onContinue }: { scenario: ScenarioKey; onClose: () => void; onContinue: () => void }) {
+  const multiclass = scenario === "multiclass";
+  const [nextClass, setNextClass] = useState(multiclass ? "Cleric" : "Ranger");
+  return <div className="modal-backdrop"><section className="level-up-dialog" role="dialog" aria-modal="true" aria-labelledby="level-up-title"><header><div><span className="eyebrow">Guided character advancement</span><h2 id="level-up-title">Level Up {multiclass ? "Elowen" : "Seren"}</h2><p>Character level {multiclass ? "10 → 11" : "7 → 8"}</p></div><button onClick={onClose}>×</button></header><ol className="level-up-steps"><li className="active"><b>1</b><span>Class</span></li><li><b>2</b><span>Hit points</span></li><li><b>3</b><span>Skills</span></li><li><b>4</b><span>Feats &amp; Magic</span></li><li><b>5</b><span>Review</span></li></ol><div className="level-up-body"><span className="eyebrow">Step 1 of 5</span><h3>Choose this level’s class</h3><p>The workflow keeps today’s guided level-up behavior, while Build remains the permanent record.</p><label>Search classes<input placeholder="Search class, archetype, or prestige class…" /></label><div className="class-options">{[multiclass ? "Cleric" : "Ranger", multiclass ? "Wizard" : "Horizon Walker", "Rogue"].map((name) => <button key={name} className={nextClass === name ? "selected" : ""} onClick={() => setNextClass(name)}><span><strong>{name}</strong><small>{name === (multiclass ? "Cleric" : "Ranger") ? "Continue an existing class" : "Add a new class progression"}</small></span><b>{nextClass === name ? "Selected" : "Choose"}</b></button>)}</div></div><footer><button className="quiet-button" onClick={onClose}>Cancel</button><button className="dialog-primary" onClick={onContinue}>Continue with {nextClass}</button></footer></section></div>;
 }
 
 function StatDrawer({ gm, stat, onClose, onToast }: { gm: boolean; stat: string; onClose: () => void; onToast: (message: string) => void }) {

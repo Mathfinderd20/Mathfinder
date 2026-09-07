@@ -15,15 +15,17 @@ The scenario switcher is mock navigation, not a proposed production control.
 - Tabs are `Notes`, `Character`, `Inventory`, `Magic`, and `Build`; Character is the default.
 - The same workspace shell applies to players, user-built characters, NPCs, monsters, villains, allies, and summons.
 - Player notes are visible only to the player. GM character notes are visible only to the GM and exist only in that campaign.
-- Notes reuse the campaign notebook experience: multiple notes, search, categories, pinning, lightweight formatting, and autosave status.
+- Notes reuse the campaign notebook experience: multiple notes, search, categories, pinning, lightweight formatting, and autosave status. The selector is on the left in both character Notes and GM Campaign Notes.
 - The Character page follows the official PF1e spatial hierarchy: abilities, defenses, combat, and weapons on the left; a dense skills table on the right.
-- The right rail contains fixed search plus independently collapsible `Active now`, `My abilities`, and `Effects & conditions` groups. Empty groups collapse by default.
+- The Character tab alone owns the `Abilities & Effects` rail, with fixed search plus independently collapsible `Active Now`, `My Abilities`, and `Effects & Conditions` groups. Empty groups collapse by default. Notes and Build are full-width; Inventory and Magic retain their task-specific search rails.
 - Calculated math is available through click/focus as well as hover. GM users can add or remove any campaign-scoped modifying value at any time.
 - A condition that grants subsequent saves exposes `Attempt save`. The affected character's player or the GM resolves the save; success removes the condition. The GM and the effect's player source may remove it directly.
 - Spellcasting never assumes a digital battle map. Casting selects affected tabletop characters, spends the chosen source's resource only on confirmation, and sends save/effect resolution to the affected sheets.
 - Multiple casting sources keep independent headers, caster levels, spell lists, DCs, and resource pools. Search may span all sources, but every Cast action identifies the source being spent.
 - Inventory promotes the equipment figure, separates Carried from Stored, gives carried weapons their own table, and keeps ammunition adjacent to its weapon.
 - Monster Build is a composable stack: codex base creature, racial HD, templates, class levels, and campaign modifiers.
+- Build progression reads top to bottom and can collapse. Every character-level line records the class taken and its resulting class level, so multiclass advancement remains explicit.
+- `Level Up` lives in the Build header and opens the retained guided advancement flow. Class, feat, skill, and spell discovery appears inside that flow or an on-demand Build Library, not a permanent rail.
 - GM workflow is desktop-only. Player views include responsive behavior and turn the right rail into an overlay on narrow screens.
 
 ## Existing behavior that implementation must preserve
