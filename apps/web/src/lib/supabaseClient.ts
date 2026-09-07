@@ -80,7 +80,10 @@ export function createOptionalSupabaseClient(
         },
         auth: {
           storageKey: authStorageKey(config.url),
-          flowType: "pkce",
+          // This is a client-only SPA. Implicit flow lets magic links opened
+          // from webmail complete in a new browser tab without depending on a
+          // PKCE verifier from the tab that requested the email.
+          flowType: "implicit",
           persistSession: true,
           autoRefreshToken: true,
           detectSessionInUrl: true,

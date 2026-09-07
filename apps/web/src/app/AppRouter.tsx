@@ -9,7 +9,7 @@ import { JoinCampaignPage } from "../features/campaigns/JoinCampaignPage";
 import { useCloudConnection } from "../lib/useCloudConnection";
 import { ServerErrorPage } from "./ServerErrorPage";
 import { SignInPage } from "../features/auth/SignInPage";
-import { safeReturnPath } from "../features/auth/authNavigation";
+import { readAuthReturnPath } from "../features/auth/authNavigation";
 import { ProfileMenu } from "../components/ProfileMenu";
 import { reconnect } from "../lib/cloudPersistence";
 import { Link, useLocation } from "react-router-dom";
@@ -38,7 +38,9 @@ function ProtectedApplication() {
     return (
       <Navigate
         replace
-        to={safeReturnPath(new URLSearchParams(location.search).get("next"))}
+        to={readAuthReturnPath(
+          new URLSearchParams(location.search).get("next"),
+        )}
       />
     );
   const offline = cloud.status === "offline";

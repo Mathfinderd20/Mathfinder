@@ -18,8 +18,9 @@ cache partitioned by Supabase project and user ID.
    URL. Configure the same callback for development/staging. Keep email
    confirmation enabled and configure production SMTP and email templates.
 5. Serve the Vite build over HTTPS, with SPA rewrites to `index.html` for deep
-   links. Serve `/sw.js` with revalidation (`Cache-Control: no-cache`). OAuth
-   callbacks and email links must open in the browser that initiated PKCE.
+   links. Serve `/sw.js` with revalidation (`Cache-Control: no-cache`). This
+   client-only SPA uses Supabase's implicit browser flow so webmail may open an
+   OAuth callback or email magic link in a new tab without a PKCE verifier.
 
 Google provider configuration and SMTP must be completed in the hosted project;
 the repository does not contain provider credentials. Authentication can also

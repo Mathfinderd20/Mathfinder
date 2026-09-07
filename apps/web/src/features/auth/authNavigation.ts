@@ -1,3 +1,14 @@
+const RETURN_PATH_KEY = "mathfinder:auth:return-path";
+
+export function rememberAuthReturnPath(path: string) {
+  window.sessionStorage.setItem(RETURN_PATH_KEY, safeReturnPath(path));
+}
+
+export function readAuthReturnPath(queryPath: string | null): string {
+  const saved = window.sessionStorage.getItem(RETURN_PATH_KEY);
+  return safeReturnPath(queryPath ?? saved);
+}
+
 export function safeReturnPath(value: string | null): string {
   if (
     !value ||
