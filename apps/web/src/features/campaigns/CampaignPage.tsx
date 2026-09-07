@@ -115,6 +115,19 @@ export function CampaignPage() {
           </p>
         </section>
 
+        {campaign.role === "gm" && (
+          <section className="backend-notice">
+            <h2>Step into the Game Master’s Layer</h2>
+            <p>
+              Explore the interactive design sandbox: Notes, Roster, Tabletop,
+              Codex, and Rules. Sample data only; your campaign is unchanged.
+            </p>
+            <a className="button-link" href="/gm-preview.html">
+              Open GM Layer preview ↗
+            </a>
+          </section>
+        )}
+
         {campaign.role === "gm" && campaign.joinCode ? (
           <section className="campaign-code-panel">
             <div>

@@ -5,6 +5,14 @@ import { fileURLToPath, URL } from "node:url";
 // Alias the engine to its TypeScript source so Vite transpiles it as app code
 // (the rules engine ships source, not a build).
 export default defineConfig({
+  build: {
+    rollupOptions: {
+      input: {
+        main: fileURLToPath(new URL("./index.html", import.meta.url)),
+        gmPreview: fileURLToPath(new URL("./gm-preview.html", import.meta.url)),
+      },
+    },
+  },
   plugins: [
     react(),
     {

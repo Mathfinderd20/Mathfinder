@@ -1,0 +1,84 @@
+@media (max-width: 1000px) {
+  .gm-main {
+    padding: 25px 20px;
+  }
+  .gm-workspace {
+    grid-template-columns: minmax(0, 1fr) 260px;
+    gap: 12px;
+  }
+  .gm-sheet {
+    padding: 20px;
+  }
+  .gm-stats {
+    grid-template-columns: 1fr 1fr;
+  }
+  .gm-combat-bar {
+    align-items: start;
+    flex-direction: column;
+  }
+  .gm-header-label {
+    display: none;
+  }
+}
+@media (max-width: 720px) {
+  .gm-main {
+    padding: 22px 14px;
+  }
+  .gm-header {
+    padding: 14px;
+  }
+  .gm-campaign-heading {
+    align-items: start;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .gm-preview-banner span {
+    display: block;
+    margin-left: 0;
+  }
+  .gm-tabs {
+    gap: 4px;
+  }
+  .gm-tabs button {
+    font-size: 12px;
+  }
+  .gm-workspace {
+    display: flex;
+    flex-direction: column-reverse;
+  }
+  .gm-workspace > * {
+    width: 100%;
+  }
+  .gm-rail {
+    max-height: 350px;
+    overflow-y: auto;
+  }
+  .gm-sheet {
+    min-height: 0;
+  }
+  .gm-field-grid {
+    grid-template-columns: 1fr;
+  }
+  .gm-sheet-top {
+    flex-wrap: wrap;
+  }
+  .gm-portrait {
+    width: 60px;
+    height: 76px;
+  }
+  .gm-actor-heading {
+    gap: 13px;
+  }
+  .gm-page-heading > .gm-muted {
+    display: none;
+  }
+  .gm-footer {
+    flex-direction: column;
+    gap: 5px;
+  }
+  .gm-section-title {
+    align-items: start;
+    flex-direction: column;
+    gap: 4px;
+  }
+}
