@@ -1,0 +1,574 @@
+import { StrictMode, useState, type ReactNode } from "react";
+import { createRoot } from "react-dom/client";
+import { EquipmentSilhouette } from "../../components/EquipmentSilhouette";
+import "../../styles.css";
+import "./mock.css";
+
+type WorkspaceTab = "notes" | "character" | "inventory" | "magic" | "build";
+type ScenarioKey = "player" | "multiclass" | "monster";
+type RailSectionKey = "active" | "abilities" | "effects";
+
+const TABS: Array<{ id: WorkspaceTab; label: string }> = [
+  { id: "notes", label: "Notes" },
+  { id: "character", label: "Character" },
+  { id: "inventory", label: "Inventory" },
+  { id: "magic", label: "Magic" },
+  { id: "build", label: "Build" },
+];
+
+const SCENARIOS = {
+  player: {
+    name: "Seren Ashfall",
+    eyebrow: "Player character · Level 7",
+    descriptor: "Half-elf · Ranger 7 · Horizon walker",
+    alignment: "Neutral Good",
+    size: "Medium",
+    health: "48 / 62",
+    status: "Healthy",
+    workspace: "My Characters",
+    owner: "Player view",
+  },
+  multiclass: {
+    name: "Elowen Vey",
+    eyebrow: "Player character · Level 10",
+    descriptor: "Human · Cleric 5 / Wizard 5",
+    alignment: "Lawful Neutral",
+    size: "Medium",
+    health: "53 / 53",
+    status: "Healthy",
+    workspace: "My Characters",
+    owner: "Player view",
+  },
+  monster: {
+    name: "The Sanguine Owlbear",
+    eyebrow: "Campaign actor · CR 11",
+    descriptor: "Vampire owlbear · Magical beast 7 / Rogue 2",
+    alignment: "Chaotic Evil",
+    size: "Large",
+    health: "96 / 118",
+    status: "Bloodied",
+    workspace: "The Ashen Road",
+    owner: "GM view",
+  },
+} as const;
+
+const ABILITIES = [
+  ["STR", "18", "+4"],
+  ["DEX", "17", "+3"],
+  ["CON", "14", "+2"],
+  ["INT", "12", "+1"],
+  ["WIS", "16", "+3"],
+  ["CHA", "13", "+1"],
+];
+
+const MONSTER_ABILITIES = [
+  ["STR", "30", "+10"],
+  ["DEX", "18", "+4"],
+  ["CON", "—", "—"],
+  ["INT", "14", "+2"],
+  ["WIS", "17", "+3"],
+  ["CHA", "21", "+5"],
+];
+
+const SKILLS: Array<[string, string, string, string]> = [
+  ["Acrobatics", "DEX", "+12", "A"],
+  ["Climb", "STR", "+14", "A"],
+  ["Diplomacy", "CHA", "+8", ""],
+  ["Escape Artist", "DEX", "+10", "A"],
+  ["Handle Animal", "CHA", "+11", "T"],
+  ["Heal", "WIS", "+10", ""],
+  ["Knowledge (geography)", "INT", "+8", "T"],
+  ["Knowledge (nature)", "INT", "+11", "T"],
+  ["Perception", "WIS", "+15", ""],
+  ["Ride", "DEX", "+12", "A"],
+  ["Sense Motive", "WIS", "+10", ""],
+  ["Stealth", "DEX", "+13", "A"],
+  ["Survival", "WIS", "+16", ""],
+  ["Swim", "STR", "+9", "A"],
+  ["Use Magic Device", "CHA", "+7", "T"],
+];
+
+const MONSTER_SKILLS: Array<[string, string, string, string]> = [
+  ["Acrobatics", "DEX", "+17", "A"],
+  ["Climb", "STR", "+22", "A"],
+  ["Intimidate", "CHA", "+18", ""],
+  ["Knowledge (nature)", "INT", "+13", "T"],
+  ["Perception", "WIS", "+21", ""],
+  ["Sense Motive", "WIS", "+16", ""],
+  ["Stealth", "DEX", "+20", "A"],
+  ["Survival", "WIS", "+15", ""],
+];
+
+const FEATS = [
+  "Deadly Aim",
+  "Endurance",
+  "Manyshot",
+  "Point-Blank Shot",
+  "Precise Shot",
+  "Rapid Shot",
+];
+
+interface MockNote {
+  id: string;
+  title: string;
+  category: string;
+  pinned: boolean;
+  body: string;
+}
+
+const NOTES: MockNote[] = [
+  {
+    id: "watchtower",
+    title: "The ruined watchtower",
+    category: "Location",
+    pinned: true,
+    body: "Brother’s signet found beneath the western stair. The caravan marks continue north, but no tracks leave the tower.\n\nAsk Captain Voss who last held the watch.\n\nThe old bell reacted when I crossed the threshold.",
+  },
+  {
+    id: "contacts",
+    title: "People who owe me",
+    category: "Character",
+    pinned: false,
+    body: "Captain Elara Voss — one favor.\nMira at the river market — safe storage.\nOld Fen — knows the marsh paths.",
+  },
+  {
+    id: "session",
+    title: "Session 12",
+    category: "Session",
+    pinned: false,
+    body: "Rain on the old road. Goblin scouts retreated toward the crypt. Brann heard a bell beneath the chapel.",
+  },
+];
+
+const PLAYER_EQUIPMENT = new Map<string, string[]>([
+  ["head", ["Headband of inspired wisdom +2"]],
+  ["neck", ["Amulet of natural armor +1"]],
+  ["shoulders", ["Cloak of resistance +2"]],
+  ["armor", ["Mithral chain shirt +1"]],
+  ["belt", ["Belt of incredible dexterity +2"]],
+  ["feet", ["Boots of striding and springing"]],
+  ["ring", ["Ring of protection +1", "Ring of sustenance"]],
+]);
+
+function App() {
+  const [scenario, setScenario] = useState<ScenarioKey>("player");
+  const [tab, setTab] = useState<WorkspaceTab>("character");
+  const [railOpen, setRailOpen] = useState(true);
+  const [railSections, setRailSections] = useState<Record<RailSectionKey, boolean>>({
+    active: true,
+    abilities: true,
+    effects: true,
+  });
+  const [detail, setDetail] = useState<string>();
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [targeting, setTargeting] = useState(false);
+  const [saveAttempt, setSaveAttempt] = useState(false);
+  const [healthOpen, setHealthOpen] = useState(false);
+  const [toast, setToast] = useState<string>();
+  const character = SCENARIOS[scenario];
+  const gm = scenario === "monster";
+
+  function chooseScenario(next: ScenarioKey) {
+    setScenario(next);
+    setTab(next === "multiclass" ? "magic" : next === "monster" ? "build" : "character");
+    setDetail(undefined);
+  }
+
+  function showToast(message: string) {
+    setToast(message);
+    window.setTimeout(() => setToast(undefined), 2600);
+  }
+
+  return (
+    <div className="character-mock" data-workspace={gm ? "gm" : "player"}>
+      <header className="mf-topbar">
+        <a className="mf-brand" href="#top" aria-label="Mathfinder home">
+          <span className="mf-brand-mark">M</span>
+          <span>Mathfinder</span>
+          <small>Pathfinder 1e smart sheet</small>
+        </a>
+        <div className="scenario-switcher" aria-label="Mock scenario">
+          <span>Mock scenario</span>
+          <button className={scenario === "player" ? "selected" : ""} onClick={() => chooseScenario("player")}>Player</button>
+          <button className={scenario === "multiclass" ? "selected" : ""} onClick={() => chooseScenario("multiclass")}>Multiclass caster</button>
+          <button className={scenario === "monster" ? "selected" : ""} onClick={() => chooseScenario("monster")}>GM monster</button>
+        </div>
+        <button className="quiet-button">Profile</button>
+      </header>
+
+      {gm ? <GmCommandBar onToast={showToast} /> : null}
+
+      <section className="identity-bar" id="top">
+        <img src="/mock-assets/seren-ashfall.png" alt="Seren Ashfall character portrait" />
+        <div className="identity-main">
+          <span className="eyebrow">{character.eyebrow}</span>
+          <div className="identity-title-row">
+            <h1>{character.name}</h1>
+            <button className="text-button" onClick={() => setProfileOpen(true)}>Edit profile</button>
+          </div>
+          <p>{character.descriptor}</p>
+        </div>
+        <dl className="identity-facts">
+          <div><dt>Alignment</dt><dd>{character.alignment}</dd></div>
+          <div><dt>Size</dt><dd>{character.size}</dd></div>
+          <div><dt>Workspace</dt><dd>{character.workspace}</dd></div>
+        </dl>
+        <button className="health-pill" onClick={() => setHealthOpen(true)}>
+          <span>Hit points</span>
+          <strong>{character.health}</strong>
+          <em className={character.status === "Bloodied" ? "danger" : "ok"}>{character.status}</em>
+        </button>
+      </section>
+
+      <nav className="character-tabs" aria-label="Character workspace">
+        {TABS.map((item) => (
+          <button
+            key={item.id}
+            className={tab === item.id ? "active" : ""}
+            aria-current={tab === item.id ? "page" : undefined}
+            onClick={() => setTab(item.id)}
+          >
+            {item.label}
+          </button>
+        ))}
+      </nav>
+
+      <div className={`workspace-frame ${railOpen ? "rail-is-open" : "rail-is-closed"}`}>
+        <main className="workspace-main">
+          {tab === "character" ? (
+            <CharacterTab
+              gm={gm}
+              scenario={scenario}
+              onDetail={setDetail}
+              onHealth={() => setHealthOpen(true)}
+            />
+          ) : null}
+          {tab === "notes" ? <NotesTab gm={gm} /> : null}
+          {tab === "inventory" ? <InventoryTab scenario={scenario} onToast={showToast} /> : null}
+          {tab === "magic" ? <MagicTab scenario={scenario} onTarget={() => setTargeting(true)} /> : null}
+          {tab === "build" ? <BuildTab scenario={scenario} onToast={showToast} /> : null}
+        </main>
+
+        {tab === "inventory" ? (
+          <InventoryRail open={railOpen} onToggle={() => setRailOpen((value) => !value)} />
+        ) : tab === "magic" ? (
+          <MagicRail open={railOpen} onToggle={() => setRailOpen((value) => !value)} />
+        ) : (
+          <EffectsRail
+            gm={gm}
+            open={railOpen}
+            sections={railSections}
+            onToggle={() => setRailOpen((value) => !value)}
+            onSection={(key) => setRailSections((previous) => ({ ...previous, [key]: !previous[key] }))}
+            onSave={() => setSaveAttempt(true)}
+            onToast={showToast}
+          />
+        )}
+      </div>
+
+      {detail ? <StatDrawer gm={gm} stat={detail} onClose={() => setDetail(undefined)} onToast={showToast} /> : null}
+      {profileOpen ? <ProfileDrawer onClose={() => setProfileOpen(false)} onToast={showToast} /> : null}
+      {targeting ? <TargetDialog onClose={() => setTargeting(false)} onCast={() => { setTargeting(false); showToast("Spell sent to 3 affected character sheets"); }} /> : null}
+      {saveAttempt ? <SaveDialog onClose={() => setSaveAttempt(false)} onResolve={() => { setSaveAttempt(false); showToast("Will save succeeded · Hold Person removed"); }} /> : null}
+      {healthOpen ? <HealthDrawer scenario={scenario} onClose={() => setHealthOpen(false)} onToast={showToast} /> : null}
+      {toast ? <div className="mock-toast" role="status">{toast}</div> : null}
+    </div>
+  );
+}
+
+function GmCommandBar({ onToast }: { onToast: (message: string) => void }) {
+  return (
+    <div className="gm-command-bar">
+      <span className="gm-badge">GM · Campaign copy</span>
+      <button className="command-button active">● On tabletop</button>
+      <label>Initiative <input type="number" defaultValue={22} /></label>
+      <label>Group <select defaultValue="Boss"><option>Boss</option><option>Independent</option></select></label>
+      <label>Turn state <select><option>Normal</option><option>Delayed</option><option>Readied</option></select></label>
+      <label className="compact-check"><input type="checkbox" defaultChecked /> Dual initiative</label>
+      <button className="quiet-button" onClick={() => onToast("Campaign copy saved")}>Saved · now</button>
+    </div>
+  );
+}
+
+function Section({ title, action, children, className = "" }: { title: string; action?: ReactNode; children: ReactNode; className?: string }) {
+  return (
+    <section className={`mock-panel ${className}`}>
+      <header className="panel-heading"><h2>{title}</h2>{action}</header>
+      {children}
+    </section>
+  );
+}
+
+function StatButton({ label, value, helper, onClick, tone = "" }: { label: string; value: string; helper?: string; onClick: () => void; tone?: string }) {
+  return (
+    <button className={`stat-button ${tone}`} onClick={onClick}>
+      <span>{label}</span><strong>{value}</strong>{helper ? <small>{helper}</small> : null}
+    </button>
+  );
+}
+
+function CharacterTab({ gm, scenario, onDetail, onHealth }: { gm: boolean; scenario: ScenarioKey; onDetail: (stat: string) => void; onHealth: () => void }) {
+  const abilities = gm ? MONSTER_ABILITIES : ABILITIES;
+  const skills = gm ? MONSTER_SKILLS : SKILLS;
+  return (
+    <div className="character-sheet-grid">
+      <div className="character-left-column">
+        <Section title="Ability scores" action={<span className="section-note">Select any value for its math</span>}>
+          <div className="ability-table">
+            {abilities.map(([key, score, modifier]) => (
+              <button key={key} onClick={() => onDetail(`${key} ${score}`)}>
+                <b>{key}</b><strong>{score}</strong><span>{modifier}</span>
+              </button>
+            ))}
+          </div>
+        </Section>
+
+        <Section title="Defense & health" action={<button className="text-button" onClick={onHealth}>Manage health</button>}>
+          <div className="defense-grid">
+            <StatButton label="Armor class" value={gm ? "28" : "22"} helper="normal" onClick={() => onDetail("Armor Class")} />
+            <StatButton label="Touch" value={gm ? "14" : "14"} onClick={() => onDetail("Touch AC")} />
+            <StatButton label="Flat-footed" value={gm ? "24" : "18"} onClick={() => onDetail("Flat-footed AC")} />
+            <StatButton label="Fortitude" value={gm ? "+12" : "+9"} helper="roll" onClick={() => onDetail("Fortitude")} />
+            <StatButton label="Reflex" value={gm ? "+15" : "+11"} helper="roll" onClick={() => onDetail("Reflex")} />
+            <StatButton label="Will" value={gm ? "+10" : "+8"} helper="roll" onClick={() => onDetail("Will")} />
+          </div>
+          <div className="health-inline">
+            <span><b>{gm ? "96" : "48"}</b> / {gm ? "118" : "62"} HP</span>
+            <div className="health-meter"><i style={{ width: gm ? "81%" : "77%" }} /></div>
+            <span className="micro-stat">Temp <b>0</b></span>
+            <span className="micro-stat">Nonlethal <b>0</b></span>
+            <button onClick={onHealth}>Damage</button><button onClick={onHealth}>Heal</button>
+          </div>
+        </Section>
+
+        <Section title="Combat & movement">
+          <div className="combat-strip">
+            <StatButton label="Base attack" value={gm ? "+9" : "+7"} onClick={() => onDetail("Base Attack Bonus")} />
+            <StatButton label="Initiative" value={gm ? "+9" : "+5"} helper="roll" onClick={() => onDetail("Initiative")} />
+            <StatButton label="Speed" value={gm ? "40 ft" : "30 ft"} onClick={() => onDetail("Speed")} />
+            <StatButton label="CMB" value={gm ? "+19" : "+11"} helper="roll" onClick={() => onDetail("CMB")} />
+            <StatButton label="CMD" value={gm ? "33" : "25"} onClick={() => onDetail("CMD")} />
+          </div>
+        </Section>
+
+        <Section title="Weapons" action={<span className="section-note">Attack-ready loadout</span>}>
+          <div className="weapon-table" role="table" aria-label="Carried weapons">
+            <div className="weapon-head" role="row"><span>Weapon</span><span>Attack</span><span>Damage</span><span>Critical</span><span>Ammunition</span><span /></div>
+            {(gm ? [
+              ["Bite", "+19", "2d6+15", "20/×2", "—"],
+              ["Claw ×2", "+19", "1d8+10", "20/×2", "—"],
+            ] : [
+              ["Ashwood longbow +1", "+14/+9", "1d8+5", "×3", "Cold iron 18"],
+              ["Elven curve blade", "+11/+6", "1d10+6", "18–20/×2", "—"],
+            ]).map((weapon) => (
+              <div className="weapon-row" role="row" key={weapon[0]}>
+                {weapon.map((value, index) => <span key={`${weapon[0]}-${index}`}><b>{index === 0 ? value : undefined}</b>{index === 0 ? null : value}</span>)}
+                <button onClick={() => onDetail(`${weapon[0]} attack`)}>Attack</button>
+              </div>
+            ))}
+          </div>
+        </Section>
+
+        <Section title="Feats & special abilities" className="reference-panel">
+          <div className="reference-list">
+            {(gm ? ["Blood Drain", "Change Shape", "Grab", "Pounce", "Sneak Attack +1d6", "Uncanny Dodge", "Vampire Resistances"] : FEATS).map((feat) => (
+              <button key={feat} onClick={() => onDetail(feat)}>{feat}<span>View</span></button>
+            ))}
+          </div>
+        </Section>
+      </div>
+
+      <aside className="skills-panel mock-panel">
+        <header className="panel-heading"><h2>Skills</h2><span className="section-note">Tap a row to roll</span></header>
+        <div className="skill-heading"><span>Skill</span><span>Ability</span><span>Total</span><span /></div>
+        <div className="skill-list">
+          {skills.map(([name, ability, total, flag]) => (
+            <button key={name} onClick={() => onDetail(name)}>
+              <span>{name}{flag ? <small>{flag}</small> : null}</span><span>{ability}</span><strong>{total}</strong><em>Roll</em>
+            </button>
+          ))}
+        </div>
+        <details className="compact-details"><summary>Languages & senses</summary><p>Common, Elven, Sylvan · Low-light vision</p></details>
+        <details className="compact-details"><summary>Resistances & immunities</summary><p>{gm ? "Cold 10, electricity 10 · undead immunities" : "Trackless step · favored terrain"}</p></details>
+      </aside>
+    </div>
+  );
+}
+
+function EffectsRail({ gm, open, sections, onToggle, onSection, onSave, onToast }: { gm: boolean; open: boolean; sections: Record<RailSectionKey, boolean>; onToggle: () => void; onSection: (key: RailSectionKey) => void; onSave: () => void; onToast: (message: string) => void }) {
+  if (!open) return <aside className="collapsed-rail"><button onClick={onToggle} aria-label="Open abilities and effects rail"><span>‹</span><b>Abilities & effects</b><i>3</i></button></aside>;
+  return (
+    <aside className="side-rail effects-rail">
+      <header className="rail-heading"><div><span className="eyebrow">At the table</span><h2>Abilities & effects</h2></div><button onClick={onToggle} aria-label="Collapse abilities and effects rail">›</button></header>
+      <label className="rail-search"><span>Search</span><input placeholder="Ability, condition, source…" /></label>
+      <RailSection title="Active now" count={3} open={sections.active} onToggle={() => onSection("active")}>
+        <EffectCard title="Hunter’s Bond" source="Ranger · player" tone="active" action={<button onClick={() => onToast("Hunter’s Bond ended")}>End</button>}><p>Allies gain +2 against Seren’s quarry.</p><span>8 rounds remaining</span></EffectCard>
+        <EffectCard title="Bless" source="Brann Ironwood · spell" tone="active" action={<button onClick={() => onToast("Bless removed by its source")}>Remove</button>}><p>+1 morale bonus on attacks and fear saves.</p><span>Source may remove</span></EffectCard>
+      </RailSection>
+      <RailSection title="My abilities" count={5} open={sections.abilities} onToggle={() => onSection("abilities")}>
+        <EffectCard title="Deadly Aim" source="Feat · player" action={<label className="switch"><input type="checkbox" /><span /></label>}><p>Trade ranged accuracy for damage.</p></EffectCard>
+        <EffectCard title="Favored Terrain" source="Ranger · passive" action={<button onClick={() => onToast("Terrain selector opened")}>Apply</button>}><p>Choose the terrain currently in play.</p></EffectCard>
+      </RailSection>
+      <RailSection title="Effects & conditions" count={1} open={sections.effects} onToggle={() => onSection("effects")}>
+        <EffectCard title="Hold Person" source="Hollow Warden · Will DC 18" tone="danger" action={<button onClick={onSave}>Attempt save</button>}><p>Paralyzed. Attempt another Will save at the end of each turn.</p><span>{gm ? "GM may remove at any time" : "You or the source may remove"}</span></EffectCard>
+        {gm ? <button className="rail-primary" onClick={() => onToast("Modifier composer opened")}>+ Add effect or modifier</button> : null}
+      </RailSection>
+    </aside>
+  );
+}
+
+function RailSection({ title, count, open, onToggle, children }: { title: string; count: number; open: boolean; onToggle: () => void; children: ReactNode }) {
+  return <section className="rail-section"><button className="rail-section-toggle" aria-expanded={open} onClick={onToggle}><span>{title}</span><b>{count}</b><i>{open ? "−" : "+"}</i></button>{open ? <div className="rail-section-body">{children}</div> : null}</section>;
+}
+
+function EffectCard({ title, source, tone = "", action, children }: { title: string; source: string; tone?: string; action: ReactNode; children: ReactNode }) {
+  return <article className={`effect-card ${tone}`}><header><div><strong>{title}</strong><span>{source}</span></div>{action}</header>{children}</article>;
+}
+
+function NotesTab({ gm }: { gm: boolean }) {
+  const [notes, setNotes] = useState(NOTES);
+  const [selected, setSelected] = useState(NOTES[0]!.id);
+  const [search, setSearch] = useState("");
+  const note = notes.find((entry) => entry.id === selected) ?? notes[0] ?? NOTES[0]!;
+  const visible = notes.filter((entry) => `${entry.title} ${entry.body}`.toLowerCase().includes(search.toLowerCase())).sort((a, b) => Number(b.pinned) - Number(a.pinned));
+  function update(patch: Partial<MockNote>) { setNotes((previous) => previous.map((entry) => entry.id === note.id ? { ...entry, ...patch } : entry)); }
+  return (
+    <div className="notes-workspace">
+      <aside className="notes-index mock-panel">
+        <header><span className="eyebrow">{gm ? "GM character notes" : "My character notes"}</span><h2>Notes <small>{notes.length}</small></h2><button onClick={() => { const next = { id: `note-${Date.now()}`, title: "Untitled note", category: "General", pinned: false, body: "" }; setNotes([...notes, next]); setSelected(next.id); }}>+ New note</button></header>
+        <input className="notes-search" aria-label="Search notes" placeholder="Search notes…" value={search} onChange={(event) => setSearch(event.target.value)} />
+        <div className="note-list">{visible.map((entry) => <button key={entry.id} className={entry.id === note.id ? "active" : ""} onClick={() => setSelected(entry.id)}><span>{entry.pinned ? "◆ Pinned · " : ""}{entry.category}</span><strong>{entry.title}</strong><small>{entry.body.slice(0, 72)}</small></button>)}</div>
+        <p className="privacy-note">{gm ? "Visible only to the GM in The Ashen Road." : "Visible only to you. Campaign GMs cannot access these notes."}</p>
+      </aside>
+      <section className="note-editor mock-panel">
+        <header><span className="privacy-lock">Private · Autosaved just now</span><button className={note.pinned ? "active" : ""} onClick={() => update({ pinned: !note.pinned })}>{note.pinned ? "Pinned" : "Pin"}</button></header>
+        <input className="note-title" aria-label="Note title" value={note.title} onChange={(event) => update({ title: event.target.value })} />
+        <div className="note-toolbar"><select aria-label="Note category" value={note.category} onChange={(event) => update({ category: event.target.value })}><option>Session</option><option>Location</option><option>Character</option><option>Plot</option><option>General</option></select><button><b>B</b></button><button><i>I</i></button><button>List</button><button>Link</button></div>
+        <textarea aria-label="Note body" value={note.body} onChange={(event) => update({ body: event.target.value })} />
+      </section>
+    </div>
+  );
+}
+
+function InventoryTab({ scenario, onToast }: { scenario: ScenarioKey; onToast: (message: string) => void }) {
+  const empty = scenario === "monster";
+  return (
+    <div className="inventory-page">
+      <div className="inventory-summary-strip">
+        <span><small>Platinum</small><b>4</b></span><span><small>Gold</small><b>286</b></span><span><small>Silver</small><b>17</b></span><span><small>Copper</small><b>8</b></span><span className="wide"><small>Total wealth</small><b>{empty ? "1,200 gp" : "14,822 gp"}</b></span><span className="wide"><small>Carried load</small><b>{empty ? "68 / 1,600 lb" : "61 / 100 lb"}</b></span><button onClick={() => onToast("Coin editor opened")}>Edit coins</button>
+      </div>
+      <section className="carried-weapons mock-panel">
+        <header className="panel-heading"><h2>Carried weapons</h2><button onClick={() => onToast("Weapon picker opened")}>+ Add weapon</button></header>
+        <div className="weapon-table">
+          <div className="weapon-head"><span>Weapon</span><span>Ready</span><span>Attack</span><span>Damage</span><span>Ammunition</span><span /></div>
+          {(empty ? [["Bite", "Natural", "+19", "2d6+15", "—"]] : [["Ashwood longbow +1", "Two hands", "+14/+9", "1d8+5", "Cold iron arrows · 18"], ["Elven curve blade", "Stowed", "+11/+6", "1d10+6", "—"]]).map((row) => <div className="weapon-row" key={row[0]}>{row.map((value, index) => <span key={value}><b>{index === 0 ? value : undefined}</b>{index ? value : null}</span>)}<button>Manage</button></div>)}
+        </div>
+      </section>
+      <div className="inventory-body-grid">
+        <section className="equipment-focus mock-panel">
+          <header className="panel-heading"><div><span className="eyebrow">Equipped now</span><h2>Equipment</h2></div><span className="section-note">Select a slot to inspect or replace it</span></header>
+          {empty ? <div className="inventory-empty"><strong>No worn equipment</strong><p>Add treasure, armor, or magic items without changing the base codex creature.</p><button onClick={() => onToast("Equipment picker opened")}>Add equipment</button></div> : <EquipmentSilhouette equippedSlots={PLAYER_EQUIPMENT} />}
+        </section>
+        <div className="inventory-lists">
+          <Section title="Carried" action={<b className="count-badge">8</b>}><InventoryRows rows={[["Explorer’s pack", "1", "14 lb"], ["Potion of cure moderate wounds", "2", "—"], ["Rope, silk · 50 ft", "1", "5 lb"], ["Cold iron arrows", "18", "2.7 lb"]]} /></Section>
+          <Section title="Stored" action={<b className="count-badge">4</b>}><InventoryRows rows={[["Winter blanket", "1", "3 lb"], ["Silver arrows", "12", "1.8 lb"], ["Antitoxin", "2", "—"], ["Merchant’s clothes", "1", "6 lb"]]} /></Section>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function InventoryRows({ rows }: { rows: string[][] }) { return <div className="inventory-rows">{rows.map((row) => <button key={row[0]}><strong>{row[0]}</strong><span>×{row[1]}</span><small>{row[2]}</small><i>›</i></button>)}</div>; }
+
+function InventoryRail({ open, onToggle }: { open: boolean; onToggle: () => void }) {
+  if (!open) return <aside className="collapsed-rail"><button onClick={onToggle}><span>‹</span><b>Inventory search</b></button></aside>;
+  return <aside className="side-rail inventory-rail"><header className="rail-heading"><div><span className="eyebrow">Find & manage</span><h2>Inventory</h2></div><button onClick={onToggle}>›</button></header><label className="rail-search"><span>Search</span><input placeholder="Item, slot, container…" /></label><div className="filter-stack"><label>Location<select><option>All locations</option><option>Carried</option><option>Stored</option></select></label><label>Type<select><option>All item types</option><option>Weapons</option><option>Armor</option><option>Consumables</option><option>Magic items</option></select></label><label>Sort<select><option>Manual order</option><option>Name</option><option>Weight</option><option>Value</option></select></label></div><div className="rail-callout"><strong>61 lb carried</strong><p>Light load · 39 lb before medium load</p></div><button className="rail-primary">+ Add inventory item</button><button className="rail-secondary">View equipment warnings <b>1</b></button></aside>;
+}
+
+function MagicTab({ scenario, onTarget }: { scenario: ScenarioKey; onTarget: () => void }) {
+  const defaultSource = scenario === "multiclass" ? "cleric" : scenario === "monster" ? "sla" : "ranger";
+  const [source, setSource] = useState(defaultSource);
+  const sourceInfo = source === "wizard" ? { name: "Wizard 5", type: "Prepared · INT", level: "Caster level 5", concentration: "+9", dc: "DC 15–18" } : source === "cleric" ? { name: "Cleric 5", type: "Prepared · WIS", level: "Caster level 5", concentration: "+9", dc: "DC 15–18" } : source === "sla" ? { name: "Vampire abilities", type: "Spell-like abilities · CHA", level: "Caster level 12", concentration: "+17", dc: "DC 15–22" } : source === "granted" ? { name: "Granted / SLA", type: "Granted ability · WIS", level: "Caster level 10", concentration: "+14", dc: "DC 18" } : { name: "Ranger 7", type: "Prepared · WIS", level: "Caster level 4", concentration: "+7", dc: "DC 14" };
+  const spells = source === "wizard" ? [["Mirror Image", "2", "Prepared", "2 remaining"], ["Web", "2", "Prepared", "1 remaining"], ["Haste", "3", "Prepared", "1 remaining"], ["Dispel Magic", "3", "Prepared", "1 remaining"]] : source === "sla" ? [["Dominate", "5", "At will", "Will DC 21"], ["Children of the Night", "—", "1/day", "Available"], ["Gaseous Form", "—", "At will", "Self"], ["Spider Climb", "1", "Constant", "Active"]] : [["Bless", "1", "Prepared", "1 remaining"], ["Hold Person", "2", "Prepared", "2 remaining"], ["Prayer", "3", "Prepared", "1 remaining"], ["Dispel Magic", "3", "Prepared", "1 remaining"]];
+  return (
+    <div className="magic-page">
+      <div className="casting-sources" role="tablist" aria-label="Casting source">
+        {scenario === "multiclass" ? <><button className={source === "cleric" ? "active" : ""} onClick={() => setSource("cleric")}><span>Divine</span><strong>Cleric 5</strong><small>7 slots ready</small></button><button className={source === "wizard" ? "active" : ""} onClick={() => setSource("wizard")}><span>Arcane</span><strong>Wizard 5</strong><small>6 slots ready</small></button><button className={source === "granted" ? "active" : ""} onClick={() => setSource("granted")}><span>Other</span><strong>Granted / SLA</strong><small>1 ability</small></button></> : <button className="active"><span>{scenario === "monster" ? "Template" : "Class"}</span><strong>{sourceInfo.name}</strong><small>Active source</small></button>}
+        <button className="add-source">+ Add source</button>
+      </div>
+      <section className="casting-header mock-panel">
+        <div><span className="eyebrow">Selected casting source</span><h2>{sourceInfo.name}</h2><p>{sourceInfo.type}</p></div>
+        <StatButton label="Caster level" value={sourceInfo.level.replace("Caster level ", "")} onClick={() => undefined} />
+        <StatButton label="Concentration" value={sourceInfo.concentration} onClick={() => undefined} />
+        <StatButton label="Save DC range" value={sourceInfo.dc.replace("DC ", "")} onClick={() => undefined} />
+        <button className="quiet-button">Manage source</button>
+      </section>
+      <section className="slot-ledger mock-panel">
+        <header className="panel-heading"><h2>Daily magic</h2><span className="section-note">Prepared · available · spent</span></header>
+        <div className="level-ledger">{[["0", "4", "At will", "4 ready"], ["1", "4", "1 spent", "3 ready"], ["2", "3", "1 spent", "2 ready"], ["3", "2", "0 spent", "2 ready"], ["4", "—", "—", "Locked"]].map((row) => <button key={row[0]}><span>Level {row[0]}</span><strong>{row[1]}</strong><small>{row[2]}</small><em>{row[3]}</em></button>)}</div>
+      </section>
+      <section className="spell-table-panel mock-panel">
+        <header className="panel-heading"><div><span className="eyebrow">Ready to cast</span><h2>Spells</h2></div><div className="inline-filters"><button className="active">Prepared</button><button>Available</button><button>Library</button></div></header>
+        <div className="spell-table"><div className="spell-head"><span>Spell</span><span>Level</span><span>Status</span><span>Resource</span><span /></div>{spells.map((spell) => <div className="spell-row" key={spell[0]}><span><strong>{spell[0]}</strong><small>{sourceInfo.name} · standard action</small></span><span>{spell[1]}</span><span>{spell[2]}</span><span>{spell[3]}</span><button onClick={onTarget}>Cast</button></div>)}</div>
+      </section>
+    </div>
+  );
+}
+
+function MagicRail({ open, onToggle }: { open: boolean; onToggle: () => void }) {
+  if (!open) return <aside className="collapsed-rail"><button onClick={onToggle}><span>‹</span><b>Magic search</b></button></aside>;
+  return <aside className="side-rail magic-rail"><header className="rail-heading"><div><span className="eyebrow">Every source</span><h2>Find magic</h2></div><button onClick={onToggle}>›</button></header><label className="rail-search"><span>Search</span><input placeholder="Spell, school, source…" /></label><div className="filter-stack"><label>Source<select><option>All casting sources</option><option>Cleric 5</option><option>Wizard 5</option><option>Granted / SLA</option></select></label><label>Level<select><option>All levels</option><option>Can cast now</option><option>0</option><option>1</option><option>2</option><option>3</option></select></label><label>Status<select><option>All statuses</option><option>Prepared</option><option>Available</option><option>Spent</option></select></label><label>School<select><option>All schools</option><option>Conjuration</option><option>Divination</option><option>Evocation</option></select></label></div><div className="rail-callout"><strong>13 spells ready</strong><p>Across 2 casting sources</p></div><button className="rail-primary">Prepare & manage spells</button></aside>;
+}
+
+function BuildTab({ scenario, onToast }: { scenario: ScenarioKey; onToast: (message: string) => void }) {
+  if (scenario === "monster") return <MonsterBuild onToast={onToast} />;
+  return (
+    <div className="build-mock-page">
+      <section className="build-summary mock-panel"><div><span className="eyebrow">Character foundation</span><h2>{scenario === "multiclass" ? "Cleric 5 / Wizard 5" : "Ranger 7"}</h2><p>Half-elf · Neutral Good · 7 of 20 levels planned</p></div><div className="build-completion"><strong>Complete</strong><span>No unresolved choices</span></div><button onClick={() => onToast("Foundation editor opened")}>Edit foundation</button></section>
+      <section className="level-map mock-panel"><header className="panel-heading"><h2>Level progression</h2><button>Plan to level 20</button></header><div className="level-timeline">{Array.from({ length: 12 }, (_, index) => index + 1).map((level) => <button key={level} className={level === 7 ? "active" : level < 7 ? "complete" : "future"}><span>{level}</span><strong>{level <= 7 ? "Ranger" : "Planned"}</strong><small>{level === 1 ? "Feat · skills" : level === 4 ? "Ability +1" : level === 7 ? "Feat · favored terrain" : ""}</small></button>)}</div></section>
+      <div className="build-detail-grid"><Section title="Level 7 · Ranger"><div className="choice-grid"><label>Class<select><option>Ranger</option></select></label><label>Hit points<input defaultValue="8" /></label><label>Favored class bonus<select><option>+1 hit point</option></select></label><label>Feat<select><option>Manyshot</option></select></label></div><div className="resolved-choice"><span>Class feature</span><strong>Woodland Stride</strong><small>Move through natural undergrowth at normal speed.</small></div></Section><Section title="Foundation & rules"><div className="build-links"><button>Ability scores <span>18 · 17 · 14 · 12 · 16 · 13</span></button><button>Ancestry choices <span>Half-elf · complete</span></button><button>Archetypes <span>Horizon walker</span></button><button>Campaign rules <span>Standard firearms</span></button></div></Section></div>
+    </div>
+  );
+}
+
+function MonsterBuild({ onToast }: { onToast: (message: string) => void }) {
+  const layers = [
+    { kind: "Codex base", name: "Owlbear", meta: "Magical beast 5d10 · CR 4", detail: "STR 23 · DEX 12 · 52 HP · grab" },
+    { kind: "Racial Hit Dice", name: "+2 magical beast HD", meta: "7d10 total · feats and skills recalculated", detail: "+22 HP · +2 BAB · +1 feat" },
+    { kind: "Template", name: "Vampire", meta: "Applied template · CR +2", detail: "Undead traits · blood drain · fast healing 5" },
+    { kind: "Class levels", name: "Rogue 2", meta: "Two class levels · CR +2", detail: "Sneak attack +1d6 · evasion · rogue talents" },
+  ];
+  return (
+    <div className="monster-build-page">
+      <section className="monster-stack mock-panel"><header className="panel-heading"><div><span className="eyebrow">Composable actor build</span><h2>Build stack</h2></div><button onClick={() => onToast("Build layer menu opened")}>+ Add layer</button></header><div className="build-stack">{layers.map((layer, index) => <article key={layer.name}><span className="layer-number">{index + 1}</span><div><small>{layer.kind}</small><h3>{layer.name}</h3><p>{layer.meta}</p><em>{layer.detail}</em></div><div className="layer-actions"><button>Configure</button>{index > 0 ? <button>Remove</button> : <button>View source</button>}</div></article>)}</div></section>
+      <aside className="derived-preview mock-panel"><span className="eyebrow">Final derived actor</span><h2>CR 11</h2><p>The Sanguine Owlbear</p><dl><div><dt>Hit Dice</dt><dd>7d8 + 2d8</dd></div><div><dt>Hit points</dt><dd>118</dd></div><div><dt>Armor class</dt><dd>28</dd></div><div><dt>Base attack</dt><dd>+9</dd></div><div><dt>Fort / Ref / Will</dt><dd>+12 / +15 / +10</dd></div><div><dt>Special abilities</dt><dd>11</dd></div></dl><button>Review all calculations</button><div className="validation-ok">✓ All build choices resolved</div></aside>
+    </div>
+  );
+}
+
+function StatDrawer({ gm, stat, onClose, onToast }: { gm: boolean; stat: string; onClose: () => void; onToast: (message: string) => void }) {
+  return <div className="drawer-backdrop" onMouseDown={onClose}><aside className="detail-drawer" onMouseDown={(event) => event.stopPropagation()}><header><div><span className="eyebrow">Calculation & action</span><h2>{stat}</h2></div><button onClick={onClose} aria-label="Close">×</button></header><div className="drawer-total"><span>Current value</span><strong>{stat.includes("Armor") ? "28" : "+15"}</strong><em>{gm ? "Calculated + GM modifiers" : "Calculated"}</em></div><section><h3>Breakdown</h3>{[["Base value", "+10", "Rules engine"], ["Ability", "+4", "DEX 18"], ["Competence", "+2", "Magic item"], ["Campaign modifier", "−1", "Sickened · GM"]].map((row) => <div className="breakdown-row" key={row[0]}><span><b>{row[0]}</b><small>{row[2]}</small></span><strong>{row[1]}</strong>{gm ? <button aria-label={`Remove ${row[0]}`} onClick={() => onToast(`${row[0]} removed from campaign copy`)}>×</button> : null}</div>)}</section><section className="roll-composer"><h3>Roll</h3><label>d20 result<input type="number" placeholder="Enter roll" /></label><div><span>Total appears here</span><strong>—</strong></div></section>{gm ? <section className="modifier-composer"><h3>Add modifying value</h3><label>Value<input type="number" placeholder="+2" /></label><label>Type<select><option>Untyped</option><option>Enhancement</option><option>Morale</option><option>Penalty</option></select></label><label className="full">Source or note<input placeholder="GM ruling, terrain, spell…" /></label><button onClick={() => onToast("Modifier added to the campaign copy")}>Add modifier</button></section> : <button className="drawer-link">Open the source in Build</button>}</aside></div>;
+}
+
+function ProfileDrawer({ onClose, onToast }: { onClose: () => void; onToast: (message: string) => void }) {
+  return <div className="drawer-backdrop" onMouseDown={onClose}><aside className="detail-drawer profile-drawer" onMouseDown={(event) => event.stopPropagation()}><header><div><span className="eyebrow">Presentation metadata</span><h2>Character profile</h2></div><button onClick={onClose}>×</button></header><div className="portrait-editor"><img src="/mock-assets/seren-ashfall.png" alt="Seren Ashfall" /><div><button>Upload new portrait</button><small>JPG or PNG · square images work best</small></div></div><div className="profile-fields"><label>Deity<input defaultValue="Desna" /></label><label>Gender<input defaultValue="Woman" /></label><label>Age<input defaultValue="34" /></label><label>Height<input defaultValue="5 ft 8 in" /></label><label>Weight<input defaultValue="142 lb" /></label><label>Homeland<input defaultValue="Kyonin borderlands" /></label><label className="full">Associations<input defaultValue="Pathfinders · Ashen Road Company" /></label><label className="full">Languages<input defaultValue="Common · Elven · Sylvan" /></label></div><button className="drawer-primary" onClick={() => { onToast("Character profile saved"); onClose(); }}>Save profile</button><p className="metadata-callout">Stored as presentation metadata so the current rules schema and calculations remain unchanged.</p></aside></div>;
+}
+
+function TargetDialog({ onClose, onCast }: { onClose: () => void; onCast: () => void }) {
+  const [selected, setSelected] = useState(["seren", "brann", "voss"]);
+  const targets: Array<[string, string, string, string]> = [["seren", "Seren Ashfall", "Player", "48 / 62 HP"], ["brann", "Brann Ironwood", "Player", "71 / 78 HP"], ["voss", "Captain Elara Voss", "Ally", "45 / 45 HP"], ["warden", "The Hollow Warden", "Enemy", "93 / 110 HP"], ["goblin", "Goblin scouts", "Enemy group", "2 characters"]];
+  return <div className="modal-backdrop"><section className="target-dialog" role="dialog" aria-modal="true" aria-labelledby="target-title"><header><div><span className="eyebrow">Cleric 5 · Level 1 slot</span><h2 id="target-title">Who is affected by Bless?</h2><p>Select the characters affected on your physical tabletop.</p></div><button onClick={onClose}>×</button></header><label className="dialog-search">Search tabletop characters<input placeholder="Name, side, group…" /></label><div className="target-list">{targets.map(([id, name, type, status]) => <label key={id} className={selected.includes(id) ? "selected" : ""}><input type="checkbox" checked={selected.includes(id)} onChange={() => setSelected((previous) => previous.includes(id) ? previous.filter((entry) => entry !== id) : [...previous, id])} /><span className="target-avatar">{name.split(" ").map((part) => part[0]).slice(0, 2).join("")}</span><span><strong>{name}</strong><small>{type}</small></span><em>{status}</em></label>)}</div><div className="target-summary"><span><b>{selected.length}</b> targets selected</span><span>Targets resolve their own saves and effects</span></div><footer><button className="quiet-button" onClick={onClose}>Cancel</button><button className="dialog-primary" disabled={selected.length === 0} onClick={onCast}>Cast Bless · spend 1 slot</button></footer></section></div>;
+}
+
+function SaveDialog({ onClose, onResolve }: { onClose: () => void; onResolve: () => void }) {
+  const [roll, setRoll] = useState("15");
+  const total = Number(roll || 0) + 8;
+  return <div className="modal-backdrop"><section className="save-dialog" role="dialog" aria-modal="true"><header><div><span className="eyebrow">Effect resolution</span><h2>Attempt save against Hold Person</h2></div><button onClick={onClose}>×</button></header><div className="save-equation"><label>d20 result<input type="number" value={roll} onChange={(event) => setRoll(event.target.value)} /></label><span>+</span><div><small>Will save</small><strong>+8</strong></div><span>=</span><div><small>Total</small><strong>{total}</strong></div><span>vs</span><div><small>DC</small><strong>18</strong></div></div><div className={`save-result ${total >= 18 ? "success" : "failure"}`}><strong>{total >= 18 ? "Success" : "Failure"}</strong><span>{total >= 18 ? "The condition will be removed and the source notified." : "Hold Person remains. Another save may be attempted next turn."}</span></div><footer><button className="quiet-button" onClick={onClose}>Cancel</button><button className="dialog-primary" onClick={total >= 18 ? onResolve : onClose}>{total >= 18 ? "Confirm & remove condition" : "Confirm failed save"}</button></footer></section></div>;
+}
+
+function HealthDrawer({ scenario, onClose, onToast }: { scenario: ScenarioKey; onClose: () => void; onToast: (message: string) => void }) {
+  const gm = scenario === "monster";
+  return <div className="drawer-backdrop" onMouseDown={onClose}><aside className="detail-drawer health-drawer" onMouseDown={(event) => event.stopPropagation()}><header><div><span className="eyebrow">Combat health</span><h2>{gm ? "96 / 118 HP" : "48 / 62 HP"}</h2></div><button onClick={onClose}>×</button></header><div className="large-health-meter"><i style={{ width: gm ? "81%" : "77%" }} /></div><div className="health-stats"><span><small>Damage</small><strong>{gm ? "22" : "14"}</strong></span><span><small>Temporary HP</small><strong>0</strong></span><span><small>Nonlethal</small><strong>0</strong></span><span><small>Death at</small><strong>{gm ? "—" : "−14"}</strong></span></div><section className="health-actions"><h3>Apply damage</h3><label>Amount<input type="number" defaultValue="8" /></label><label>Damage type<select><option>Physical</option><option>Fire</option><option>Cold</option><option>Electricity</option></select></label><button onClick={() => onToast("8 physical damage applied")}>Apply damage</button></section><section className="health-actions"><h3>Recovery</h3><label>Healing<input type="number" defaultValue="8" /></label><button onClick={() => onToast("8 HP restored")}>Heal</button><label>Temporary HP<input type="number" defaultValue="0" /></label><button>Set temporary HP</button></section><button className="drawer-link">Stability, nonlethal & revival</button></aside></div>;
+}
+
+createRoot(document.getElementById("root")!).render(<StrictMode><App /></StrictMode>);

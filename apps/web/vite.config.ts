@@ -10,6 +10,9 @@ export default defineConfig({
       input: {
         main: fileURLToPath(new URL("./index.html", import.meta.url)),
         gmPreview: fileURLToPath(new URL("./gm-preview.html", import.meta.url)),
+        characterUiMock: fileURLToPath(
+          new URL("./character-ui-mock.html", import.meta.url),
+        ),
       },
     },
   },
