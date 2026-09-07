@@ -1,7 +1,7 @@
 .profile-menu {
   position: relative;
   flex-shrink: 0;
-  color: #fff;
+  color: #ede8dd;
   margin-left: auto;
   z-index: 20;
 }
@@ -14,7 +14,7 @@
   border-radius: 0;
   background: transparent;
   box-shadow: none;
-  color: #fff;
+  color: #ede8dd;
   cursor: pointer;
 }
 .profile-panel {
@@ -26,9 +26,9 @@
   display: grid;
   gap: 12px;
   padding: 20px;
-  border: 1px solid #765337;
-  border-radius: 12px;
-  background: #211b17;
+  border: 1px solid #3b3d3b;
+  border-radius: 7px;
+  background: #202325;
   box-shadow: 0 14px 40px #0008;
 }
 .profile-email,
@@ -39,28 +39,29 @@
   font-size: 14px;
 }
 .profile-sync {
-  color: #e2ad6f;
+  color: #d9b77d;
   font-size: 13px;
 }
 .profile-message {
   margin: 0;
-  color: #cabbac;
+  color: #b4b4aa;
   font-size: 13px;
 }
 .profile-panel button {
   padding: 10px 12px;
   text-align: left;
-  border: 1px solid #765337;
-  border-radius: 7px;
-  background: #2a221d;
-  color: #f3e9dd;
+  border: 1px solid #50514a;
+  border-radius: 5px;
+  background: #2b2e2e;
+  color: #ede8dd;
   cursor: pointer;
 }
 .profile-panel .profile-signout {
-  color: #ffb7a8;
+  color: #f1a79a;
 }
 .profile-panel button:hover {
-  background: #392c22;
+  border-color: #d9b77d;
+  background: #3b403e;
 }
 .home-header:has(.profile-menu),
 .app-bar:has(.profile-menu) {
@@ -81,6 +82,6 @@
   margin-left: 0;
 }
 .profile-menu button:focus-visible {
-  outline: 2px solid #e2ad6f;
+  outline: 2px solid #d9b77d;
   outline-offset: 3px;
 }

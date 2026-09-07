@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useWorkspaceField } from "./WorkspaceState";
 
 const defaults = {
   advancement: "XP leveling",
@@ -9,12 +10,12 @@ const defaults = {
   savage: true,
   grouped: false,
 };
-export function CampaignRules() {
-  const [rules, setRules] = useState({
+export function CampaignRules({ live = false }: { live?: boolean }) {
+  const [rules, setRules] = useWorkspaceField("rules", {
     ...defaults,
-    advancement: "Milestone leveling",
-    hp: "Average rounded up",
-    grouped: true,
+    advancement: live ? defaults.advancement : "Milestone leveling",
+    hp: live ? defaults.hp : "Average rounded up",
+    grouped: !live,
   });
   const [applied, setApplied] = useState(false);
   const update = (patch: Partial<typeof rules>) => {
@@ -36,11 +37,11 @@ export function CampaignRules() {
         <h2>The rules of this world</h2>
         <p className="gm-prose">
           Core Pathfinder rules are the foundation. Campaign exceptions are
-          explicit, visible, and reversible.
+          saved as preferences only; enforcement is disabled.
         </p>
         <div className="gm-section-title">
           <h3>Advancement & recovery</h3>
-          <span>All campaign characters</span>
+          <span>{live ? "Preferences only" : "All campaign characters"}</span>
         </div>
         <div className="gm-field-grid">
           <label>
@@ -92,7 +93,7 @@ export function CampaignRules() {
           <label className="gm-rule-row" key={key}>
             <span>
               <strong>{title}</strong>
-              <small>Core preview default: Enabled</small>
+              <small>Default: Enabled</small>
             </span>
             <input
               type="checkbox"
@@ -103,9 +104,7 @@ export function CampaignRules() {
         ))}
         {(!rules.core || !rules.apg || !rules.savage) && (
           <p className="gm-warning" role="alert">
-            Source disabled. Real implementation must check existing character
-            dependencies before enforcement; no builds will be changed in this
-            mock.
+            Source preference disabled. Existing character builds are unchanged.
           </p>
         )}
         <div className="gm-section-title">
@@ -121,8 +120,14 @@ export function CampaignRules() {
           Prefer grouped monster initiative
         </label>
         <div className="gm-actions">
-          <button className="gm-primary" onClick={() => setApplied(true)}>
-            Apply preview rules
+          <button
+            className="gm-primary"
+            onClick={() => {
+              setRules({ ...rules });
+              setApplied(true);
+            }}
+          >
+            Record preferences
           </button>
           <button
             onClick={() => {
@@ -135,8 +140,8 @@ export function CampaignRules() {
         </div>
         <p role="status" className="gm-save">
           {applied
-            ? "Preview settings applied in memory. No rules engine or player sheets changed."
-            : "Draft configuration · not enforced"}
+            ? "Preferences recorded. Rule enforcement is disabled."
+            : "Preferences autosave in live campaigns · not enforced"}
         </p>
       </section>
       <aside className="gm-rail">
@@ -150,7 +155,7 @@ export function CampaignRules() {
           <p>The baseline calculation and validation engine.</p>
           <span className="gm-step">02</span>
           <h4>Campaign exceptions</h4>
-          <p>Typed settings override only the rule they describe.</p>
+          <p>Campaign preferences are stored for future rule enforcement.</p>
           <span className="gm-step">03</span>
           <h4>Runtime modifiers</h4>
           <p>

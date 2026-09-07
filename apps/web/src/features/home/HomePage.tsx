@@ -60,11 +60,9 @@ export function HomePage() {
       <header className="home-header">
         <Link className="home-brand" to="/" aria-label="Mathfinder home">
           <span className="home-brand-mark">M</span>
-          <span>
-            Mathfinder
-            <small>Pathfinder 1e companion</small>
-          </span>
+          <span>Mathfinder</span>
         </Link>
+        <span className="home-header-label">Adventure hub</span>
         <HeaderProfile />
       </header>
 

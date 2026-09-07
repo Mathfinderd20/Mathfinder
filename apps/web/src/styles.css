@@ -1,14 +1,14 @@
 :root {
-  --bg: #1a1614;
-  --panel: #251f1b;
-  --panel-2: #2e2722;
-  --ink: #ece3d8;
-  --muted: #a8998a;
-  --accent: #c2683a;
-  --accent-2: #d99a5b;
-  --line: #3a322c;
-  --ok: #6fae6f;
-  --err: #d4756a;
+  --bg: #151719;
+  --panel: #202325;
+  --panel-2: #191c1e;
+  --ink: #ede8dd;
+  --muted: #b4b4aa;
+  --accent: #d9b77d;
+  --accent-2: #efd09c;
+  --line: #3b3d3b;
+  --ok: #a5b987;
+  --err: #f1a79a;
   font-family:
     "Segoe UI",
     system-ui,
@@ -24,6 +24,7 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--ink);
+  color-scheme: dark;
 }
 
 .mf-tooltip {
@@ -3485,5 +3486,252 @@ button:disabled {
   .paper-sheet-combat-grid,
   .abilities-grid {
     grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* Shared Game Master visual system */
+.app {
+  background:
+    radial-gradient(ellipse at 15% 0%, #363329 0, transparent 45%), var(--bg);
+}
+
+.app-bar {
+  min-height: 61px;
+  padding: 13px 4%;
+  border-bottom: 1px solid var(--line);
+  background: rgba(21, 23, 25, 0.9);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--ink);
+  font-family: Georgia, serif;
+  font-size: 22px;
+  font-weight: 400;
+}
+
+.brand::before {
+  display: grid;
+  width: 39px;
+  height: 31px;
+  place-items: center;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  content: "M";
+}
+
+.brand-sub {
+  margin-left: 10px;
+  padding-left: 24px;
+  border-left: 1px solid var(--line);
+  color: var(--accent);
+  font-family: system-ui, sans-serif;
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+}
+
+button {
+  padding: 9px 13px;
+  border: 1px solid var(--accent);
+  border-radius: 5px;
+  color: #24231f;
+  background: var(--accent);
+  box-shadow: none;
+}
+
+button:hover {
+  border-color: #efd09c;
+  background: #efd09c;
+}
+
+button.ghost {
+  border-color: #50514a;
+  color: var(--ink);
+  background: #2b2e2e;
+}
+
+button.ghost:hover {
+  border-color: var(--accent);
+  background: #3b403e;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.tab-bar {
+  gap: 25px;
+  max-width: 1600px;
+  padding: 10px 4% 0;
+  border-bottom: 1px solid var(--line);
+  background: rgba(21, 23, 25, 0.94);
+}
+
+.tab-button {
+  padding: 14px 8px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  color: var(--muted);
+  background: transparent;
+}
+
+.tab-button:hover {
+  border-color: transparent;
+  border-bottom-color: #77725f;
+  color: var(--ink);
+  background: transparent;
+}
+
+.tab-button.active {
+  border-color: transparent;
+  border-bottom-color: var(--accent);
+  color: var(--accent);
+  background: transparent;
+}
+
+.layout,
+.build-page {
+  max-width: 1600px;
+  padding: 22px 4%;
+}
+
+.panel,
+.paper-panel,
+.item-card,
+.mode-group,
+.runtime-preset-preview,
+.health-tracker,
+.health-action-card,
+.summary-box,
+.stat-card,
+.ability,
+.inventory-item,
+.spell-sheet-card,
+.race-meta-card,
+.spell-cast-panel,
+.modal-preview,
+.modal-preview-card,
+.modal-preview-ability,
+.modal-spell-seed-card {
+  border-color: var(--line);
+  border-radius: 5px;
+  background: var(--panel);
+  box-shadow: none;
+}
+
+.paper-panel {
+  background: linear-gradient(135deg, #282b2b, #202325 65%);
+}
+
+.panel h2,
+.editor-section-head h3,
+.health-action-card h3,
+.spell-chip-label,
+.subsection-title {
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 1.4px;
+}
+
+.sheet-name-row h1,
+.modal h2 {
+  font-family: Georgia, serif;
+  font-weight: 400;
+}
+
+.paper-badge,
+.hp-status,
+.chip,
+.skill-flag,
+.spell-cast-chip,
+.spell-name-chip {
+  border-radius: 4px;
+}
+
+.field select,
+.field input[type="number"],
+.field input[type="text"],
+.field input[list],
+.searchable-name-input,
+.sheet-roll-entry input,
+.app input:not([type="checkbox"]):not([type="radio"]),
+.app select,
+.app textarea {
+  border: 1px solid #484b47;
+  border-radius: 4px;
+  color: var(--ink);
+  background: #191c1e;
+}
+
+.runtime-active-tray {
+  background: rgba(30, 34, 35, 0.96);
+}
+
+.modal-backdrop {
+  background: rgba(10, 12, 13, 0.78);
+}
+
+.modal {
+  border-color: var(--line);
+  border-radius: 7px;
+  background: linear-gradient(135deg, #282b2b, #202325 65%);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.42);
+}
+
+.connection-banner {
+  border-bottom: 1px solid #605338;
+  color: #cec3ad;
+  background: #332e22;
+}
+
+.connection-banner[data-offline="true"] {
+  background: #332e22;
+}
+
+@media (max-width: 640px) {
+  .app-bar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px 12px;
+    padding: 12px 14px;
+  }
+
+  .app-bar > .actions {
+    grid-row: 2;
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+    margin-left: 0;
+  }
+
+  .app-bar > .profile-menu {
+    grid-row: 1;
+    grid-column: 2;
+    margin-left: 0;
+  }
+
+  .brand-sub {
+    display: none;
+  }
+
+  .tab-bar {
+    gap: 4px;
+    padding-inline: 14px;
+  }
+
+  .layout,
+  .build-page {
+    padding-inline: 14px;
   }
 }

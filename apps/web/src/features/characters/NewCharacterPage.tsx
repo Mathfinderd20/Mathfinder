@@ -54,6 +54,7 @@ export function NewCharacterPage() {
           <span className="home-brand-mark">M</span>
           <span>Mathfinder</span>
         </Link>
+        <span className="home-header-label">Character forge</span>
         <HeaderProfile />
       </header>
       <main className="form-page">

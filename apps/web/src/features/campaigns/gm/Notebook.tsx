@@ -23,7 +23,7 @@ export function Notebook({
       <section className="gm-sheet gm-notebook">
         <div className="gm-sheet-top">
           <span className="gm-kicker">Campaign notebook</span>
-          <span className="gm-save">◈ Private to the GM · Session draft</span>
+          <span className="gm-save">◈ Private to the campaign creator</span>
         </div>
         {note ? (
           <>
@@ -73,13 +73,13 @@ export function Notebook({
             <button
               className="gm-danger"
               onClick={() => {
-                if (window.confirm("Remove this sandbox note?")) {
+                if (window.confirm("Remove this campaign note?")) {
                   setNotes(notes.filter((entry) => entry.id !== note.id));
                   setSelected(notes.find((entry) => entry.id !== note.id)?.id);
                 }
               }}
             >
-              Delete draft note
+              Delete note
             </button>
           </>
         ) : (
@@ -140,8 +140,8 @@ export function Notebook({
             </button>
           ))}
         <p className="gm-rail-foot">
-          Your secrets stay behind the screen. Sharing and handouts are outside
-          this preview.
+          Your secrets stay behind the screen. Sharing and handouts are not
+          available.
         </p>
       </aside>
     </div>

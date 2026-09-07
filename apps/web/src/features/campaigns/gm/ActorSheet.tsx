@@ -2,10 +2,12 @@ import type { Actor } from "./mockData";
 
 export function ActorSheet({
   actor,
+  live = false,
   update,
   tabletop,
   remove,
 }: {
+  live?: boolean;
   actor: Actor;
   update: (patch: Partial<Actor>) => void;
   tabletop: boolean;
@@ -16,9 +18,11 @@ export function ActorSheet({
       <div className="gm-sheet-top">
         <span className="gm-kicker">
           {actor.kind === "Player" ? "Character sheet" : "Campaign stat block"}{" "}
-          / Preview
+          / {live ? "Campaign copy" : "Preview"}
         </span>
-        <span className="gm-save">● In-memory draft</span>
+        <span className="gm-save">
+          {live ? "● Campaign state" : "● In-memory draft"}
+        </span>
       </div>
       <header className="gm-actor-heading">
         <div
@@ -73,7 +77,7 @@ export function ActorSheet({
         <div>
           <span>Armor class</span>
           <strong>{actor.ac}</strong>
-          <small>Sample defense</small>
+          <small>Armor defense</small>
         </div>
         <div>
           <span>Initiative</span>
@@ -128,6 +132,62 @@ export function ActorSheet({
           />
         </label>
       </div>
+      {live && (
+        <div className="gm-field-grid">
+          {(["ancestry", "role", "level"] as const).map((key) => (
+            <label key={key}>
+              {key}
+              <input
+                value={actor[key]}
+                onChange={(e) => update({ [key]: e.target.value })}
+              />
+            </label>
+          ))}
+          <label>
+            Maximum hit points
+            <input
+              type="number"
+              min={1}
+              value={actor.maxHp}
+              onChange={(e) => {
+                const maxHp = Math.max(1, Number(e.target.value));
+                update({ maxHp, hp: Math.min(actor.hp, maxHp) });
+              }}
+            />
+          </label>
+          <label>
+            Armor class
+            <input
+              type="number"
+              value={actor.ac}
+              onChange={(e) => update({ ac: Number(e.target.value) })}
+            />
+          </label>
+          <label>
+            Initiative modifier
+            <input
+              type="number"
+              value={actor.initiativeBonus ?? 0}
+              onChange={(e) =>
+                update({ initiativeBonus: Number(e.target.value) })
+              }
+            />
+          </label>
+          <label>
+            Character type
+            <select
+              value={actor.kind}
+              onChange={(e) =>
+                update({ kind: e.target.value as Actor["kind"] })
+              }
+            >
+              {["Player", "Ally", "NPC", "Monster", "Villain"].map((kind) => (
+                <option key={kind}>{kind}</option>
+              ))}
+            </select>
+          </label>
+        </div>
+      )}
       {tabletop && (
         <div className="gm-field-grid gm-inset">
           <label>
@@ -168,9 +228,9 @@ export function ActorSheet({
             Acts in surprise round
           </label>
           <p className="gm-muted">
-            Preview: second turn at initiative −20. Delay/ready are markers;
-            select a turn in the tracker to resolve it. Group rolls share a
-            result.
+            Second turn at initiative −20. Delay/ready are markers; select a
+            turn in the tracker to resolve it. Groups share the d20 roll before
+            individual modifiers.
           </p>
         </div>
       )}
@@ -191,12 +251,14 @@ export function ActorSheet({
           {tabletop ? "An active participant" : "The campaign’s lasting cast"}
         </strong>
         <p>
-          {tabletop
-            ? "Damage and conditions here change this preview participant only. Interaction math and player modifier visibility are not wired up."
-            : "Roster edits stay in this sandbox when you switch characters. Full sheets, account imports, and real autosave are future integrations."}
+          {live
+            ? "Hit points, conditions, and notes belong to this campaign copy. Player character builds are unchanged."
+            : tabletop
+              ? "Damage and conditions here change this preview participant only. Interaction math and player modifier visibility are not wired up."
+              : "Roster edits stay in this sandbox when you switch characters. Full sheets, account imports, and real autosave are future integrations."}
         </p>
       </div>
-      {actor.saved && (
+      {(actor.saved || live) && (
         <button className="gm-danger" onClick={remove}>
           Remove from Roster and Tabletop
         </button>

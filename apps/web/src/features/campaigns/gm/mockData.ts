@@ -10,6 +10,7 @@ export interface Actor {
   maxHp: number;
   ac: number;
   initiative: number;
+  initiativeBonus?: number;
   onTable: boolean;
   saved: boolean;
   dual: boolean;

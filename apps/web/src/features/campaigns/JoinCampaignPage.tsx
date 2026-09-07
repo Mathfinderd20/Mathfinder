@@ -77,6 +77,7 @@ export function JoinCampaignPage() {
           <span className="home-brand-mark">M</span>
           <span>Mathfinder</span>
         </Link>
+        <span className="home-header-label">Campaigns</span>
         <HeaderProfile />
       </header>
       <main className="form-page">

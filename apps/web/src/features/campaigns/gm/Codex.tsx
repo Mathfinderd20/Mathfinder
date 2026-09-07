@@ -3,7 +3,11 @@ import { codexActors } from "./mockData";
 
 export function Codex({
   add,
+  catalog = codexActors,
+  live = false,
 }: {
+  catalog?: typeof codexActors;
+  live?: boolean;
   add: (index: number, quantity: number, table: boolean, save: boolean) => void;
 }) {
   const [search, setSearch] = useState("");
@@ -12,28 +16,38 @@ export function Codex({
   const [quantity, setQuantity] = useState(1);
   const [save, setSave] = useState(false);
   const [message, setMessage] = useState("");
-  const creature = codexActors[selected]!;
+  const creature = catalog[selected] ?? catalog[0];
   function insert(table: boolean) {
-    add(selected, quantity, table, !table || save);
+    if (!creature) return;
+    add(catalog.indexOf(creature), quantity, table, !table || save);
     setMessage(
       `Added ${quantity} × ${creature.name} to ${table ? "Tabletop" : "Roster"}.`,
     );
   }
+  if (!creature)
+    return (
+      <section className="gm-sheet gm-empty">
+        <h2>Your library is empty.</h2>
+        <p>Create a character in Roster to build a reusable stat block.</p>
+      </section>
+    );
   return (
     <div className="gm-workspace">
       <section className="gm-sheet">
         <div className="gm-sheet-top">
-          <span className="gm-kicker">Codex / Sample library</span>
-          <span className="gm-tag">Illustrative stats</span>
+          <span className="gm-kicker">
+            {live ? "Codex / Campaign library" : "Codex / Sample library"}
+          </span>
+          <span className="gm-tag">
+            {live ? "Independent templates" : "Illustrative stats"}
+          </span>
         </div>
         <header className="gm-actor-heading">
           <div className="gm-portrait tone-monster" aria-hidden="true">
             ◈
           </div>
           <div>
-            <span className="gm-kicker">
-              {creature.level} · Reference preview
-            </span>
+            <span className="gm-kicker">{creature.level} · Reference</span>
             <h2>{creature.name}</h2>
             <p>
               {creature.ancestry} · {creature.role}
@@ -55,7 +69,9 @@ export function Codex({
           </div>
           <div>
             <span>Source</span>
-            <strong className="gm-stat-word">Sample</strong>
+            <strong className="gm-stat-word">
+              {live ? "Campaign" : "Sample"}
+            </strong>
           </div>
         </div>
         <div className="gm-section-title">
@@ -104,14 +120,16 @@ export function Codex({
             {message}
           </p>
         </div>
-        <div className="gm-callout">
-          <strong>Library integration comes next</strong>
-          <p>
-            These five entries are synthetic presentation fixtures, not the full
-            Pathfinder Bestiary or NPC Codex. Source, CR-range, and environment
-            filtering will arrive with real content.
-          </p>
-        </div>
+        {!live && (
+          <div className="gm-callout">
+            <strong>Library integration comes next</strong>
+            <p>
+              These five entries are synthetic presentation fixtures, not the
+              full Pathfinder Bestiary or NPC Codex. Source, CR-range, and
+              environment filtering will arrive with real content.
+            </p>
+          </div>
+        )}
       </section>
       <aside className="gm-rail">
         <div className="gm-rail-head">
@@ -133,7 +151,7 @@ export function Codex({
             <option>Summons</option>
           </select>
         </div>
-        {codexActors
+        {catalog
           .map((entry, index) => ({ entry, index }))
           .filter(
             ({ entry }) =>
@@ -145,7 +163,7 @@ export function Codex({
           )
           .map(({ entry, index }) => (
             <button
-              key={entry.name}
+              key={index}
               className={`gm-list-entry ${selected === index ? "is-selected" : ""}`}
               onClick={() => {
                 setSelected(index);

@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
+import { useWorkspaceField } from "./WorkspaceState";
 import { ActorSheet } from "./ActorSheet";
 import { Notebook } from "./Notebook";
 import { Codex } from "./Codex";
@@ -13,31 +14,51 @@ import {
 import "./gm.css";
 import "./gm-responsive.css";
 
-const tabs = ["Notes", "Roster", "Tabletop", "Codex", "Rules"] as const;
+const tabs = [
+  "Notes",
+  "Roster",
+  "Tabletop",
+  "Codex",
+  "Rules",
+  "Invite",
+] as const;
 type Tab = (typeof tabs)[number];
 export function GameMasterLayer({
+  live = false,
+  catalog = codexActors,
+  invite,
+  management,
+  status,
   campaignName = "The Ashen Road",
   backHref = "/",
   backLabel = "Back to Mathfinder",
 }: {
+  live?: boolean;
+  catalog?: typeof codexActors;
+  invite?: ReactNode;
+  management?: ReactNode;
+  status?: ReactNode;
   campaignName?: string;
   backHref?: string;
   backLabel?: string;
 }) {
   const [tab, setTab] = useState<Tab>("Roster");
-  const [actors, setActors] = useState<Actor[]>(() =>
-    initialActors.map((actor) => ({ ...actor })),
+  const [actors, setActors] = useWorkspaceField<Actor[]>("actors", () =>
+    (live ? [] : initialActors).map((actor) => ({ ...actor })),
   );
-  const [notes, setNotes] = useState(initialNotes);
+  const [notes, setNotes] = useWorkspaceField(
+    "notes",
+    live ? [] : initialNotes,
+  );
   const [selected, setSelected] = useState("seren");
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("All");
-  const [phase, setPhase] = useState<
+  const [phase, setPhase] = useWorkspaceField<
     "Exploration" | "Awaiting initiative" | "Combat"
-  >("Exploration");
-  const [round, setRound] = useState(1);
-  const [turnId, setTurnId] = useState("");
-  const [surprise, setSurprise] = useState(false);
+  >("phase", "Exploration");
+  const [round, setRound] = useWorkspaceField("round", 1);
+  const [turnId, setTurnId] = useWorkspaceField("turnId", "");
+  const [surprise, setSurprise] = useWorkspaceField("surprise", false);
   const [notice, setNotice] = useState("");
   const tabletop = tab === "Tabletop";
   const order = initiativeOrder(actors, surprise);
@@ -57,19 +78,27 @@ export function GameMasterLayer({
       ),
     );
   function add(index: number, quantity: number, table: boolean, save: boolean) {
-    const sample = codexActors[index];
+    const sample = catalog[index];
     if (!sample || quantity < 1) return;
     const additions = Array.from({ length: quantity }, (_, i): Actor => ({
       ...initialActors[4]!,
       ...sample,
       id: crypto.randomUUID(),
       name: quantity > 1 ? `${sample.name} ${i + 1}` : sample.name,
-      maxHp: sample.hp,
+      hp: (sample as Partial<Actor>).maxHp ?? sample.hp,
+      maxHp: (sample as Partial<Actor>).maxHp ?? sample.hp,
       onTable: table,
       saved: save,
       group: "",
-      notes: "Added from the sample Codex. Independent encounter state.",
-      kind: sample.role.includes("NPC") ? "NPC" : "Monster",
+      initiative: 0,
+      conditions: "",
+      dual: false,
+      aware: true,
+      stance: "Normal",
+      notes: "",
+      kind:
+        (sample as Partial<Actor>).kind ??
+        (sample.role.includes("NPC") ? "NPC" : "Monster"),
     }));
     setActors((entries) => [...entries, ...additions]);
     setSelected(additions[0]!.id);
@@ -82,11 +111,14 @@ export function GameMasterLayer({
         const key = entry.group.trim() || entry.id;
         if (!groups.has(key))
           groups.set(key, Math.floor(Math.random() * 20) + 1);
-        return { ...entry, initiative: groups.get(key)! };
+        return {
+          ...entry,
+          initiative: groups.get(key)! + (entry.initiativeBonus ?? 0),
+        };
       }),
     );
     setNotice(
-      "Sample d20 results assigned. Group members share a roll; edit results on the sheet. No player requests sent.",
+      "d20 results assigned with each participant’s initiative modifier. Groups share the d20 roll.",
     );
   }
   function advance(direction: number) {
@@ -119,7 +151,9 @@ export function GameMasterLayer({
           <span>M</span> Mathfinder
         </a>
         <span className="gm-header-label">GAME MASTER’S LAYER</span>
-        <span className="gm-sandbox">◈ Interactive mock</span>
+        <span className="gm-sandbox">
+          {live ? "◈ Creator workspace" : "◈ Interactive mock"}
+        </span>
       </header>
       <main className="gm-main">
         <div className="gm-campaign-heading">
@@ -132,31 +166,41 @@ export function GameMasterLayer({
             {backLabel} ↗
           </a>
         </div>
-        <div className="gm-preview-banner">
-          DESIGN SANDBOX{" "}
-          <span>
-            Synthetic characters · changes last until refresh · no cloud writes
-            or player functionality
-          </span>
-        </div>
+        {live ? (
+          status
+        ) : (
+          <div className="gm-preview-banner">
+            DESIGN SANDBOX{" "}
+            <span>
+              Synthetic characters · changes last until refresh · no cloud
+              writes or player functionality
+            </span>
+          </div>
+        )}
         <nav className="gm-tabs" aria-label="Game Master workspace">
-          {tabs.map((name, index) => (
-            <button
-              key={name}
-              aria-current={tab === name ? "page" : undefined}
-              onClick={() => {
-                setTab(name);
-                setSearch("");
-                setFilter("All");
-              }}
-            >
-              <span aria-hidden="true">{["▤", "♜", "⚔", "◈", "⚙"][index]}</span>
-              {name}
-              {name === "Tabletop" && (
-                <small>{actors.filter((entry) => entry.onTable).length}</small>
-              )}
-            </button>
-          ))}
+          {tabs
+            .filter((name) => live || name !== "Invite")
+            .map((name, index) => (
+              <button
+                key={name}
+                aria-current={tab === name ? "page" : undefined}
+                onClick={() => {
+                  setTab(name);
+                  setSearch("");
+                  setFilter("All");
+                }}
+              >
+                <span aria-hidden="true">
+                  {["▤", "♜", "⚔", "◈", "⚙", "✉"][index]}
+                </span>
+                {name}
+                {name === "Tabletop" && (
+                  <small>
+                    {actors.filter((entry) => entry.onTable).length}
+                  </small>
+                )}
+              </button>
+            ))}
         </nav>
         <div className="gm-page-heading">
           <div>
@@ -187,11 +231,13 @@ export function GameMasterLayer({
           <Notebook notes={notes} setNotes={setNotes} />
         </div>
         <div hidden={tab !== "Codex"}>
-          <Codex add={add} />
+          <Codex add={add} catalog={catalog} live={live} />
         </div>
         <div hidden={tab !== "Rules"}>
-          <CampaignRules />
+          <CampaignRules live={live} />
+          {management}
         </div>
+        {tab === "Invite" && invite}
         {(tab === "Roster" || tabletop) && (
           <>
             {tabletop && (
@@ -200,7 +246,9 @@ export function GameMasterLayer({
                 aria-label="Encounter controls"
               >
                 <div>
-                  <span className="gm-kicker">The sunken chapel</span>
+                  <span className="gm-kicker">
+                    {live ? "Campaign encounter" : "The sunken chapel"}
+                  </span>
                   <strong>
                     {phase === "Combat"
                       ? surprise
@@ -211,7 +259,7 @@ export function GameMasterLayer({
                   <small>
                     {phase === "Combat"
                       ? `Current: ${current?.name ?? "No active combatants"}`
-                      : "One active encounter · sample scene"}
+                      : "One active encounter"}
                   </small>
                 </div>
                 <div className="gm-actions">
@@ -229,13 +277,13 @@ export function GameMasterLayer({
                         onClick={() => {
                           setPhase("Awaiting initiative");
                           setNotice(
-                            "Initiative requested in this GM preview. Player sheet prompts are future work.",
+                            "Awaiting initiative. Enter results or roll all participants.",
                           );
                         }}
                       >
                         Call for Initiative
                       </button>
-                      <button onClick={roll}>Roll all (demo)</button>
+                      <button onClick={roll}>Roll all</button>
                       <button
                         className="gm-primary"
                         disabled={!order.length}
@@ -285,13 +333,14 @@ export function GameMasterLayer({
               <div>
                 {actor ? (
                   <ActorSheet
+                    live={live}
                     actor={actor}
                     update={update}
                     tabletop={tabletop}
                     remove={() => {
                       if (
                         window.confirm(
-                          `Remove ${actor.name} from this mock roster and tabletop?`,
+                          `Remove ${actor.name} from this campaign roster and tabletop?`,
                         )
                       )
                         setActors(
@@ -339,6 +388,19 @@ export function GameMasterLayer({
                           ...actors,
                           {
                             ...initialActors[2]!,
+                            ancestry: "",
+                            role: "NPC",
+                            level: "Level 1",
+                            hp: 1,
+                            maxHp: 1,
+                            ac: 10,
+                            initiative: 0,
+                            conditions: "",
+                            group: "",
+                            dual: false,
+                            aware: true,
+                            stance: "Normal",
+                            saved: true,
                             id,
                             name: "New custom NPC",
                             kind: "NPC",
@@ -440,7 +502,7 @@ export function GameMasterLayer({
                 <p className="gm-rail-foot">
                   {tabletop
                     ? "Ties retain cast order. Edit results to reorder; ▶ sets the current turn. Defeated participants are skipped. Summons join through the Codex."
-                    : "Select a character to inspect their sheet. Account-character import is reserved for live integration."}
+                    : "Select a character to edit their campaign copy. Use the Codex to import available characters."}
                 </p>
               </aside>
             </div>

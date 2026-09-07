@@ -55,6 +55,7 @@ export function CreateCampaignPage() {
           <span className="home-brand-mark">M</span>
           <span>Mathfinder</span>
         </Link>
+        <span className="home-header-label">Game Master</span>
         <HeaderProfile />
       </header>
       <main className="form-page">
