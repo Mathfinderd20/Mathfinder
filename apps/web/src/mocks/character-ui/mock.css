@@ -1409,7 +1409,7 @@ body {
 .spell-head,
 .spell-row {
   display: grid;
-  grid-template-columns: minmax(240px, 1.5fr) 70px 120px minmax(120px, 0.8fr) 70px;
+  grid-template-columns: minmax(290px, 1.7fr) 52px 78px 92px minmax(112px, 0.7fr) 112px;
   align-items: center;
   gap: 10px;
   padding: 9px 12px;
@@ -1433,9 +1433,14 @@ body {
 
 .spell-row > span:first-child {
   display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  justify-content: start;
+  gap: 4px 7px;
 }
 
-.spell-row small {
+.spell-row > span:first-child > small {
+  grid-column: 1 / -1;
   color: var(--mock-muted);
   font-size: 11px;
 }
@@ -1443,6 +1448,59 @@ body {
 .spell-row button {
   color: #18140e;
   background: var(--mock-gold);
+}
+
+.spell-kind {
+  width: fit-content;
+  padding: 2px 5px;
+  border: 1px solid var(--mock-line);
+  border-radius: 999px;
+  color: var(--mock-muted);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.spell-kind.domain {
+  border-color: rgba(154, 134, 214, 0.7);
+  color: #c8b9f1;
+  background: rgba(116, 88, 184, 0.14);
+}
+
+.spell-row.domain-spell {
+  box-shadow: inset 3px 0 #9175d3;
+  background: rgba(116, 88, 184, 0.045);
+}
+
+.domain-key {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 12px;
+  border-bottom: 1px solid var(--mock-line);
+  background: rgba(116, 88, 184, 0.06);
+}
+
+.domain-key p {
+  color: var(--mock-muted);
+  font-size: 11px;
+}
+
+.prepare-amount {
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  align-items: center;
+  gap: 5px;
+}
+
+.prepare-amount select {
+  min-width: 48px;
+  padding: 5px;
+}
+
+.prepare-amount small {
+  color: var(--mock-muted);
+  font-size: 10px;
 }
 
 /* Build */
@@ -1500,6 +1558,89 @@ body {
   background: var(--mock-gold) !important;
 }
 
+.build-foundation-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.build-foundation-section {
+  overflow: hidden;
+}
+
+.foundation-record,
+.campaign-rule-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 12px;
+  border-bottom: 1px solid var(--mock-line);
+}
+
+.foundation-record > div {
+  display: grid;
+  gap: 2px;
+}
+
+.foundation-record > div > strong {
+  font: 21px Georgia, serif;
+}
+
+.foundation-record small,
+.campaign-rule-line {
+  color: var(--mock-muted);
+  font-size: 11px;
+}
+
+.foundation-status,
+.campaign-rule-line em {
+  padding: 3px 7px;
+  border: 1px solid rgba(159, 189, 132, 0.5);
+  border-radius: 999px;
+  color: var(--mock-green);
+  font-size: 10px;
+  font-style: normal;
+}
+
+.trait-list {
+  display: grid;
+  padding: 5px 10px 9px;
+}
+
+.trait-list button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 4px;
+  border: 0;
+  border-bottom: 1px solid var(--mock-line);
+  border-radius: 0;
+  text-align: left;
+  background: transparent;
+}
+
+.trait-list button:last-child {
+  border-bottom: 0;
+}
+
+.trait-list button > span {
+  display: grid;
+  gap: 2px;
+}
+
+.trait-list small {
+  color: var(--mock-muted);
+  font-size: 11px;
+}
+
+.trait-list em {
+  color: var(--mock-gold);
+  font-size: 11px;
+  font-style: normal;
+}
+
 .vertical-progression {
   overflow: hidden;
 }
@@ -1546,8 +1687,12 @@ body {
   padding: 7px 11px 10px;
 }
 
-.progression-list button {
+.progression-level {
   position: relative;
+  border-bottom: 1px solid var(--mock-line);
+}
+
+.progression-level > summary {
   display: grid;
   grid-template-columns: 74px 110px 110px minmax(180px, 1fr) auto;
   align-items: center;
@@ -1555,13 +1700,18 @@ body {
   min-height: 43px;
   padding: 7px 10px;
   border: 0;
-  border-bottom: 1px solid var(--mock-line);
   border-radius: 0;
+  cursor: pointer;
+  list-style: none;
   text-align: left;
   background: transparent;
 }
 
-.progression-list button::before {
+.progression-level > summary::-webkit-details-marker {
+  display: none;
+}
+
+.progression-level::before {
   position: absolute;
   top: 0;
   bottom: 0;
@@ -1571,16 +1721,16 @@ body {
   content: "";
 }
 
-.progression-list button:hover,
-.progression-list button.active {
+.progression-level > summary:hover,
+.progression-level[open] > summary {
   background: rgba(221, 185, 120, 0.06);
 }
 
-.progression-list button.active {
+.progression-level[open] {
   box-shadow: inset 3px 0 var(--mock-gold);
 }
 
-.progression-list button.active::before {
+.progression-level[open]::before {
   background: var(--mock-gold-bright);
 }
 
@@ -1589,16 +1739,67 @@ body {
   font-size: 11px;
 }
 
-.progression-list button > span:nth-of-type(2),
-.progression-list button small {
+.progression-level > summary > span:nth-of-type(2),
+.progression-level > summary small {
   color: var(--mock-muted);
   font-size: 11px;
 }
 
-.progression-list button em {
+.progression-level > summary em {
   color: var(--mock-gold);
-  font-size: 18px;
+  font-size: 0;
   font-style: normal;
+}
+
+.progression-level > summary em::after {
+  content: "+";
+  font-size: 18px;
+}
+
+.progression-level[open] > summary em::after {
+  content: "−";
+}
+
+.progression-breakdown {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(250px, 0.8fr);
+  gap: 10px;
+  padding: 10px 12px 12px 22px;
+  background: rgba(0, 0, 0, 0.11);
+}
+
+.level-choice-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(120px, 1fr));
+  gap: 8px;
+}
+
+.level-choice-grid label {
+  display: grid;
+  gap: 4px;
+  color: var(--mock-muted);
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.level-grants {
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  gap: 3px 8px;
+  padding: 8px 10px;
+  border-left: 3px solid var(--mock-green);
+  background: rgba(159, 189, 132, 0.05);
+}
+
+.level-grants span,
+.level-grants small {
+  color: var(--mock-muted);
+  font-size: 10px;
+}
+
+.level-grants small {
+  grid-column: 2;
 }
 
 .choice-grid,
@@ -1823,7 +2024,8 @@ body {
 .detail-drawer > header,
 .target-dialog > header,
 .save-dialog > header,
-.level-up-dialog > header {
+.level-up-dialog > header,
+.creation-guide-dialog > header {
   display: flex;
   align-items: start;
   justify-content: space-between;
@@ -1835,14 +2037,16 @@ body {
 .detail-drawer > header h2,
 .target-dialog > header h2,
 .save-dialog > header h2,
-.level-up-dialog > header h2 {
+.level-up-dialog > header h2,
+.creation-guide-dialog > header h2 {
   font-size: 27px;
 }
 
 .detail-drawer > header > button,
 .target-dialog > header > button,
 .save-dialog > header > button,
-.level-up-dialog > header > button {
+.level-up-dialog > header > button,
+.creation-guide-dialog > header > button {
   width: 32px;
   height: 32px;
   padding: 0;
@@ -2022,7 +2226,8 @@ body {
 
 .target-dialog,
 .save-dialog,
-.level-up-dialog {
+.level-up-dialog,
+.creation-guide-dialog {
   width: min(660px, 100%);
   max-height: calc(100vh - 40px);
   overflow-y: auto;
@@ -2037,10 +2242,127 @@ body {
   width: min(760px, 100%);
 }
 
-.level-up-dialog > header p {
+.creation-guide-dialog {
+  width: min(900px, 100%);
+}
+
+.level-up-dialog > header p,
+.creation-guide-dialog > header p {
   margin-top: 4px;
   color: var(--mock-muted);
   font-size: 12px;
+}
+
+.creation-steps {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(82px, 1fr));
+  gap: 1px;
+  overflow-x: auto;
+  margin: 14px 0;
+  background: var(--mock-line);
+}
+
+.creation-steps button {
+  position: relative;
+  display: grid;
+  min-height: 66px;
+  align-content: center;
+  justify-items: start;
+  gap: 3px;
+  padding: 7px 8px;
+  border: 0;
+  border-radius: 0;
+  color: var(--mock-muted);
+  background: #151a1c;
+  text-align: left;
+}
+
+.creation-steps button.active {
+  color: var(--mock-ink);
+  box-shadow: inset 0 -3px var(--mock-gold);
+  background: rgba(221, 185, 120, 0.09);
+}
+
+.creation-steps button b {
+  color: var(--mock-gold);
+  font-size: 10px;
+}
+
+.creation-steps button span {
+  font-size: 11px;
+}
+
+.creation-steps button em {
+  color: #c8b9f1;
+  font-size: 9px;
+  font-style: normal;
+  text-transform: uppercase;
+}
+
+.creation-guide-body h3 {
+  margin-top: 2px;
+  font-size: 23px;
+}
+
+.creation-guide-body > p {
+  margin: 4px 0 14px;
+  color: var(--mock-muted);
+  font-size: 12px;
+}
+
+.creation-guide-body > label {
+  display: grid;
+  grid-template-columns: 120px minmax(240px, 360px);
+  align-items: center;
+  gap: 10px;
+  color: var(--mock-muted);
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.creation-choice-list {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 7px;
+  margin-top: 12px;
+}
+
+.creation-choice-list label {
+  display: grid;
+  grid-template-columns: 18px 1fr;
+  align-items: start;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--mock-line);
+  border-radius: 5px;
+  background: rgba(0, 0, 0, 0.11);
+}
+
+.creation-choice-list label > span {
+  display: grid;
+  gap: 3px;
+}
+
+.creation-choice-list small {
+  color: var(--mock-muted);
+  font-size: 11px;
+}
+
+.campaign-policy {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid rgba(221, 185, 120, 0.4);
+  background: rgba(221, 185, 120, 0.05);
+}
+
+.campaign-policy span,
+.campaign-policy em {
+  color: var(--mock-muted);
+  font-size: 11px;
+  font-style: normal;
 }
 
 .level-up-steps {
@@ -2213,7 +2535,8 @@ body {
 
 .target-dialog footer,
 .save-dialog footer,
-.level-up-dialog footer {
+.level-up-dialog footer,
+.creation-guide-dialog footer {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
@@ -2428,7 +2751,8 @@ body {
   .notes-workspace,
   .inventory-body-grid,
   .build-detail-grid,
-  .monster-build-page {
+  .monster-build-page,
+  .build-foundation-grid {
     grid-template-columns: 1fr;
   }
 
@@ -2485,6 +2809,10 @@ body {
   .foundation-chips,
   .build-actions {
     justify-content: flex-start;
+  }
+
+  .progression-breakdown {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -2609,7 +2937,7 @@ body {
 
   .spell-head,
   .spell-row {
-    min-width: 650px;
+    min-width: 840px;
   }
 
   .save-equation {
@@ -2632,13 +2960,26 @@ body {
     display: grid;
   }
 
-  .progression-list button {
+  .progression-level > summary {
     grid-template-columns: 66px 1fr auto;
   }
 
-  .progression-list button > span:nth-of-type(2),
-  .progression-list button small {
+  .progression-level > summary > span:nth-of-type(2),
+  .progression-level > summary small {
     display: none;
+  }
+
+  .level-choice-grid,
+  .creation-choice-list {
+    grid-template-columns: 1fr;
+  }
+
+  .build-actions {
+    flex-wrap: wrap;
+  }
+
+  .creation-guide-body > label {
+    grid-template-columns: 1fr;
   }
 
   .level-up-steps li {
