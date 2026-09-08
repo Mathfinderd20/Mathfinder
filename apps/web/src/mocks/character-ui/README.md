@@ -25,6 +25,8 @@ The scenario switcher is mock navigation, not a proposed production control.
 - Spell rows carry a short effect summary, save/DC, and verbal, somatic, and material/focus components. Prepared casters choose quantities from the source Library, capped by that spell level's open slots.
 - Selecting a spell opens its complete rules dialog: school, casting time, components, range, target/area, duration, saving throw/DC, spell resistance, preparation state, and full description. Cast or Prepare remains available from that dialog.
 - Domain spells remain inside their granting class source and the unified Spells list, but use a distinct Domain marker and the dedicated domain-slot allowance for their level.
+- Prepared spell rows expose `Reprepare`. The guided dialog releases that exact normal or domain slot, filters the character's known/eligible spells to matching level and slot type, and atomically replaces the preparation on confirmation.
+- The Character tab exposes `Rest` beside health management. It previews the active campaign's rest period and HP rule, then restores eligible HP, expended spell slots, and per-day resources. Existing spell preparations remain assigned; conditions clear only when their duration or a campaign rule says so.
 - Inventory promotes the equipment figure, separates Carried from Stored, gives carried weapons their own table, and keeps ammunition adjacent to its weapon.
 - Monster and NPC Build use the same collapsible Level Progression chart as player characters. Racial Hit Dice and class levels occupy explicit lines; templates and codex origin remain attached modifiers outside the level sequence.
 - Build progression reads top to bottom and can collapse. Every character-level line records the class taken and its resulting class level; its full choice breakdown expands directly beneath that line instead of appearing in a detached panel.
@@ -56,6 +58,7 @@ The scenario switcher is mock navigation, not a proposed production control.
 
 - Prepared and spontaneous casters, spell library, known/prepared selections, granted spells, domains, specialist schools, suggestions, spell metadata, extra/restricted slots, slot use/reset, runtime casting, and diagnostics.
 - Preparation must prevent a caster from assigning more copies than the remaining normal or domain slots at that spell level. Domain spells cannot consume ordinary prepared slots unless another rule separately grants that permission.
+- Repreparing must preserve slot accounting: the existing preparation is not removed until a valid replacement is confirmed, and the replacement must be eligible for the released source, spell level, and domain/normal slot type.
 
 ### Build
 
@@ -75,6 +78,8 @@ The current `CharacterBuild` rules schema does not include portraits, player not
 Effect targeting and subsequent-save flows will likely require runtime/campaign metadata for effect source, owner authority, affected character IDs, save type, DC, repeat-save timing, duration, and removal state. Preserve the existing campaign workspace JSON document rather than replacing the recently implemented campaign persistence model.
 
 Manual GM modifiers should be campaign-scoped layers over derived values, not destructive edits to an imported player's build. The UI must nevertheless give the GM full authority to add or remove any modifying value on the campaign copy.
+
+Rest resolution must read the character's active campaign rules rather than hard-code natural healing. Apply HP recovery, spell-slot restoration, per-day resource reset, rest interruption, and condition-duration behavior as one auditable runtime event. For prepared casters, restoring a spent slot does not silently change the spell already assigned to it.
 
 ## Image asset
 

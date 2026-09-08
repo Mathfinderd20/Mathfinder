@@ -164,6 +164,7 @@ function App() {
   const [targeting, setTargeting] = useState(false);
   const [saveAttempt, setSaveAttempt] = useState(false);
   const [healthOpen, setHealthOpen] = useState(false);
+  const [restOpen, setRestOpen] = useState(false);
   const [leveling, setLeveling] = useState<{ level?: number; className?: string; editing?: boolean }>();
   const [creationGuideOpen, setCreationGuideOpen] = useState(false);
   const [toast, setToast] = useState<string>();
@@ -244,6 +245,7 @@ function App() {
               scenario={scenario}
               onDetail={setDetail}
               onHealth={() => setHealthOpen(true)}
+              onRest={() => setRestOpen(true)}
             />
           ) : null}
           {tab === "notes" ? <NotesTab gm={gm} /> : null}
@@ -274,6 +276,7 @@ function App() {
       {targeting ? <TargetDialog onClose={() => setTargeting(false)} onCast={() => { setTargeting(false); showToast("Spell sent to 3 affected character sheets"); }} /> : null}
       {saveAttempt ? <SaveDialog onClose={() => setSaveAttempt(false)} onResolve={() => { setSaveAttempt(false); showToast("Will save succeeded · Hold Person removed"); }} /> : null}
       {healthOpen ? <HealthDrawer scenario={scenario} onClose={() => setHealthOpen(false)} onToast={showToast} /> : null}
+      {restOpen ? <RestDialog scenario={scenario} onClose={() => setRestOpen(false)} onRest={() => { setRestOpen(false); showToast("Rest completed · HP and daily resources restored"); }} /> : null}
       {leveling ? <LevelUpDialog scenario={scenario} target={leveling} onClose={() => setLeveling(undefined)} onContinue={() => { const editing = leveling.editing; setLeveling(undefined); showToast(editing ? "Level changes staged for review" : "Level-up workflow opened at hit points"); }} /> : null}
       {creationGuideOpen ? <CreationGuideDialog scenario={scenario} onClose={() => setCreationGuideOpen(false)} /> : null}
       {toast ? <div className="mock-toast" role="status">{toast}</div> : null}
@@ -312,7 +315,7 @@ function StatButton({ label, value, helper, onClick, tone = "" }: { label: strin
   );
 }
 
-function CharacterTab({ gm, scenario, onDetail, onHealth }: { gm: boolean; scenario: ScenarioKey; onDetail: (stat: string) => void; onHealth: () => void }) {
+function CharacterTab({ gm, scenario, onDetail, onHealth, onRest }: { gm: boolean; scenario: ScenarioKey; onDetail: (stat: string) => void; onHealth: () => void; onRest: () => void }) {
   const abilities = gm ? MONSTER_ABILITIES : ABILITIES;
   const skills = gm ? MONSTER_SKILLS : SKILLS;
   return (
@@ -328,7 +331,7 @@ function CharacterTab({ gm, scenario, onDetail, onHealth }: { gm: boolean; scena
           </div>
         </Section>
 
-        <Section title="Defense & health" action={<button className="text-button" onClick={onHealth}>Manage health</button>}>
+        <Section title="Defense & health" action={<div className="section-actions"><button className="text-button" onClick={onHealth}>Manage Health</button><button className="rest-button" onClick={onRest}>Rest</button></div>}>
           <div className="defense-grid">
             <StatButton label="Armor class" value={gm ? "28" : "22"} helper="normal" onClick={() => onDetail("Armor Class")} />
             <StatButton label="Touch" value={gm ? "14" : "14"} onClick={() => onDetail("Touch AC")} />
@@ -519,7 +522,8 @@ function MagicTab({ scenario, onTarget, onToast }: { scenario: ScenarioKey; onTa
   const [view, setView] = useState<"prepared" | "available" | "library">("prepared");
   const [prepareAmounts, setPrepareAmounts] = useState<Record<string, number>>({});
   const [spellDetail, setSpellDetail] = useState<MockSpell>();
-  const sourceInfo = source === "wizard" ? { name: "Wizard 5", type: "Prepared · INT", level: "Caster level 5", concentration: "+9", dc: "DC 15–18", prepared: true } : source === "cleric" ? { name: "Cleric 5", type: "Prepared · WIS · Travel domain", level: "Caster level 5", concentration: "+9", dc: "DC 15–18", prepared: true } : source === "sla" ? { name: "Vampire abilities", type: "Spell-like abilities · CHA", level: "Caster level 12", concentration: "+17", dc: "DC 15–22", prepared: false } : source === "granted" ? { name: "Granted / SLA", type: "Granted ability · WIS", level: "Caster level 10", concentration: "+14", dc: "DC 18", prepared: false } : { name: "Ranger 7", type: "Prepared · WIS", level: "Caster level 4", concentration: "+7", dc: "DC 14", prepared: true };
+  const [reprepareSpell, setReprepareSpell] = useState<MockSpell>();
+  const sourceInfo = source === "wizard" ? { name: "Wizard 5", type: "Prepared · INT", level: "Caster level 5", concentration: "+9", dc: "DC 15–18", prepared: true } : source === "cleric" ? { name: "Cleric 5", type: "Prepared · WIS · Travel & Liberation domains", level: "Caster level 5", concentration: "+9", dc: "DC 15–18", prepared: true } : source === "sla" ? { name: "Vampire abilities", type: "Spell-like abilities · CHA", level: "Caster level 12", concentration: "+17", dc: "DC 15–22", prepared: false } : source === "granted" ? { name: "Granted / SLA", type: "Granted ability · WIS", level: "Caster level 10", concentration: "+14", dc: "DC 18", prepared: false } : { name: "Ranger 7", type: "Prepared · WIS", level: "Caster level 4", concentration: "+7", dc: "DC 14", prepared: true };
   const libraryMode = view === "library" && sourceInfo.prepared;
   const spellCatalog: Record<string, MockSpell[]> = {
     cleric: [
@@ -551,9 +555,14 @@ function MagicTab({ scenario, onTarget, onToast }: { scenario: ScenarioKey; onTa
     ],
   };
   const libraryExtras: MockSpell[] = source === "cleric" ? [
+    { name: "Remove Fear", level: 1, description: "Suppress fear and grant a bonus against later fear effects.", dc: "—", components: "V, S", preparation: "Domain option", kind: "domain" },
+    { name: "Cure Light Wounds", level: 1, description: "Restore 1d8 + caster level hit points.", dc: "Will 16", components: "V, S", preparation: "Not prepared", kind: "normal" },
+    { name: "Shield of Faith", level: 1, description: "Grant a deflection bonus to armor class.", dc: "Will 16", components: "V, S, M", preparation: "Not prepared", kind: "normal" },
     { name: "Cure Moderate Wounds", level: 2, description: "Restore 2d8 + caster level hit points.", dc: "Will 17", components: "V, S", preparation: "Not prepared", kind: "normal" },
     { name: "Silence", level: 2, description: "Suppress sound in a 20-foot radius.", dc: "Will 17", components: "V, S", preparation: "Not prepared", kind: "normal" },
+    { name: "Remove Paralysis", level: 2, description: "Free one or more creatures from paralysis or slowing magic.", dc: "Will 17", components: "V, S", preparation: "Domain option", kind: "domain" },
     { name: "Daylight", level: 3, description: "Create bright light that counters magical darkness.", dc: "—", components: "V, S", preparation: "Not prepared", kind: "normal" },
+    { name: "Remove Curse", level: 3, description: "Attempt to end a curse affecting a creature or object.", dc: "CL check", components: "V, S", preparation: "Domain option", kind: "domain" },
   ] : [];
   const spells = libraryMode ? [...(spellCatalog[source] ?? []), ...libraryExtras] : spellCatalog[source] ?? [];
   const availableSlots: Record<number, number> = { 0: 4, 1: 3, 2: 2, 3: 2, 4: 0, 5: 1 };
@@ -576,14 +585,15 @@ function MagicTab({ scenario, onTarget, onToast }: { scenario: ScenarioKey; onTa
       </section>
       <section className="spell-table-panel mock-panel">
         <header className="panel-heading"><div><span className="eyebrow">{libraryMode ? "Prepare from this source" : "Ready to cast"}</span><h2>Spells</h2></div><div className="inline-filters"><button className={view === "prepared" ? "active" : ""} onClick={() => setView("prepared")}>Prepared</button><button className={view === "available" ? "active" : ""} onClick={() => setView("available")}>Available</button><button className={libraryMode ? "active" : ""} disabled={!sourceInfo.prepared} onClick={() => setView("library")}>Library</button></div></header>
-        {source === "cleric" ? <div className="domain-key"><span className="spell-kind domain">Domain</span><p>Travel domain spells use the dedicated +1 domain slot at each spell level.</p></div> : null}
+        {source === "cleric" ? <div className="domain-key"><span className="spell-kind domain">Domain</span><p>Travel and Liberation domain spells share the dedicated +1 domain slot at each spell level.</p></div> : null}
         <div className="spell-table"><div className="spell-head"><span>Spell</span><span>Level</span><span>DC</span><span>Components</span><span>{libraryMode ? "Prepare" : "Status"}</span><span /></div>{spells.map((spell) => {
           const maxPrepare = typeof spell.level === "number" ? spell.kind === "domain" ? 1 : availableSlots[spell.level] ?? 0 : 0;
           const amount = prepareAmounts[spell.name] ?? Math.min(1, maxPrepare);
-          return <div className={`spell-row ${spell.kind === "domain" ? "domain-spell" : ""}`} key={`${spell.name}-${spell.kind ?? "spell"}`}><button className="spell-detail-trigger" onClick={() => setSpellDetail(spell)}><span><strong>{spell.name}</strong><span className={`spell-kind ${spell.kind === "domain" ? "domain" : "standard"}`}>{spell.kind === "domain" ? "Domain" : "Spell"}</span><small>{spell.description}</small></span><em>View full spell</em></button><span>{spell.level}</span><span>{spell.dc}</span><span>{spell.components}</span>{libraryMode ? <label className="prepare-amount"><span className="sr-only">Prepare quantity</span><select value={amount} onChange={(event) => setPrepareAmounts((previous) => ({ ...previous, [spell.name]: Number(event.target.value) }))}>{Array.from({ length: maxPrepare + 1 }, (_, index) => <option key={index} value={index}>{index}</option>)}</select><small>of {maxPrepare} open</small></label> : <span>{spell.preparation}</span>}<button onClick={libraryMode ? () => onToast(`${amount} × ${spell.name} prepared`) : onTarget}>{libraryMode ? spell.kind === "domain" ? "Prepare Domain" : "Prepare" : "Cast"}</button></div>;
+          return <div className={`spell-row ${spell.kind === "domain" ? "domain-spell" : ""}`} key={`${spell.name}-${spell.kind ?? "spell"}`}><button className="spell-detail-trigger" onClick={() => setSpellDetail(spell)}><span><strong>{spell.name}</strong><span className={`spell-kind ${spell.kind === "domain" ? "domain" : "standard"}`}>{spell.kind === "domain" ? "Domain" : "Spell"}</span><small>{spell.description}</small></span><em>View full spell</em></button><span>{spell.level}</span><span>{spell.dc}</span><span>{spell.components}</span>{libraryMode ? <label className="prepare-amount"><span className="sr-only">Prepare quantity</span><select value={amount} onChange={(event) => setPrepareAmounts((previous) => ({ ...previous, [spell.name]: Number(event.target.value) }))}>{Array.from({ length: maxPrepare + 1 }, (_, index) => <option key={index} value={index}>{index}</option>)}</select><small>of {maxPrepare} open</small></label> : <span>{spell.preparation}</span>}<div className="spell-actions"><button onClick={libraryMode ? () => onToast(`${amount} × ${spell.name} prepared`) : onTarget}>{libraryMode ? spell.kind === "domain" ? "Prepare Domain" : "Prepare" : "Cast"}</button>{sourceInfo.prepared && view === "prepared" ? <button className="reprepare-button" onClick={() => setReprepareSpell(spell)}>Reprepare</button> : null}</div></div>;
         })}</div>
       </section>
       {spellDetail ? <SpellDetailDialog spell={spellDetail} sourceName={sourceInfo.name} libraryMode={libraryMode} onClose={() => setSpellDetail(undefined)} onAction={() => { setSpellDetail(undefined); if (libraryMode) onToast(`${spellDetail.name} added to preparation`); else onTarget(); }} /> : null}
+      {reprepareSpell ? <ReprepareDialog spell={reprepareSpell} sourceName={sourceInfo.name} options={[...(spellCatalog[source] ?? []), ...libraryExtras].filter((candidate) => candidate.level === reprepareSpell.level && candidate.name !== reprepareSpell.name && (reprepareSpell.kind === "domain" ? candidate.kind === "domain" : candidate.kind !== "domain"))} onClose={() => setReprepareSpell(undefined)} onConfirm={(replacement) => { setReprepareSpell(undefined); onToast(`${reprepareSpell.name} reprepared as ${replacement}`); }} /> : null}
     </div>
   );
 }
@@ -591,6 +601,22 @@ function MagicTab({ scenario, onTarget, onToast }: { scenario: ScenarioKey; onTa
 function SpellDetailDialog({ spell, sourceName, libraryMode, onClose, onAction }: { spell: MockSpell; sourceName: string; libraryMode: boolean; onClose: () => void; onAction: () => void }) {
   const rules = SPELL_RULES[spell.name] ?? { school: "Class spell or supernatural effect", castingTime: "1 standard action", range: "See source", target: "See source", duration: "See source", resistance: "See source", full: `${spell.description} The complete source text, scaling, exceptions, and interaction rules appear here when connected to the rules catalog.` };
   return <div className="modal-backdrop" onMouseDown={onClose}><section className="spell-detail-dialog" role="dialog" aria-modal="true" aria-labelledby="spell-detail-title" onMouseDown={(event) => event.stopPropagation()}><header><div><span className="eyebrow">{sourceName} · Level {spell.level}</span><div className="spell-dialog-title"><h2 id="spell-detail-title">{spell.name}</h2>{spell.kind === "domain" ? <span className="spell-kind domain">Domain</span> : null}</div><p>{rules.school}</p></div><button onClick={onClose}>×</button></header><dl className="spell-rules-grid"><div><dt>Casting time</dt><dd>{rules.castingTime}</dd></div><div><dt>Components</dt><dd>{spell.components}</dd></div><div><dt>Range</dt><dd>{rules.range}</dd></div><div><dt>Target / Area</dt><dd>{rules.target}</dd></div><div><dt>Duration</dt><dd>{rules.duration}</dd></div><div><dt>Saving throw</dt><dd>{spell.dc}</dd></div><div><dt>Spell resistance</dt><dd>{rules.resistance}</dd></div><div><dt>Preparation</dt><dd>{spell.preparation}</dd></div></dl><section className="spell-full-description"><h3>Description</h3><p>{rules.full}</p></section>{spell.kind === "domain" ? <div className="domain-detail-note"><span className="spell-kind domain">Domain slot</span><p>This spell belongs to the selected domain and uses that level’s dedicated domain slot when prepared.</p></div> : null}<footer><button className="quiet-button" onClick={onClose}>Close</button><button className="dialog-primary" onClick={onAction}>{libraryMode ? "Prepare Spell" : "Cast Spell"}</button></footer></section></div>;
+}
+
+function ReprepareDialog({ spell, sourceName, options, onClose, onConfirm }: { spell: MockSpell; sourceName: string; options: MockSpell[]; onClose: () => void; onConfirm: (replacement: string) => void }) {
+  const [search, setSearch] = useState("");
+  const [selected, setSelected] = useState(options[0]?.name ?? "");
+  const visible = options.filter((option) => `${option.name} ${option.description}`.toLowerCase().includes(search.toLowerCase()));
+  return <div className="modal-backdrop" onMouseDown={onClose}><section className="reprepare-dialog" role="dialog" aria-modal="true" aria-labelledby="reprepare-title" onMouseDown={(event) => event.stopPropagation()}><header><div><span className="eyebrow">{sourceName} · Level {spell.level} {spell.kind === "domain" ? "domain" : "prepared"} slot</span><h2 id="reprepare-title">Reprepare {spell.name}</h2><p>Release this preparation and replace it with another known spell for the same slot.</p></div><button onClick={onClose}>×</button></header><ol className="reprepare-steps"><li className="complete"><b>1</b><span>Release slot</span></li><li className="active"><b>2</b><span>Choose spell</span></li><li><b>3</b><span>Confirm</span></li></ol><div className="reprepare-slot"><span>Current preparation</span><strong>{spell.name}</strong><em>{spell.kind === "domain" ? "Domain slot" : `Level ${spell.level} slot`} · changes on confirmation</em></div><label className="dialog-search">Known spells eligible for this slot<input placeholder="Search known spells…" value={search} onChange={(event) => setSearch(event.target.value)} /></label>{spell.kind === "domain" ? <p className="reprepare-rule">Only spells granted by the character’s selected domains are eligible for this domain slot.</p> : null}<div className="replacement-list">{visible.map((option) => <button key={option.name} className={selected === option.name ? "selected" : ""} onClick={() => setSelected(option.name)}><span><strong>{option.name}</strong><small>{option.description}</small></span><span><b>{option.dc}</b><small>{option.components}</small></span><em>{selected === option.name ? "Selected" : "Choose"}</em></button>)}</div><div className="reprepare-summary"><span>After confirmation</span><strong>{spell.name} → {selected || "Choose a replacement"}</strong><small>The slot remains prepared and no additional slot is consumed.</small></div><footer><button className="quiet-button" onClick={onClose}>Cancel</button><button className="dialog-primary" disabled={!selected} onClick={() => onConfirm(selected)}>Confirm Reprepare</button></footer></section></div>;
+}
+
+function RestDialog({ scenario, onClose, onRest }: { scenario: ScenarioKey; onClose: () => void; onRest: () => void }) {
+  const gmMonster = scenario === "monster";
+  const multiclass = scenario === "multiclass";
+  const currentHp = gmMonster ? 96 : multiclass ? 53 : 48;
+  const maximumHp = gmMonster ? 118 : multiclass ? 53 : 62;
+  const healing = gmMonster ? 0 : Math.min(maximumHp - currentHp, multiclass ? 10 : 7);
+  return <div className="modal-backdrop" onMouseDown={onClose}><section className="rest-dialog" role="dialog" aria-modal="true" aria-labelledby="rest-title" onMouseDown={(event) => event.stopPropagation()}><header><div><span className="eyebrow">The Ashen Road · Campaign rest rules</span><h2 id="rest-title">Take a Rest</h2><p>Preview every recovery change before advancing the character’s rest state.</p></div><button onClick={onClose}>×</button></header><div className="rest-rule-card"><div><span>Rest period</span><strong>8 hours</strong></div><div><span>Natural healing</span><strong>{gmMonster ? "Not eligible" : `Level × 1 · +${healing} HP`}</strong></div><div><span>Interruption rule</span><strong>1 hour of strenuous activity breaks rest</strong></div></div><section className="rest-results"><h3>Rest will restore</h3><div><article><span>Hit points</span><strong>{currentHp} → {currentHp + healing}</strong><small>{healing ? `Recover ${healing} HP under campaign rules` : gmMonster ? "Undead do not receive natural healing from rest" : "Already at maximum HP"}</small></article><article><span>Spell slots</span><strong>All expended slots</strong><small>Existing prepared spells stay assigned; use Reprepare to change them</small></article><article><span>Daily resources</span><strong>Reset eligible uses</strong><small>Class features, magic items, and abilities marked per day</small></article><article><span>Conditions</span><strong>Rule-dependent only</strong><small>Conditions are not removed unless their duration or campaign rule says so</small></article></div></section><div className="rest-confirmation"><label><input type="checkbox" defaultChecked /> Apply rest to HP and daily resources</label><span>Last rest: Yesterday · 6:10 AM</span></div><footer><button className="quiet-button" onClick={onClose}>Cancel</button><button className="dialog-primary" onClick={onRest}>Complete Rest</button></footer></section></div>;
 }
 
 function MagicRail({ open, onToggle }: { open: boolean; onToggle: () => void }) {

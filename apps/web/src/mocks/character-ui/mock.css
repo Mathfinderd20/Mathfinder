@@ -442,6 +442,19 @@ body {
   font: 700 12px "Segoe UI", sans-serif;
 }
 
+.section-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.rest-button {
+  padding: 5px 11px;
+  border-color: rgba(159, 189, 132, 0.55);
+  color: #d9e8cb;
+  background: rgba(159, 189, 132, 0.08);
+}
+
 .panel-heading > div h2 {
   margin-top: 2px;
   color: var(--mock-ink);
@@ -1409,7 +1422,7 @@ body {
 .spell-head,
 .spell-row {
   display: grid;
-  grid-template-columns: minmax(290px, 1.7fr) 52px 78px 92px minmax(112px, 0.7fr) 112px;
+  grid-template-columns: minmax(290px, 1.7fr) 52px 78px 92px minmax(112px, 0.7fr) 126px;
   align-items: center;
   gap: 10px;
   padding: 9px 12px;
@@ -1471,9 +1484,20 @@ body {
   font-style: normal;
 }
 
-.spell-row > button:last-child {
+.spell-actions {
+  display: grid;
+  gap: 4px;
+}
+
+.spell-actions > button:first-child {
   color: #18140e;
   background: var(--mock-gold);
+}
+
+.spell-actions .reprepare-button {
+  color: var(--mock-gold-bright);
+  background: transparent;
+  font-size: 10px;
 }
 
 .spell-kind {
@@ -2082,7 +2106,9 @@ body {
 .save-dialog > header,
 .level-up-dialog > header,
 .creation-guide-dialog > header,
-.spell-detail-dialog > header {
+.spell-detail-dialog > header,
+.reprepare-dialog > header,
+.rest-dialog > header {
   display: flex;
   align-items: start;
   justify-content: space-between;
@@ -2096,7 +2122,9 @@ body {
 .save-dialog > header h2,
 .level-up-dialog > header h2,
 .creation-guide-dialog > header h2,
-.spell-detail-dialog > header h2 {
+.spell-detail-dialog > header h2,
+.reprepare-dialog > header h2,
+.rest-dialog > header h2 {
   font-size: 27px;
 }
 
@@ -2105,7 +2133,9 @@ body {
 .save-dialog > header > button,
 .level-up-dialog > header > button,
 .creation-guide-dialog > header > button,
-.spell-detail-dialog > header > button {
+.spell-detail-dialog > header > button,
+.reprepare-dialog > header > button,
+.rest-dialog > header > button {
   width: 32px;
   height: 32px;
   padding: 0;
@@ -2287,7 +2317,9 @@ body {
 .save-dialog,
 .level-up-dialog,
 .creation-guide-dialog,
-.spell-detail-dialog {
+.spell-detail-dialog,
+.reprepare-dialog,
+.rest-dialog {
   width: min(660px, 100%);
   max-height: calc(100vh - 40px);
   overflow-y: auto;
@@ -2310,12 +2342,205 @@ body {
   width: min(780px, 100%);
 }
 
+.reprepare-dialog,
+.rest-dialog {
+  width: min(760px, 100%);
+}
+
 .level-up-dialog > header p,
 .creation-guide-dialog > header p,
-.spell-detail-dialog > header p {
+.spell-detail-dialog > header p,
+.reprepare-dialog > header p,
+.rest-dialog > header p {
   margin-top: 4px;
   color: var(--mock-muted);
   font-size: 12px;
+}
+
+.reprepare-steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  margin: 14px 0;
+  padding: 0;
+  background: var(--mock-line);
+  list-style: none;
+}
+
+.reprepare-steps li {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 10px;
+  color: var(--mock-muted);
+  background: #151a1c;
+  font-size: 11px;
+}
+
+.reprepare-steps li b {
+  display: grid;
+  width: 21px;
+  height: 21px;
+  place-items: center;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  color: var(--mock-gold);
+  font-size: 10px;
+}
+
+.reprepare-steps li.active {
+  color: var(--mock-ink);
+  background: rgba(221, 185, 120, 0.09);
+}
+
+.reprepare-steps li.complete b {
+  border-color: var(--mock-green);
+  color: var(--mock-green);
+}
+
+.reprepare-slot,
+.reprepare-summary {
+  display: grid;
+  grid-template-columns: 130px 1fr;
+  gap: 3px 10px;
+  padding: 10px 12px;
+  border-left: 3px solid var(--mock-gold);
+  background: rgba(221, 185, 120, 0.05);
+}
+
+.reprepare-slot span,
+.reprepare-slot em,
+.reprepare-summary span,
+.reprepare-summary small {
+  color: var(--mock-muted);
+  font-size: 10px;
+  font-style: normal;
+}
+
+.reprepare-slot em,
+.reprepare-summary small {
+  grid-column: 2;
+}
+
+.reprepare-rule {
+  margin: -7px 0 10px;
+  color: #c8b9f1;
+  font-size: 11px;
+}
+
+.replacement-list {
+  display: grid;
+  gap: 5px;
+  max-height: 250px;
+  overflow-y: auto;
+}
+
+.replacement-list button {
+  display: grid;
+  grid-template-columns: 1fr 100px 70px;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  text-align: left;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.replacement-list button.selected {
+  border-color: var(--mock-gold);
+  background: rgba(221, 185, 120, 0.06);
+}
+
+.replacement-list button > span {
+  display: grid;
+  gap: 2px;
+}
+
+.replacement-list small {
+  color: var(--mock-muted);
+  font-size: 10px;
+}
+
+.replacement-list em {
+  color: var(--mock-gold);
+  font-size: 10px;
+  font-style: normal;
+  text-align: right;
+}
+
+.reprepare-summary {
+  margin-top: 10px;
+  border-left-color: var(--mock-green);
+  background: rgba(159, 189, 132, 0.05);
+}
+
+.rest-rule-card {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  margin: 14px 0;
+  background: var(--mock-line);
+}
+
+.rest-rule-card > div {
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+  background: #151a1c;
+}
+
+.rest-rule-card span,
+.rest-results article > span,
+.rest-results article small {
+  color: var(--mock-muted);
+  font-size: 10px;
+}
+
+.rest-results h3 {
+  margin-bottom: 8px;
+  color: var(--mock-gold-bright);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.rest-results > div {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+}
+
+.rest-results article {
+  display: grid;
+  gap: 3px;
+  padding: 10px 12px;
+  border: 1px solid var(--mock-line);
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.rest-results article strong {
+  color: var(--mock-green);
+}
+
+.rest-confirmation {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 9px 10px;
+  background: rgba(159, 189, 132, 0.05);
+}
+
+.rest-confirmation label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+}
+
+.rest-confirmation span {
+  color: var(--mock-muted);
+  font-size: 10px;
 }
 
 .respec-warning {
@@ -2684,7 +2909,9 @@ body {
 .save-dialog footer,
 .level-up-dialog footer,
 .creation-guide-dialog footer,
-.spell-detail-dialog footer {
+.spell-detail-dialog footer,
+.reprepare-dialog footer,
+.rest-dialog footer {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
@@ -3143,6 +3370,23 @@ body {
 
   .spell-rules-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .rest-rule-card,
+  .rest-results > div {
+    grid-template-columns: 1fr;
+  }
+
+  .rest-confirmation {
+    display: grid;
+  }
+
+  .replacement-list button {
+    grid-template-columns: 1fr auto;
+  }
+
+  .replacement-list button > span:nth-of-type(2) {
+    display: none;
   }
 
   .level-up-steps li {
