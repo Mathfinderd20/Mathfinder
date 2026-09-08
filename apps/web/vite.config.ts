@@ -28,15 +28,15 @@ export default defineConfig({
           source: `
 const CACHE = 'mathfinder-shell-' + ${JSON.stringify(version)};
 const ASSETS = ${JSON.stringify(["/", "/usable-content.json"])}.concat(${JSON.stringify(assets)});
-self.addEventListener('install', event => event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS))));
-self.addEventListener('activate', event => event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key.startsWith('mathfinder-shell-') && key !== CACHE).map(key => caches.delete(key))))));
+self.addEventListener('install', event => event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)).then(() => self.skipWaiting())));
+self.addEventListener('activate', event => event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key.startsWith('mathfinder-shell-') && key !== CACHE).map(key => caches.delete(key)))).then(() => self.clients.claim())));
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
   if (event.request.method !== 'GET' || url.origin !== self.location.origin) return;
   // Authentication URLs and API responses are never placed in Cache Storage.
   if (url.pathname.startsWith('/auth/') || url.pathname === '/sign-in') return;
   if (event.request.mode === 'navigate') {
-    event.respondWith(fetch(event.request, {signal: AbortSignal.timeout(5000)}).then(response => {
+    event.respondWith(fetch(event.request, {cache: 'no-store', signal: AbortSignal.timeout(5000)}).then(response => {
       if (!response.ok) throw new Error('Unavailable');
       return response;
     }).catch(() => caches.open(CACHE).then(cache => cache.match('/'))));
