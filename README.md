@@ -10,11 +10,16 @@ directly to player sheets in real time.
 
 ## Status
 
-Early planning. See:
+Track new work in [GitHub Issues](https://github.com/Mathfinderd20/Mathfinder/issues).
+See [`CONTRIBUTING.md`](./CONTRIBUTING.md) for issue and pull request conventions.
+Use [`DEPLOYMENT.md`](./DEPLOYMENT.md) for the GitHub, Supabase, Docker, rollback,
+and stale-browser-cache release procedure.
+
+Design docs and existing backlog material:
 
 - [`PLAN.md`](./PLAN.md) — architecture, tech stack, rules-engine design, roadmap
-- [`TODO.md`](./TODO.md) — living checklist of steps
-- [`BACKEND_ISSUES.md`](./BACKEND_ISSUES.md) — contributor-facing backend/API issue tracking log
+- [`TODO.md`](./TODO.md) — legacy backlog awaiting issue migration; add new work to GitHub
+- [`BACKEND_ISSUES.md`](./BACKEND_ISSUES.md) — legacy backend log awaiting issue migration
 - [`CONTENT_PIPELINE.md`](./CONTENT_PIPELINE.md) — canonical content, local DB workflow, runtime export contract
 
 ## Content workflow

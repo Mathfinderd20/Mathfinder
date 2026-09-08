@@ -1,4 +1,8 @@
 import { accountStorage } from "../../lib/accountCache";
+import {
+  parseCharacterCreationRules,
+  type CharacterCreationRules,
+} from "@mathfinder/rules-engine";
 import type { StorageLike } from "../characters/characterRepository";
 import { LOCAL_DATA_CHANGED_EVENT } from "../characters/characterRepository";
 
@@ -7,6 +11,7 @@ export const CAMPAIGN_STORE_KEY = "mathfinder:campaigns:v1";
 const STORE_VERSION = 1;
 
 export interface CampaignRecord {
+  creationRules?: CharacterCreationRules;
   id: string;
   ownerId?: string;
   joinCode?: string;
@@ -77,6 +82,7 @@ function readStore(storage: StorageLike): CampaignStore | undefined {
       )
       .map((campaign) => ({
         ...campaign,
+        creationRules: parseCharacterCreationRules(campaign.creationRules),
         joinCode:
           typeof campaign.joinCode === "string" ? campaign.joinCode : undefined,
       }));

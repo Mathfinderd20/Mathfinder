@@ -5,6 +5,17 @@ import { fileURLToPath, URL } from "node:url";
 // Alias the engine to its TypeScript source so Vite transpiles it as app code
 // (the rules engine ships source, not a build).
 export default defineConfig({
+  build: {
+    rollupOptions: {
+      input: {
+        main: fileURLToPath(new URL("./index.html", import.meta.url)),
+        gmPreview: fileURLToPath(new URL("./gm-preview.html", import.meta.url)),
+        characterUiMock: fileURLToPath(
+          new URL("./character-ui-mock.html", import.meta.url),
+        ),
+      },
+    },
+  },
   plugins: [
     react(),
     {
@@ -25,15 +36,15 @@ const ASSETS = ${JSON.stringify([
             "/usable-content-normalized.json",
             "/usable-content-rules.json",
           ])}.concat(${JSON.stringify(assets)});
-self.addEventListener('install', event => event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS))));
-self.addEventListener('activate', event => event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key.startsWith('mathfinder-shell-') && key !== CACHE).map(key => caches.delete(key))))));
+self.addEventListener('install', event => event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)).then(() => self.skipWaiting())));
+self.addEventListener('activate', event => event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key.startsWith('mathfinder-shell-') && key !== CACHE).map(key => caches.delete(key)))).then(() => self.clients.claim())));
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
   if (event.request.method !== 'GET' || url.origin !== self.location.origin) return;
   // Authentication URLs and API responses are never placed in Cache Storage.
   if (url.pathname.startsWith('/auth/') || url.pathname === '/sign-in') return;
   if (event.request.mode === 'navigate') {
-    event.respondWith(fetch(event.request, {signal: AbortSignal.timeout(5000)}).then(response => {
+    event.respondWith(fetch(event.request, {cache: 'no-store', signal: AbortSignal.timeout(5000)}).then(response => {
       if (!response.ok) throw new Error('Unavailable');
       return response;
     }).catch(() => caches.open(CACHE).then(cache => cache.match('/'))));

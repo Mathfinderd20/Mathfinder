@@ -1,3 +1,5 @@
+import { HeaderProfile } from "../../components/ProfileMenu";
+import { CreationRulesSummary } from "./CampaignCreationRules";
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { accountStorage } from "../../lib/accountCache";
@@ -76,6 +78,8 @@ export function JoinCampaignPage() {
           <span className="home-brand-mark">M</span>
           <span>Mathfinder</span>
         </Link>
+        <span className="home-header-label">Campaigns</span>
+        <HeaderProfile />
       </header>
       <main className="form-page">
         <section className="form-card campaign-form-card">
@@ -86,6 +90,7 @@ export function JoinCampaignPage() {
               "Enter the reusable campaign ID from your Game Master, then choose which of your characters to bring."}
           </p>
 
+          {preview && <CreationRulesSummary rules={preview.creationRules} />}
           {!preview ? (
             <form onSubmit={findCampaign}>
               <label htmlFor="campaign-code">Campaign ID</label>

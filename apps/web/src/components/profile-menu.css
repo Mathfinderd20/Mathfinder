@@ -1,0 +1,87 @@
+.profile-menu {
+  position: relative;
+  flex-shrink: 0;
+  color: #ede8dd;
+  margin-left: auto;
+  z-index: 20;
+}
+.profile-menu .profile-trigger {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 12px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: #ede8dd;
+  cursor: pointer;
+}
+.profile-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: min(320px, calc(100vw - 40px));
+  box-sizing: border-box;
+  display: grid;
+  gap: 12px;
+  padding: 20px;
+  border: 1px solid #3b3d3b;
+  border-radius: 7px;
+  background: #202325;
+  box-shadow: 0 14px 40px #0008;
+}
+.profile-email,
+.profile-message {
+  overflow-wrap: anywhere;
+}
+.profile-email {
+  font-size: 14px;
+}
+.profile-sync {
+  color: #d9b77d;
+  font-size: 13px;
+}
+.profile-message {
+  margin: 0;
+  color: #b4b4aa;
+  font-size: 13px;
+}
+.profile-panel button {
+  padding: 10px 12px;
+  text-align: left;
+  border: 1px solid #50514a;
+  border-radius: 5px;
+  background: #2b2e2e;
+  color: #ede8dd;
+  cursor: pointer;
+}
+.profile-panel .profile-signout {
+  color: #f1a79a;
+}
+.profile-panel button:hover {
+  border-color: #d9b77d;
+  background: #3b403e;
+}
+.home-header:has(.profile-menu),
+.app-bar:has(.profile-menu) {
+  gap: 20px;
+  position: relative;
+  z-index: 20;
+}
+.home-header > .edition-chip {
+  margin-left: auto;
+}
+.home-header > .edition-chip + .profile-menu {
+  margin-left: 0;
+}
+.app-bar > .actions {
+  margin-left: auto;
+}
+.app-bar > .profile-menu {
+  margin-left: 0;
+}
+.profile-menu button:focus-visible {
+  outline: 2px solid #d9b77d;
+  outline-offset: 3px;
+}

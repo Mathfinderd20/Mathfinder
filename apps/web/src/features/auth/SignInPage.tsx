@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { supabase } from "../../lib/supabaseClient";
-import { safeReturnPath } from "./authNavigation";
+import { rememberAuthReturnPath, safeReturnPath } from "./authNavigation";
 import "./auth.css";
 
 export function SignInPage() {
@@ -14,13 +14,13 @@ export function SignInPage() {
   );
   const next = safeReturnPath(params.get("next"));
   const callback = new URL("/auth/callback", window.location.origin);
-  callback.searchParams.set("next", next);
   async function submit(event?: FormEvent) {
     event?.preventDefault();
     if (!supabase) return;
     setBusy(true);
     setMessage("");
     try {
+      rememberAuthReturnPath(next);
       const { error } = await supabase.auth.signInWithOtp({
         email: email.trim(),
         options: { emailRedirectTo: callback.href },
@@ -44,6 +44,7 @@ export function SignInPage() {
     setBusy(true);
     setMessage("");
     try {
+      rememberAuthReturnPath(next);
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {

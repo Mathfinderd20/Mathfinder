@@ -33,19 +33,30 @@ import { plannedFeatSlotsForLevel } from "../featSlots";
 import { buildFavoredClassBonusOptions } from "../favoredClassBonusData";
 import { createFreshCharacterBuild } from "../features/characters/newCharacterBuild";
 import { AlignmentPicker } from "./AlignmentPicker";
+import {
+  creationWarnings,
+  pointBuyTotal,
+  type CharacterCreationRules,
+} from "@mathfinder/rules-engine";
 import { FeatSelectionPicker } from "./FeatSelectionPicker";
+import {
+  MAX_ABILITY_SCORE,
+  MIN_ABILITY_SCORE,
+  parseAbilityScoreInput,
+} from "../abilityScoreInput";
 
 const ABILITIES: AbilityKey[] = ["str", "dex", "con", "int", "wis", "cha"];
-const DEFAULT_SCORES: Record<AbilityKey, number> = {
-  str: 10,
-  dex: 10,
-  con: 10,
-  int: 10,
-  wis: 10,
-  cha: 10,
+const DEFAULT_SCORE_INPUTS: Record<AbilityKey, string> = {
+  str: "10",
+  dex: "10",
+  con: "10",
+  int: "10",
+  wis: "10",
+  cha: "10",
 };
 
 interface Props {
+  creationRules?: CharacterCreationRules;
   characterName: string;
   onConfirm: (build: CharacterBuild) => void;
   onClose: () => void;
@@ -70,6 +81,7 @@ function classKeyForName(name: string) {
 }
 
 export function CharacterCreationModal({
+  creationRules,
   characterName,
   onConfirm,
   onClose,
@@ -89,9 +101,34 @@ export function CharacterCreationModal({
     useState(false);
   const [ignoreEncumbrance, setIgnoreEncumbrance] = useState(false);
   const [className, setClassName] = useState(defaultClassName);
-  const [abilityScores, setAbilityScores] =
-    useState<Record<AbilityKey, number>>(DEFAULT_SCORES);
+  const [abilityScoreInputs, setAbilityScoreInputs] =
+    useState(DEFAULT_SCORE_INPUTS);
+  const abilityScores = useMemo(() => {
+    const entries = ABILITIES.map(
+      (ability) =>
+        [ability, parseAbilityScoreInput(abilityScoreInputs[ability])] as const,
+    );
+    if (entries.some(([, score]) => score === undefined)) return undefined;
+    return Object.fromEntries(entries) as Record<AbilityKey, number>;
+  }, [abilityScoreInputs]);
   const deferredAbilityScores = useDeferredValue(abilityScores);
+  const warnings =
+    creationRules && abilityScores
+      ? creationWarnings(
+          ABILITIES.map((ability) => abilityScores[ability]),
+          1,
+          creationRules,
+        )
+      : [];
+  let pointBuy: number | undefined;
+  try {
+    if (abilityScores)
+      pointBuy = pointBuyTotal(
+        ABILITIES.map((ability) => abilityScores[ability]),
+      );
+  } catch {
+    /* Manual scores may exceed point-buy bounds. */
+  }
   const [flexibleAbility, setFlexibleAbility] = useState<AbilityKey>("str");
   const [selectedSkills, setSelectedSkills] = useState<Set<SkillKey>>(
     new Set(),
@@ -149,7 +186,8 @@ export function CharacterCreationModal({
     ],
   );
   const draftBuild = useMemo(
-    () => createBuild(deferredAbilityScores),
+    () =>
+      deferredAbilityScores ? createBuild(deferredAbilityScores) : undefined,
     [createBuild, deferredAbilityScores],
   );
 
@@ -174,7 +212,9 @@ export function CharacterCreationModal({
     [draftBuild],
   );
   const intelligenceScore =
-    previewSheet?.abilities.int.score ?? abilityScores.int;
+    previewSheet?.abilities.int.score ??
+    parseAbilityScoreInput(abilityScoreInputs.int) ??
+    10;
   const intelligenceModifier = Math.floor((intelligenceScore - 10) / 2);
   const extraRaceSkillRanks = race?.choiceOptions?.extraSkillRanksPerLevel ?? 0;
   const skillPoints = Math.max(
@@ -249,8 +289,10 @@ export function CharacterCreationModal({
     !missingRequiredFeat;
 
   function updateAbility(ability: AbilityKey, rawValue: string) {
-    const value = Math.max(7, Math.min(18, Number(rawValue) || 10));
-    setAbilityScores((previous) => ({ ...previous, [ability]: value }));
+    setAbilityScoreInputs((previous) => ({
+      ...previous,
+      [ability]: rawValue,
+    }));
   }
 
   function toggleSkill(skill: SkillKey) {
@@ -348,15 +390,27 @@ export function CharacterCreationModal({
 
         <div className="field">
           <span>Base ability scores</span>
+          <p>
+            PF1e point-buy cost: {pointBuy ?? "Scores outside point-buy range"}
+            {creationRules?.method === "point-buy"
+              ? ` / ${creationRules.pointBuyBudget}`
+              : ""}{" "}
+            (before ancestry bonuses).
+          </p>
+          {warnings.map((warning) => (
+            <p role="status" key={warning}>
+              {warning}
+            </p>
+          ))}
           <div className="ability-picker">
             {ABILITIES.map((ability) => (
               <label className="field compact" key={ability}>
                 <span>{ability.toUpperCase()}</span>
                 <input
                   type="number"
-                  min={7}
-                  max={18}
-                  value={abilityScores[ability]}
+                  min={MIN_ABILITY_SCORE}
+                  max={MAX_ABILITY_SCORE}
+                  value={abilityScoreInputs[ability]}
                   onChange={(event) =>
                     updateAbility(ability, event.target.value)
                   }
@@ -364,6 +418,12 @@ export function CharacterCreationModal({
               </label>
             ))}
           </div>
+          {!abilityScores ? (
+            <p className="form-error">
+              Enter a whole number from {MIN_ABILITY_SCORE} to{" "}
+              {MAX_ABILITY_SCORE} for every ability.
+            </p>
+          ) : null}
         </div>
 
         {hasFlexibleAbility ? (
@@ -536,7 +596,9 @@ export function CharacterCreationModal({
             type="button"
             disabled={!canConfirm}
             onClick={() => {
-              const finalBuild = createBuild(abilityScores);
+              const finalBuild = abilityScores
+                ? createBuild(abilityScores)
+                : undefined;
               if (finalBuild) onConfirm(finalBuild);
             }}
           >

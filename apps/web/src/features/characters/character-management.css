@@ -19,9 +19,9 @@
   align-items: center;
   justify-content: space-between;
   padding: 24px;
-  border: 1px solid rgba(212, 117, 106, 0.42);
-  border-radius: 16px;
-  background: rgba(80, 32, 28, 0.22);
+  border: 1px solid #5c3c38;
+  border-radius: 6px;
+  background: #2b2020;
 }
 
 .danger-zone h2 {
@@ -47,11 +47,15 @@
 
 button.danger-button {
   flex: 0 0 auto;
-  background: #a4473d;
+  border-color: #754a43;
+  color: #f1a79a;
+  background: transparent;
 }
 
 button.danger-button:hover {
-  background: #c65b50;
+  border-color: #f1a79a;
+  color: #151719;
+  background: #f1a79a;
 }
 
 @media (max-width: 650px) {

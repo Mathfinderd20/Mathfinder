@@ -22,6 +22,16 @@ describe("Supabase client configuration", () => {
     });
   });
 
+  it("uses the client-only implicit auth flow for cross-tab magic links", () => {
+    const client = createOptionalSupabaseClient({
+      VITE_SUPABASE_URL: "https://example.supabase.co",
+      VITE_SUPABASE_PUBLISHABLE_KEY: "publishable-key",
+    });
+    expect((client?.auth as unknown as { flowType: string }).flowType).toBe(
+      "implicit",
+    );
+  });
+
   it("accepts local HTTP but rejects unsafe protocols and remote HTTP", () => {
     expect(
       readSupabaseConfig({

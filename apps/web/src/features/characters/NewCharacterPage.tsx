@@ -1,19 +1,31 @@
+import { HeaderProfile } from "../../components/ProfileMenu";
 import { accountStorage } from "../../lib/accountCache";
 import { useState, type ComponentType, type FormEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import type { CharacterBuild } from "@mathfinder/rules-engine";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import type {
+  CharacterBuild,
+  CharacterCreationRules,
+} from "@mathfinder/rules-engine";
+import {
+  getCampaign,
+  setCampaignCharacterAssignment,
+} from "../campaigns/campaignRepository";
+import { CreationRulesSummary } from "../campaigns/CampaignCreationRules";
 import { createCharacter } from "./characterRepository";
 import "../home/home.css";
 import "../home/home-responsive.css";
 
 export function NewCharacterPage() {
   const navigate = useNavigate();
+  const [params] = useSearchParams();
+  const campaign = getCampaign(accountStorage, params.get("campaign") ?? "");
   const [name, setName] = useState("");
   const [creating, setCreating] = useState(false);
   const [creationName, setCreationName] = useState<string>();
   const [CreationModal, setCreationModal] = useState<
     ComponentType<{
       characterName: string;
+      creationRules?: CharacterCreationRules;
       onConfirm: (build: CharacterBuild) => void;
       onClose: () => void;
     }>
@@ -43,6 +55,14 @@ export function NewCharacterPage() {
 
   function finishCreation(build: CharacterBuild) {
     const character = createCharacter(accountStorage, build);
+    if (campaign) {
+      setCampaignCharacterAssignment(
+        accountStorage,
+        campaign.id,
+        character.id,
+        true,
+      );
+    }
     navigate(`/characters/${character.id}/build`, { replace: true });
   }
 
@@ -53,6 +73,8 @@ export function NewCharacterPage() {
           <span className="home-brand-mark">M</span>
           <span>Mathfinder</span>
         </Link>
+        <span className="home-header-label">Character forge</span>
+        <HeaderProfile />
       </header>
       <main className="form-page">
         <section className="form-card">
@@ -63,6 +85,9 @@ export function NewCharacterPage() {
             where ancestry, class, abilities, feats, and gear await.
           </p>
           <form onSubmit={submit}>
+            {campaign && (
+              <CreationRulesSummary rules={campaign.creationRules} />
+            )}
             <label htmlFor="character-name">Character name</label>
             <input
               autoFocus
@@ -87,6 +112,7 @@ export function NewCharacterPage() {
       {creationName && CreationModal ? (
         <CreationModal
           characterName={creationName}
+          creationRules={campaign?.creationRules}
           onConfirm={finishCreation}
           onClose={() => {
             setCreationName(undefined);

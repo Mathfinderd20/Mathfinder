@@ -35,6 +35,12 @@ const campaignDeactivateSql = (
     "utf8",
   )
 ).toLowerCase();
+const campaignCreationRulesSql = (
+  await readFile(
+    "supabase/migrations/20260907030000_campaign_creation_rules.sql",
+    "utf8",
+  )
+).toLowerCase();
 for (const fragment of [
   "as restrictive for all to authenticated",
   "is_anonymous",
@@ -43,6 +49,17 @@ for (const fragment of [
 ]) {
   if (!authSql.includes(fragment))
     missing.push(`Permanent-account contract: ${fragment}`);
+}
+for (const fragment of [
+  "check (public.valid_campaign_creation_rules(creation_rules))",
+  "create function public.set_campaign_creation_rules",
+  "not public.is_campaign_gm(p_campaign_id)",
+  "create function public.preview_campaign_creation_rules",
+  "revoke all on function public.set_campaign_creation_rules",
+]) {
+  if (!campaignCreationRulesSql.includes(fragment)) {
+    missing.push(`Campaign creation rules contract: ${fragment}`);
+  }
 }
 for (const fragment of [
   "create or replace function public.is_campaign_member",

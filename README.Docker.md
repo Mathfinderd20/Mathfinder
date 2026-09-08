@@ -1,5 +1,9 @@
 # Run Mathfinder with Docker
 
+For the complete production procedure—including GitHub, Supabase migration
+ordering, rollback tags, smoke tests, and stale-asset recovery—follow
+[`DEPLOYMENT.md`](./DEPLOYMENT.md). This page covers Docker usage only.
+
 From the repository root, build and start the app:
 
 ```sh

@@ -712,7 +712,19 @@ export function parseAonSpellDetail(
 }
 
 export function parseAonFeatLinks(html: string): NamedLink[] {
-  return parseLinksByPrefix(html, "FeatDisplay.aspx?ItemName=");
+  const hrefPrefix = "FeatDisplay.aspx?ItemName=";
+  const $ = load(html);
+  const links = new Map<string, string>();
+  $(
+    `table[id^='MainContent_GridView'] tr > td:first-child a[href^='${hrefPrefix}']`,
+  ).each((_, element) => {
+    const href = $(element).attr("href");
+    const name = cleanText($(element).text());
+    if (href && name) links.set(name, absoluteUrl(href));
+  });
+  return links.size
+    ? [...links.entries()].map(([name, url]) => ({ name, url }))
+    : parseLinksByPrefix(html, hrefPrefix);
 }
 
 export function parseAonFeatCategories(html: string): string[] {

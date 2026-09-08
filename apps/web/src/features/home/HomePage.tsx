@@ -1,3 +1,4 @@
+import { HeaderProfile } from "../../components/ProfileMenu";
 import { accountStorage } from "../../lib/accountCache";
 import { Link } from "react-router-dom";
 import { useCloudConnection } from "../../lib/useCloudConnection";
@@ -59,18 +60,10 @@ export function HomePage() {
       <header className="home-header">
         <Link className="home-brand" to="/" aria-label="Mathfinder home">
           <span className="home-brand-mark">M</span>
-          <span>
-            Mathfinder
-            <small>Pathfinder 1e companion</small>
-          </span>
+          <span>Mathfinder</span>
         </Link>
-        <div className="local-profile">
-          <span className="status-dot" aria-hidden="true" />
-          <span>
-            Your account
-            <small>Characters and campaigns</small>
-          </span>
-        </div>
+        <span className="home-header-label">Adventure hub</span>
+        <HeaderProfile />
       </header>
 
       <main className="home-main">

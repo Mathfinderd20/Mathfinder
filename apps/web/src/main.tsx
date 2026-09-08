@@ -1,6 +1,12 @@
 import { Component, StrictMode, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
+import {
+  installAssetReloadRecovery,
+  markAssetLoadSucceeded,
+} from "./assetReloadRecovery";
 import "./styles.css";
+
+installAssetReloadRecovery();
 
 const root = document.getElementById("root");
 if (!root) throw new Error("Root element #root not found");
@@ -11,11 +17,11 @@ function renderShell(
   body: string,
   tone: "loading" | "error" = "loading",
 ) {
-  const titleColor = tone === "error" ? "#fca5a5" : "#e5e7eb";
-  const bodyColor = tone === "error" ? "#fecaca" : "#cbd5e1";
+  const titleColor = tone === "error" ? "#f1a79a" : "#ede8dd";
+  const bodyColor = tone === "error" ? "#f1a79a" : "#b4b4aa";
   appRoot.innerHTML = `
-    <div style="padding: 16px; font-family: system-ui, sans-serif; color: ${bodyColor}; background: #111827; min-height: 100vh;">
-      <h1 style="margin: 0 0 8px; font-size: 20px; color: ${titleColor};">${title}</h1>
+    <div style="padding: 38px 4%; font-family: system-ui, sans-serif; color: ${bodyColor}; background: radial-gradient(ellipse at 15% 0%, #363329 0, transparent 45%), #151719; min-height: 100vh;">
+      <h1 style="margin: 0 0 8px; font: 400 32px Georgia, serif; color: ${titleColor};">${title}</h1>
       <pre style="white-space: pre-wrap; word-break: break-word; margin: 0; color: ${bodyColor}; font-family: inherit;">${body}</pre>
     </div>
   `;
@@ -49,14 +55,21 @@ class AppErrorBoundary extends Component<
       return (
         <div
           style={{
-            padding: 16,
+            padding: "38px 4%",
             fontFamily: "system-ui, sans-serif",
-            color: "#fecaca",
-            background: "#111827",
+            color: "#f1a79a",
+            background:
+              "radial-gradient(ellipse at 15% 0%, #363329 0, transparent 45%), #151719",
             minHeight: "100vh",
           }}
         >
-          <h1 style={{ margin: "0 0 8px", fontSize: 20, color: "#fca5a5" }}>
+          <h1
+            style={{
+              margin: "0 0 8px",
+              font: "400 32px Georgia, serif",
+              color: "#f1a79a",
+            }}
+          >
             Mathfinder render failed
           </h1>
           <pre
@@ -70,7 +83,7 @@ class AppErrorBoundary extends Component<
           >
             {this.state.error}
           </pre>
-          <p style={{ marginTop: 12, color: "#cbd5e1" }}>
+          <p style={{ marginTop: 12, color: "#b4b4aa" }}>
             Open DevTools console for the full stack trace.
           </p>
         </div>
@@ -100,6 +113,7 @@ window.addEventListener("unhandledrejection", (event) => {
 async function bootstrap() {
   const { initializeCloudPersistence } = await import("./lib/cloudPersistence");
   const { AppRouter } = await import("./app/AppRouter");
+  markAssetLoadSucceeded();
   createRoot(appRoot).render(
     <StrictMode>
       <AppErrorBoundary>
