@@ -3,6 +3,7 @@ dist/
 coverage/
 package-lock.json
 apps/web/public/usable-content.json
+design-mocks/character-ui/
 supabase/.temp/
 .tmp-pydeps/
 tmp-*

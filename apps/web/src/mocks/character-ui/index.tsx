@@ -232,7 +232,7 @@ function App() {
 
       <section className="identity-bar" id="top">
         <img
-          src="/mock-assets/seren-ashfall.png"
+          src={`${import.meta.env.BASE_URL}mock-assets/seren-ashfall.png`}
           alt="Seren Ashfall character portrait"
         />
         <div className="identity-main">
@@ -3273,7 +3273,10 @@ function ProfileDrawer({
           <button onClick={onClose}>×</button>
         </header>
         <div className="portrait-editor">
-          <img src="/mock-assets/seren-ashfall.png" alt="Seren Ashfall" />
+          <img
+            src={`${import.meta.env.BASE_URL}mock-assets/seren-ashfall.png`}
+            alt="Seren Ashfall"
+          />
           <div>
             <button>Upload new portrait</button>
             <small>JPG or PNG · square images work best</small>
