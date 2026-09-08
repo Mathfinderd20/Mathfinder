@@ -249,8 +249,10 @@ describe("content-db", () => {
     const listHtml = `
       <a href="Feats.aspx?Category=Combat">Combat</a>
       <a href="Feats.aspx?Category=General">General</a>
-      <a href="FeatDisplay.aspx?ItemName=Power%20Attack">Power Attack</a>
-      <a href="FeatDisplay.aspx?ItemName=Cleave">Cleave</a>
+      <table id="MainContent_GridView6">
+        <tr><td><a href="FeatDisplay.aspx?ItemName=Power%20Attack">Power Attack</a></td><td>Str 13</td></tr>
+        <tr><td><a href="FeatDisplay.aspx?ItemName=Cleave">Cleave</a></td><td><a href="FeatDisplay.aspx?ItemName=Power%20Attack">Power Attack</a></td></tr>
+      </table>
     `;
     const categories = parseAonFeatCategories(listHtml);
     expect(categories).toEqual(["Combat", "General"]);
