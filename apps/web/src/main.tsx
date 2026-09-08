@@ -1,6 +1,12 @@
 import { Component, StrictMode, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
+import {
+  installAssetReloadRecovery,
+  markAssetLoadSucceeded,
+} from "./assetReloadRecovery";
 import "./styles.css";
+
+installAssetReloadRecovery();
 
 const root = document.getElementById("root");
 if (!root) throw new Error("Root element #root not found");
@@ -107,6 +113,7 @@ window.addEventListener("unhandledrejection", (event) => {
 async function bootstrap() {
   const { initializeCloudPersistence } = await import("./lib/cloudPersistence");
   const { AppRouter } = await import("./app/AppRouter");
+  markAssetLoadSucceeded();
   createRoot(appRoot).render(
     <StrictMode>
       <AppErrorBoundary>
