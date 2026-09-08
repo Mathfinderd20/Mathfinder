@@ -2,7 +2,7 @@
 
 ## Track work in GitHub Issues
 
-Use [GitHub Issues](https://github.com/adammartin2500-ship-it/Mathfinder/issues)
+Use [GitHub Issues](https://github.com/Mathfinderd20/Mathfinder/issues)
 for new features, bugs, and actionable maintenance work. Search existing issues
 first. One issue should describe a coherent outcome; use a checklist for its
 implementation steps rather than opening an issue for every small task.
@@ -18,6 +18,11 @@ before starting to avoid duplicate efforts. Link dependencies explicitly.
 In pull requests, use `Closes #123` only when the change completes that issue's
 acceptance criteria; use `Refs #123` for partial progress. Verify applicable
 tests and describe what was checked.
+
+Use [`DEPLOYMENT.md`](./DEPLOYMENT.md) for releases. In particular, apply an
+approved hosted Supabase migration before deploying frontend code that depends
+on it, and preserve a Docker rollback image before replacing a healthy
+container.
 
 ## Docs explain; issues track
 

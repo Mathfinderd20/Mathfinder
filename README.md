@@ -10,8 +10,10 @@ directly to player sheets in real time.
 
 ## Status
 
-Track new work in [GitHub Issues](https://github.com/adammartin2500-ship-it/Mathfinder/issues).
+Track new work in [GitHub Issues](https://github.com/Mathfinderd20/Mathfinder/issues).
 See [`CONTRIBUTING.md`](./CONTRIBUTING.md) for issue and pull request conventions.
+Use [`DEPLOYMENT.md`](./DEPLOYMENT.md) for the GitHub, Supabase, Docker, rollback,
+and stale-browser-cache release procedure.
 
 Design docs and existing backlog material:
 
