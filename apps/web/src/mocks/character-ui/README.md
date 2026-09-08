@@ -2,6 +2,8 @@
 
 This interactive mock is intentionally isolated from the production character and campaign workspaces. Open `/character-ui-mock.html` in the Vite application.
 
+A committed static review export lives at `design-mocks/character-ui/`. Regenerate it from the repository root with `npm run build:character-mock`; do not hand-edit the compiled files.
+
 ## Scenarios
 
 - **Player** opens Seren Ashfall on the default Character tab.
