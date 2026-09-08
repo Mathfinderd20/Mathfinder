@@ -19,7 +19,7 @@ export function Notebook({
     );
   }
   return (
-    <div className="gm-workspace">
+    <div className="gm-workspace gm-notes-workspace">
       <section className="gm-sheet gm-notebook">
         <div className="gm-sheet-top">
           <span className="gm-kicker">Campaign notebook</span>
