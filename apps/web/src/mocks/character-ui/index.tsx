@@ -164,7 +164,7 @@ function App() {
   const [targeting, setTargeting] = useState(false);
   const [saveAttempt, setSaveAttempt] = useState(false);
   const [healthOpen, setHealthOpen] = useState(false);
-  const [leveling, setLeveling] = useState(false);
+  const [leveling, setLeveling] = useState<{ level?: number; className?: string; editing?: boolean }>();
   const [creationGuideOpen, setCreationGuideOpen] = useState(false);
   const [toast, setToast] = useState<string>();
   const character = SCENARIOS[scenario];
@@ -249,7 +249,7 @@ function App() {
           {tab === "notes" ? <NotesTab gm={gm} /> : null}
           {tab === "inventory" ? <InventoryTab scenario={scenario} onToast={showToast} /> : null}
           {tab === "magic" ? <MagicTab scenario={scenario} onTarget={() => setTargeting(true)} onToast={showToast} /> : null}
-          {tab === "build" ? <BuildTab scenario={scenario} onToast={showToast} onLevelUp={() => setLeveling(true)} onCreationGuide={() => setCreationGuideOpen(true)} /> : null}
+          {tab === "build" ? <BuildTab scenario={scenario} onToast={showToast} onLevelUp={() => setLeveling({})} onEditLevel={(level, className) => setLeveling({ level, className, editing: true })} onCreationGuide={() => setCreationGuideOpen(true)} /> : null}
         </main>
 
         {tab === "inventory" ? (
@@ -274,7 +274,7 @@ function App() {
       {targeting ? <TargetDialog onClose={() => setTargeting(false)} onCast={() => { setTargeting(false); showToast("Spell sent to 3 affected character sheets"); }} /> : null}
       {saveAttempt ? <SaveDialog onClose={() => setSaveAttempt(false)} onResolve={() => { setSaveAttempt(false); showToast("Will save succeeded · Hold Person removed"); }} /> : null}
       {healthOpen ? <HealthDrawer scenario={scenario} onClose={() => setHealthOpen(false)} onToast={showToast} /> : null}
-      {leveling ? <LevelUpDialog scenario={scenario} onClose={() => setLeveling(false)} onContinue={() => { setLeveling(false); showToast("Level-up workflow opened at hit points"); }} /> : null}
+      {leveling ? <LevelUpDialog scenario={scenario} target={leveling} onClose={() => setLeveling(undefined)} onContinue={() => { const editing = leveling.editing; setLeveling(undefined); showToast(editing ? "Level changes staged for review" : "Level-up workflow opened at hit points"); }} /> : null}
       {creationGuideOpen ? <CreationGuideDialog scenario={scenario} onClose={() => setCreationGuideOpen(false)} /> : null}
       {toast ? <div className="mock-toast" role="status">{toast}</div> : null}
     </div>
@@ -500,11 +500,25 @@ interface MockSpell {
   kind?: "domain" | "normal";
 }
 
+const SPELL_RULES: Record<string, { school: string; castingTime: string; range: string; target: string; duration: string; resistance: string; full: string }> = {
+  Bless: { school: "Enchantment (compulsion) [mind-affecting]", castingTime: "1 standard action", range: "50 ft", target: "All allies within a 50-ft burst centered on you", duration: "1 minute / level", resistance: "Yes (harmless)", full: "Bless fills your allies with courage. Each ally gains a +1 morale bonus on attack rolls and on saving throws against fear effects. Bless counters and dispels bane." },
+  Longstrider: { school: "Transmutation", castingTime: "1 standard action", range: "Personal", target: "You", duration: "1 hour / level", resistance: "No", full: "This spell gives you a +10-foot enhancement bonus to your base land speed. It has no effect on other modes of movement." },
+  "Hold Person": { school: "Enchantment (compulsion) [mind-affecting]", castingTime: "1 standard action", range: "Medium", target: "One humanoid creature", duration: "1 round / level", resistance: "Yes", full: "The subject becomes paralyzed and freezes in place. At the end of each turn, the subject may attempt a new Will save to end the effect." },
+  "Locate Object": { school: "Divination", castingTime: "1 standard action", range: "Long", target: "Circle centered on you", duration: "1 minute / level", resistance: "No", full: "You sense the direction of a well-known or clearly visualized object. The spell can locate a general kind of object, but lead and certain transformations block it." },
+  Prayer: { school: "Enchantment (compulsion) [mind-affecting]", castingTime: "1 standard action", range: "40 ft", target: "All allies and foes in a 40-ft burst", duration: "1 round / level", resistance: "Yes", full: "Allies gain a +1 luck bonus on attack rolls, weapon damage rolls, saves, and skill checks. Enemies take a −1 penalty on those rolls." },
+  Fly: { school: "Transmutation", castingTime: "1 standard action", range: "Touch", target: "Creature touched", duration: "1 minute / level", resistance: "Yes (harmless)", full: "The subject gains a fly speed of 60 feet with good maneuverability. The spell supports normal movement and safe descent when its duration ends." },
+  "Mirror Image": { school: "Illusion (figment)", castingTime: "1 standard action", range: "Personal", target: "You", duration: "1 minute / level", resistance: "No", full: "Several illusory duplicates surround you and make it difficult for enemies to determine which target is real. Successful attacks may destroy an image instead of striking you." },
+  Web: { school: "Conjuration (creation)", castingTime: "1 standard action", range: "Medium", target: "Webs in a 20-ft-radius spread", duration: "10 minutes / level", resistance: "No", full: "Sticky strands fill the area, grappling creatures and creating difficult terrain. The webs must be anchored and can be burned or cut away." },
+  Haste: { school: "Transmutation", castingTime: "1 standard action", range: "Close", target: "One creature / level, no two more than 30 ft apart", duration: "1 round / level", resistance: "Yes (harmless)", full: "Affected creatures move faster, gain a +1 bonus on attack rolls, AC, and Reflex saves, and gain one additional attack during a full attack." },
+  "Dispel Magic": { school: "Abjuration", castingTime: "1 standard action", range: "Medium", target: "One spellcaster, creature, object, or spell", duration: "Instantaneous", resistance: "No", full: "Choose a targeted dispel or counterspell. Make a caster-level check against the effect's dispel DC; successful checks end eligible spells without affecting their remaining duration." },
+};
+
 function MagicTab({ scenario, onTarget, onToast }: { scenario: ScenarioKey; onTarget: () => void; onToast: (message: string) => void }) {
   const defaultSource = scenario === "multiclass" ? "cleric" : scenario === "monster" ? "sla" : "ranger";
   const [source, setSource] = useState(defaultSource);
   const [view, setView] = useState<"prepared" | "available" | "library">("prepared");
   const [prepareAmounts, setPrepareAmounts] = useState<Record<string, number>>({});
+  const [spellDetail, setSpellDetail] = useState<MockSpell>();
   const sourceInfo = source === "wizard" ? { name: "Wizard 5", type: "Prepared · INT", level: "Caster level 5", concentration: "+9", dc: "DC 15–18", prepared: true } : source === "cleric" ? { name: "Cleric 5", type: "Prepared · WIS · Travel domain", level: "Caster level 5", concentration: "+9", dc: "DC 15–18", prepared: true } : source === "sla" ? { name: "Vampire abilities", type: "Spell-like abilities · CHA", level: "Caster level 12", concentration: "+17", dc: "DC 15–22", prepared: false } : source === "granted" ? { name: "Granted / SLA", type: "Granted ability · WIS", level: "Caster level 10", concentration: "+14", dc: "DC 18", prepared: false } : { name: "Ranger 7", type: "Prepared · WIS", level: "Caster level 4", concentration: "+7", dc: "DC 14", prepared: true };
   const libraryMode = view === "library" && sourceInfo.prepared;
   const spellCatalog: Record<string, MockSpell[]> = {
@@ -566,11 +580,17 @@ function MagicTab({ scenario, onTarget, onToast }: { scenario: ScenarioKey; onTa
         <div className="spell-table"><div className="spell-head"><span>Spell</span><span>Level</span><span>DC</span><span>Components</span><span>{libraryMode ? "Prepare" : "Status"}</span><span /></div>{spells.map((spell) => {
           const maxPrepare = typeof spell.level === "number" ? spell.kind === "domain" ? 1 : availableSlots[spell.level] ?? 0 : 0;
           const amount = prepareAmounts[spell.name] ?? Math.min(1, maxPrepare);
-          return <div className={`spell-row ${spell.kind === "domain" ? "domain-spell" : ""}`} key={`${spell.name}-${spell.kind ?? "spell"}`}><span><strong>{spell.name}</strong><span className={`spell-kind ${spell.kind === "domain" ? "domain" : "standard"}`}>{spell.kind === "domain" ? "Domain" : "Spell"}</span><small>{spell.description}</small></span><span>{spell.level}</span><span>{spell.dc}</span><span>{spell.components}</span>{libraryMode ? <label className="prepare-amount"><span className="sr-only">Prepare quantity</span><select value={amount} onChange={(event) => setPrepareAmounts((previous) => ({ ...previous, [spell.name]: Number(event.target.value) }))}>{Array.from({ length: maxPrepare + 1 }, (_, index) => <option key={index} value={index}>{index}</option>)}</select><small>of {maxPrepare} open</small></label> : <span>{spell.preparation}</span>}<button onClick={libraryMode ? () => onToast(`${amount} × ${spell.name} prepared`) : onTarget}>{libraryMode ? spell.kind === "domain" ? "Prepare Domain" : "Prepare" : "Cast"}</button></div>;
+          return <div className={`spell-row ${spell.kind === "domain" ? "domain-spell" : ""}`} key={`${spell.name}-${spell.kind ?? "spell"}`}><button className="spell-detail-trigger" onClick={() => setSpellDetail(spell)}><span><strong>{spell.name}</strong><span className={`spell-kind ${spell.kind === "domain" ? "domain" : "standard"}`}>{spell.kind === "domain" ? "Domain" : "Spell"}</span><small>{spell.description}</small></span><em>View full spell</em></button><span>{spell.level}</span><span>{spell.dc}</span><span>{spell.components}</span>{libraryMode ? <label className="prepare-amount"><span className="sr-only">Prepare quantity</span><select value={amount} onChange={(event) => setPrepareAmounts((previous) => ({ ...previous, [spell.name]: Number(event.target.value) }))}>{Array.from({ length: maxPrepare + 1 }, (_, index) => <option key={index} value={index}>{index}</option>)}</select><small>of {maxPrepare} open</small></label> : <span>{spell.preparation}</span>}<button onClick={libraryMode ? () => onToast(`${amount} × ${spell.name} prepared`) : onTarget}>{libraryMode ? spell.kind === "domain" ? "Prepare Domain" : "Prepare" : "Cast"}</button></div>;
         })}</div>
       </section>
+      {spellDetail ? <SpellDetailDialog spell={spellDetail} sourceName={sourceInfo.name} libraryMode={libraryMode} onClose={() => setSpellDetail(undefined)} onAction={() => { setSpellDetail(undefined); if (libraryMode) onToast(`${spellDetail.name} added to preparation`); else onTarget(); }} /> : null}
     </div>
   );
+}
+
+function SpellDetailDialog({ spell, sourceName, libraryMode, onClose, onAction }: { spell: MockSpell; sourceName: string; libraryMode: boolean; onClose: () => void; onAction: () => void }) {
+  const rules = SPELL_RULES[spell.name] ?? { school: "Class spell or supernatural effect", castingTime: "1 standard action", range: "See source", target: "See source", duration: "See source", resistance: "See source", full: `${spell.description} The complete source text, scaling, exceptions, and interaction rules appear here when connected to the rules catalog.` };
+  return <div className="modal-backdrop" onMouseDown={onClose}><section className="spell-detail-dialog" role="dialog" aria-modal="true" aria-labelledby="spell-detail-title" onMouseDown={(event) => event.stopPropagation()}><header><div><span className="eyebrow">{sourceName} · Level {spell.level}</span><div className="spell-dialog-title"><h2 id="spell-detail-title">{spell.name}</h2>{spell.kind === "domain" ? <span className="spell-kind domain">Domain</span> : null}</div><p>{rules.school}</p></div><button onClick={onClose}>×</button></header><dl className="spell-rules-grid"><div><dt>Casting time</dt><dd>{rules.castingTime}</dd></div><div><dt>Components</dt><dd>{spell.components}</dd></div><div><dt>Range</dt><dd>{rules.range}</dd></div><div><dt>Target / Area</dt><dd>{rules.target}</dd></div><div><dt>Duration</dt><dd>{rules.duration}</dd></div><div><dt>Saving throw</dt><dd>{spell.dc}</dd></div><div><dt>Spell resistance</dt><dd>{rules.resistance}</dd></div><div><dt>Preparation</dt><dd>{spell.preparation}</dd></div></dl><section className="spell-full-description"><h3>Description</h3><p>{rules.full}</p></section>{spell.kind === "domain" ? <div className="domain-detail-note"><span className="spell-kind domain">Domain slot</span><p>This spell belongs to the selected domain and uses that level’s dedicated domain slot when prepared.</p></div> : null}<footer><button className="quiet-button" onClick={onClose}>Close</button><button className="dialog-primary" onClick={onAction}>{libraryMode ? "Prepare Spell" : "Cast Spell"}</button></footer></section></div>;
 }
 
 function MagicRail({ open, onToggle }: { open: boolean; onToggle: () => void }) {
@@ -578,10 +598,10 @@ function MagicRail({ open, onToggle }: { open: boolean; onToggle: () => void }) 
   return <aside className="side-rail magic-rail"><header className="rail-heading"><div><span className="eyebrow">Every source</span><h2>Find Magic</h2></div><button onClick={onToggle}>›</button></header><label className="rail-search"><span>Search</span><input placeholder="Spell, school, source…" /></label><div className="filter-stack"><label>Source<select><option>All casting sources</option><option>Cleric 5</option><option>Wizard 5</option><option>Granted / SLA</option></select></label><label>Level<select><option>All levels</option><option>Can cast now</option><option>0</option><option>1</option><option>2</option><option>3</option></select></label><label>Status<select><option>All statuses</option><option>Prepared</option><option>Available</option><option>Spent</option></select></label><label>School<select><option>All schools</option><option>Conjuration</option><option>Divination</option><option>Evocation</option></select></label></div><div className="rail-callout"><strong>13 spells ready</strong><p>Across 2 casting sources</p></div><button className="rail-primary">Prepare &amp; manage spells</button></aside>;
 }
 
-function BuildTab({ scenario, onToast, onLevelUp, onCreationGuide }: { scenario: ScenarioKey; onToast: (message: string) => void; onLevelUp: () => void; onCreationGuide: () => void }) {
+function BuildTab({ scenario, onToast, onLevelUp, onEditLevel, onCreationGuide }: { scenario: ScenarioKey; onToast: (message: string) => void; onLevelUp: () => void; onEditLevel: (level: number, className: string) => void; onCreationGuide: () => void }) {
   const multiclass = scenario === "multiclass";
   const currentLevel = multiclass ? 10 : 7;
-  if (scenario === "monster") return <MonsterBuild onToast={onToast} />;
+  if (scenario === "monster") return <MonsterBuild onToast={onToast} onEditLevel={onEditLevel} />;
   const progression = multiclass
     ? [
         [1, "Cleric", 1, "Domains · feat · skills"],
@@ -628,7 +648,7 @@ function BuildTab({ scenario, onToast, onLevelUp, onCreationGuide }: { scenario:
         <div className="progression-list">
           {progression.map(([level, className, classLevel, detail]) => (
             <details className="progression-level" key={level} open={level === currentLevel ? true : undefined}>
-              <summary><span className="progression-index">Level {level}</span><strong>{className}</strong><span>{className} {classLevel}</span><small>{detail}</small><em>+</em></summary>
+              <summary><span className="progression-index">Level {level}</span><strong>{className}</strong><span>{className} {classLevel}</span><small>{detail}</small><button className="level-edit-button" onClick={(event) => { event.preventDefault(); event.stopPropagation(); onEditLevel(Number(level), String(className)); }}>Edit</button><em>+</em></summary>
               <div className="progression-breakdown">
                 <div className="level-choice-grid"><label>Class<select defaultValue={String(className)}><option>{className}</option></select></label><label>Hit points<input defaultValue={className === "Wizard" ? "5" : "8"} /></label><label>Favored class bonus<select><option>+1 hit point</option><option>+1 skill rank</option></select></label><label>Feat or choice<select><option>{detail}</option></select></label></div>
                 <div className="level-grants"><span>Resolved grants</span><strong>{detail}</strong><small>Class features, prerequisites, skill ranks, spell access, and derived changes for this level remain editable here.</small></div>
@@ -641,28 +661,38 @@ function BuildTab({ scenario, onToast, onLevelUp, onCreationGuide }: { scenario:
   );
 }
 
-function MonsterBuild({ onToast }: { onToast: (message: string) => void }) {
-  const layers = [
-    { kind: "Codex base", name: "Owlbear", meta: "Magical beast 5d10 · CR 4", detail: "STR 23 · DEX 12 · 52 HP · grab" },
-    { kind: "Racial Hit Dice", name: "+2 magical beast HD", meta: "7d10 total · feats and skills recalculated", detail: "+22 HP · +2 BAB · +1 feat" },
-    { kind: "Template", name: "Vampire", meta: "Applied template · CR +2", detail: "Undead traits · blood drain · fast healing 5" },
-    { kind: "Class levels", name: "Rogue 2", meta: "Two class levels · CR +2", detail: "Sneak attack +1d6 · evasion · rogue talents" },
+function MonsterBuild({ onToast, onEditLevel }: { onToast: (message: string) => void; onEditLevel: (level: number, className: string) => void }) {
+  const progression = [
+    [1, "Magical Beast", "Racial HD 1", "Codex base · feat · skill ranks"],
+    [2, "Magical Beast", "Racial HD 2", "Codex base · BAB and saves"],
+    [3, "Magical Beast", "Racial HD 3", "Codex base · feat · skills"],
+    [4, "Magical Beast", "Racial HD 4", "Codex base · ability increase"],
+    [5, "Magical Beast", "Racial HD 5", "Codex base · grab and scent"],
+    [6, "Magical Beast", "Racial HD 6", "Added HD · feat · skills"],
+    [7, "Magical Beast", "Racial HD 7", "Added HD · BAB and saves"],
+    [8, "Rogue", "Rogue 1", "Sneak attack +1d6 · trapfinding"],
+    [9, "Rogue", "Rogue 2", "Evasion · rogue talent"],
   ];
   return (
     <div className="build-mock-page">
       <section className="build-summary mock-panel"><div><span className="eyebrow">Actor progression</span><h2>CR 11 · 9 Hit Dice / class levels</h2><p>Codex creature extended through racial HD, a template, and class levels</p></div><div className="build-actions"><button onClick={() => onToast("Codex browser opened")}>Browse codex</button><button className="level-up-button" onClick={() => onToast("Build layer menu opened")}>+ Add HD, Template, or Class</button></div></section>
+      <section className="actor-origin-strip mock-panel"><div><span className="eyebrow">Codex origin</span><strong>Owlbear · Magical Beast 5 HD</strong><small>Imported foundation remains linked to its source record</small></div><div><span className="eyebrow">Applied template</span><strong>Vampire · CR +2</strong><small>Undead traits · blood drain · fast healing 5</small></div><button onClick={() => onToast("Template configuration opened")}>Configure Template</button></section>
       <div className="monster-build-page">
-        <details className="monster-stack mock-panel" open><summary className="panel-heading"><div><span className="eyebrow">Top to bottom</span><h2>Build stack</h2></div><span>4 layers · collapse</span></summary><div className="build-stack">{layers.map((layer, index) => <article key={layer.name}><span className="layer-number">{index + 1}</span><div><small>{layer.kind}</small><h3>{layer.name}</h3><p>{layer.meta}</p><em>{layer.detail}</em></div><div className="layer-actions"><button>Configure</button>{index > 0 ? <button>Remove</button> : <button>View source</button>}</div></article>)}</div></details>
+        <details className="vertical-progression mock-panel" open><summary><div><span className="eyebrow">Top to bottom</span><h2>Level Progression</h2></div><span>7 racial Hit Dice · 2 class levels</span></summary><div className="progression-list">{progression.map(([level, className, classLevel, detail]) => <details className="progression-level" key={level} open={level === 9 ? true : undefined}><summary><span className="progression-index">Level {level}</span><strong>{className}</strong><span>{classLevel}</span><small>{detail}</small><button className="level-edit-button" onClick={(event) => { event.preventDefault(); event.stopPropagation(); onEditLevel(Number(level), String(className)); }}>Edit</button><em>+</em></summary><div className="progression-breakdown"><div className="level-choice-grid"><label>Progression type<select defaultValue={String(className)}><option>{className}</option></select></label><label>Hit points<input defaultValue={className === "Rogue" ? "7" : "11"} /></label><label>Skill ranks<input defaultValue={className === "Rogue" ? "8" : "2"} /></label><label>Feat or feature<select><option>{detail}</option></select></label></div><div className="level-grants"><span>Resolved grants</span><strong>{detail}</strong><small>Creature type, racial HD, class features, prerequisites, and derived changes stay editable at this level.</small></div></div></details>)}</div></details>
         <aside className="derived-preview mock-panel"><span className="eyebrow">Final derived actor</span><h2>CR 11</h2><p>The Sanguine Owlbear</p><dl><div><dt>Hit Dice</dt><dd>7d8 + 2d8</dd></div><div><dt>Hit points</dt><dd>118</dd></div><div><dt>Armor class</dt><dd>28</dd></div><div><dt>Base attack</dt><dd>+9</dd></div><div><dt>Fort / Ref / Will</dt><dd>+12 / +15 / +10</dd></div><div><dt>Special abilities</dt><dd>11</dd></div></dl><button>Review all calculations</button><div className="validation-ok">✓ All build choices resolved</div></aside>
       </div>
     </div>
   );
 }
 
-function LevelUpDialog({ scenario, onClose, onContinue }: { scenario: ScenarioKey; onClose: () => void; onContinue: () => void }) {
+function LevelUpDialog({ scenario, target, onClose, onContinue }: { scenario: ScenarioKey; target: { level?: number; className?: string; editing?: boolean }; onClose: () => void; onContinue: () => void }) {
   const multiclass = scenario === "multiclass";
-  const [nextClass, setNextClass] = useState(multiclass ? "Cleric" : "Ranger");
-  return <div className="modal-backdrop"><section className="level-up-dialog" role="dialog" aria-modal="true" aria-labelledby="level-up-title"><header><div><span className="eyebrow">Guided character advancement</span><h2 id="level-up-title">Level Up {multiclass ? "Elowen" : "Seren"}</h2><p>Character level {multiclass ? "10 → 11" : "7 → 8"}</p></div><button onClick={onClose}>×</button></header><ol className="level-up-steps"><li className="active"><b>1</b><span>Class</span></li><li><b>2</b><span>Hit points</span></li><li><b>3</b><span>Skills</span></li><li><b>4</b><span>Feats &amp; Magic</span></li><li><b>5</b><span>Review</span></li></ol><div className="level-up-body"><span className="eyebrow">Step 1 of 5</span><h3>Choose this level’s class</h3><p>The workflow keeps today’s guided level-up behavior, while Build remains the permanent record.</p><label>Search classes<input placeholder="Search class, archetype, or prestige class…" /></label><div className="class-options">{[multiclass ? "Cleric" : "Ranger", multiclass ? "Wizard" : "Horizon Walker", "Rogue"].map((name) => <button key={name} className={nextClass === name ? "selected" : ""} onClick={() => setNextClass(name)}><span><strong>{name}</strong><small>{name === (multiclass ? "Cleric" : "Ranger") ? "Continue an existing class" : "Add a new class progression"}</small></span><b>{nextClass === name ? "Selected" : "Choose"}</b></button>)}</div></div><footer><button className="quiet-button" onClick={onClose}>Cancel</button><button className="dialog-primary" onClick={onContinue}>Continue with {nextClass}</button></footer></section></div>;
+  const gmMonster = scenario === "monster";
+  const defaultClass = target.className ?? (multiclass ? "Cleric" : "Ranger");
+  const [nextClass, setNextClass] = useState(defaultClass);
+  const actor = gmMonster ? "The Sanguine Owlbear" : multiclass ? "Elowen" : "Seren";
+  const options = gmMonster ? [defaultClass, "Rogue", "Fighter"] : [multiclass ? "Cleric" : "Ranger", multiclass ? "Wizard" : "Horizon Walker", "Rogue"];
+  return <div className="modal-backdrop"><section className="level-up-dialog" role="dialog" aria-modal="true" aria-labelledby="level-up-title"><header><div><span className="eyebrow">{target.editing ? "Respec · guided revision" : "Guided character advancement"}</span><h2 id="level-up-title">{target.editing ? `Edit Level ${target.level}` : "Level Up"} · {actor}</h2><p>{target.editing ? "Change anything granted at this level; downstream requirements will be revalidated." : `Character level ${multiclass ? "10 → 11" : gmMonster ? "9 → 10" : "7 → 8"}`}</p></div><button onClick={onClose}>×</button></header>{target.editing ? <div className="respec-warning"><strong>Respec safely</strong><span>You may change the class, feat, skills, spells, or other choices at this level without recreating the character. Dependent later levels are flagged before saving.</span></div> : null}<ol className="level-up-steps"><li className="active"><b>1</b><span>Class</span></li><li><b>2</b><span>Hit points</span></li><li><b>3</b><span>Skills</span></li><li><b>4</b><span>Feats &amp; Magic</span></li><li><b>5</b><span>Review</span></li></ol><div className="level-up-body"><span className="eyebrow">Step 1 of 5</span><h3>{target.editing ? "Keep or replace this level’s class" : "Choose this level’s class"}</h3><p>{target.editing ? "A narrow feat-only change can skip directly to Feats & Magic; a full class change continues through every step." : "The workflow keeps today’s guided level-up behavior, while Build remains the permanent record."}</p><label>Search classes<input placeholder="Search class, archetype, prestige class, or racial HD…" /></label><div className="class-options">{[...new Set(options)].map((name) => <button key={name} className={nextClass === name ? "selected" : ""} onClick={() => setNextClass(name)}><span><strong>{name}</strong><small>{name === defaultClass ? "Current selection" : "Replace this level’s progression"}</small></span><b>{nextClass === name ? "Selected" : "Choose"}</b></button>)}</div></div><footer>{target.editing ? <button className="quiet-button" onClick={() => undefined}>Jump to Feats &amp; Magic</button> : null}<button className="quiet-button" onClick={onClose}>Cancel</button><button className="dialog-primary" onClick={onContinue}>{target.editing ? "Review Level Changes" : `Continue with ${nextClass}`}</button></footer></section></div>;
 }
 
 function CreationGuideDialog({ scenario, onClose }: { scenario: ScenarioKey; onClose: () => void }) {

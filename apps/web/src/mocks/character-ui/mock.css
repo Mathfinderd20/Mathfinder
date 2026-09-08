@@ -1431,7 +1431,26 @@ body {
   border-top: 0;
 }
 
-.spell-row > span:first-child {
+.spell-detail-trigger {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 3px 5px !important;
+  border: 1px solid transparent !important;
+  text-align: left;
+  color: var(--mock-ink) !important;
+  background: transparent !important;
+}
+
+.spell-detail-trigger:hover,
+.spell-detail-trigger:focus-visible {
+  border-color: rgba(221, 185, 120, 0.5) !important;
+  background: rgba(221, 185, 120, 0.05) !important;
+}
+
+.spell-detail-trigger > span {
   display: grid;
   grid-template-columns: auto 1fr;
   align-items: center;
@@ -1439,13 +1458,20 @@ body {
   gap: 4px 7px;
 }
 
-.spell-row > span:first-child > small {
+.spell-detail-trigger > span > small {
   grid-column: 1 / -1;
   color: var(--mock-muted);
   font-size: 11px;
 }
 
-.spell-row button {
+.spell-detail-trigger > em {
+  flex: 0 0 auto;
+  color: var(--mock-gold);
+  font-size: 10px;
+  font-style: normal;
+}
+
+.spell-row > button:last-child {
   color: #18140e;
   background: var(--mock-gold);
 }
@@ -1562,6 +1588,29 @@ body {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
+}
+
+.actor-origin-strip {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  align-items: center;
+  gap: 18px;
+  padding: 11px 14px;
+}
+
+.actor-origin-strip > div {
+  display: grid;
+  gap: 2px;
+}
+
+.actor-origin-strip > div + div {
+  padding-left: 18px;
+  border-left: 1px solid var(--mock-line);
+}
+
+.actor-origin-strip small {
+  color: var(--mock-muted);
+  font-size: 11px;
 }
 
 .build-foundation-section {
@@ -1694,7 +1743,7 @@ body {
 
 .progression-level > summary {
   display: grid;
-  grid-template-columns: 74px 110px 110px minmax(180px, 1fr) auto;
+  grid-template-columns: 74px 110px 110px minmax(180px, 1fr) auto auto;
   align-items: center;
   gap: 12px;
   min-height: 43px;
@@ -1705,6 +1754,13 @@ body {
   list-style: none;
   text-align: left;
   background: transparent;
+}
+
+.level-edit-button {
+  padding: 4px 8px;
+  color: var(--mock-gold-bright);
+  background: transparent;
+  font-size: 10px;
 }
 
 .progression-level > summary::-webkit-details-marker {
@@ -2025,7 +2081,8 @@ body {
 .target-dialog > header,
 .save-dialog > header,
 .level-up-dialog > header,
-.creation-guide-dialog > header {
+.creation-guide-dialog > header,
+.spell-detail-dialog > header {
   display: flex;
   align-items: start;
   justify-content: space-between;
@@ -2038,7 +2095,8 @@ body {
 .target-dialog > header h2,
 .save-dialog > header h2,
 .level-up-dialog > header h2,
-.creation-guide-dialog > header h2 {
+.creation-guide-dialog > header h2,
+.spell-detail-dialog > header h2 {
   font-size: 27px;
 }
 
@@ -2046,7 +2104,8 @@ body {
 .target-dialog > header > button,
 .save-dialog > header > button,
 .level-up-dialog > header > button,
-.creation-guide-dialog > header > button {
+.creation-guide-dialog > header > button,
+.spell-detail-dialog > header > button {
   width: 32px;
   height: 32px;
   padding: 0;
@@ -2227,7 +2286,8 @@ body {
 .target-dialog,
 .save-dialog,
 .level-up-dialog,
-.creation-guide-dialog {
+.creation-guide-dialog,
+.spell-detail-dialog {
   width: min(660px, 100%);
   max-height: calc(100vh - 40px);
   overflow-y: auto;
@@ -2246,11 +2306,98 @@ body {
   width: min(900px, 100%);
 }
 
+.spell-detail-dialog {
+  width: min(780px, 100%);
+}
+
 .level-up-dialog > header p,
-.creation-guide-dialog > header p {
+.creation-guide-dialog > header p,
+.spell-detail-dialog > header p {
   margin-top: 4px;
   color: var(--mock-muted);
   font-size: 12px;
+}
+
+.respec-warning {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  margin: 12px 0;
+  padding: 10px 12px;
+  border-left: 3px solid var(--mock-gold);
+  background: rgba(221, 185, 120, 0.06);
+}
+
+.respec-warning span {
+  color: var(--mock-muted);
+  font-size: 11px;
+}
+
+.spell-dialog-title {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.spell-rules-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  margin: 14px 0;
+  background: var(--mock-line);
+}
+
+.spell-rules-grid > div {
+  display: grid;
+  align-content: start;
+  gap: 3px;
+  min-height: 66px;
+  padding: 9px 10px;
+  background: #151a1c;
+}
+
+.spell-rules-grid dt {
+  color: var(--mock-muted);
+  font-size: 9px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.spell-rules-grid dd {
+  font-size: 12px;
+}
+
+.spell-full-description {
+  padding: 12px 14px;
+  border: 1px solid var(--mock-line);
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.spell-full-description h3 {
+  margin-bottom: 6px;
+  color: var(--mock-gold-bright);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.spell-full-description p {
+  color: var(--mock-ink);
+  font: 14px/1.55 Georgia, serif;
+}
+
+.domain-detail-note {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 10px;
+  padding: 9px 10px;
+  background: rgba(116, 88, 184, 0.08);
+}
+
+.domain-detail-note p {
+  color: var(--mock-muted);
+  font-size: 11px;
 }
 
 .creation-steps {
@@ -2536,7 +2683,8 @@ body {
 .target-dialog footer,
 .save-dialog footer,
 .level-up-dialog footer,
-.creation-guide-dialog footer {
+.creation-guide-dialog footer,
+.spell-detail-dialog footer {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
@@ -2814,6 +2962,17 @@ body {
   .progression-breakdown {
     grid-template-columns: 1fr;
   }
+
+  .actor-origin-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .actor-origin-strip > div + div {
+    padding-top: 10px;
+    padding-left: 0;
+    border-top: 1px solid var(--mock-line);
+    border-left: 0;
+  }
 }
 
 @media (max-width: 580px) {
@@ -2961,7 +3120,7 @@ body {
   }
 
   .progression-level > summary {
-    grid-template-columns: 66px 1fr auto;
+    grid-template-columns: 66px 1fr auto auto;
   }
 
   .progression-level > summary > span:nth-of-type(2),
@@ -2980,6 +3139,10 @@ body {
 
   .creation-guide-body > label {
     grid-template-columns: 1fr;
+  }
+
+  .spell-rules-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 
   .level-up-steps li {

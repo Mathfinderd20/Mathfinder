@@ -23,12 +23,15 @@ The scenario switcher is mock navigation, not a proposed production control.
 - Spellcasting never assumes a digital battle map. Casting selects affected tabletop characters, spends the chosen source's resource only on confirmation, and sends save/effect resolution to the affected sheets.
 - Multiple casting sources keep independent headers, caster levels, spell lists, DCs, and resource pools. Search may span all sources, but every Cast action identifies the source being spent.
 - Spell rows carry a short effect summary, save/DC, and verbal, somatic, and material/focus components. Prepared casters choose quantities from the source Library, capped by that spell level's open slots.
+- Selecting a spell opens its complete rules dialog: school, casting time, components, range, target/area, duration, saving throw/DC, spell resistance, preparation state, and full description. Cast or Prepare remains available from that dialog.
 - Domain spells remain inside their granting class source and the unified Spells list, but use a distinct Domain marker and the dedicated domain-slot allowance for their level.
 - Inventory promotes the equipment figure, separates Carried from Stored, gives carried weapons their own table, and keeps ammunition adjacent to its weapon.
-- Monster Build is a composable stack: codex base creature, racial HD, templates, class levels, and campaign modifiers.
+- Monster and NPC Build use the same collapsible Level Progression chart as player characters. Racial Hit Dice and class levels occupy explicit lines; templates and codex origin remain attached modifiers outside the level sequence.
 - Build progression reads top to bottom and can collapse. Every character-level line records the class taken and its resulting class level; its full choice breakdown expands directly beneath that line instead of appearing in a detached panel.
 - `Level Up` lives in the Build header and opens the retained guided advancement flow. Class, feat, skill, and spell discovery appears inside that flow or an on-demand Build Library, not a permanent rail.
 - Build includes editable Race and Campaign Traits records. Race shows the selected race and its standard, choice-based, and alternate racial traits. Campaign Traits are optional, campaign-governed selections with a typical allowance of one to three.
+- Race and Campaign Traits remain data-aware sections for codex NPCs when their source records provide those fields, but ordinary monster records omit the sections.
+- Every progression line has an `Edit` action that reopens the guided level workflow in respec mode. A player may replace the class at that level or make a narrow feat, skill, spell, HP, or feature change; dependent later choices are revalidated before saving.
 - The Character Creation Guide includes a required Race step and an optional Campaign Traits step. Both choices can be modified later with an impact review and validation against current campaign rules.
 - GM workflow is desktop-only. Player views include responsive behavior and turn the right rail into an overlay on narrow screens.
 
@@ -58,6 +61,7 @@ The scenario switcher is mock navigation, not a proposed production control.
 
 - Name, alignment, base ability scores, ancestry and ancestry choices, alternate traits, favored class, campaign rules, archetypes, class levels, HP, feats, ability increases, skill ranks, guided suggestions, level planning through 20, validation, and level-up/rollback flows.
 - Character creation and later editing must include Race, racial trait replacements/choices, and optional Campaign Traits constrained by the selected campaign's trait catalog and one-to-three-trait allowance.
+- Respec must preserve character identity, inventory, notes, presentation metadata, and campaign relationships while recalculating the edited level and validating all dependent later levels. Present conflicts for review rather than silently discarding choices.
 - Spell construction controls move to Magic but retain the same data and behavior.
 
 ### GM campaign copy
