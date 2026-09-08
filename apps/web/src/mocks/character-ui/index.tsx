@@ -8,6 +8,8 @@ type WorkspaceTab = "notes" | "character" | "inventory" | "magic" | "build";
 type ScenarioKey = "player" | "multiclass" | "monster";
 type RailSectionKey = "active" | "abilities" | "effects";
 
+const CHARACTER_PORTRAIT_URL = `${import.meta.env.BASE_URL}mock-assets/seren-ashfall.png`;
+
 const TABS: Array<{ id: WorkspaceTab; label: string }> = [
   { id: "notes", label: "Notes" },
   { id: "character", label: "Character" },
@@ -232,7 +234,7 @@ function App() {
 
       <section className="identity-bar" id="top">
         <img
-          src={`${import.meta.env.BASE_URL}mock-assets/seren-ashfall.png`}
+          src={CHARACTER_PORTRAIT_URL}
           alt="Seren Ashfall character portrait"
         />
         <div className="identity-main">
@@ -3273,10 +3275,7 @@ function ProfileDrawer({
           <button onClick={onClose}>×</button>
         </header>
         <div className="portrait-editor">
-          <img
-            src={`${import.meta.env.BASE_URL}mock-assets/seren-ashfall.png`}
-            alt="Seren Ashfall"
-          />
+          <img src={CHARACTER_PORTRAIT_URL} alt="Seren Ashfall" />
           <div>
             <button>Upload new portrait</button>
             <small>JPG or PNG · square images work best</small>
