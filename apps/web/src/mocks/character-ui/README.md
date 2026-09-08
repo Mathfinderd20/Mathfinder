@@ -2,7 +2,7 @@
 
 This interactive mock is intentionally isolated from the production character and campaign workspaces. Open `/character-ui-mock.html` in the Vite application.
 
-A committed static review export lives at `design-mocks/character-ui/`. Regenerate it from the repository root with `npm run build:character-mock`; do not hand-edit the compiled files.
+A committed, self-contained HTML review export lives at `design-mocks/character-ui/character-ui-mock.html`. Its UI, styles, scripts, and portrait are embedded in that single file. Regenerate it from the repository root with `npm run build:character-mock`; do not hand-edit the compiled file.
 
 ## Scenarios
 
