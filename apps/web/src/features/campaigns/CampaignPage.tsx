@@ -1,3 +1,4 @@
+import { CampaignCreationRulesPanel } from "./CampaignCreationRules";
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { accountStorage } from "../../lib/accountCache";
@@ -57,6 +58,7 @@ function LiveCampaign({
   joinCode?: string;
 }) {
   const navigate = useNavigate();
+  const campaign = getCampaign(accountStorage, campaignId);
   const [state, setState] = useState<WorkspaceState | null>(null);
   const [catalog, setCatalog] = useState<Actor[]>([]);
   const [error, setError] = useState("");
@@ -293,6 +295,11 @@ function LiveCampaign({
         backLabel="Back to dashboard"
         catalog={library}
         status={status}
+        campaignCreationRules={
+          campaign ? (
+            <CampaignCreationRulesPanel key={campaign.id} campaign={campaign} />
+          ) : null
+        }
         invite={
           <section className="gm-sheet campaign-access-panel">
             <h2>Invite your party</h2>

@@ -1,7 +1,13 @@
 import { getCloudConnectionState, reconnect } from "../../lib/cloudPersistence";
 import { supabase } from "../../lib/supabaseClient";
+import {
+  parseCharacterCreationRules,
+  validateCreationRules,
+  type CharacterCreationRules,
+} from "@mathfinder/rules-engine";
 
 export interface CampaignPreview {
+  creationRules?: CharacterCreationRules;
   id: string;
   name: string;
   description?: string;
@@ -98,7 +104,15 @@ export async function previewCampaignByCode(
   if (!row?.campaign_id) {
     throw new Error("Campaign ID is invalid or the campaign is inactive.");
   }
+  const rules = await client.rpc("preview_campaign_creation_rules", {
+    p_code: normalized,
+  });
+  if (rules.error)
+    throw new Error(
+      errorMessage(rules.error, "Campaign rules could not be loaded."),
+    );
   return {
+    creationRules: parseCharacterCreationRules(rules.data),
     id: String(row.campaign_id),
     name: String(row.campaign_name),
     description: row.campaign_description
@@ -167,5 +181,21 @@ export async function deactivateSharedCampaign(campaignId: string) {
     p_campaign_id: campaignId,
   });
   if (error) throw new Error(errorMessage(error, "Deactivation failed."));
+  await refreshCampaignData();
+}
+
+export async function saveCampaignCreationRules(
+  campaignId: string,
+  rules: CharacterCreationRules,
+) {
+  const errors = validateCreationRules(rules);
+  if (errors.length) throw new Error(errors.join(" "));
+  await ensureCampaignWriteReady();
+  const { error } = await requireClient().rpc("set_campaign_creation_rules", {
+    p_campaign_id: campaignId,
+    p_rules: rules,
+  });
+  if (error)
+    throw new Error(errorMessage(error, "Saving campaign rules failed."));
   await refreshCampaignData();
 }

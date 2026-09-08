@@ -27,6 +27,7 @@ export function GameMasterLayer({
   live = false,
   catalog = codexActors,
   invite,
+  campaignCreationRules,
   management,
   status,
   campaignName = "The Ashen Road",
@@ -36,6 +37,7 @@ export function GameMasterLayer({
   live?: boolean;
   catalog?: typeof codexActors;
   invite?: ReactNode;
+  campaignCreationRules?: ReactNode;
   management?: ReactNode;
   status?: ReactNode;
   campaignName?: string;
@@ -234,6 +236,7 @@ export function GameMasterLayer({
           <Codex add={add} catalog={catalog} live={live} />
         </div>
         <div hidden={tab !== "Rules"}>
+          {campaignCreationRules}
           <CampaignRules live={live} />
           {management}
         </div>

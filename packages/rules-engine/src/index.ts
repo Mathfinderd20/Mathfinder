@@ -7,6 +7,7 @@
  */
 
 export * from "./types";
+export * from "./character-creation-rules";
 export {
   ALIGNMENTS,
   ALIGNMENT_LABELS,
