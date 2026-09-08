@@ -33,6 +33,11 @@ import { plannedFeatSlotsForLevel } from "../featSlots";
 import { buildFavoredClassBonusOptions } from "../favoredClassBonusData";
 import { createFreshCharacterBuild } from "../features/characters/newCharacterBuild";
 import { AlignmentPicker } from "./AlignmentPicker";
+import {
+  creationWarnings,
+  pointBuyTotal,
+  type CharacterCreationRules,
+} from "@mathfinder/rules-engine";
 import { FeatSelectionPicker } from "./FeatSelectionPicker";
 
 const ABILITIES: AbilityKey[] = ["str", "dex", "con", "int", "wis", "cha"];
@@ -46,6 +51,7 @@ const DEFAULT_SCORES: Record<AbilityKey, number> = {
 };
 
 interface Props {
+  creationRules?: CharacterCreationRules;
   characterName: string;
   onConfirm: (build: CharacterBuild) => void;
   onClose: () => void;
@@ -70,6 +76,7 @@ function classKeyForName(name: string) {
 }
 
 export function CharacterCreationModal({
+  creationRules,
   characterName,
   onConfirm,
   onClose,
@@ -92,6 +99,15 @@ export function CharacterCreationModal({
   const [abilityScores, setAbilityScores] =
     useState<Record<AbilityKey, number>>(DEFAULT_SCORES);
   const deferredAbilityScores = useDeferredValue(abilityScores);
+  const warnings = creationRules
+    ? creationWarnings(Object.values(abilityScores), 1, creationRules)
+    : [];
+  let pointBuy: number | undefined;
+  try {
+    pointBuy = pointBuyTotal(Object.values(abilityScores));
+  } catch {
+    /* Manual scores may exceed point-buy bounds. */
+  }
   const [flexibleAbility, setFlexibleAbility] = useState<AbilityKey>("str");
   const [selectedSkills, setSelectedSkills] = useState<Set<SkillKey>>(
     new Set(),
@@ -348,6 +364,18 @@ export function CharacterCreationModal({
 
         <div className="field">
           <span>Base ability scores</span>
+          <p>
+            PF1e point-buy cost: {pointBuy ?? "Scores outside point-buy range"}
+            {creationRules?.method === "point-buy"
+              ? ` / ${creationRules.pointBuyBudget}`
+              : ""}{" "}
+            (before ancestry bonuses).
+          </p>
+          {warnings.map((warning) => (
+            <p role="status" key={warning}>
+              {warning}
+            </p>
+          ))}
           <div className="ability-picker">
             {ABILITIES.map((ability) => (
               <label className="field compact" key={ability}>
