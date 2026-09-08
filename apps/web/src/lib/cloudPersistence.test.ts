@@ -3,6 +3,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   user: { id: "user-a", email: "a@example.test", is_anonymous: false },
   authError: null as unknown,
+  selectFailures: {} as Record<
+    string,
+    { remaining: number; error: unknown; status: number }
+  >,
   rows: {} as Record<string, Record<string, unknown>[]>,
   mutations: [] as string[],
   cache: undefined as unknown,
@@ -64,6 +68,17 @@ vi.mock("./supabaseClient", () => ({
           return chain;
         },
         then: (resolve: (value: unknown) => unknown) => {
+          const failure = mocks.selectFailures[table];
+          if (action === "select" && failure?.remaining) {
+            failure.remaining--;
+            return Promise.resolve(
+              resolve({
+                data: null,
+                error: failure.error,
+                status: failure.status,
+              }),
+            );
+          }
           const rows = mocks.rows[table] ?? [];
           let data = rows.filter((row) =>
             Object.entries(filters).every(([k, v]) => (row[k] ?? null) === v),
@@ -111,6 +126,7 @@ beforeEach(() => {
   vi.stubGlobal("window", new EventTarget());
   mocks.user = { id: "user-a", email: "a@example.test", is_anonymous: false };
   mocks.authError = null;
+  mocks.selectFailures = {};
   mocks.mutations = [];
   mocks.cache = undefined;
   mocks.rows = {
@@ -196,6 +212,20 @@ describe("authenticated persistence", () => {
     await cloud.reconnect();
     expect(cloud.getCloudConnectionState().status).toBe("signedOut");
     expect(cache.currentEntries()).toEqual({});
+  });
+  it("retries a transient future-JWT response without signing out", async () => {
+    mocks.selectFailures.characters = {
+      remaining: 1,
+      error: { code: "PGRST303", message: "JWT issued at future" },
+      status: 401,
+    };
+    const cloud = await import("./cloudPersistence");
+    const initializing = cloud.initializeCloudPersistence();
+
+    await vi.advanceTimersByTimeAsync(1000);
+    await initializing;
+
+    expect(cloud.getCloudConnectionState().status).toBe("connected");
   });
   it("restores a matching account cache after a page reload during an outage", async () => {
     const first = await import("./cloudPersistence");

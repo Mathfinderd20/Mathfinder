@@ -217,6 +217,16 @@ function checkEpoch(expected: number) {
   if (epoch !== expected)
     throw new Error("Account changed; operation cancelled.");
 }
+function isFutureJwtError(error: unknown) {
+  return (
+    !!error &&
+    typeof error === "object" &&
+    "code" in error &&
+    error.code === "PGRST303"
+  );
+}
+const wait = (milliseconds: number) =>
+  new Promise((resolve) => setTimeout(resolve, milliseconds));
 async function loadCloud(expected: number) {
   if (!supabase || !user) return;
   const id = user.id;
@@ -228,17 +238,28 @@ async function loadCloud(expected: number) {
     "character_runtime_states",
     "profiles",
   ];
-  const results = await Promise.all(
-    tables.map((table) => {
-      let q = supabase!.from(table).select("*");
-      if (table === "characters" || table === "campaigns")
-        q = q.is("archived_at", null);
-      if (table === "campaign_members") q = q.eq("user_id", id);
-      if (table === "profiles") q = q.eq("id", id);
-      if (table === "character_runtime_states") q = q.is("campaign_id", null);
-      return q;
-    }),
-  );
+  const loadTables = () =>
+    Promise.all(
+      tables.map((table) => {
+        let q = supabase!.from(table).select("*");
+        if (table === "characters" || table === "campaigns")
+          q = q.is("archived_at", null);
+        if (table === "campaign_members") q = q.eq("user_id", id);
+        if (table === "profiles") q = q.eq("id", id);
+        if (table === "character_runtime_states") q = q.is("campaign_id", null);
+        return q;
+      }),
+    );
+  let results = await loadTables();
+  for (
+    let attempt = 0;
+    attempt < 3 && results.some((result) => isFutureJwtError(result.error));
+    attempt++
+  ) {
+    await wait(1000);
+    checkEpoch(expected);
+    results = await loadTables();
+  }
   checkEpoch(expected);
   for (const r of results) if (r.error) throw { ...r.error, status: r.status };
   const [
@@ -424,7 +445,11 @@ export async function reconnect() {
       error && typeof error === "object" && "status" in error
         ? Number(error.status)
         : 0;
-    if (code === 401 || code === 403 || code === 400) await signOut();
+    if (
+      (code === 401 || code === 403 || code === 400) &&
+      !isFutureJwtError(error)
+    )
+      await signOut();
     else if (
       cachedAt &&
       (isConnectionFailure(error) ||
