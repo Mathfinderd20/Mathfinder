@@ -19,7 +19,12 @@ export default defineConfig({
           fileName: "sw.js",
           source: `
 const CACHE = 'mathfinder-shell-' + ${JSON.stringify(version)};
-const ASSETS = ${JSON.stringify(["/", "/usable-content.json"])}.concat(${JSON.stringify(assets)});
+const ASSETS = ${JSON.stringify([
+            "/",
+            "/usable-content.json",
+            "/usable-content-normalized.json",
+            "/usable-content-rules.json",
+          ])}.concat(${JSON.stringify(assets)});
 self.addEventListener('install', event => event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS))));
 self.addEventListener('activate', event => event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key.startsWith('mathfinder-shell-') && key !== CACHE).map(key => caches.delete(key))))));
 self.addEventListener('fetch', event => {

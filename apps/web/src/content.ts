@@ -469,7 +469,23 @@ async function fetchUsableContentAsset(): Promise<UsableContentAsset> {
       `Runtime content at ${assetUrl} returned ${contentType || "an unknown content type"} instead of JSON`,
     );
   }
-  return response.json() as Promise<UsableContentAsset>;
+  const content = (await response.json()) as
+    UsableContentAsset | { chunks: string[] };
+  if (!("chunks" in content)) return content;
+
+  const chunks = await Promise.all(
+    content.chunks.map(async (chunkPath) => {
+      const chunkUrl = new URL(chunkPath, assetUrl).toString();
+      const chunkResponse = await fetch(chunkUrl, { cache: "no-cache" });
+      if (!chunkResponse.ok) {
+        throw new Error(
+          `Failed to load runtime content chunk from ${chunkUrl} (${chunkResponse.status} ${chunkResponse.statusText})`,
+        );
+      }
+      return (await chunkResponse.json()) as Partial<UsableContentAsset>;
+    }),
+  );
+  return Object.assign({}, ...chunks) as UsableContentAsset;
 }
 
 let loadPromise: Promise<void> | null = null;

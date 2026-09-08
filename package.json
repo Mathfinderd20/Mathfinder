@@ -14,6 +14,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "build:web": "npm run build --workspace @mathfinder/web",
+    "deploy": "npx wrangler@4.129.1 deploy",
     "verify": "npm run typecheck && npm run lint && npm run test && npm run build:web && npm run format:check",
     "content:db:init": "npm run db:init --workspace @mathfinder/content-db",
     "content:db:seed-local": "npm run db:seed-local --workspace @mathfinder/content-db",

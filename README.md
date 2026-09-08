@@ -60,6 +60,13 @@ Useful commands:
 
 Public frontend configuration belongs in `apps/web/.env.local`, using `apps/web/.env.example` as the template. Never place a service-role key in a `VITE_*` variable. See [`BACKEND_PLAN.md`](./BACKEND_PLAN.md) for architecture and rollout details.
 
+## Cloudflare deployment
+
+Deploy from the repository root with `npm run deploy`. The root Wrangler config
+builds the `apps/web` workspace and publishes its static output with SPA route
+fallbacks. Configure `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` as
+Cloudflare build variables; they are consumed by Vite during the build.
+
 ## Decisions Locked
 
 - **Stack:** TypeScript + React Native / React Native Web (shared web + phone, shared rules engine)
