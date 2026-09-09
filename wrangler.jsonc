@@ -8,4 +8,9 @@
     "directory": "./apps/web/dist",
     "not_found_handling": "single-page-application",
   },
+  "env": {
+    "stage": {
+      "name": "mathfinder-stage",
+    },
+  },
 }

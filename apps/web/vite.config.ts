@@ -1,41 +1,53 @@
-import { defineConfig } from "vite";
+import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 import { fileURLToPath, URL } from "node:url";
+import { validateWebBuildEnvironment } from "./src/lib/buildEnvironment.ts";
 
 // Alias the engine to its TypeScript source so Vite transpiles it as app code
 // (the rules engine ships source, not a build).
-export default defineConfig({
-  build: {
-    rollupOptions: {
-      input: {
-        main: fileURLToPath(new URL("./index.html", import.meta.url)),
-        gmPreview: fileURLToPath(new URL("./gm-preview.html", import.meta.url)),
-        characterUiMock: fileURLToPath(
-          new URL("./character-ui-mock.html", import.meta.url),
-        ),
+export default defineConfig(({ command, mode }) => {
+  if (command === "build") {
+    const environment = loadEnv(
+      mode,
+      fileURLToPath(new URL(".", import.meta.url)),
+      "",
+    );
+    validateWebBuildEnvironment(environment);
+  }
+  return {
+    build: {
+      rollupOptions: {
+        input: {
+          main: fileURLToPath(new URL("./index.html", import.meta.url)),
+          gmPreview: fileURLToPath(
+            new URL("./gm-preview.html", import.meta.url),
+          ),
+          characterUiMock: fileURLToPath(
+            new URL("./character-ui-mock.html", import.meta.url),
+          ),
+        },
       },
     },
-  },
-  plugins: [
-    react(),
-    {
-      name: "mathfinder-offline-shell",
-      generateBundle(_options, bundle) {
-        const assets = Object.keys(bundle)
-          .filter((name) => /\.(js|css)$/.test(name))
-          .map((name) => `/${name}`);
-        const version = assets.join("|");
-        this.emitFile({
-          type: "asset",
-          fileName: "sw.js",
-          source: `
+    plugins: [
+      react(),
+      {
+        name: "mathfinder-offline-shell",
+        generateBundle(_options, bundle) {
+          const assets = Object.keys(bundle)
+            .filter((name) => /\.(js|css)$/.test(name))
+            .map((name) => `/${name}`);
+          const version = assets.join("|");
+          this.emitFile({
+            type: "asset",
+            fileName: "sw.js",
+            source: `
 const CACHE = 'mathfinder-shell-' + ${JSON.stringify(version)};
 const ASSETS = ${JSON.stringify([
-            "/",
-            "/usable-content.json",
-            "/usable-content-normalized.json",
-            "/usable-content-rules.json",
-          ])}.concat(${JSON.stringify(assets)});
+              "/",
+              "/usable-content.json",
+              "/usable-content-normalized.json",
+              "/usable-content-rules.json",
+            ])}.concat(${JSON.stringify(assets)});
 self.addEventListener('install', event => event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)).then(() => self.skipWaiting())));
 self.addEventListener('activate', event => event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key.startsWith('mathfinder-shell-') && key !== CACHE).map(key => caches.delete(key)))).then(() => self.clients.claim())));
 self.addEventListener('fetch', event => {
@@ -53,15 +65,16 @@ self.addEventListener('fetch', event => {
   }
 });
 `,
-        });
+          });
+        },
+      },
+    ],
+    resolve: {
+      alias: {
+        "@mathfinder/rules-engine": fileURLToPath(
+          new URL("../../packages/rules-engine/src/index.ts", import.meta.url),
+        ),
       },
     },
-  ],
-  resolve: {
-    alias: {
-      "@mathfinder/rules-engine": fileURLToPath(
-        new URL("../../packages/rules-engine/src/index.ts", import.meta.url),
-      ),
-    },
-  },
+  };
 });

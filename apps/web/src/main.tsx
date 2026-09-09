@@ -4,6 +4,7 @@ import {
   installAssetReloadRecovery,
   markAssetLoadSucceeded,
 } from "./assetReloadRecovery";
+import { EnvironmentBanner } from "./components/EnvironmentBanner";
 import "./styles.css";
 
 installAssetReloadRecovery();
@@ -117,6 +118,7 @@ async function bootstrap() {
   createRoot(appRoot).render(
     <StrictMode>
       <AppErrorBoundary>
+        <EnvironmentBanner />
         <AppRouter />
       </AppErrorBoundary>
     </StrictMode>,

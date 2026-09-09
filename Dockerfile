@@ -19,7 +19,8 @@ COPY apps/web/ apps/web/
 COPY packages/rules-data/ packages/rules-data/
 COPY packages/rules-engine/ packages/rules-engine/
 
-# Optional public frontend configuration; local-only mode is the default.
+# Public frontend configuration is embedded by Vite during the image build.
+ARG VITE_APP_ENV="development"
 ARG VITE_SUPABASE_URL=""
 ARG VITE_SUPABASE_PUBLISHABLE_KEY=""
 RUN npm run build:web

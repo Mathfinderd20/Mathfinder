@@ -70,7 +70,9 @@ Public frontend configuration belongs in `apps/web/.env.local`, using `apps/web/
 Deploy from the repository root with `npm run deploy`. The root Wrangler config
 builds the `apps/web` workspace and publishes its static output with SPA route
 fallbacks. Configure `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` as
-Cloudflare build variables; they are consumed by Vite during the build.
+Cloudflare build variables, along with `VITE_APP_ENV=production` for the
+production Worker. Staging uses `VITE_APP_ENV=staging` and its own Supabase
+project. These values are consumed by Vite during the build.
 
 ## Decisions Locked
 

@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - stage
   pull_request:
 
 jobs:
@@ -53,3 +54,7 @@ jobs:
 
       - name: Build web app
         run: npm run build:web
+        env:
+          VITE_APP_ENV: staging
+          VITE_SUPABASE_URL: https://example-stage.supabase.co
+          VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_placeholder

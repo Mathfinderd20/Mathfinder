@@ -4,6 +4,34 @@ Use this checklist when shipping Mathfinder. GitHub, hosted Supabase, and the
 Docker-served web app are separate release steps. Pushing Git does not rebuild
 Docker, and rebuilding Docker does not apply database migrations.
 
+## Environments
+
+Production and staging are isolated deployments:
+
+| Environment | Branch  | Worker             | Domain                 | Backend                     |
+| ----------- | ------- | ------------------ | ---------------------- | --------------------------- |
+| Production  | `main`  | `mathfinder`       | `diresheets.com`       | Production Supabase project |
+| Staging     | `stage` | `mathfinder-stage` | `stage.diresheets.com` | Staging Supabase project    |
+
+Each Cloudflare Worker requires these Vite build variables:
+
+```text
+VITE_APP_ENV=production|staging
+VITE_SUPABASE_URL=https://PROJECT_REF.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=PROJECT_PUBLISHABLE_KEY
+```
+
+The build rejects invalid environment names, server-only Supabase credentials,
+non-HTTPS hosted URLs, and staging builds pointed at the production project.
+`VITE_*` values are public browser configuration and must never contain a
+service-role key, database password, or OAuth client secret.
+
+Deploy production with `npm run deploy` (which explicitly selects Wrangler's
+top-level environment) and staging with `npm run deploy:stage`. Always dry-run
+the appropriate command before changing a hosted deployment. The normal
+promotion path is `feature/*` → `stage` → `main`; merge production hotfixes back
+into `stage` promptly.
+
 ## 1. Prepare a focused branch
 
 Start from a clean, current `main`:
@@ -74,6 +102,12 @@ npx supabase migration list --linked
 Verify new tables, columns, or RPCs before deploying frontend code that depends
 on them. Do not deploy that frontend first: a missing RPC turns an otherwise
 healthy release into a runtime failure.
+
+Apply and verify every migration in staging first. Before either staging or
+production operations, explicitly link the intended project and verify its ref;
+the CLI's previous link is not an environment boundary. Inspect a production
+dry run only after the same migrations and dependent frontend have passed
+staging acceptance.
 
 Database migrations and frontend rollback have different lifecycles. Prefer
 backward-compatible, additive migrations. Do not reverse a hosted migration

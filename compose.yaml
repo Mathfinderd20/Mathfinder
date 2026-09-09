@@ -4,6 +4,7 @@ services:
     build:
       context: .
       args:
+        VITE_APP_ENV: ${VITE_APP_ENV:-development}
         VITE_SUPABASE_URL: ${VITE_SUPABASE_URL:-https://guronltdufvmnwnjqggd.supabase.co}
         VITE_SUPABASE_PUBLISHABLE_KEY: ${VITE_SUPABASE_PUBLISHABLE_KEY:-sb_publishable_JBB1eLVox6DlzkwoP4z_hw_SfuBK65e}
     ports:
