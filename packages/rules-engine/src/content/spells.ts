@@ -16,6 +16,13 @@ export interface SpellDefinition {
   school?: string;
   classes: SpellClassLevel[];
   description?: string;
+  castingTime?: string;
+  components?: string;
+  range?: string;
+  targetEffectArea?: string;
+  duration?: string;
+  savingThrow?: string;
+  spellResistance?: string;
   source?: string;
   sourceUrl?: string;
 }

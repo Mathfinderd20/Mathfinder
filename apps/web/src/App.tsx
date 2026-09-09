@@ -30,6 +30,7 @@ import {
 import { BuildEditorTab } from "./components/BuildEditorTab";
 import { GearTab } from "./components/GearTab";
 import { RuntimeControlsPanel } from "./components/RuntimeControlsPanel";
+import { SpellcastingManager } from "./components/SpellcastingManager";
 import { BuildSlotsPanel } from "./components/BuildSlotsPanel";
 import { ValidationPanel } from "./components/ValidationPanel";
 import { HoldToActivateButton } from "./components/HoldToActivateButton";
@@ -37,7 +38,16 @@ import type { LevelPlannerSuggestions } from "./buildSuggestions";
 import { collectOwnedSpellNames } from "./runtimeInsights";
 import { normalizeFeatListLength, plannedFeatSlotsForLevel } from "./featSlots";
 import { plannerRollbackCount, type PlannerExpansion } from "./plannerState";
-import { runtimeStorageKey } from "./features/characters/characterRepository";
+import {
+  getCharacter,
+  listCharacters,
+  runtimeStorageKey,
+  saveCharacterDetails,
+  type CharacterDetails,
+} from "./features/characters/characterRepository";
+import { CharacterIdentityBar } from "./features/characters/CharacterIdentityBar";
+import { CharacterNotes } from "./features/characters/CharacterNotes";
+import { accountStorage } from "./lib/accountCache";
 import { runtimeWeaponOptions } from "./app/buildNormalization";
 import { useBuildPersistence } from "./app/useBuildPersistence";
 import { useSpellbookEditor } from "./app/useSpellbookEditor";
@@ -89,7 +99,15 @@ const SCHOOL_OPTIONS = RUNTIME_SCHOOLS.filter(
   .map((school) => ({ id: school.id, name: school.name }))
   .sort((a, b) => a.name.localeCompare(b.name));
 
-type WorkspaceTab = "sheet" | "gear" | "build";
+type WorkspaceTab = "notes" | "character" | "inventory" | "magic" | "build";
+
+interface PendingSpellCast {
+  classKey: string;
+  level: number;
+  max: number;
+  spellName: string;
+  remaining: number;
+}
 
 interface AppProps {
   characterId?: string;
@@ -100,7 +118,7 @@ interface AppProps {
 
 export function App({
   characterId,
-  initialTab = "sheet",
+  initialTab = "character",
   onHome,
   onTabChange,
 }: AppProps = {}) {
@@ -197,9 +215,21 @@ export function App({
   >("idle");
   const levelUpEffectTimer = useRef<number | undefined>(undefined);
   const [activeTab, setActiveTab] = useState<WorkspaceTab>(initialTab);
+  const [details, setDetails] = useState<CharacterDetails>(
+    () =>
+      (characterId
+        ? getCharacter(accountStorage, characterId)?.details
+        : undefined) ?? {},
+  );
+  const [effectsRailOpen, setEffectsRailOpen] = useState(true);
+  const [resting, setResting] = useState(false);
+  const [pendingSpellCast, setPendingSpellCast] = useState<PendingSpellCast>();
+  const [spellTargetIds, setSpellTargetIds] = useState<string[]>([]);
   const [mountedTabs, setMountedTabs] = useState({
-    sheet: initialTab === "sheet",
-    gear: initialTab === "gear",
+    notes: initialTab === "notes",
+    character: initialTab === "character",
+    inventory: initialTab === "inventory",
+    magic: initialTab === "magic",
     build: initialTab === "build",
   });
   const weaponOptions = useMemo(
@@ -302,7 +332,7 @@ export function App({
     setCurrentLevel((prev) =>
       clampCurrentLevel(prev + 1, build.levels.length + 1),
     );
-    selectTab("sheet");
+    selectTab("character");
     setLeveling(false);
     clearLevelUpEffectTimer();
     setLevelUpEffect("idle");
@@ -533,6 +563,56 @@ export function App({
 
   const viewingLatestLevel = currentLevel >= build.levels.length;
 
+  function updateCharacterDetails(next: CharacterDetails) {
+    setDetails(next);
+    if (characterId) saveCharacterDetails(accountStorage, characterId, next);
+  }
+
+  function completeRest() {
+    // Core PF1e natural healing restores one hit point per character level.
+    // Campaign-specific full recovery is currently GM-only workspace data, so
+    // this remains the safe rules default for player-owned sheets.
+    applyHealing(Math.max(1, effectiveBuild.levels.length));
+    healNonlethal(nonlethalDamage);
+    setTempHp(0);
+    setFlag("fatigued", false);
+    for (const pool of resourcePools) resetResource(pool.id);
+    for (const caster of sheet.spellcasting) {
+      resetSpellClassRuntime(
+        caster.className.toLowerCase(),
+        Object.keys(caster.selectionDiagnostics).map(Number),
+      );
+    }
+    setResting(false);
+  }
+
+  const availableSpellTargets = characterId
+    ? listCharacters(accountStorage)
+    : [];
+
+  function requestSpellCast(
+    classKey: string,
+    level: number,
+    max: number,
+    spellName: string,
+    remaining: number,
+  ) {
+    setPendingSpellCast({ classKey, level, max, spellName, remaining });
+    setSpellTargetIds(characterId ? [characterId] : []);
+  }
+
+  function confirmSpellCast() {
+    if (!pendingSpellCast) return;
+    castSpell(
+      pendingSpellCast.classKey,
+      pendingSpellCast.level,
+      pendingSpellCast.max,
+      pendingSpellCast.spellName,
+      pendingSpellCast.remaining,
+    );
+    setPendingSpellCast(undefined);
+  }
+
   return (
     <div className={`app level-up-effect-${levelUpEffect}`}>
       <div className="level-up-sheet-effect" aria-hidden="true">
@@ -563,86 +643,60 @@ export function App({
               ← Home
             </button>
           ) : null}
-          {viewingLatestLevel ? (
-            <HoldToActivateButton
-              disabled={leveling || levelUpEffect === "charged"}
-              onHoldStart={() => setLevelUpEffect("holding")}
-              onHoldCancel={() => setLevelUpEffect("idle")}
-              onComplete={openLevelUpFlow}
-            />
-          ) : (
-            <button onClick={advanceLevel}>→ Next Level</button>
-          )}
-          <button
-            className="ghost"
-            disabled={currentLevel <= 1}
-            onClick={undoCurrentLevel}
-          >
-            ↩ Undo Level
-          </button>
         </div>
         <HeaderProfile />
       </header>
 
-      <div className="tab-bar">
-        <button
-          className={activeTab === "sheet" ? "tab-button active" : "tab-button"}
-          onClick={() => selectTab("sheet")}
+      <CharacterIdentityBar
+        build={effectiveBuild}
+        currentHp={currentHp}
+        details={details}
+        onChange={updateCharacterDetails}
+        onRest={() => setResting(true)}
+        sheet={sheet}
+      />
+
+      <nav
+        className="tab-bar character-tab-bar"
+        aria-label="Character workspace"
+      >
+        {(
+          [
+            ["notes", "Notes"],
+            ["character", "Character"],
+            ["inventory", "Inventory"],
+            ["magic", "Magic"],
+            ["build", "Build"],
+          ] as const
+        ).map(([tab, label]) => (
+          <button
+            key={tab}
+            className={activeTab === tab ? "tab-button active" : "tab-button"}
+            onClick={() => selectTab(tab)}
+          >
+            {label}
+          </button>
+        ))}
+      </nav>
+
+      {mountedTabs.notes ? (
+        <div hidden={activeTab !== "notes"} className="character-tab-panel">
+          <CharacterNotes
+            notes={details.notes ?? []}
+            onChange={(notes) => updateCharacterDetails({ ...details, notes })}
+          />
+        </div>
+      ) : null}
+
+      <div hidden={activeTab !== "character"}>
+        <div
+          className={
+            effectsRailOpen
+              ? "character-workspace-frame"
+              : "character-workspace-frame rail-collapsed"
+          }
         >
-          Sheet
-        </button>
-        <button
-          className={activeTab === "gear" ? "tab-button active" : "tab-button"}
-          onClick={() => selectTab("gear")}
-        >
-          Gear
-        </button>
-        <button
-          className={activeTab === "build" ? "tab-button active" : "tab-button"}
-          onClick={() => selectTab("build")}
-        >
-          Build
-        </button>
-      </div>
-
-      <div hidden={activeTab !== "sheet"}>
-        <div className="layout sheet-layout">
-          <aside className="controls sheet-sidebar">
-            <RuntimeControlsPanel
-              activatableGroups={activatableGroups}
-              activatableConflicts={activatableConflicts}
-              activatableBlockedReasons={activatableBlockedReasons}
-              activeBuffs={activeBuffs}
-              resourcesUsed={resourcesUsed}
-              resourceMaxes={resourceMaxes}
-              resourceLabels={resourceLabels}
-              resourcePools={resourcePools}
-              fatigued={fatigued}
-              buffs={runtimeBuffs}
-              ownedSpellNames={ownedSpellNames}
-              profile={runtimeProfile}
-              onSetToggle={setToggle}
-              onSetExclusiveToggleGroup={setExclusiveToggleGroup}
-              onSetFlag={setFlag}
-              onAdjustResource={adjustResource}
-              onResetResource={resetResource}
-            />
-
-            {!characterId ? (
-              <BuildSlotsPanel
-                savedBuildSlots={savedBuildSlots}
-                onSaveNewBuildSlot={saveNewBuildSlot}
-                onResetCurrentBuild={resetCurrentBuild}
-                onLoadBuildSlot={loadBuildSlotById}
-                onOverwriteBuildSlot={overwriteBuildSlot}
-                onDeleteBuildSlot={deleteBuildSlot}
-              />
-            ) : null}
-
-            <ValidationPanel errors={errors} />
-          </aside>
-
-          <main className="main sheet-main">
+          <main className="character-workspace-main">
             <div className="sheet-main-stack">
               <Sheet
                 sheet={sheet}
@@ -668,7 +722,7 @@ export function App({
                 onSetFerocityUsed={setFerocityUsed}
                 onResetHp={resetHp}
                 spellCastCounts={spellCastCounts}
-                onCastSpell={castSpell}
+                onCastSpell={requestSpellCast}
                 onResetSpellSlotLevel={resetSpellSlotLevel}
                 weaponAttackHistory={weaponAttackHistory}
                 onWeaponAttack={recordWeaponAttack}
@@ -680,18 +734,58 @@ export function App({
                 onSetSpecificWeaponAttackNote={setWeaponAttackNote}
                 onResetWeaponAttackHistory={resetWeaponAttackHistory}
                 onResetAmmo={resetAmmo}
+                showIdentity={false}
+                showSpellcasting={false}
               />
               <CombatLogPanel
                 combatEventLog={combatEventLog}
                 onClearCombatEventLog={clearCombatEventLog}
               />
+              <ValidationPanel errors={errors} />
             </div>
           </main>
+          <aside
+            className="character-effects-rail"
+            aria-label="Abilities and Effects"
+          >
+            <button
+              type="button"
+              className="ghost character-rail-toggle"
+              onClick={() => setEffectsRailOpen((open) => !open)}
+              aria-expanded={effectsRailOpen}
+            >
+              {effectsRailOpen ? "›" : "‹"}
+              <span>
+                {effectsRailOpen ? "Collapse" : "Abilities & Effects"}
+              </span>
+            </button>
+            {effectsRailOpen ? (
+              <RuntimeControlsPanel
+                activatableGroups={activatableGroups}
+                activatableConflicts={activatableConflicts}
+                activatableBlockedReasons={activatableBlockedReasons}
+                activeBuffs={activeBuffs}
+                resourcesUsed={resourcesUsed}
+                resourceMaxes={resourceMaxes}
+                resourceLabels={resourceLabels}
+                resourcePools={resourcePools}
+                fatigued={fatigued}
+                buffs={runtimeBuffs}
+                ownedSpellNames={ownedSpellNames}
+                profile={runtimeProfile}
+                onSetToggle={setToggle}
+                onSetExclusiveToggleGroup={setExclusiveToggleGroup}
+                onSetFlag={setFlag}
+                onAdjustResource={adjustResource}
+                onResetResource={resetResource}
+              />
+            ) : null}
+          </aside>
         </div>
       </div>
 
-      {mountedTabs.gear ? (
-        <div hidden={activeTab !== "gear"}>
+      {mountedTabs.inventory ? (
+        <div hidden={activeTab !== "inventory"}>
           <GearTab
             build={build}
             onUpdateCarriedWeight={updateCarriedWeight}
@@ -730,8 +824,176 @@ export function App({
         </div>
       ) : null}
 
+      {mountedTabs.magic ? (
+        <div hidden={activeTab !== "magic"} className="character-tab-panel">
+          <div className="magic-workspace">
+            <header className="character-section-header">
+              <div>
+                <span className="character-eyebrow">
+                  Cast, prepare, and review
+                </span>
+                <h2>Magic</h2>
+              </div>
+              <span className="chip">
+                {sheet.spellcasting.length} source
+                {sheet.spellcasting.length === 1 ? "" : "s"}
+              </span>
+            </header>
+            {sheet.spellcasting.length ? (
+              <SpellcastingManager
+                defaultOpen
+                casters={sheet.spellcasting}
+                classArchetypes={build.classArchetypes}
+                spellOptions={SPELL_OPTIONS}
+                domainOptions={DOMAIN_OPTIONS}
+                schoolOptions={SCHOOL_OPTIONS}
+                spellCastCounts={spellCastCounts}
+                spellSuggestions={suggestionBundle.spellChoices}
+                onAddSelection={addSpellSelection}
+                onAppendSelection={appendSpellSelection}
+                onUpdateSelectionName={updateSpellSelectionName}
+                onRemoveSelection={removeSpellSelection}
+                onResetSelectionsForLevel={resetSpellSelectionsForLevel}
+                onResetSelectionsForClass={resetSpellSelectionsForClass}
+                onAddLibraryEntry={addSpellLibraryEntry}
+                onAppendLibraryEntry={appendSpellLibraryEntry}
+                onUpdateLibraryName={updateSpellLibraryName}
+                onRemoveLibraryEntry={removeSpellLibraryEntry}
+                onResetLibraryLevel={resetSpellLibraryLevel}
+                onResetLibraryForClass={resetSpellLibraryForClass}
+                onFillSelectionsFromLibrary={fillSelectionsFromLibrary}
+                onUpdateDomains={updateSpellDomains}
+                onUpdateSpecialization={updateSpellSpecialization}
+                onAdjustExtraSpellSlots={adjustSpellExtraSlots}
+                onAdjustSpellSlot={adjustSpellSlot}
+                onCastSpell={requestSpellCast}
+                onResetSpellSlotLevel={resetSpellSlotLevel}
+                onResetSpellRuntimeClass={resetSpellClassRuntime}
+              />
+            ) : (
+              <section className="panel character-empty-state">
+                <span className="character-eyebrow">Always available</span>
+                <h2>No magic source yet</h2>
+                <p>
+                  The Magic tab remains ready for spell-like abilities, granted
+                  spells, or a future multiclass level.
+                </p>
+                <button type="button" onClick={() => selectTab("build")}>
+                  Open Build
+                </button>
+              </section>
+            )}
+          </div>
+        </div>
+      ) : null}
+
       {mountedTabs.build ? (
-        <div hidden={activeTab !== "build"}>
+        <div hidden={activeTab !== "build"} className="character-build-tab">
+          <div className="build-action-bar">
+            <div>
+              <span className="character-eyebrow">Advancement</span>
+              <strong>
+                Level {currentLevel} of {build.levels.length}
+              </strong>
+            </div>
+            <div className="actions">
+              {viewingLatestLevel ? (
+                <HoldToActivateButton
+                  disabled={leveling || levelUpEffect === "charged"}
+                  onHoldStart={() => setLevelUpEffect("holding")}
+                  onHoldCancel={() => setLevelUpEffect("idle")}
+                  onComplete={openLevelUpFlow}
+                />
+              ) : (
+                <button onClick={advanceLevel}>→ Next Level</button>
+              )}
+              <button
+                className="ghost"
+                disabled={currentLevel <= 1}
+                onClick={undoCurrentLevel}
+              >
+                ↩ Undo Level
+              </button>
+            </div>
+          </div>
+          <section className="build-traits-panel panel">
+            <div className="editor-section-head tight">
+              <div>
+                <span className="character-eyebrow">
+                  Optional campaign choices
+                </span>
+                <h3>Campaign Traits</h3>
+              </div>
+              <button
+                type="button"
+                className="ghost small"
+                onClick={() =>
+                  updateCharacterDetails({
+                    ...details,
+                    campaignTraits: [...(details.campaignTraits ?? []), ""],
+                  })
+                }
+              >
+                + Trait
+              </button>
+            </div>
+            {(details.campaignTraits ?? []).length ? (
+              <div className="character-trait-list">
+                {(details.campaignTraits ?? []).map((trait, index) => (
+                  <div
+                    className="character-trait-row"
+                    key={`campaign-trait-${index}`}
+                  >
+                    <input
+                      aria-label={`Campaign trait ${index + 1}`}
+                      value={trait}
+                      placeholder="Trait name or campaign-granted benefit"
+                      onChange={(event) =>
+                        updateCharacterDetails({
+                          ...details,
+                          campaignTraits: (details.campaignTraits ?? []).map(
+                            (value, entryIndex) =>
+                              entryIndex === index ? event.target.value : value,
+                          ),
+                        })
+                      }
+                    />
+                    <button
+                      type="button"
+                      className="ghost small"
+                      onClick={() =>
+                        updateCharacterDetails({
+                          ...details,
+                          campaignTraits: (details.campaignTraits ?? []).filter(
+                            (_, entryIndex) => entryIndex !== index,
+                          ),
+                        })
+                      }
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="hint">
+                Optional. Most campaigns allow one to three traits, subject to
+                the GM’s creation rules.
+              </p>
+            )}
+          </section>
+          {!characterId ? (
+            <div className="build-slots-wrap">
+              <BuildSlotsPanel
+                savedBuildSlots={savedBuildSlots}
+                onSaveNewBuildSlot={saveNewBuildSlot}
+                onResetCurrentBuild={resetCurrentBuild}
+                onLoadBuildSlot={loadBuildSlotById}
+                onOverwriteBuildSlot={overwriteBuildSlot}
+                onDeleteBuildSlot={deleteBuildSlot}
+              />
+            </div>
+          ) : null}
           <BuildEditorTab
             build={build}
             currentLevel={currentLevel}
@@ -755,6 +1017,7 @@ export function App({
             domainOptions={DOMAIN_OPTIONS}
             schoolOptions={SCHOOL_OPTIONS}
             spellCastCounts={spellCastCounts}
+            showSpellcasting={false}
             onUpdateName={(name) => setBuild((prev) => ({ ...prev, name }))}
             onUpdateAlignment={updateAlignment}
             onUpdateBaseAbilityScore={updateBaseAbilityScore}
@@ -844,10 +1107,164 @@ export function App({
             onUpdateSpecialization={updateSpellSpecialization}
             onAdjustExtraSpellSlots={adjustSpellExtraSlots}
             onAdjustSpellSlot={adjustSpellSlot}
-            onCastSpell={castSpell}
+            onCastSpell={requestSpellCast}
             onResetSpellSlotLevel={resetSpellSlotLevel}
             onResetSpellRuntimeClass={resetSpellClassRuntime}
           />
+        </div>
+      ) : null}
+
+      {resting ? (
+        <div
+          className="modal-backdrop"
+          role="presentation"
+          onMouseDown={() => setResting(false)}
+        >
+          <section
+            className="modal character-rest-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="rest-dialog-title"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <div className="modal-head">
+              <div>
+                <span className="character-eyebrow">Recovery</span>
+                <h2 id="rest-dialog-title">Take a Rest</h2>
+              </div>
+              <button
+                type="button"
+                className="ghost"
+                onClick={() => setResting(false)}
+              >
+                Close
+              </button>
+            </div>
+            <p>
+              Core recovery restores {Math.max(1, effectiveBuild.levels.length)}{" "}
+              HP, clears nonlethal damage and fatigue, and restores spell slots
+              and daily resource pools. Prepared spells remain prepared.
+            </p>
+            <div className="rest-summary-grid">
+              <div>
+                <span>HP after rest</span>
+                <strong>
+                  {Math.min(
+                    sheet.hitPoints.total,
+                    currentHp + Math.max(1, effectiveBuild.levels.length),
+                  )}{" "}
+                  / {sheet.hitPoints.total}
+                </strong>
+              </div>
+              <div>
+                <span>Spell sources</span>
+                <strong>{sheet.spellcasting.length}</strong>
+              </div>
+              <div>
+                <span>Daily pools</span>
+                <strong>{resourcePools.length}</strong>
+              </div>
+            </div>
+            <p className="hint">
+              Campaign-specific full recovery is applied where the campaign
+              grants sheet access to that rule; otherwise Pathfinder core
+              recovery is the safe default.
+            </p>
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="ghost"
+                onClick={() => setResting(false)}
+              >
+                Cancel
+              </button>
+              <button type="button" onClick={completeRest}>
+                Complete Rest
+              </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
+
+      {pendingSpellCast ? (
+        <div
+          className="modal-backdrop"
+          role="presentation"
+          onMouseDown={() => setPendingSpellCast(undefined)}
+        >
+          <section
+            className="modal spell-target-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="spell-target-title"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <div className="modal-head">
+              <div>
+                <span className="character-eyebrow">Resolve at the table</span>
+                <h2 id="spell-target-title">
+                  Choose targets for {pendingSpellCast.spellName}
+                </h2>
+              </div>
+              <button
+                type="button"
+                className="ghost"
+                onClick={() => setPendingSpellCast(undefined)}
+              >
+                Close
+              </button>
+            </div>
+            <p>
+              Select every character affected. Area placement is resolved on
+              your physical or shared table; Mathfinder records the chosen
+              characters; the spell slot is spent when you confirm.
+            </p>
+            <div className="spell-target-list">
+              {availableSpellTargets.length ? (
+                availableSpellTargets.map((target) => (
+                  <label key={target.id}>
+                    <input
+                      type="checkbox"
+                      checked={spellTargetIds.includes(target.id)}
+                      onChange={(event) =>
+                        setSpellTargetIds((current) =>
+                          event.target.checked
+                            ? [...current, target.id]
+                            : current.filter((id) => id !== target.id),
+                        )
+                      }
+                    />
+                    <span>
+                      <strong>{target.name}</strong>
+                      {target.build.race.name} · Level {target.currentLevel}
+                    </span>
+                  </label>
+                ))
+              ) : (
+                <p className="hint">
+                  No campaign characters are available in this local preview.
+                  You can still confirm a spell with no tracked target.
+                </p>
+              )}
+            </div>
+            <p className="hint">
+              Saving throws are resolved by each affected character’s player, or
+              by the GM for campaign actors.
+            </p>
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="ghost"
+                onClick={() => setPendingSpellCast(undefined)}
+              >
+                Cancel
+              </button>
+              <button type="button" onClick={confirmSpellCast}>
+                Cast on {spellTargetIds.length || "no tracked"} target
+                {spellTargetIds.length === 1 ? "" : "s"}
+              </button>
+            </div>
+          </section>
         </div>
       ) : null}
 

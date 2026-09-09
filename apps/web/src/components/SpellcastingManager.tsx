@@ -26,6 +26,15 @@ interface SpellIssue {
   detail: string;
 }
 
+interface ReprepareRequest {
+  classKey: string;
+  index: number;
+  level: number;
+  mode: SpellMode;
+  options: string[];
+  spellName: string;
+}
+
 function uniqueSpellNames(spellNames: string[]) {
   return [...new Set(spellNames.map((name) => name.trim()).filter(Boolean))];
 }
@@ -144,6 +153,7 @@ interface Props {
   ) => void;
   onResetSpellSlotLevel: (classKey: string, level: number) => void;
   onResetSpellRuntimeClass: (classKey: string, levels: number[]) => void;
+  defaultOpen?: boolean;
 }
 
 export function SpellcastingManager({
@@ -174,6 +184,7 @@ export function SpellcastingManager({
   onCastSpell,
   onResetSpellSlotLevel,
   onResetSpellRuntimeClass,
+  defaultOpen = false,
 }: Props) {
   const [spellLevelTabs, setSpellLevelTabs] = useState<
     Record<string, SpellLevelTab>
@@ -184,7 +195,10 @@ export function SpellcastingManager({
   const [spellSchoolFilters, setSpellSchoolFilters] = useState<
     Record<string, string | null>
   >({});
-  const [managerOpen, setManagerOpen] = useState(false);
+  const [managerOpen, setManagerOpen] = useState(defaultOpen);
+  const [spellDetailName, setSpellDetailName] = useState<string>();
+  const [reprepare, setReprepare] = useState<ReprepareRequest>();
+  const [replacementSpell, setReplacementSpell] = useState("");
   const spellCompendiumOptions = useMemo(
     () =>
       casters.length > 0 && managerOpen
@@ -195,6 +209,9 @@ export function SpellcastingManager({
         : [],
     [casters, managerOpen, spellOptions],
   );
+  const detailOption = spellDetailName
+    ? findSpellOption(spellCompendiumOptions, spellDetailName)
+    : undefined;
 
   if (casters.length === 0) return null;
 
@@ -202,9 +219,7 @@ export function SpellcastingManager({
     return (
       <section className="planner-builder">
         <div className="planner-builder-summary">
-          <span className="subsection-title planner-builder-title">
-            Spellcasting Build Setup
-          </span>
+          <span className="subsection-title planner-builder-title">Magic</span>
           <div className="planner-builder-controls">
             <span className="planner-builder-meta">
               {casters.length} caster{casters.length === 1 ? "" : "s"}
@@ -225,7 +240,7 @@ export function SpellcastingManager({
   return (
     <>
       <div className="editor-section-head">
-        <h3>Spellcasting Build Setup</h3>
+        <h3>Magic</h3>
         <button
           className="ghost small"
           type="button"
@@ -235,9 +250,8 @@ export function SpellcastingManager({
         </button>
       </div>
       <p className="hint">
-        Manage library/learnable spells, prepared or known picks, and runtime
-        usage in one caster block. Less note-card necromancy, more actual sheet
-        behavior.
+        Manage each casting source independently: its library, prepared or known
+        spells, save DCs, and runtime usage all remain tied to that source.
       </p>
       <div className="item-list">
         {casters.map((caster) => {
@@ -272,7 +286,10 @@ export function SpellcastingManager({
             );
           });
           return (
-            <div className="item-card" key={`spellcasting-${classKey}`}>
+            <div
+              className="item-card spellcasting-source-card"
+              key={`spellcasting-${classKey}`}
+            >
               <div className="editor-section-head tight">
                 <h3>{caster.className} Spellcasting</h3>
                 <div className="resource-buttons">
@@ -398,6 +415,7 @@ export function SpellcastingManager({
                 selectedSpells={selections}
                 onAppendLibraryEntry={onAppendLibraryEntry}
                 onAppendSelection={onAppendSelection}
+                onOpenSpell={setSpellDetailName}
               />
 
               {levels.map((level) => {
@@ -823,6 +841,23 @@ export function SpellcastingManager({
                                     Remove
                                   </button>
                                 </div>
+                                {spellName ? (
+                                  <button
+                                    type="button"
+                                    className="spell-detail-trigger"
+                                    onClick={() =>
+                                      setSpellDetailName(spellName)
+                                    }
+                                  >
+                                    <strong>
+                                      {displaySpellName(spellName)}
+                                    </strong>
+                                    <span>
+                                      {option?.spell?.description ||
+                                        "Open full spell details"}
+                                    </span>
+                                  </button>
+                                ) : null}
                                 {meta || badges.length > 0 ? (
                                   <div className="spell-inline-meta">
                                     {meta ? (
@@ -984,7 +1019,61 @@ export function SpellcastingManager({
                                   >
                                     Remove
                                   </button>
+                                  {mode === "prepared" ? (
+                                    <button
+                                      className="ghost small"
+                                      type="button"
+                                      onClick={() => {
+                                        const options = uniqueSpellNames(
+                                          library.length > 0
+                                            ? library
+                                            : levelSpellOptions.map(
+                                                (entry) => entry.name,
+                                              ),
+                                        );
+                                        setReplacementSpell(spellName);
+                                        setReprepare({
+                                          classKey,
+                                          index,
+                                          level,
+                                          mode,
+                                          options,
+                                          spellName,
+                                        });
+                                      }}
+                                    >
+                                      Reprepare
+                                    </button>
+                                  ) : null}
                                 </div>
+                                {spellName ? (
+                                  <button
+                                    type="button"
+                                    className="spell-detail-trigger"
+                                    onClick={() =>
+                                      setSpellDetailName(spellName)
+                                    }
+                                  >
+                                    <strong>
+                                      {displaySpellName(spellName)}
+                                    </strong>
+                                    <span>
+                                      DC {caster.spellSaveDcs[level] ?? "—"} ·
+                                      Components{" "}
+                                      {option?.spell?.components || "—"}
+                                      {diag.restrictedSlotEligibleSpellNames.some(
+                                        (name) =>
+                                          name.toLowerCase() ===
+                                          spellName.toLowerCase(),
+                                      )
+                                        ? ` · ${classKey === "cleric" ? "Domain spell" : "Restricted spell"}`
+                                        : ""}
+                                      {option?.spell?.description
+                                        ? ` · ${option.spell.description}`
+                                        : ""}
+                                    </span>
+                                  </button>
+                                ) : null}
                                 {meta || badges.length > 0 ? (
                                   <div className="spell-inline-meta">
                                     {meta ? (
@@ -1158,13 +1247,19 @@ export function SpellcastingManager({
                                 >
                                   <div className="spell-cast-copy">
                                     <Tooltip content={spellTitle(spellName)}>
-                                      <span className="resource-label">
+                                      <button
+                                        type="button"
+                                        className="resource-label spell-runtime-name"
+                                        onClick={() =>
+                                          setSpellDetailName(spellName)
+                                        }
+                                      >
                                         {displaySpellName(spellName)} ×
                                         {castCount}
                                         {spellEffect
                                           ? " · activates effect"
                                           : ""}
-                                      </span>
+                                      </button>
                                     </Tooltip>
                                     {meta || badges.length > 0 || sourceTag ? (
                                       <div className="spell-inline-meta">
@@ -1250,6 +1345,175 @@ export function SpellcastingManager({
           );
         })}
       </div>
+      {spellDetailName ? (
+        <div
+          className="modal-backdrop"
+          role="presentation"
+          onMouseDown={() => setSpellDetailName(undefined)}
+        >
+          <section
+            className="modal spell-detail-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="spell-detail-title"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <div className="modal-head">
+              <div>
+                <span className="character-eyebrow">Spell reference</span>
+                <h2 id="spell-detail-title">
+                  {displaySpellName(spellDetailName)}
+                </h2>
+              </div>
+              <button
+                type="button"
+                className="ghost"
+                onClick={() => setSpellDetailName(undefined)}
+              >
+                Close
+              </button>
+            </div>
+            <div className="spell-detail-facts">
+              <span>{detailOption?.schoolTag || "School unavailable"}</span>
+              <span>{detailOption?.metaTag || "Level varies by class"}</span>
+              <span>Components: {detailOption?.spell?.components || "—"}</span>
+              {detailOption?.sourceTag ? (
+                <span>{detailOption.sourceTag}</span>
+              ) : null}
+            </div>
+            <dl className="spell-detail-rules">
+              <div>
+                <dt>Casting time</dt>
+                <dd>{detailOption?.spell?.castingTime || "—"}</dd>
+              </div>
+              <div>
+                <dt>Range</dt>
+                <dd>{detailOption?.spell?.range || "—"}</dd>
+              </div>
+              <div>
+                <dt>Target / Area</dt>
+                <dd>{detailOption?.spell?.targetEffectArea || "—"}</dd>
+              </div>
+              <div>
+                <dt>Duration</dt>
+                <dd>{detailOption?.spell?.duration || "—"}</dd>
+              </div>
+              <div>
+                <dt>Saving throw</dt>
+                <dd>{detailOption?.spell?.savingThrow || "—"}</dd>
+              </div>
+              <div>
+                <dt>Spell resistance</dt>
+                <dd>{detailOption?.spell?.spellResistance || "—"}</dd>
+              </div>
+            </dl>
+            <p className="spell-detail-description">
+              {detailOption?.spell?.description || spellTitle(spellDetailName)}
+            </p>
+            {detailOption?.supportSummary ? (
+              <p className="hint">{detailOption.supportSummary}</p>
+            ) : null}
+            <div className="modal-actions">
+              {detailOption?.sourceUrl ? (
+                <a
+                  className="button-link ghost"
+                  href={detailOption.sourceUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Open full source
+                </a>
+              ) : null}
+              <button
+                type="button"
+                onClick={() => setSpellDetailName(undefined)}
+              >
+                Done
+              </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
+      {reprepare ? (
+        <div
+          className="modal-backdrop"
+          role="presentation"
+          onMouseDown={() => setReprepare(undefined)}
+        >
+          <section
+            className="modal reprepare-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="reprepare-title"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <div className="modal-head">
+              <div>
+                <span className="character-eyebrow">
+                  Prepared slot · Level {reprepare.level}
+                </span>
+                <h2 id="reprepare-title">
+                  Reprepare {displaySpellName(reprepare.spellName)}
+                </h2>
+              </div>
+              <button
+                type="button"
+                className="ghost"
+                onClick={() => setReprepare(undefined)}
+              >
+                Close
+              </button>
+            </div>
+            <p>
+              Choose a replacement from this casting source’s spell library.
+              Confirming changes only this prepared slot.
+            </p>
+            <label className="field compact">
+              <span>Replacement spell</span>
+              <select
+                value={replacementSpell}
+                onChange={(event) => setReplacementSpell(event.target.value)}
+              >
+                {reprepare.options.map((spellName) => (
+                  <option key={`reprepare-${spellName}`} value={spellName}>
+                    {displaySpellName(spellName)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <div className="reprepare-preview">
+              <span>{displaySpellName(reprepare.spellName)}</span>
+              <strong>→</strong>
+              <span>{displaySpellName(replacementSpell)}</span>
+            </div>
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="ghost"
+                onClick={() => setReprepare(undefined)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={!replacementSpell}
+                onClick={() => {
+                  onUpdateSelectionName(
+                    reprepare.classKey,
+                    reprepare.mode,
+                    reprepare.level,
+                    reprepare.index,
+                    replacementSpell,
+                  );
+                  setReprepare(undefined);
+                }}
+              >
+                Confirm Reprepare
+              </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
     </>
   );
 }

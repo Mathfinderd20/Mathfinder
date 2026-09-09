@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { codexActors } from "./mockData";
+import { ActorSheet } from "./ActorSheet";
+import { codexActors, type Actor } from "./mockData";
 
 export function Codex({
   add,
@@ -17,6 +18,7 @@ export function Codex({
   const [save, setSave] = useState(false);
   const [message, setMessage] = useState("");
   const creature = catalog[selected] ?? catalog[0];
+
   function insert(table: boolean) {
     if (!creature) return;
     add(catalog.indexOf(creature), quantity, table, !table || save);
@@ -24,66 +26,56 @@ export function Codex({
       `Added ${quantity} × ${creature.name} to ${table ? "Tabletop" : "Roster"}.`,
     );
   }
-  if (!creature)
+
+  if (!creature) {
     return (
       <section className="gm-sheet gm-empty">
         <h2>Your library is empty.</h2>
         <p>Create a character in Roster to build a reusable stat block.</p>
       </section>
     );
+  }
+
+  const source = creature as Partial<Actor> & typeof creature;
+  const preview: Actor = {
+    id: source.id ?? `codex-${selected}`,
+    name: creature.name,
+    kind:
+      source.kind ??
+      (creature.role.includes("NPC")
+        ? "NPC"
+        : creature.role.includes("Summon")
+          ? "Ally"
+          : "Monster"),
+    ancestry: creature.ancestry,
+    role: creature.role,
+    level: creature.level,
+    hp: creature.hp,
+    maxHp: source.maxHp ?? creature.hp,
+    ac: creature.ac,
+    initiative: source.initiative ?? 0,
+    initiativeBonus: source.initiativeBonus ?? 0,
+    onTable: false,
+    saved: false,
+    dual: source.dual ?? false,
+    aware: source.aware ?? true,
+    group: source.group ?? "",
+    stance: source.stance ?? "Normal",
+    conditions: "",
+    notes: "",
+    build: source.build,
+  };
+
   return (
-    <div className="gm-workspace">
-      <section className="gm-sheet">
-        <div className="gm-sheet-top">
-          <span className="gm-kicker">
-            {live ? "Codex / Campaign library" : "Codex / Sample library"}
-          </span>
-          <span className="gm-tag">
-            {live ? "Independent templates" : "Illustrative stats"}
-          </span>
-        </div>
-        <header className="gm-actor-heading">
-          <div className="gm-portrait tone-monster" aria-hidden="true">
-            ◈
-          </div>
+    <div className="gm-workspace gm-codex-workspace">
+      <div>
+        <section className="gm-codex-addbar">
           <div>
-            <span className="gm-kicker">{creature.level} · Reference</span>
-            <h2>{creature.name}</h2>
-            <p>
-              {creature.ancestry} · {creature.role}
-            </p>
+            <span className="gm-kicker">
+              {live ? "Codex / Campaign library" : "Codex / Sample library"}
+            </span>
+            <strong>Independent campaign copies</strong>
           </div>
-        </header>
-        <div className="gm-stats">
-          <div>
-            <span>Hit points</span>
-            <strong>{creature.hp}</strong>
-          </div>
-          <div>
-            <span>Armor class</span>
-            <strong>{creature.ac}</strong>
-          </div>
-          <div>
-            <span>Challenge</span>
-            <strong>{creature.level.replace("CR ", "")}</strong>
-          </div>
-          <div>
-            <span>Source</span>
-            <strong className="gm-stat-word">
-              {live ? "Campaign" : "Sample"}
-            </strong>
-          </div>
-        </div>
-        <div className="gm-section-title">
-          <h3>Bring the world to your table</h3>
-          <span>Independent copies</span>
-        </div>
-        <p className="gm-prose">
-          Preview an entry here before adding it to your campaign. Each copy
-          gets its own hit points, conditions, and initiative. The original
-          reference never changes.
-        </p>
-        <div className="gm-inset">
           <label>
             Quantity
             <input
@@ -92,11 +84,11 @@ export function Codex({
               min={1}
               max={20}
               value={quantity}
-              onChange={(e) =>
+              onChange={(event) =>
                 setQuantity(
                   Math.max(
                     1,
-                    Math.min(20, Math.floor(Number(e.target.value)) || 1),
+                    Math.min(20, Math.floor(Number(event.target.value)) || 1),
                   ),
                 )
               }
@@ -106,45 +98,41 @@ export function Codex({
             <input
               type="checkbox"
               checked={save}
-              onChange={(e) => setSave(e.target.checked)}
+              onChange={(event) => setSave(event.target.checked)}
             />{" "}
-            Also save tabletop additions to the Campaign Roster
+            Save tabletop additions to Roster
           </label>
-          <div className="gm-actions">
-            <button className="gm-primary" onClick={() => insert(true)}>
-              + Add to Tabletop
-            </button>
-            <button onClick={() => insert(false)}>+ Add to Roster</button>
-          </div>
-          <p role="status" className="gm-save">
+          <button className="gm-primary" onClick={() => insert(true)}>
+            + Add to Tabletop
+          </button>
+          <button onClick={() => insert(false)}>+ Add to Roster</button>
+          <span role="status" className="gm-save">
             {message}
-          </p>
-        </div>
-        {!live && (
-          <div className="gm-callout">
-            <strong>Library integration comes next</strong>
-            <p>
-              These five entries are synthetic presentation fixtures, not the
-              full Pathfinder Bestiary or NPC Codex. Source, CR-range, and
-              environment filtering will arrive with real content.
-            </p>
-          </div>
-        )}
-      </section>
+          </span>
+        </section>
+        <ActorSheet
+          actor={preview}
+          live={false}
+          previewOnly
+          tabletop={false}
+          update={() => undefined}
+          remove={() => undefined}
+        />
+      </div>
       <aside className="gm-rail">
         <div className="gm-rail-head">
-          <span className="gm-kicker">Creatures & characters</span>
+          <span className="gm-kicker">Creatures &amp; characters</span>
           <h3>The Codex</h3>
           <input
             aria-label="Search Codex"
             placeholder="Search the Codex…"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(event) => setSearch(event.target.value)}
           />
           <select
             aria-label="Creature category"
             value={type}
-            onChange={(e) => setType(e.target.value)}
+            onChange={(event) => setType(event.target.value)}
           >
             <option>All creatures</option>
             <option>NPCs</option>
@@ -163,7 +151,7 @@ export function Codex({
           )
           .map(({ entry, index }) => (
             <button
-              key={index}
+              key={entry.name}
               className={`gm-list-entry ${selected === index ? "is-selected" : ""}`}
               onClick={() => {
                 setSelected(index);
@@ -178,7 +166,8 @@ export function Codex({
             </button>
           ))}
         <p className="gm-rail-foot">
-          Quick additions from the Roster and Tabletop open this same library.
+          Every reference opens the same Character workspace before it becomes
+          an independent campaign copy.
         </p>
       </aside>
     </div>

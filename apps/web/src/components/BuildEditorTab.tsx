@@ -62,6 +62,7 @@ interface Props {
   domainOptions: Array<{ id: string; name: string }>;
   schoolOptions: Array<{ id: string; name: string }>;
   spellCastCounts: SpellCastCounts;
+  showSpellcasting?: boolean;
   onUpdateName: (name: string) => void;
   onUpdateAlignment: (alignment: Alignment) => void;
   onUpdateBaseAbilityScore: (ability: AbilityKey, value: number) => void;
@@ -190,9 +191,10 @@ export function BuildEditorTab(props: Props) {
     domainOptions,
     schoolOptions,
     spellCastCounts,
+    showSpellcasting = true,
   } = props;
 
-  const [plannerOpen, setPlannerOpen] = useState(false);
+  const [plannerOpen, setPlannerOpen] = useState(true);
   const [coreSetupOpen, setCoreSetupOpen] = useState(true);
   const [coreSetupAutoCollapsed, setCoreSetupAutoCollapsed] = useState(false);
   const currentLevelIndex = Math.max(0, currentLevel - 1);
@@ -720,35 +722,37 @@ export function BuildEditorTab(props: Props) {
           ) : null}
         </EditorSection>
 
-        <SpellcastingManager
-          casters={sheetSpellcasting}
-          classArchetypes={build.classArchetypes}
-          spellOptions={spellOptions}
-          domainOptions={domainOptions}
-          schoolOptions={schoolOptions}
-          spellCastCounts={spellCastCounts}
-          spellSuggestions={spellSuggestions}
-          onAddSelection={props.onAddSelection}
-          onAppendSelection={props.onAppendSelection}
-          onUpdateSelectionName={props.onUpdateSelectionName}
-          onRemoveSelection={props.onRemoveSelection}
-          onResetSelectionsForLevel={props.onResetSelectionsForLevel}
-          onResetSelectionsForClass={props.onResetSelectionsForClass}
-          onAddLibraryEntry={props.onAddLibraryEntry}
-          onAppendLibraryEntry={props.onAppendLibraryEntry}
-          onUpdateLibraryName={props.onUpdateLibraryName}
-          onRemoveLibraryEntry={props.onRemoveLibraryEntry}
-          onResetLibraryLevel={props.onResetLibraryLevel}
-          onResetLibraryForClass={props.onResetLibraryForClass}
-          onFillSelectionsFromLibrary={props.onFillSelectionsFromLibrary}
-          onUpdateDomains={props.onUpdateDomains}
-          onUpdateSpecialization={props.onUpdateSpecialization}
-          onAdjustExtraSpellSlots={props.onAdjustExtraSpellSlots}
-          onAdjustSpellSlot={props.onAdjustSpellSlot}
-          onCastSpell={props.onCastSpell}
-          onResetSpellSlotLevel={props.onResetSpellSlotLevel}
-          onResetSpellRuntimeClass={props.onResetSpellRuntimeClass}
-        />
+        {showSpellcasting ? (
+          <SpellcastingManager
+            casters={sheetSpellcasting}
+            classArchetypes={build.classArchetypes}
+            spellOptions={spellOptions}
+            domainOptions={domainOptions}
+            schoolOptions={schoolOptions}
+            spellCastCounts={spellCastCounts}
+            spellSuggestions={spellSuggestions}
+            onAddSelection={props.onAddSelection}
+            onAppendSelection={props.onAppendSelection}
+            onUpdateSelectionName={props.onUpdateSelectionName}
+            onRemoveSelection={props.onRemoveSelection}
+            onResetSelectionsForLevel={props.onResetSelectionsForLevel}
+            onResetSelectionsForClass={props.onResetSelectionsForClass}
+            onAddLibraryEntry={props.onAddLibraryEntry}
+            onAppendLibraryEntry={props.onAppendLibraryEntry}
+            onUpdateLibraryName={props.onUpdateLibraryName}
+            onRemoveLibraryEntry={props.onRemoveLibraryEntry}
+            onResetLibraryLevel={props.onResetLibraryLevel}
+            onResetLibraryForClass={props.onResetLibraryForClass}
+            onFillSelectionsFromLibrary={props.onFillSelectionsFromLibrary}
+            onUpdateDomains={props.onUpdateDomains}
+            onUpdateSpecialization={props.onUpdateSpecialization}
+            onAdjustExtraSpellSlots={props.onAdjustExtraSpellSlots}
+            onAdjustSpellSlot={props.onAdjustSpellSlot}
+            onCastSpell={props.onCastSpell}
+            onResetSpellSlotLevel={props.onResetSpellSlotLevel}
+            onResetSpellRuntimeClass={props.onResetSpellRuntimeClass}
+          />
+        ) : null}
       </section>
     </div>
   );
@@ -771,13 +775,16 @@ function EditorSection({
   action?: ReactNode;
   children: ReactNode;
 }) {
+  const sectionKey = title.toLowerCase().replace(/[^a-z0-9]+/g, "-");
   return (
-    <>
+    <section
+      className={`build-editor-section build-editor-section-${sectionKey}`}
+    >
       <div className="editor-section-head">
         <h3>{title}</h3>
         {action}
       </div>
       <div className="item-list">{children}</div>
-    </>
+    </section>
   );
 }

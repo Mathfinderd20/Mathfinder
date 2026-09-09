@@ -34,6 +34,7 @@ interface Props {
     level: number,
     spellName: string,
   ) => void;
+  onOpenSpell?: (spellName: string) => void;
 }
 
 type SpellBrowserSort = "recommended" | "alphabetical" | "level" | "school";
@@ -91,6 +92,7 @@ export function SpellCompendiumBrowser({
   selectedSpells,
   onAppendLibraryEntry,
   onAppendSelection,
+  onOpenSpell,
 }: Props) {
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
@@ -352,7 +354,13 @@ export function SpellCompendiumBrowser({
               className="spell-browser-result"
             >
               <div className="spell-browser-result-head">
-                <strong>{displaySpellName(option.name)}</strong>
+                <button
+                  type="button"
+                  className="spell-browser-name"
+                  onClick={() => onOpenSpell?.(option.name)}
+                >
+                  {displaySpellName(option.name)}
+                </button>
                 {targetLevel != null ? (
                   <span className="resource-label">L{targetLevel}</span>
                 ) : null}
@@ -417,7 +425,9 @@ export function SpellCompendiumBrowser({
                     type="button"
                     className="ghost small"
                     disabled={
-                      targetLevel == null || inSelection || !canAddSelection
+                      targetLevel == null ||
+                      (mode === "known" && inSelection) ||
+                      !canAddSelection
                     }
                     onClick={() => {
                       if (targetLevel == null) return;
@@ -435,11 +445,11 @@ export function SpellCompendiumBrowser({
                       );
                     }}
                   >
-                    {inSelection
-                      ? mode === "prepared"
-                        ? "Prepared"
-                        : "Known"
-                      : `Add to ${mode === "prepared" ? "Prepared" : "Known"}`}
+                    {mode === "prepared"
+                      ? `Prepare${inSelection ? " another" : ""}`
+                      : inSelection
+                        ? "Known"
+                        : "Add to Known"}
                   </button>
                 </Tooltip>
               </div>

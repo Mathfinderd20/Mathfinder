@@ -6,6 +6,7 @@ import {
 } from "./assetReloadRecovery";
 import { EnvironmentBanner } from "./components/EnvironmentBanner";
 import "./styles.css";
+import "./character-workspace.css";
 
 installAssetReloadRecovery();
 

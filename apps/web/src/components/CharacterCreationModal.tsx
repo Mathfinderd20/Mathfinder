@@ -44,6 +44,7 @@ import {
   MIN_ABILITY_SCORE,
   parseAbilityScoreInput,
 } from "../abilityScoreInput";
+import type { CharacterDetails } from "../features/characters/characterRepository";
 
 const ABILITIES: AbilityKey[] = ["str", "dex", "con", "int", "wis", "cha"];
 const DEFAULT_SCORE_INPUTS: Record<AbilityKey, string> = {
@@ -58,7 +59,7 @@ const DEFAULT_SCORE_INPUTS: Record<AbilityKey, string> = {
 interface Props {
   creationRules?: CharacterCreationRules;
   characterName: string;
-  onConfirm: (build: CharacterBuild) => void;
+  onConfirm: (build: CharacterBuild, details?: CharacterDetails) => void;
   onClose: () => void;
 }
 
@@ -136,6 +137,7 @@ export function CharacterCreationModal({
   const [selectedFeats, setSelectedFeats] = useState<string[]>([]);
   const [raceBonusFeat, setRaceBonusFeat] = useState("");
   const [favoredClass, setFavoredClass] = useState<string | undefined>("hp");
+  const [campaignTraits, setCampaignTraits] = useState<string[]>([]);
 
   const race =
     RUNTIME_RACE_OPTIONS.find(([key]) => key === raceKey)?.[1] ??
@@ -538,6 +540,51 @@ export function CharacterCreationModal({
           </div>
         </div>
 
+        <div className="field">
+          <span>Campaign Traits · optional</span>
+          <p>
+            Add up to three campaign-specific traits when the GM’s creation
+            rules allow them. They remain editable on Build.
+          </p>
+          <div className="creation-campaign-traits">
+            {campaignTraits.map((trait, index) => (
+              <div className="inline-row" key={`creation-trait-${index}`}>
+                <input
+                  aria-label={`Campaign trait ${index + 1}`}
+                  value={trait}
+                  placeholder="Campaign trait"
+                  onChange={(event) =>
+                    setCampaignTraits((current) =>
+                      current.map((value, traitIndex) =>
+                        traitIndex === index ? event.target.value : value,
+                      ),
+                    )
+                  }
+                />
+                <button
+                  type="button"
+                  className="ghost small"
+                  onClick={() =>
+                    setCampaignTraits((current) =>
+                      current.filter((_, traitIndex) => traitIndex !== index),
+                    )
+                  }
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
+            <button
+              type="button"
+              className="ghost small"
+              disabled={campaignTraits.length >= 3}
+              onClick={() => setCampaignTraits((current) => [...current, ""])}
+            >
+              + Add campaign trait
+            </button>
+          </div>
+        </div>
+
         {previewSheet ? (
           <section className="modal-preview">
             <div className="modal-preview-header">
@@ -599,7 +646,12 @@ export function CharacterCreationModal({
               const finalBuild = abilityScores
                 ? createBuild(abilityScores)
                 : undefined;
-              if (finalBuild) onConfirm(finalBuild);
+              if (finalBuild)
+                onConfirm(finalBuild, {
+                  campaignTraits: campaignTraits
+                    .map((trait) => trait.trim())
+                    .filter(Boolean),
+                });
             }}
           >
             Create Character

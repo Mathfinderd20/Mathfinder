@@ -196,7 +196,8 @@ export function GearTab(props: Props) {
     | "none"
   >("any");
   const [gearSortMode, setGearSortMode] = useState<GearSortMode>("manual");
-  const [gearGroupMode, setGearGroupMode] = useState<GearGroupMode>("none");
+  const [gearGroupMode, setGearGroupMode] =
+    useState<GearGroupMode>("carry-state");
   const [weaponAvailabilityFilter, setWeaponAvailabilityFilter] =
     useState<WeaponAvailabilityFilter>("all");
   const magicItemTemplateOptions = useMemo<CompendiumOption[]>(
@@ -391,14 +392,14 @@ export function GearTab(props: Props) {
 
   return (
     <div className="build-page">
-      <section className="panel build-panel">
-        <h2>Gear</h2>
+      <section className="panel build-panel inventory-panel">
+        <h2>Inventory</h2>
         <p className="hint">
           All the bags, steel, coins, and shiny nonsense live here now. Much
           less clutter. Revolutionary.
         </p>
 
-        <EditorSection title="Gear Overview">
+        <EditorSection title="Inventory Overview">
           <label className="field compact">
             <span>
               Total carried weight override (lb){" "}
@@ -462,13 +463,13 @@ export function GearTab(props: Props) {
               </span>
             </div>
             <div className="stat-card compact-stat-card">
-              <span className="summary-label">Gear Weight</span>
+              <span className="summary-label">Carried Weight</span>
               <span className="summary-value compact-summary-value">
                 {formatCompactNumber(equipmentTotals.weight)} lb
               </span>
             </div>
             <div className="stat-card compact-stat-card">
-              <span className="summary-label">Gear Cost</span>
+              <span className="summary-label">Equipment Value</span>
               <span className="summary-value compact-summary-value">
                 {formatCompactNumber(wealthSummary.gearCostGp)} gp
               </span>
@@ -629,7 +630,7 @@ export function GearTab(props: Props) {
                 setGearOwnershipFilter("all");
                 setGearComponentFilter("any");
                 setGearSortMode("manual");
-                setGearGroupMode("none");
+                setGearGroupMode("carry-state");
               }}
             >
               Reset Filters
@@ -2441,14 +2442,15 @@ function EditorSection({
   action?: ReactNode;
   children: ReactNode;
 }) {
+  const sectionKey = title.toLowerCase().replace(/[^a-z0-9]+/g, "-");
   return (
-    <>
+    <section className={`gear-editor-section gear-${sectionKey}`}>
       <div className="editor-section-head">
         <h3>{title}</h3>
         {action}
       </div>
       <div className="item-list">{children}</div>
-    </>
+    </section>
   );
 }
 
