@@ -145,7 +145,10 @@ export function Tooltip({
     >
       {children}
       {panel && typeof document !== "undefined"
-        ? createPortal(panel, document.body)
+        ? createPortal(
+            panel,
+            anchorRef.current?.closest("dialog") ?? document.body,
+          )
         : null}
     </span>
   );

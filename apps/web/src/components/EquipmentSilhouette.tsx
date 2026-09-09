@@ -191,8 +191,10 @@ function connectorPath(from: [number, number], to: [number, number]) {
 
 export function EquipmentSilhouette({
   equippedSlots,
+  onSelectSlot,
 }: {
   equippedSlots: Map<string, string[]>;
+  onSelectSlot?: (slot: string, itemName?: string, slotIndex?: number) => void;
 }) {
   const [hoveredSlotKey, setHoveredSlotKey] = useState<SlotKey | null>(null);
   const [hoveredRegionKey, setHoveredRegionKey] = useState<RegionKey | null>(
@@ -316,6 +318,33 @@ export function EquipmentSilhouette({
                   key={definition.key}
                   onMouseEnter={() => setHoveredSlotKey(definition.key)}
                   onMouseLeave={() => setHoveredSlotKey(null)}
+                  role={onSelectSlot ? "button" : undefined}
+                  tabIndex={onSelectSlot ? 0 : undefined}
+                  aria-label={
+                    onSelectSlot
+                      ? `Manage ${definition.label ?? definition.slot}${items[0] ? `: ${items[0]}` : ": empty slot"}`
+                      : undefined
+                  }
+                  onClick={() =>
+                    onSelectSlot?.(
+                      definition.slot,
+                      items[0],
+                      definition.key === "ring-right" ? 1 : 0,
+                    )
+                  }
+                  onKeyDown={(event) => {
+                    if (
+                      onSelectSlot &&
+                      (event.key === "Enter" || event.key === " ")
+                    ) {
+                      event.preventDefault();
+                      onSelectSlot(
+                        definition.slot,
+                        items[0],
+                        definition.key === "ring-right" ? 1 : 0,
+                      );
+                    }
+                  }}
                 >
                   <div className="silhouette-slot-label">
                     {definition.label ??

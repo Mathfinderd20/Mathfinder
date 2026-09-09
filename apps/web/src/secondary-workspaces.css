@@ -1,0 +1,1402 @@
+/* Character workspace mock language, scoped away from the Character sheet. */
+.app .workspace-v2 {
+  color: var(--ink);
+  font-size: 13px;
+}
+.workspace-v2 *,
+.v2-editor-dialog * {
+  box-sizing: border-box;
+}
+.app .workspace-v2 h2 {
+  margin: 0;
+  color: var(--ink);
+  font:
+    500 24px Georgia,
+    serif;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.app .workspace-v2 h3 {
+  color: var(--ink);
+}
+.workspace-v2 small {
+  color: var(--muted);
+  font-size: 11px;
+}
+.workspace-v2 button,
+.v2-editor-dialog button {
+  border-radius: 5px;
+}
+.workspace-v2 label,
+.v2-coin-dialog label,
+.v2-prepare-dialog label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.workspace-v2 input:not([type="checkbox"]):not([type="radio"]),
+.workspace-v2 select,
+.v2-coin-dialog input:not([type="checkbox"]),
+.v2-prepare-dialog input:not([type="radio"]) {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: #151a1c;
+  color: var(--ink);
+  padding: 8px 10px;
+  font-size: 12px;
+}
+.app .v2-panel {
+  border: 1px solid var(--line);
+  background: linear-gradient(140deg, #1f2426, #191e20);
+  border-radius: 7px;
+  overflow: hidden;
+}
+.app .v2-panel-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 15px;
+  border-bottom: 1px solid var(--line);
+}
+.app .v2-panel-heading h2 {
+  font:
+    700 11px "Segoe UI",
+    sans-serif;
+  color: var(--accent-2);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+.v2-panel-heading .character-eyebrow {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 9px;
+}
+.v2-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px 20px 40px max(18px, 3vw);
+}
+.v2-empty {
+  padding: 22px 18px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+.v2-empty h2,
+.v2-empty h3 {
+  margin-bottom: 12px !important;
+}
+.v2-footnote {
+  color: var(--muted);
+  font-size: 11px;
+  margin: 2px 0;
+  line-height: 1.6;
+}
+.v2-count {
+  font-size: 11px;
+  background: #292e2c;
+  padding: 3px 8px;
+  border-radius: 20px;
+  color: var(--accent-2);
+}
+.v2-spacer {
+  flex: 1;
+}
+.v2-stack {
+  display: grid;
+  gap: 8px;
+  padding-block: 10px;
+}
+.v2-inline-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.app .v2-rail-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 290px;
+  max-width: none;
+}
+.app .v2-rail-layout.is-collapsed {
+  grid-template-columns: minmax(0, 1fr) 52px;
+}
+.v2-search-rail {
+  position: sticky;
+  top: 58px;
+  height: calc(100dvh - 58px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+  padding: 20px 15px;
+  border-left: 1px solid var(--line);
+  background: #171c1e;
+}
+.v2-search-rail > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+.app .v2-search-rail h2 {
+  font-size: 25px;
+}
+.is-collapsed .v2-search-rail {
+  padding: 16px 7px;
+}
+.v2-search-rail > header button {
+  padding: 3px 10px;
+  font-size: 23px;
+}
+.v2-segmented {
+  display: flex;
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+.v2-segmented button {
+  flex: 1;
+  background: transparent;
+  border: 0;
+  color: var(--muted);
+  font-size: 11px;
+  padding: 8px;
+}
+.v2-segmented button[aria-pressed="true"] {
+  background: #30332c;
+  color: var(--accent-2);
+}
+.v2-callout {
+  padding: 14px;
+  background: #202725;
+  border: 1px solid #38433b;
+  border-radius: 6px;
+}
+.v2-callout strong {
+  color: #c8d1b1;
+  text-transform: capitalize;
+}
+.v2-callout p {
+  color: var(--muted);
+  font-size: 11px;
+  margin: 7px 0 0;
+}
+.v2-catalog-results {
+  display: grid;
+  gap: 8px;
+}
+.v2-catalog-results article {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 5px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #1c2224;
+}
+.v2-catalog-results article strong {
+  font-size: 13px;
+  color: var(--ink);
+}
+.v2-catalog-results article p {
+  margin: 0;
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.v2-catalog-results article button:last-child {
+  align-self: flex-end;
+}
+.v2-pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+.v2-pagination button {
+  padding: 3px 12px;
+}
+.app .v2-text-button {
+  padding: 0;
+  text-align: left;
+  background: none;
+  border: 0;
+}
+.app .v2-editor-dialog {
+  max-width: 1120px;
+  width: calc(100vw - 48px);
+  padding: 24px;
+}
+.v2-editor-dialog > .modal-head {
+  margin-bottom: 18px;
+}
+.app .v2-editor-dialog h2,
+.app .v2-coin-dialog h2,
+.app .v2-spell-dialog h2,
+.app .v2-prepare-dialog h2 {
+  font:
+    500 26px Georgia,
+    serif;
+  text-transform: none;
+  letter-spacing: 0;
+  margin: 0;
+  color: var(--ink);
+}
+.v2-editor-dialog .build-page {
+  display: block;
+  padding: 0;
+  max-width: none;
+}
+.v2-editor-dialog .build-panel {
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+}
+.v2-editor-dialog .build-panel > h2,
+.v2-editor-dialog .build-panel > p.hint {
+  display: none;
+}
+.v2-editor-dialog .editor-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.v2-editor-dialog .item-card {
+  background: #1b2022;
+  padding: 14px;
+  border-radius: 6px;
+}
+.v2-editor-dialog .planner-table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+}
+.v2-editor-dialog .planner-builder {
+  border: 0;
+  margin: 0;
+}
+.v2-editor-dialog .build-core-setup {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 170px;
+  gap: 14px;
+}
+.v2-editor-dialog .build-core-setup > .editor-section-head,
+.v2-editor-dialog .build-core-setup > .editor-grid,
+.v2-editor-dialog .build-core-setup > .item-card {
+  grid-column: 1/-1;
+  margin: 0;
+}
+.v2-editor-dialog .build-core-setup > .alignment-field + .editor-grid {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+.v2-editor-dialog .build-core-setup .field {
+  margin: 0;
+}
+.v2-editor-dialog .build-core-setup .campaign-rule-pick {
+  display: flex;
+  align-items: flex-start;
+  text-align: left;
+  gap: 10px;
+}
+.v2-editor-dialog .build-core-setup .campaign-rule-pick input {
+  flex: none;
+  margin-top: 3px;
+}
+.app .v2-coin-dialog,
+.app .v2-prepare-dialog {
+  max-width: 620px;
+  width: calc(100vw - 32px);
+  display: grid;
+  gap: 18px;
+}
+.v2-four-fields {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+.v2-prepare-dialog p,
+.v2-coin-dialog p {
+  margin: 0;
+}
+.v2-coin-dialog label:has(input[type="checkbox"]) {
+  display: flex;
+  align-items: center;
+}
+/* Notebook: the mock's left-hand index, editorial title, and quiet writing surface. */
+.app .notebook-workspace {
+  display: grid;
+  grid-template-columns: 270px minmax(0, 1fr);
+  gap: 14px;
+  padding: 18px max(18px, 3vw) 40px;
+  min-height: calc(100dvh - 200px);
+}
+.notebook-index {
+  display: flex;
+  flex-direction: column;
+  align-self: start;
+  min-height: 600px;
+}
+.notebook-index > header {
+  padding: 20px 18px 15px;
+  display: grid;
+  gap: 12px;
+}
+.notebook-index > header h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.notebook-index > input {
+  margin: 0 14px 12px;
+  width: calc(100% - 28px) !important;
+}
+.notebook-list {
+  flex: 1;
+}
+.notebook-list button {
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+  text-align: left;
+  width: 100%;
+  padding: 16px 18px;
+  display: grid;
+  gap: 7px;
+}
+.notebook-list button > span {
+  color: var(--accent-2);
+  font-size: 10px;
+}
+.notebook-list button strong {
+  font:
+    500 17px Georgia,
+    serif;
+}
+.notebook-list button small {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.5;
+  font-weight: 400;
+}
+.notebook-list button.active {
+  border-left: 3px solid var(--accent);
+  background: #282e2b;
+  padding-left: 15px;
+}
+.notebook-privacy {
+  margin: 0;
+  padding: 18px;
+  font-size: 11px;
+  color: var(--muted);
+  border-top: 1px solid var(--line);
+  line-height: 1.7;
+}
+.notebook-editor {
+  display: flex;
+  flex-direction: column;
+  padding: 22px 28px 12px;
+  min-height: 600px;
+}
+.notebook-editor > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.notebook-save {
+  font-size: 11px;
+  color: #b2bda5;
+}
+.app .workspace-v2 .notebook-editor input.notebook-title {
+  font:
+    500 32px Georgia,
+    serif;
+  background: transparent;
+  border: 0;
+  padding: 24px 0 20px;
+  outline-offset: 4px;
+}
+.notebook-toolbar {
+  display: flex;
+  gap: 6px;
+  align-items: flex-end;
+  padding: 12px 0;
+  border-block: 1px solid var(--line);
+  flex-wrap: wrap;
+}
+.notebook-toolbar label {
+  max-width: 170px;
+}
+.notebook-toolbar button {
+  padding: 7px 12px;
+  min-height: 33px;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  background: transparent;
+}
+.app textarea.notebook-body {
+  flex: 1;
+  min-height: 430px;
+  margin: 0;
+  padding: 22px 0;
+  border: 0;
+  background: transparent;
+  resize: vertical;
+  color: #d3d0c5;
+  font:
+    15px/1.95 "Segoe UI",
+    sans-serif;
+  border-radius: 0;
+  width: 100%;
+}
+.notebook-editor footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+/* Inventory: coins, weapons, equipment focus, and location lists. */
+.inventory-money-strip {
+  display: flex;
+  gap: 0;
+  align-items: center;
+  padding: 13px 10px;
+}
+.inventory-money-strip > div {
+  flex: 1;
+  padding: 0 14px;
+  border-right: 1px solid var(--line);
+  display: grid;
+  gap: 5px;
+}
+.inventory-money-strip strong {
+  font:
+    500 24px Georgia,
+    serif;
+  color: var(--accent-2);
+  white-space: nowrap;
+}
+.inventory-money-strip strong em {
+  font:
+    12px "Segoe UI",
+    sans-serif;
+  color: var(--muted);
+}
+.inventory-money-strip > button {
+  margin-inline: 10px;
+}
+.inventory-weapon-table {
+  overflow-x: auto;
+}
+.inventory-weapon-head,
+.inventory-weapon-row {
+  display: grid;
+  grid-template-columns:
+    minmax(120px, 1.5fr) 75px 65px minmax(100px, 1fr)
+    minmax(100px, 1fr) 75px;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 16px;
+}
+.inventory-weapon-head {
+  color: var(--muted);
+  font-size: 9px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+.inventory-weapon-row {
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+}
+.inventory-weapon-row > b {
+  color: var(--accent-2);
+  font:
+    20px Georgia,
+    serif;
+}
+.inventory-weapon-row > span small {
+  display: block;
+  margin-top: 4px;
+}
+.inventory-body-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(270px, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+.inventory-location-lists {
+  display: grid;
+  gap: 12px;
+}
+.inventory-item-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 28px 55px 10px;
+  gap: 8px;
+  width: 100%;
+  align-items: center;
+  text-align: left;
+  padding: 13px 15px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0 !important;
+  background: transparent;
+  color: var(--ink);
+  font-size: 12px;
+}
+.inventory-item-row:last-child {
+  border-bottom: 0;
+}
+.inventory-item-row > span:first-child {
+  display: grid;
+  gap: 4px;
+}
+.inventory-item-row strong {
+  font-weight: 500;
+}
+.inventory-item-row:hover {
+  background: #252d2c;
+}
+.v2-group-label {
+  margin: 0;
+  padding: 8px 15px;
+  font-size: 10px;
+  background: #151b1c;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.inventory-equipment-focus .equipment-silhouette-panel {
+  padding: 12px 6px;
+  border: 0;
+  background: radial-gradient(ellipse at center, #293a35 0, transparent 65%);
+}
+.inventory-equipment-focus .equipment-silhouette {
+  width: 100%;
+  min-width: 0;
+}
+.inventory-equipment-focus .silhouette-slot {
+  cursor: pointer;
+}
+.inventory-equipment-focus .silhouette-slot:focus-visible {
+  outline: 2px solid var(--accent);
+}
+/* Fluid slot columns keep the body legible without scaling text down with a fixed canvas. */
+.inventory-equipment-focus .equipment-silhouette-stage {
+  min-height: 600px;
+}
+.inventory-equipment-focus .silhouette-connectors {
+  display: none;
+}
+.inventory-equipment-focus .silhouette-body {
+  width: 31%;
+  top: 20px;
+  height: 555px;
+}
+.inventory-equipment-focus .silhouette-slot {
+  width: 32%;
+  padding: 9px;
+  background: #1e2525;
+  box-shadow: none;
+  border-radius: 5px;
+}
+.inventory-equipment-focus .silhouette-slot.occupied {
+  border-color: #7b714e;
+  background: #2a3029;
+}
+.inventory-equipment-focus .silhouette-slot-label {
+  font-size: 9px;
+  letter-spacing: 0.08em;
+}
+.inventory-equipment-focus .silhouette-slot-item {
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+.inventory-equipment-focus
+  .silhouette-slot:is(
+    .head,
+    .eyes,
+    .shoulders,
+    .body,
+    .wrists,
+    .ring-left,
+    .armor
+  ) {
+  left: 0;
+}
+.inventory-equipment-focus
+  .silhouette-slot:is(
+    .neck,
+    .chest,
+    .torso,
+    .hands,
+    .ring-right,
+    .shield,
+    .belt
+  ) {
+  left: auto;
+  right: 0;
+}
+.inventory-equipment-focus .silhouette-slot:is(.head, .neck) {
+  top: 8px;
+}
+.inventory-equipment-focus .silhouette-slot:is(.eyes, .chest) {
+  top: 87px;
+}
+.inventory-equipment-focus .silhouette-slot:is(.shoulders, .torso) {
+  top: 166px;
+}
+.inventory-equipment-focus .silhouette-slot:is(.body, .hands) {
+  top: 245px;
+}
+.inventory-equipment-focus .silhouette-slot:is(.wrists, .shield) {
+  top: 324px;
+}
+.inventory-equipment-focus .silhouette-slot:is(.ring-left, .ring-right) {
+  top: 403px;
+}
+.inventory-equipment-focus .silhouette-slot:is(.armor, .belt) {
+  top: 482px;
+}
+.inventory-equipment-focus .silhouette-slot.feet {
+  top: 550px;
+  left: 34%;
+}
+.v2-spell-facts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding-block: 18px;
+  border-block: 1px solid var(--line);
+}
+.v2-spell-facts dt {
+  color: var(--muted);
+  font-size: 11px;
+  margin-bottom: 5px;
+}
+.v2-spell-facts dd {
+  margin: 0;
+  font-size: 13px;
+}
+.v2-audit {
+  padding: 13px 16px;
+  color: var(--muted);
+}
+.v2-audit > summary {
+  display: flex;
+  justify-content: space-between;
+  cursor: pointer;
+}
+.inventory-detail-editor .gear-editor-section {
+  display: none;
+}
+.inventory-detail-editor[data-editor="overview"] .gear-inventory-overview,
+.inventory-detail-editor[data-editor="weapon"] .gear-weapons,
+.inventory-detail-editor[data-editor="equipment"][data-kind="magic"]
+  .gear-magic-items,
+.inventory-detail-editor[data-editor="equipment"][data-kind="mundane"]
+  .gear-mundane-equipment {
+  display: block;
+}
+.inventory-detail-editor .gear-editor-section > .editor-section-head,
+.inventory-detail-editor .gear-editor-section > .item-list > p.hint,
+.inventory-detail-editor .equipment-group-title {
+  display: none;
+}
+.inventory-detail-editor[data-editor="overview"] .equipment-toolbar,
+.inventory-detail-editor[data-editor="overview"] .equipment-silhouette-panel,
+.inventory-detail-editor[data-editor="overview"] .resource-buttons.wrap {
+  display: none;
+}
+.inventory-detail-editor .gear-editor-section {
+  margin: 0;
+  padding: 0;
+}
+.inventory-detail-editor .gear-editor-section > .item-list {
+  display: block;
+}
+.inventory-detail-editor .gear-editor-section > .item-list > .item-card {
+  margin-top: 14px;
+}
+/* Magic: per-source cards, compact slot ledger, and actual spell rows. */
+.app .magic-workspace {
+  padding: 0;
+  max-width: none;
+}
+.magic-workspace > .character-section-header {
+  display: none;
+}
+.casting-source-tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.casting-source-tabs button {
+  display: grid;
+  gap: 5px;
+  min-width: 150px;
+  padding: 12px 18px;
+  text-align: left;
+  border: 1px solid var(--line);
+  background: #1c2224;
+  color: var(--ink);
+}
+.casting-source-tabs button strong {
+  font:
+    20px Georgia,
+    serif;
+}
+.casting-source-tabs button small {
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 9px;
+}
+.casting-source-tabs button span {
+  font-size: 10px;
+  color: var(--muted);
+}
+.casting-source-tabs button[aria-selected="true"] {
+  border-color: #8b7851;
+  background: #2a2d26;
+}
+.casting-source-tabs .casting-add-source {
+  display: block;
+  min-width: 0;
+  border-style: dashed;
+  background: none;
+  font-size: 11px;
+  color: var(--muted);
+}
+.casting-source-summary {
+  display: grid;
+  grid-template-columns: minmax(200px, 1.6fr) repeat(3, minmax(90px, 1fr)) auto;
+  align-items: center;
+  gap: 16px;
+  padding: 18px;
+}
+.casting-source-summary > div {
+  display: grid;
+  gap: 6px;
+}
+.casting-source-summary p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+.casting-source-summary strong {
+  color: var(--accent-2);
+  font:
+    27px Georgia,
+    serif;
+}
+.casting-level-ledger {
+  display: flex;
+  flex-wrap: wrap;
+  padding: 10px;
+  gap: 7px;
+}
+.casting-level-ledger button {
+  display: grid;
+  gap: 7px;
+  text-align: left;
+  flex: 1;
+  min-width: 115px;
+  background: #181d1f;
+  border: 1px solid var(--line);
+  padding: 11px;
+  color: var(--ink);
+}
+.casting-level-ledger button > span {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--muted);
+}
+.casting-level-ledger button > strong {
+  font:
+    22px Georgia,
+    serif;
+  color: var(--accent-2);
+}
+.casting-level-ledger button.active {
+  border-color: var(--accent);
+}
+.casting-level-ledger em {
+  color: #c8b889;
+  font-size: 10px;
+  font-style: normal;
+}
+.casting-spell-table {
+  overflow-x: auto;
+}
+.casting-spell-head,
+.casting-spell-row {
+  display: grid;
+  grid-template-columns: 45px minmax(230px, 1fr) 65px 85px 70px 120px;
+  gap: 12px;
+  padding: 13px 16px;
+  align-items: center;
+}
+.casting-spell-head {
+  font-size: 9px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.casting-spell-row {
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+}
+.spell-level-number {
+  width: 29px;
+  height: 29px;
+  background: #2b302a;
+  color: var(--accent-2);
+  display: grid;
+  place-items: center;
+  border-radius: 5px;
+  font:
+    19px Georgia,
+    serif;
+}
+.app button.casting-spell-name {
+  display: grid;
+  gap: 6px;
+  padding: 0;
+  background: none;
+  border: 0;
+  color: var(--ink);
+  text-align: left;
+  font-size: 13px;
+}
+.casting-spell-name > span {
+  font-weight: 400;
+  color: #b0b5ad;
+  font-size: 11px;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.casting-spell-name strong {
+  font-weight: 600;
+}
+.spell-domain-badge {
+  display: inline-block;
+  background: #342f21;
+  color: #cbb582 !important;
+  border: 1px solid #5a513a;
+  border-radius: 3px;
+  padding: 2px 5px;
+  font-size: 9px !important;
+  font-weight: 500;
+}
+.casting-spell-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.casting-spell-actions button {
+  font-size: 10px;
+  padding: 5px 8px;
+}
+.spell-components {
+  color: var(--muted);
+  font-size: 11px;
+}
+.app .v2-spell-dialog {
+  width: calc(100vw - 40px);
+  max-width: 780px;
+}
+.v2-spell-full {
+  white-space: pre-wrap;
+  font:
+    14px/1.85 "Segoe UI",
+    sans-serif;
+  padding-top: 20px;
+  color: #d3d0c5;
+}
+.v2-replacement-list {
+  max-height: 300px;
+  overflow: auto;
+  display: grid;
+  gap: 4px;
+}
+.v2-replacement-list label {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  color: var(--ink);
+}
+/* Build: a foundation, then one chronological level list. */
+.app .character-build-tab {
+  display: block;
+  padding: 0;
+}
+.app .character-build-tab[hidden] {
+  display: none;
+}
+.app .build-v2 {
+  padding: 18px max(18px, 3vw) 40px;
+  display: grid;
+  gap: 14px;
+}
+.build-v2-summary {
+  display: grid;
+  grid-template-columns: minmax(250px, 1fr) auto;
+  gap: 16px 24px;
+  padding: 20px;
+}
+.build-v2-summary p {
+  margin: 8px 0 0;
+  color: var(--muted);
+}
+.build-score-strip {
+  display: flex;
+  gap: 0;
+  align-self: center;
+}
+.build-score-strip > span {
+  display: grid;
+  gap: 5px;
+  min-width: 56px;
+  padding: 0 12px;
+  text-align: center;
+  border-left: 1px solid var(--line);
+}
+.build-score-strip strong {
+  font:
+    23px Georgia,
+    serif;
+  color: var(--accent-2);
+}
+.build-v2-actions {
+  grid-column: 1/-1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+}
+.app .build-v2-actions .build-action-bar {
+  margin: 0 0 0 auto;
+  padding: 0;
+  background: none;
+  border: 0;
+  width: auto;
+  min-height: 0;
+}
+.build-v2-actions .build-action-bar > div:first-child {
+  display: none;
+}
+.build-v2-foundation {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  align-items: start;
+}
+.build-foundation-record {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 18px;
+  border-bottom: 1px solid var(--line);
+}
+.build-foundation-record strong {
+  font:
+    21px Georgia,
+    serif;
+}
+.build-foundation-record > span {
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: capitalize;
+}
+.build-racial-traits > div {
+  display: grid;
+  grid-template-columns: minmax(110px, 0.6fr) 1fr;
+  gap: 8px;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--line);
+  font-size: 12px;
+}
+.build-racial-traits > div > span:only-child {
+  grid-column: 1/-1;
+}
+.build-racial-traits > div > span {
+  color: var(--muted);
+  line-height: 1.6;
+}
+.app .build-campaign-traits .build-traits-panel {
+  margin: 0;
+  padding: 0;
+  background: linear-gradient(140deg, #1f2426, #191e20);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+}
+.build-campaign-traits .editor-section-head {
+  padding: 12px 15px;
+  border-bottom: 1px solid var(--line);
+  margin: 0;
+}
+.build-campaign-traits h3 {
+  font:
+    700 11px "Segoe UI",
+    sans-serif;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent-2);
+}
+.build-campaign-traits .character-trait-list {
+  padding: 14px;
+}
+.build-campaign-traits .hint {
+  padding: 15px;
+  margin: 0;
+  line-height: 1.7;
+}
+.build-level-record {
+  border-top: 1px solid var(--line);
+}
+.build-level-record:first-child {
+  border-top: 0;
+}
+.build-level-line {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 0 16px;
+}
+.app .build-level-toggle {
+  flex: 1;
+  width: 100%;
+  display: grid;
+  grid-template-columns:
+    84px minmax(110px, 0.7fr) minmax(85px, 0.5fr) minmax(200px, 1.5fr)
+    16px;
+  gap: 18px;
+  align-items: center;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  border-radius: 0;
+  text-align: left;
+  padding: 17px 0;
+}
+.build-level-index {
+  display: grid;
+  gap: 5px;
+  color: var(--accent-2);
+}
+.build-level-index small {
+  font-size: 9px;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.build-level-toggle > strong {
+  font:
+    19px Georgia,
+    serif;
+}
+.build-level-toggle > span:nth-child(3) {
+  color: var(--muted);
+  font-weight: 400;
+  font-size: 12px;
+}
+.build-level-toggle > small {
+  font-weight: 400;
+  line-height: 1.6;
+}
+.build-level-toggle em {
+  font-size: 20px;
+  color: var(--accent-2);
+  font-style: normal;
+}
+.build-level-breakdown {
+  background: #171d1f;
+  padding: 16px;
+  border-top: 1px solid var(--line);
+}
+.build-level-breakdown .planner-shell {
+  margin: 0;
+  border: 0;
+  padding: 0;
+  background: none;
+}
+.build-level-breakdown .planner-shell > .editor-section-head,
+.build-level-breakdown .planner-shell > p.hint,
+.build-level-breakdown .planner-table thead {
+  display: none;
+}
+.build-level-breakdown .planner-table-wrap {
+  border: 0;
+  overflow: visible;
+}
+.build-level-breakdown .planner-table,
+.build-level-breakdown .planner-table tbody {
+  display: block;
+  min-width: 0;
+  width: 100%;
+}
+.build-level-breakdown .planner-table tbody > tr:first-child {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+.build-level-breakdown .planner-table tbody > tr:first-child > td {
+  display: block;
+  width: auto;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: #1d2425;
+}
+.build-level-breakdown .planner-table tbody > tr:first-child > td:nth-child(1),
+.build-level-breakdown .planner-table tbody > tr:first-child > td:nth-child(2) {
+  display: none;
+}
+.build-level-breakdown .planner-table tbody > tr:first-child > td::before {
+  display: block;
+  margin-bottom: 9px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 9px;
+}
+.build-level-breakdown .planner-table td:nth-child(3)::before {
+  content: "Class";
+}
+.build-level-breakdown .planner-table td:nth-child(4)::before {
+  content: "Class abilities";
+}
+.build-level-breakdown .planner-table td:nth-child(5)::before {
+  content: "Hit points";
+}
+.build-level-breakdown .planner-table td:nth-child(6)::before {
+  content: "Feats";
+}
+.build-level-breakdown .planner-table td:nth-child(7)::before {
+  content: "Favored bonus";
+}
+.build-level-breakdown .planner-table td:nth-child(8)::before {
+  content: "Ability increase";
+}
+.build-level-breakdown .planner-table td:nth-child(9)::before {
+  content: "Level actions";
+}
+.build-level-breakdown .planner-table td:nth-child(10)::before {
+  content: "Guided choices";
+}
+.build-level-breakdown
+  .planner-table
+  tbody
+  > tr:first-child
+  > td:nth-child(10) {
+  grid-column: 1/-1;
+}
+.build-level-breakdown .planner-guided-details summary {
+  cursor: pointer;
+  color: var(--accent-2);
+}
+.build-level-breakdown .planner-guided-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 12px;
+  padding-top: 12px;
+}
+.inventory-extra-filters label {
+  margin-top: 12px;
+}
+.build-detail-editor[data-section="skills"]
+  .build-editor-section-class-archetypes,
+.build-detail-editor[data-section="progression"]
+  .build-editor-section-class-archetypes {
+  display: none;
+}
+.build-level-breakdown .planner-table tbody > tr:not(:first-child),
+.build-level-breakdown .planner-table tbody > tr:not(:first-child) > td {
+  display: block;
+  width: 100%;
+}
+.build-level-breakdown .planner-row-details-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.build-detail-editor[data-section="foundation"] .planner-builder,
+.build-detail-editor[data-section="foundation"]
+  .build-editor-section-character-skill-ranks {
+  display: none;
+}
+.build-detail-editor[data-section="skills"] .build-core-setup,
+.build-detail-editor[data-section="skills"] .planner-builder {
+  display: none;
+}
+.build-detail-editor[data-section="progression"] .build-core-setup,
+.build-detail-editor[data-section="progression"]
+  .build-editor-section-character-skill-ranks {
+  display: none;
+}
+@media (max-width: 1250px) {
+  .app .v2-rail-layout {
+    grid-template-columns: minmax(0, 1fr) 255px;
+  }
+  .inventory-body-layout {
+    grid-template-columns: minmax(0, 1.1fr) minmax(220px, 1fr);
+  }
+  .inventory-money-strip {
+    flex-wrap: wrap;
+    row-gap: 14px;
+  }
+  .inventory-money-strip > div {
+    min-width: 80px;
+  }
+  .casting-source-summary {
+    grid-template-columns: minmax(160px, 1.3fr) repeat(3, minmax(60px, 1fr));
+  }
+  .casting-source-summary > button {
+    grid-column: 1/-1;
+    justify-self: end;
+  }
+  .casting-spell-head,
+  .casting-spell-row {
+    grid-template-columns: 30px minmax(170px, 1fr) 46px 58px 55px 90px;
+    gap: 8px;
+    padding-inline: 12px;
+  }
+  .build-level-toggle {
+    gap: 10px !important;
+    grid-template-columns: 70px 100px 90px minmax(100px, 1fr) 14px !important;
+  }
+}
+@media (max-width: 950px) {
+  .inventory-body-layout {
+    grid-template-columns: 1fr;
+  }
+  .inventory-location-lists {
+    grid-template-columns: 1fr 1fr;
+  }
+  .inventory-weapon-head,
+  .inventory-weapon-row {
+    min-width: 620px;
+  }
+  .casting-spell-head,
+  .casting-spell-row {
+    min-width: 580px;
+  }
+  .build-v2-summary {
+    grid-template-columns: 1fr;
+  }
+  .build-v2-foundation {
+    grid-template-columns: 1fr;
+  }
+  .build-score-strip {
+    justify-self: start;
+  }
+  .build-level-breakdown .planner-table tbody > tr:first-child {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 700px) {
+  .inventory-equipment-focus .equipment-silhouette-stage {
+    display: block;
+  }
+  .inventory-equipment-focus .silhouette-body {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  .inventory-equipment-focus .equipment-silhouette-slots {
+    position: absolute;
+    display: block;
+    inset: 0;
+  }
+  .inventory-equipment-focus .silhouette-slot {
+    position: absolute;
+  }
+  .app .v2-rail-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .app .v2-rail-layout.is-collapsed {
+    grid-template-columns: minmax(0, 1fr) 44px;
+  }
+  .v2-search-rail {
+    position: relative;
+    top: 0;
+    height: auto;
+    border-top: 1px solid var(--line);
+  }
+  .v2-main {
+    padding: 12px;
+  }
+  .app .notebook-workspace {
+    grid-template-columns: 1fr;
+    padding: 12px;
+  }
+  .notebook-index {
+    min-height: 0;
+    max-height: 320px;
+    overflow: auto;
+  }
+  .notebook-editor {
+    padding: 16px;
+  }
+  .inventory-location-lists {
+    grid-template-columns: 1fr;
+  }
+  .casting-source-summary {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .casting-source-summary > div:first-child {
+    grid-column: 1/-1;
+  }
+  .app .build-v2 {
+    padding: 12px;
+  }
+  .build-level-toggle {
+    grid-template-columns: 65px 1fr 14px !important;
+  }
+  .build-level-toggle > span:nth-child(3),
+  .build-level-toggle > small {
+    display: none;
+  }
+  .build-v2-actions {
+    flex-wrap: wrap;
+  }
+  .build-score-strip > span {
+    min-width: 40px;
+    padding: 0 8px;
+  }
+  .v2-editor-dialog .editor-grid {
+    grid-template-columns: 1fr;
+  }
+  .v2-editor-dialog .build-core-setup {
+    grid-template-columns: 1fr;
+  }
+  .v2-editor-dialog .build-core-setup > .alignment-field + .editor-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}

@@ -33,10 +33,14 @@ import type { CompendiumOption } from "./CompendiumPicker";
 import { FeatSelectionPicker } from "./FeatSelectionPicker";
 import { SpellcastingManager } from "./SpellcastingManager";
 import { Tooltip } from "./Tooltip";
+import { BuildWorkspace } from "./BuildWorkspace";
 
 type SpellMode = "prepared" | "known";
 
-interface Props {
+export interface BuildEditorProps {
+  characterId?: string;
+  advancementActions?: ReactNode;
+  campaignTraitsPanel?: ReactNode;
   build: CharacterBuild;
   currentLevel: number;
   sheetSpellcasting: DerivedSpellcasting[];
@@ -172,7 +176,18 @@ interface Props {
   onResetSpellRuntimeClass: (classKey: string, levels: number[]) => void;
 }
 
+type Props = BuildEditorProps;
 export function BuildEditorTab(props: Props) {
+  return (
+    <BuildWorkspace
+      {...props}
+      renderDetails={(section) => (
+        <BuildDetailEditor {...props} section={section} />
+      )}
+    />
+  );
+}
+function BuildDetailEditor(props: Props & { section: string }) {
   const {
     build,
     currentLevel,
@@ -258,14 +273,21 @@ export function BuildEditorTab(props: Props) {
     .join(" · ");
 
   useEffect(() => {
-    if (coreSetupLooksConfigured && !coreSetupAutoCollapsed) {
+    if (
+      coreSetupLooksConfigured &&
+      !coreSetupAutoCollapsed &&
+      props.section !== "foundation"
+    ) {
       setCoreSetupOpen(false);
       setCoreSetupAutoCollapsed(true);
     }
-  }, [coreSetupAutoCollapsed, coreSetupLooksConfigured]);
+  }, [coreSetupAutoCollapsed, coreSetupLooksConfigured, props.section]);
 
   return (
-    <div className="build-page">
+    <div
+      className="build-page build-detail-editor"
+      data-section={props.section}
+    >
       <section className="panel build-panel">
         <h2>Build Editor</h2>
         <p className="hint">

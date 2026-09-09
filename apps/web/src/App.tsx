@@ -30,7 +30,7 @@ import {
 import { BuildEditorTab } from "./components/BuildEditorTab";
 import { GearTab } from "./components/GearTab";
 import { RuntimeControlsPanel } from "./components/RuntimeControlsPanel";
-import { SpellcastingManager } from "./components/SpellcastingManager";
+import { MagicWorkspace as SpellcastingManager } from "./components/MagicWorkspace";
 import { BuildSlotsPanel } from "./components/BuildSlotsPanel";
 import { ValidationPanel } from "./components/ValidationPanel";
 import { HoldToActivateButton } from "./components/HoldToActivateButton";
@@ -684,6 +684,7 @@ export function App({
       {mountedTabs.notes ? (
         <div hidden={activeTab !== "notes"} className="character-tab-panel">
           <CharacterNotes
+            characterId={characterId}
             notes={details.notes ?? []}
             onChange={(notes) => updateCharacterDetails({ ...details, notes })}
           />
@@ -800,6 +801,8 @@ export function App({
       {mountedTabs.inventory ? (
         <div hidden={activeTab !== "inventory"}>
           <GearTab
+            characterId={characterId}
+            sheet={sheet}
             build={build}
             onUpdateCarriedWeight={updateCarriedWeight}
             onUpdateCoinPurse={updateCoinPurse}
@@ -852,149 +855,44 @@ export function App({
                 {sheet.spellcasting.length === 1 ? "" : "s"}
               </span>
             </header>
-            {sheet.spellcasting.length ? (
-              <SpellcastingManager
-                defaultOpen
-                casters={sheet.spellcasting}
-                classArchetypes={build.classArchetypes}
-                spellOptions={SPELL_OPTIONS}
-                domainOptions={DOMAIN_OPTIONS}
-                schoolOptions={SCHOOL_OPTIONS}
-                spellCastCounts={spellCastCounts}
-                spellSuggestions={suggestionBundle.spellChoices}
-                onAddSelection={addSpellSelection}
-                onAppendSelection={appendSpellSelection}
-                onUpdateSelectionName={updateSpellSelectionName}
-                onRemoveSelection={removeSpellSelection}
-                onResetSelectionsForLevel={resetSpellSelectionsForLevel}
-                onResetSelectionsForClass={resetSpellSelectionsForClass}
-                onAddLibraryEntry={addSpellLibraryEntry}
-                onAppendLibraryEntry={appendSpellLibraryEntry}
-                onUpdateLibraryName={updateSpellLibraryName}
-                onRemoveLibraryEntry={removeSpellLibraryEntry}
-                onResetLibraryLevel={resetSpellLibraryLevel}
-                onResetLibraryForClass={resetSpellLibraryForClass}
-                onFillSelectionsFromLibrary={fillSelectionsFromLibrary}
-                onUpdateDomains={updateSpellDomains}
-                onUpdateSpecialization={updateSpellSpecialization}
-                onAdjustExtraSpellSlots={adjustSpellExtraSlots}
-                onAdjustSpellSlot={adjustSpellSlot}
-                onCastSpell={requestSpellCast}
-                onResetSpellSlotLevel={resetSpellSlotLevel}
-                onResetSpellRuntimeClass={resetSpellClassRuntime}
-              />
-            ) : (
-              <section className="panel character-empty-state">
-                <span className="character-eyebrow">Always available</span>
-                <h2>No magic source yet</h2>
-                <p>
-                  The Magic tab remains ready for spell-like abilities, granted
-                  spells, or a future multiclass level.
-                </p>
-                <button type="button" onClick={() => selectTab("build")}>
-                  Open Build
-                </button>
-              </section>
-            )}
+            <SpellcastingManager
+              characterId={characterId}
+              onAddSource={() => selectTab("build")}
+              defaultOpen
+              casters={sheet.spellcasting}
+              classArchetypes={build.classArchetypes}
+              spellOptions={SPELL_OPTIONS}
+              domainOptions={DOMAIN_OPTIONS}
+              schoolOptions={SCHOOL_OPTIONS}
+              spellCastCounts={spellCastCounts}
+              spellSuggestions={suggestionBundle.spellChoices}
+              onAddSelection={addSpellSelection}
+              onAppendSelection={appendSpellSelection}
+              onUpdateSelectionName={updateSpellSelectionName}
+              onRemoveSelection={removeSpellSelection}
+              onResetSelectionsForLevel={resetSpellSelectionsForLevel}
+              onResetSelectionsForClass={resetSpellSelectionsForClass}
+              onAddLibraryEntry={addSpellLibraryEntry}
+              onAppendLibraryEntry={appendSpellLibraryEntry}
+              onUpdateLibraryName={updateSpellLibraryName}
+              onRemoveLibraryEntry={removeSpellLibraryEntry}
+              onResetLibraryLevel={resetSpellLibraryLevel}
+              onResetLibraryForClass={resetSpellLibraryForClass}
+              onFillSelectionsFromLibrary={fillSelectionsFromLibrary}
+              onUpdateDomains={updateSpellDomains}
+              onUpdateSpecialization={updateSpellSpecialization}
+              onAdjustExtraSpellSlots={adjustSpellExtraSlots}
+              onAdjustSpellSlot={adjustSpellSlot}
+              onCastSpell={requestSpellCast}
+              onResetSpellSlotLevel={resetSpellSlotLevel}
+              onResetSpellRuntimeClass={resetSpellClassRuntime}
+            />
           </div>
         </div>
       ) : null}
 
       {mountedTabs.build ? (
         <div hidden={activeTab !== "build"} className="character-build-tab">
-          <div className="build-action-bar">
-            <div>
-              <span className="character-eyebrow">Advancement</span>
-              <strong>
-                Level {currentLevel} of {build.levels.length}
-              </strong>
-            </div>
-            <div className="actions">
-              {viewingLatestLevel ? (
-                <HoldToActivateButton
-                  disabled={leveling || levelUpEffect === "charged"}
-                  onHoldStart={() => setLevelUpEffect("holding")}
-                  onHoldCancel={() => setLevelUpEffect("idle")}
-                  onComplete={openLevelUpFlow}
-                />
-              ) : (
-                <button onClick={advanceLevel}>→ Next Level</button>
-              )}
-              <button
-                className="ghost"
-                disabled={currentLevel <= 1}
-                onClick={undoCurrentLevel}
-              >
-                ↩ Undo Level
-              </button>
-            </div>
-          </div>
-          <section className="build-traits-panel panel">
-            <div className="editor-section-head tight">
-              <div>
-                <span className="character-eyebrow">
-                  Optional campaign choices
-                </span>
-                <h3>Campaign Traits</h3>
-              </div>
-              <button
-                type="button"
-                className="ghost small"
-                onClick={() =>
-                  updateCharacterDetails({
-                    ...details,
-                    campaignTraits: [...(details.campaignTraits ?? []), ""],
-                  })
-                }
-              >
-                + Trait
-              </button>
-            </div>
-            {(details.campaignTraits ?? []).length ? (
-              <div className="character-trait-list">
-                {(details.campaignTraits ?? []).map((trait, index) => (
-                  <div
-                    className="character-trait-row"
-                    key={`campaign-trait-${index}`}
-                  >
-                    <input
-                      aria-label={`Campaign trait ${index + 1}`}
-                      value={trait}
-                      placeholder="Trait name or campaign-granted benefit"
-                      onChange={(event) =>
-                        updateCharacterDetails({
-                          ...details,
-                          campaignTraits: (details.campaignTraits ?? []).map(
-                            (value, entryIndex) =>
-                              entryIndex === index ? event.target.value : value,
-                          ),
-                        })
-                      }
-                    />
-                    <button
-                      type="button"
-                      className="ghost small"
-                      onClick={() =>
-                        updateCharacterDetails({
-                          ...details,
-                          campaignTraits: (details.campaignTraits ?? []).filter(
-                            (_, entryIndex) => entryIndex !== index,
-                          ),
-                        })
-                      }
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="hint">
-                Optional. Most campaigns allow one to three traits, subject to
-                the GM’s creation rules.
-              </p>
-            )}
-          </section>
           {!characterId ? (
             <div className="build-slots-wrap">
               <BuildSlotsPanel
@@ -1008,6 +906,107 @@ export function App({
             </div>
           ) : null}
           <BuildEditorTab
+            characterId={characterId}
+            advancementActions={
+              <div className="build-action-bar">
+                <div>
+                  <span className="character-eyebrow">Advancement</span>
+                  <strong>
+                    Level {currentLevel} of {build.levels.length}
+                  </strong>
+                </div>
+                <div className="actions">
+                  {viewingLatestLevel ? (
+                    <HoldToActivateButton
+                      disabled={leveling || levelUpEffect === "charged"}
+                      onHoldStart={() => setLevelUpEffect("holding")}
+                      onHoldCancel={() => setLevelUpEffect("idle")}
+                      onComplete={openLevelUpFlow}
+                    />
+                  ) : (
+                    <button onClick={advanceLevel}>→ Next Level</button>
+                  )}
+                  <button
+                    className="ghost"
+                    disabled={currentLevel <= 1}
+                    onClick={undoCurrentLevel}
+                  >
+                    ↩ Undo Level
+                  </button>
+                </div>
+              </div>
+            }
+            campaignTraitsPanel={
+              <section className="build-traits-panel panel">
+                <div className="editor-section-head tight">
+                  <div>
+                    <span className="character-eyebrow">
+                      Optional campaign choices
+                    </span>
+                    <h3>Campaign Traits</h3>
+                  </div>
+                  <button
+                    type="button"
+                    className="ghost small"
+                    onClick={() =>
+                      updateCharacterDetails({
+                        ...details,
+                        campaignTraits: [...(details.campaignTraits ?? []), ""],
+                      })
+                    }
+                  >
+                    + Trait
+                  </button>
+                </div>
+                {(details.campaignTraits ?? []).length ? (
+                  <div className="character-trait-list">
+                    {(details.campaignTraits ?? []).map((trait, index) => (
+                      <div
+                        className="character-trait-row"
+                        key={`campaign-trait-${index}`}
+                      >
+                        <input
+                          aria-label={`Campaign trait ${index + 1}`}
+                          value={trait}
+                          placeholder="Trait name or campaign-granted benefit"
+                          onChange={(event) =>
+                            updateCharacterDetails({
+                              ...details,
+                              campaignTraits: (
+                                details.campaignTraits ?? []
+                              ).map((value, entryIndex) =>
+                                entryIndex === index
+                                  ? event.target.value
+                                  : value,
+                              ),
+                            })
+                          }
+                        />
+                        <button
+                          type="button"
+                          className="ghost small"
+                          onClick={() =>
+                            updateCharacterDetails({
+                              ...details,
+                              campaignTraits: (
+                                details.campaignTraits ?? []
+                              ).filter((_, entryIndex) => entryIndex !== index),
+                            })
+                          }
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="hint">
+                    Optional. Most campaigns allow one to three traits, subject
+                    to the GM’s creation rules.
+                  </p>
+                )}
+              </section>
+            }
             build={build}
             currentLevel={currentLevel}
             sheetSpellcasting={sheet.spellcasting}
