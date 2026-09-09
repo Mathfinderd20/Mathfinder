@@ -143,6 +143,39 @@ function statTooltip(stat: DerivedStat, raw?: boolean) {
   );
 }
 
+function CompactRollControl({
+  label,
+  value,
+  onChange,
+  total,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  total: number | undefined;
+}) {
+  return (
+    <details className="sheet-roll-popover">
+      <summary aria-label={`Roll ${label}`}>Roll</summary>
+      <div className="sheet-roll-popover-body">
+        <label>
+          <span>d20 result</span>
+          <input
+            type="number"
+            inputMode="numeric"
+            placeholder="d20"
+            value={value}
+            onChange={(event) => onChange(event.target.value)}
+          />
+        </label>
+        <span className="sheet-roll-popover-total">
+          Total <strong>{total === undefined ? "—" : sign(total)}</strong>
+        </span>
+      </div>
+    </details>
+  );
+}
+
 function contextualAcTooltip(
   profile: DerivedSheet["ac"]["contextual"][number],
 ) {
@@ -557,8 +590,8 @@ export function Sheet({
         </section>
 
         <div className="sheet-stack">
-          <section className="panel paper-panel">
-            <h2>Defense Snapshot</h2>
+          <section className="panel paper-panel sheet-defense-panel">
+            <h2>Defense &amp; Health</h2>
             <div className="sheet-ac-grid">
               <Tooltip
                 content={statTooltip(sheet.ac.normal, true)}
@@ -567,6 +600,7 @@ export function Sheet({
                 <div className="summary-box ac-primary">
                   <span className="summary-label">Armor Class</span>
                   <span className="summary-value">{sheet.ac.normal.total}</span>
+                  <span className="stat-helper">Normal</span>
                 </div>
               </Tooltip>
               <Tooltip
@@ -621,7 +655,7 @@ export function Sheet({
                 content={hitPointTooltip(sheet)}
                 className="mf-tooltip-anchor-block"
               >
-                <div className="summary-box">
+                <div className="summary-box sheet-hp-summary">
                   <span className="summary-label">Hit Points</span>
                   <span className="summary-value">
                     {currentHp} / {sheet.hitPoints.total}
@@ -632,143 +666,131 @@ export function Sheet({
                 content={statTooltip(sheet.saves.fort)}
                 className="mf-tooltip-anchor-block"
               >
-                <div className="summary-box">
-                  <span className="summary-label">Fort</span>
+                <div className="summary-box save-summary">
+                  <span className="summary-label">Fortitude</span>
                   <span className="summary-value">
                     {sign(sheet.saves.fort.total)}
                   </span>
-                  <label className="sheet-roll-entry">
-                    <span>Roll</span>
-                    <input
-                      type="number"
-                      inputMode="numeric"
-                      placeholder="d20"
-                      value={saveRollDrafts.fort ?? ""}
-                      onChange={(event) =>
-                        setSaveRollDrafts((prev) => ({
-                          ...prev,
-                          fort: event.target.value,
-                        }))
-                      }
-                    />
-                  </label>
-                  <span className="sheet-roll-total">
-                    {checkTotal(saveRollDrafts.fort, sheet.saves.fort.total) ===
-                    undefined
-                      ? "—"
-                      : sign(
-                          checkTotal(
-                            saveRollDrafts.fort,
-                            sheet.saves.fort.total,
-                          ) ?? 0,
-                        )}
-                  </span>
+                  <CompactRollControl
+                    label="Fortitude"
+                    value={saveRollDrafts.fort ?? ""}
+                    onChange={(value) =>
+                      setSaveRollDrafts((prev) => ({ ...prev, fort: value }))
+                    }
+                    total={checkTotal(
+                      saveRollDrafts.fort,
+                      sheet.saves.fort.total,
+                    )}
+                  />
                 </div>
               </Tooltip>
               <Tooltip
                 content={statTooltip(sheet.saves.ref)}
                 className="mf-tooltip-anchor-block"
               >
-                <div className="summary-box">
-                  <span className="summary-label">Ref</span>
+                <div className="summary-box save-summary">
+                  <span className="summary-label">Reflex</span>
                   <span className="summary-value">
                     {sign(sheet.saves.ref.total)}
                   </span>
-                  <label className="sheet-roll-entry">
-                    <span>Roll</span>
-                    <input
-                      type="number"
-                      inputMode="numeric"
-                      placeholder="d20"
-                      value={saveRollDrafts.ref ?? ""}
-                      onChange={(event) =>
-                        setSaveRollDrafts((prev) => ({
-                          ...prev,
-                          ref: event.target.value,
-                        }))
-                      }
-                    />
-                  </label>
-                  <span className="sheet-roll-total">
-                    {checkTotal(saveRollDrafts.ref, sheet.saves.ref.total) ===
-                    undefined
-                      ? "—"
-                      : sign(
-                          checkTotal(
-                            saveRollDrafts.ref,
-                            sheet.saves.ref.total,
-                          ) ?? 0,
-                        )}
-                  </span>
+                  <CompactRollControl
+                    label="Reflex"
+                    value={saveRollDrafts.ref ?? ""}
+                    onChange={(value) =>
+                      setSaveRollDrafts((prev) => ({ ...prev, ref: value }))
+                    }
+                    total={checkTotal(
+                      saveRollDrafts.ref,
+                      sheet.saves.ref.total,
+                    )}
+                  />
                 </div>
               </Tooltip>
               <Tooltip
                 content={statTooltip(sheet.saves.will)}
                 className="mf-tooltip-anchor-block"
               >
-                <div className="summary-box">
+                <div className="summary-box save-summary">
                   <span className="summary-label">Will</span>
                   <span className="summary-value">
                     {sign(sheet.saves.will.total)}
                   </span>
-                  <label className="sheet-roll-entry">
-                    <span>Roll</span>
-                    <input
-                      type="number"
-                      inputMode="numeric"
-                      placeholder="d20"
-                      value={saveRollDrafts.will ?? ""}
-                      onChange={(event) =>
-                        setSaveRollDrafts((prev) => ({
-                          ...prev,
-                          will: event.target.value,
-                        }))
-                      }
-                    />
-                  </label>
-                  <span className="sheet-roll-total">
-                    {checkTotal(saveRollDrafts.will, sheet.saves.will.total) ===
-                    undefined
-                      ? "—"
-                      : sign(
-                          checkTotal(
-                            saveRollDrafts.will,
-                            sheet.saves.will.total,
-                          ) ?? 0,
-                        )}
-                  </span>
+                  <CompactRollControl
+                    label="Will"
+                    value={saveRollDrafts.will ?? ""}
+                    onChange={(value) =>
+                      setSaveRollDrafts((prev) => ({ ...prev, will: value }))
+                    }
+                    total={checkTotal(
+                      saveRollDrafts.will,
+                      sheet.saves.will.total,
+                    )}
+                  />
                 </div>
               </Tooltip>
             </div>
-            <HealthTracker
-              maxHp={sheet.hitPoints.total}
-              currentHp={currentHp}
-              hpDamageTaken={hpDamageTaken}
-              tempHp={tempHp}
-              nonlethalDamage={nonlethalDamage}
-              constitutionScore={sheet.abilities.con.score}
-              stable={stable}
-              deathRules={deathRules}
-              fightOnSource={fightOnSource}
-              diehardActive={diehardActive}
-              ferocityUsed={ferocityUsed}
-              onApplyDamage={(amount, damageType) =>
-                onApplyDamage?.(amount, damageType)
-              }
-              onApplyHealing={(amount) => onApplyHealing?.(amount)}
-              onApplyHpLoss={(amount) => onApplyHpLoss?.(amount)}
-              onSetTempHp={(amount) => onSetTempHp?.(amount)}
-              onApplyNonlethal={(amount) => onApplyNonlethal?.(amount)}
-              onHealNonlethal={(amount) => onHealNonlethal?.(amount)}
-              onSetStable={(value) => onSetStable?.(value)}
-              onSetDiehardActive={(value) => onSetDiehardActive?.(value)}
-              onSetFerocityActive={(value) => onSetFerocityActive?.(value)}
-              onSetFerocityUsed={(value) => onSetFerocityUsed?.(value)}
-              onReset={() => onResetHp?.()}
-            />
+            <details className="health-manager-details">
+              <summary className="health-inline-summary">
+                <span className="health-inline-value">
+                  <strong>{currentHp}</strong> / {sheet.hitPoints.total} HP
+                </span>
+                <span className="health-inline-meter" aria-hidden="true">
+                  <i
+                    style={{
+                      width: `${Math.max(
+                        0,
+                        Math.min(
+                          100,
+                          (currentHp / Math.max(1, sheet.hitPoints.total)) *
+                            100,
+                        ),
+                      )}%`,
+                    }}
+                  />
+                </span>
+                <span className="health-inline-stat">
+                  Temp <strong>{tempHp}</strong>
+                </span>
+                <span className="health-inline-stat">
+                  Nonlethal <strong>{nonlethalDamage}</strong>
+                </span>
+                <span className="health-inline-status">
+                  {healthConditionLabel(healthStatus.condition)}
+                </span>
+                <span className="health-inline-action">Manage Health</span>
+              </summary>
+              <div className="health-manager-body">
+                <HealthTracker
+                  maxHp={sheet.hitPoints.total}
+                  currentHp={currentHp}
+                  hpDamageTaken={hpDamageTaken}
+                  tempHp={tempHp}
+                  nonlethalDamage={nonlethalDamage}
+                  constitutionScore={sheet.abilities.con.score}
+                  stable={stable}
+                  deathRules={deathRules}
+                  fightOnSource={fightOnSource}
+                  diehardActive={diehardActive}
+                  ferocityUsed={ferocityUsed}
+                  onApplyDamage={(amount, damageType) =>
+                    onApplyDamage?.(amount, damageType)
+                  }
+                  onApplyHealing={(amount) => onApplyHealing?.(amount)}
+                  onApplyHpLoss={(amount) => onApplyHpLoss?.(amount)}
+                  onSetTempHp={(amount) => onSetTempHp?.(amount)}
+                  onApplyNonlethal={(amount) => onApplyNonlethal?.(amount)}
+                  onHealNonlethal={(amount) => onHealNonlethal?.(amount)}
+                  onSetStable={(value) => onSetStable?.(value)}
+                  onSetDiehardActive={(value) => onSetDiehardActive?.(value)}
+                  onSetFerocityActive={(value) => onSetFerocityActive?.(value)}
+                  onSetFerocityUsed={(value) => onSetFerocityUsed?.(value)}
+                  onReset={() => onResetHp?.()}
+                />
+              </div>
+            </details>
           </section>
 
-          <section className="panel paper-panel">
+          <section className="panel paper-panel sheet-combat-panel">
             <h2>Combat & Movement</h2>
             <div className="sheet-stat-grid sheet-stat-grid-compact paper-sheet-combat-grid">
               <div className="stat-card">
@@ -786,29 +808,15 @@ export function Sheet({
                   <span className="summary-value">
                     {sign(sheet.initiative.total)}
                   </span>
-                  <label className="sheet-roll-entry">
-                    <span>Roll</span>
-                    <input
-                      type="number"
-                      inputMode="numeric"
-                      placeholder="d20"
-                      value={initiativeRollDraft}
-                      onChange={(event) =>
-                        setInitiativeRollDraft(event.target.value)
-                      }
-                    />
-                  </label>
-                  <span className="sheet-roll-total">
-                    {checkTotal(initiativeRollDraft, sheet.initiative.total) ===
-                    undefined
-                      ? "—"
-                      : sign(
-                          checkTotal(
-                            initiativeRollDraft,
-                            sheet.initiative.total,
-                          ) ?? 0,
-                        )}
-                  </span>
+                  <CompactRollControl
+                    label="Initiative"
+                    value={initiativeRollDraft}
+                    onChange={setInitiativeRollDraft}
+                    total={checkTotal(
+                      initiativeRollDraft,
+                      sheet.initiative.total,
+                    )}
+                  />
                 </div>
               </Tooltip>
               <Tooltip
@@ -824,7 +832,7 @@ export function Sheet({
                 content={statTooltip(sheet.attack.melee)}
                 className="mf-tooltip-anchor-block"
               >
-                <div className="stat-card">
+                <div className="stat-card combat-secondary-stat">
                   <span className="summary-label">Melee</span>
                   <span className="summary-value">
                     {sign(sheet.attack.melee.total)}
@@ -835,7 +843,7 @@ export function Sheet({
                 content={statTooltip(sheet.attack.ranged)}
                 className="mf-tooltip-anchor-block"
               >
-                <div className="stat-card">
+                <div className="stat-card combat-secondary-stat">
                   <span className="summary-label">Ranged</span>
                   <span className="summary-value">
                     {sign(sheet.attack.ranged.total)}
@@ -849,21 +857,12 @@ export function Sheet({
                 <div className="stat-card">
                   <span className="summary-label">CMB</span>
                   <span className="summary-value">{sign(sheet.cmb.total)}</span>
-                  <label className="sheet-roll-entry">
-                    <span>Roll</span>
-                    <input
-                      type="number"
-                      inputMode="numeric"
-                      placeholder="d20"
-                      value={cmbRollDraft}
-                      onChange={(event) => setCmbRollDraft(event.target.value)}
-                    />
-                  </label>
-                  <span className="sheet-roll-total">
-                    {checkTotal(cmbRollDraft, sheet.cmb.total) === undefined
-                      ? "—"
-                      : sign(checkTotal(cmbRollDraft, sheet.cmb.total) ?? 0)}
-                  </span>
+                  <CompactRollControl
+                    label="CMB"
+                    value={cmbRollDraft}
+                    onChange={setCmbRollDraft}
+                    total={checkTotal(cmbRollDraft, sheet.cmb.total)}
+                  />
                 </div>
               </Tooltip>
               <Tooltip
@@ -879,7 +878,7 @@ export function Sheet({
                 content={encumbranceTooltip(sheet.encumbrance)}
                 className="mf-tooltip-anchor-block"
               >
-                <div className="stat-card">
+                <div className="stat-card combat-secondary-stat">
                   <span className="summary-label">Encumbrance</span>
                   <span className="summary-value smallcaps">
                     {encumbranceLabel(sheet.encumbrance)}
@@ -962,7 +961,7 @@ export function Sheet({
       </div>
 
       {sheet.weapons.length > 0 ? (
-        <section className="panel paper-panel">
+        <section className="panel paper-panel sheet-weapons-panel">
           <div className="editor-section-head tight">
             <h2>Weapons</h2>
             {Object.keys(sheet.rangedCombat.ammoByType).length > 0 &&
@@ -1364,8 +1363,17 @@ export function Sheet({
       ) : null}
 
       <div className="sheet-sections sheet-sections-wide-right">
-        <section className="panel paper-panel">
-          <h2>Skills</h2>
+        <section className="panel paper-panel sheet-skills-panel">
+          <div className="sheet-section-heading">
+            <h2>Skills</h2>
+            <span>Choose Roll to make a check</span>
+          </div>
+          <div className="skill-table-heading" aria-hidden="true">
+            <span>Skill</span>
+            <span>Ability</span>
+            <span>Total</span>
+            <span />
+          </div>
           <div className="skills single-column-skills paper-skill-grid">
             {rankedSkills.map((skill) => {
               const definition = SKILL_DEFINITION_BY_KEY.get(skill.key);
@@ -1405,30 +1413,20 @@ export function Sheet({
                   >
                     <span className="skill-value">{sign(skill.total)}</span>
                   </Tooltip>
-                  <label className="sheet-roll-entry skill-roll-entry-inline">
-                    <input
-                      type="number"
-                      inputMode="numeric"
-                      placeholder="d20"
-                      aria-label={`${skill.name} d20 roll`}
-                      value={skillRollDrafts[skill.key] ?? ""}
-                      onChange={(event) =>
-                        setSkillRollDrafts((prev) => ({
-                          ...prev,
-                          [skill.key]: event.target.value,
-                        }))
-                      }
-                    />
-                  </label>
-                  <span className="sheet-roll-total">
-                    {checkTotal(skillRollDrafts[skill.key], skill.total) ===
-                    undefined
-                      ? "—"
-                      : sign(
-                          checkTotal(skillRollDrafts[skill.key], skill.total) ??
-                            0,
-                        )}
+                  <span className="skill-ability-key">
+                    {skill.ability.toUpperCase()}
                   </span>
+                  <CompactRollControl
+                    label={skill.name}
+                    value={skillRollDrafts[skill.key] ?? ""}
+                    onChange={(value) =>
+                      setSkillRollDrafts((prev) => ({
+                        ...prev,
+                        [skill.key]: value,
+                      }))
+                    }
+                    total={checkTotal(skillRollDrafts[skill.key], skill.total)}
+                  />
                 </div>
               );
             })}
@@ -1440,7 +1438,7 @@ export function Sheet({
           feats.length > 0 ||
           displayedFeatures.length > 0 ||
           suppressedFeatures.length > 0 ? (
-            <section className="panel paper-panel">
+            <section className="panel paper-panel sheet-reference-panel">
               <h2>Feats & Special Abilities</h2>
               <div className="acquisitions">
                 {archetypes.map((a, i) => (
@@ -1475,7 +1473,7 @@ export function Sheet({
             </section>
           ) : null}
 
-          <section className="panel paper-panel">
+          <section className="panel paper-panel sheet-inventory-panel">
             <h2>Inventory</h2>
             <div className="sheet-stat-grid sheet-stat-grid-compact">
               <div className="stat-card">

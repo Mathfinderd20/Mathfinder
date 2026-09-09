@@ -5,6 +5,580 @@
   padding-inline: 4%;
 }
 
+/* Character tab: mirror the approved dense Pathfinder layout. The derived
+   values and controls still come from Sheet; these rules only change their
+   visual hierarchy and presentation. */
+.character-workspace-main .paper-sheet {
+  display: grid;
+  grid-template-columns: minmax(590px, 1.65fr) minmax(260px, 0.7fr);
+  align-items: start;
+  gap: 10px 12px;
+}
+
+.character-workspace-main .sheet-top-grid,
+.character-workspace-main .sheet-top-grid > .sheet-stack,
+.character-workspace-main .sheet-sections,
+.character-workspace-main .sheet-sections > .sheet-stack {
+  display: contents;
+}
+
+.character-workspace-main .paper-panel {
+  overflow: visible;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: linear-gradient(
+    145deg,
+    rgba(31, 36, 38, 0.98),
+    rgba(24, 29, 31, 0.98)
+  );
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+.character-workspace-main .paper-panel > h2,
+.character-workspace-main .paper-panel > .sheet-section-heading,
+.character-workspace-main .sheet-weapons-panel > .editor-section-head {
+  min-height: 42px;
+  margin: 0;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.character-workspace-main .paper-panel > h2,
+.character-workspace-main .paper-panel > .sheet-section-heading h2,
+.character-workspace-main .sheet-weapons-panel .editor-section-head h2 {
+  color: var(--accent-2);
+  font:
+    700 12px "Segoe UI",
+    sans-serif;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+
+.character-workspace-main .paper-panel > h2 {
+  display: flex;
+  align-items: center;
+}
+
+.character-workspace-main .sheet-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.character-workspace-main .sheet-section-heading h2 {
+  margin: 0;
+}
+
+.character-workspace-main .sheet-section-heading span {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.character-workspace-main .paper-abilities {
+  grid-column: 1;
+  grid-row: 1;
+  gap: 0;
+}
+
+.character-workspace-main .sheet-defense-panel {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.character-workspace-main .sheet-combat-panel {
+  grid-column: 1;
+  grid-row: 3;
+}
+
+.character-workspace-main .sheet-weapons-panel {
+  grid-column: 1;
+  grid-row: 4;
+}
+
+.character-workspace-main .sheet-reference-panel {
+  grid-column: 1;
+  grid-row: 5;
+}
+
+.character-workspace-main .sheet-inventory-panel {
+  grid-column: 1;
+  grid-row: 6;
+  display: none;
+}
+
+.character-workspace-main .sheet-skills-panel {
+  position: sticky;
+  top: 66px;
+  grid-column: 2;
+  grid-row: 1 / span 6;
+  overflow: visible;
+}
+
+.character-workspace-main .paper-abilities > .hint {
+  margin: 0;
+  padding: 5px 10px;
+  border-bottom: 1px solid rgba(59, 61, 59, 0.65);
+  font-size: 10px;
+}
+
+.character-workspace-main .abilities-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 1px;
+  padding: 1px;
+  background: var(--line);
+}
+
+.character-workspace-main .ability {
+  min-height: 54px;
+  grid-template-columns: auto 1fr auto;
+  align-items: baseline;
+  gap: 4px;
+  padding: 8px 6px;
+  border: 0;
+  border-radius: 0;
+  background: #191d1f;
+}
+
+.character-workspace-main .ability-key {
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+.character-workspace-main .ability-score {
+  color: var(--ink);
+  text-align: center;
+  font:
+    24px Georgia,
+    serif;
+}
+
+.character-workspace-main .ability-mod {
+  color: var(--accent-2);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.character-workspace-main .sheet-ac-grid {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 6px;
+  padding: 8px;
+}
+
+.character-workspace-main .sheet-ac-grid > .mf-tooltip:has(.sheet-hp-summary) {
+  display: none;
+}
+
+.character-workspace-main .summary-box,
+.character-workspace-main .stat-card {
+  position: relative;
+  min-height: 60px;
+  align-content: center;
+  align-items: start;
+  justify-content: center;
+  gap: 2px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.12);
+}
+
+.character-workspace-main .ac-primary {
+  grid-column: auto;
+}
+
+.character-workspace-main .summary-label {
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.character-workspace-main .summary-value {
+  color: var(--ink);
+  font:
+    23px Georgia,
+    serif;
+}
+
+.character-workspace-main .stat-helper,
+.character-workspace-main .sheet-roll-popover > summary {
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.character-workspace-main .stat-helper {
+  position: absolute;
+  right: 9px;
+  bottom: 7px;
+}
+
+.sheet-roll-popover {
+  position: absolute;
+  right: 8px;
+  bottom: 6px;
+  z-index: 8;
+}
+
+.sheet-roll-popover > summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+.sheet-roll-popover > summary::-webkit-details-marker {
+  display: none;
+}
+
+.sheet-roll-popover-body {
+  position: absolute;
+  top: calc(100% + 7px);
+  right: 0;
+  z-index: 20;
+  display: grid;
+  width: 190px;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid rgba(217, 183, 125, 0.5);
+  border-radius: 5px;
+  background: #171a1b;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.42);
+}
+
+.sheet-roll-popover-body label {
+  display: grid;
+  grid-template-columns: 1fr 70px;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.sheet-roll-popover-body input {
+  min-width: 0;
+  padding: 5px 7px;
+}
+
+.sheet-roll-popover-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.sheet-roll-popover-total strong {
+  color: var(--accent-2);
+  font:
+    18px Georgia,
+    serif;
+}
+
+.health-manager-details {
+  position: relative;
+  border-top: 1px solid var(--line);
+  background: rgba(0, 0, 0, 0.09);
+}
+
+.health-inline-summary {
+  display: grid;
+  grid-template-columns: auto minmax(100px, 1fr) auto auto auto auto;
+  align-items: center;
+  gap: 9px;
+  min-height: 48px;
+  padding: 7px 10px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.health-inline-summary::-webkit-details-marker {
+  display: none;
+}
+
+.health-inline-value {
+  white-space: nowrap;
+  font-size: 13px;
+}
+
+.health-inline-value strong {
+  font:
+    24px Georgia,
+    serif;
+}
+
+.health-inline-meter {
+  overflow: hidden;
+  height: 8px;
+  border-radius: 99px;
+  background: #0d1011;
+}
+
+.health-inline-meter i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #78985f, #acc98d);
+}
+
+.health-inline-stat,
+.health-inline-status {
+  color: var(--muted);
+  white-space: nowrap;
+  font-size: 11px;
+}
+
+.health-inline-stat strong {
+  color: var(--ink);
+}
+
+.health-inline-action {
+  padding: 6px 9px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  color: var(--accent-2);
+  white-space: nowrap;
+  font-size: 12px;
+}
+
+.health-manager-details[open] .health-inline-action::before {
+  content: "Close ";
+}
+
+.health-manager-body {
+  padding: 0 8px 8px;
+}
+
+.health-manager-body .health-tracker {
+  margin: 0;
+  border-radius: 5px;
+}
+
+.character-workspace-main .paper-sheet-combat-grid {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+  padding: 8px;
+}
+
+.character-workspace-main .paper-sheet-combat-grid > * {
+  order: 1;
+  min-width: 0;
+}
+
+.character-workspace-main
+  .paper-sheet-combat-grid
+  > .mf-tooltip:has(.combat-secondary-stat) {
+  order: 2;
+}
+
+.character-workspace-main .combat-secondary-stat {
+  min-height: 46px;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.character-workspace-main .combat-secondary-stat .summary-value {
+  font-size: 18px;
+}
+
+.character-workspace-main .race-travel-grid,
+.character-workspace-main .sheet-combat-panel > .equipment-details {
+  margin: 0 8px 8px;
+}
+
+.character-workspace-main .sheet-weapons-panel > .editor-section-head {
+  display: flex;
+  align-items: center;
+}
+
+.character-workspace-main .sheet-weapons-panel .weapons {
+  display: grid;
+  gap: 0;
+}
+
+.character-workspace-main .sheet-weapons-panel .weapon {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.65fr) minmax(0, 2.35fr);
+  align-items: start;
+  gap: 8px;
+  min-height: 44px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.character-workspace-main .sheet-weapons-panel .weapon:last-child {
+  border-bottom: 0;
+}
+
+.character-workspace-main .weapon-name {
+  padding-top: 3px;
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.character-workspace-main .weapon-stats {
+  gap: 6px 10px;
+  font-size: 12px;
+}
+
+.character-workspace-main .weapon-atk,
+.character-workspace-main .weapon-dmg,
+.character-workspace-main .weapon-crit {
+  min-width: 0;
+  text-align: left;
+}
+
+.character-workspace-main .sheet-reference-panel .acquisitions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  padding: 8px;
+}
+
+.character-workspace-main .sheet-reference-panel .chip {
+  min-width: 0;
+  justify-content: space-between;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.12);
+}
+
+.skill-table-heading,
+.character-workspace-main .paper-skill-grid .skill {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 34px 38px 34px;
+  align-items: center;
+  gap: 4px;
+}
+
+.skill-table-heading {
+  padding: 7px 10px;
+  color: var(--muted);
+  background: rgba(0, 0, 0, 0.14);
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.character-workspace-main .paper-skill-grid {
+  display: grid;
+  gap: 0;
+}
+
+.character-workspace-main .paper-skill-grid .skill {
+  position: relative;
+  min-height: 34px;
+  padding: 6px 10px;
+  border: 0;
+  border-top: 1px solid rgba(59, 64, 63, 0.8);
+  font-size: 13px;
+}
+
+.character-workspace-main .paper-skill-grid .skill-name-tooltip {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.character-workspace-main .paper-skill-grid .skill-name-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  overflow-wrap: normal;
+  white-space: nowrap;
+}
+
+.character-workspace-main .paper-skill-grid .skill-flags {
+  gap: 2px;
+}
+
+.character-workspace-main .paper-skill-grid .skill-flag {
+  min-width: 16px;
+  padding-inline: 2px;
+}
+
+.character-workspace-main .paper-skill-grid .skill-flag.muted {
+  display: none;
+}
+
+.character-workspace-main .paper-skill-grid .skill-ability-key {
+  grid-column: 2;
+  grid-row: 1;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.character-workspace-main .paper-skill-grid .skill-value-tooltip {
+  grid-column: 3;
+  grid-row: 1;
+  justify-self: start;
+}
+
+.character-workspace-main .paper-skill-grid .skill-value {
+  color: var(--accent-2);
+  font:
+    17px Georgia,
+    serif;
+}
+
+.character-workspace-main .paper-skill-grid .sheet-roll-popover {
+  position: relative;
+  right: auto;
+  bottom: auto;
+  grid-column: 4;
+  grid-row: 1;
+  justify-self: start;
+}
+
+.character-workspace-main .paper-skill-grid .sheet-roll-popover-body {
+  top: calc(100% + 8px);
+}
+
+.character-workspace-main .sheet-inventory-panel > .sheet-stat-grid,
+.character-workspace-main .sheet-inventory-panel > .hint,
+.character-workspace-main .sheet-inventory-panel > .inventory-list {
+  margin: 0;
+  padding: 8px;
+}
+
+@media (max-width: 1260px) {
+  .character-workspace-main .paper-sheet {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .character-workspace-main .paper-abilities,
+  .character-workspace-main .sheet-defense-panel,
+  .character-workspace-main .sheet-combat-panel,
+  .character-workspace-main .sheet-weapons-panel,
+  .character-workspace-main .sheet-reference-panel,
+  .character-workspace-main .sheet-inventory-panel,
+  .character-workspace-main .sheet-skills-panel {
+    position: static;
+    grid-column: 1;
+    grid-row: auto;
+  }
+}
+
+@media (max-width: 780px) {
+  .character-workspace-main .abilities-grid,
+  .character-workspace-main .sheet-ac-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .character-workspace-main .paper-sheet-combat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .health-inline-summary {
+    grid-template-columns: auto 1fr auto;
+  }
+
+  .health-inline-stat,
+  .health-inline-status {
+    display: none;
+  }
+}
+
 .inventory-panel {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 310px;
