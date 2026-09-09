@@ -15,6 +15,7 @@ RUN --mount=type=cache,target=/root/.npm npm ci --include=dev \
     --workspace @mathfinder/rules-engine --include-workspace-root=false
 
 COPY tsconfig.base.json ./
+COPY scripts/split-runtime-content.mjs scripts/split-runtime-content.mjs
 COPY apps/web/ apps/web/
 COPY packages/rules-data/ packages/rules-data/
 COPY packages/rules-engine/ packages/rules-engine/
