@@ -9,6 +9,7 @@ import {
   reduceRuntimeState,
   type AttackOutcome,
   type RuntimeAction,
+  type WeaponAttackRolls,
 } from "@mathfinder/rules-engine";
 import { createAppRuntimeState, loadAppRuntimeState } from "./runtimeState";
 import { LOCAL_DATA_CHANGED_EVENT } from "./features/characters/characterRepository";
@@ -148,9 +149,11 @@ export function useRuntimeState(storageKey: string) {
         ammoType?: string,
         ammoSpentForAttack?: number,
         ammoEntries?: Array<{ ammoType: string; amount: number }>,
+        rolls?: WeaponAttackRolls,
       ) =>
         dispatch({
           type: "record-weapon-attack",
+          rolls,
           weaponKey,
           weaponName,
           ammoType,

@@ -33,7 +33,16 @@ export interface AmmoUsageEntry {
   amount: number;
 }
 
+export interface WeaponAttackRolls {
+  attackRoll?: number;
+  attackTotal?: number;
+  damageRoll?: number;
+  damageTotal?: number;
+  criticalMultiplier?: number;
+}
+
 export interface WeaponAttackRecord extends RuntimeHistoryRecord {
+  rolls?: WeaponAttackRolls;
   kind: "attack";
   ammoType?: string;
   ammoSpent?: number;
@@ -45,6 +54,7 @@ export interface WeaponAttackRecord extends RuntimeHistoryRecord {
 export type WeaponAttackHistory = Record<string, WeaponAttackRecord[]>;
 
 export interface CombatEventRecord extends RuntimeEventRecord {
+  rolls?: WeaponAttackRolls;
   kind:
     | "attack"
     | "undo-attack"
@@ -117,6 +127,7 @@ export type RuntimeAction =
   | { type: "reset-ammo"; ammoType?: string }
   | {
       type: "record-weapon-attack";
+      rolls?: WeaponAttackRolls;
       weaponKey: string;
       weaponName: string;
       ammoType?: string;
@@ -259,6 +270,7 @@ export function resetLedger(ledger: Record<string, number>, key?: string) {
 }
 
 export function recordWeaponAttack(args: {
+  rolls?: WeaponAttackRolls;
   history: WeaponAttackHistory;
   events: CombatEventRecord[];
   ammoLedger: Record<string, number>;
@@ -296,6 +308,7 @@ export function recordWeaponAttack(args: {
     args.ammoLedger,
   );
   const attack: WeaponAttackRecord = {
+    ...(args.rolls ? { rolls: { ...args.rolls } } : {}),
     id: attackId,
     at: attackedAt,
     kind: "attack",
@@ -319,6 +332,7 @@ export function recordWeaponAttack(args: {
       {
         kind: "attack",
         attackId,
+        ...(args.rolls ? { rolls: { ...args.rolls } } : {}),
         weaponName: args.weaponName,
         ammoType: normalizedAmmoType,
         ammoDelta: normalizedAmmoEntries.reduce(
@@ -793,6 +807,7 @@ export function reduceRuntimeState(
         ammoType: action.ammoType,
         ammoSpentForAttack: action.ammoSpentForAttack,
         ammoEntries: action.ammoEntries,
+        rolls: action.rolls,
         eventHistoryLimit,
       });
       let nextState: RuntimeStateSnapshot = {

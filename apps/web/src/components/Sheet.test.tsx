@@ -73,6 +73,9 @@ describe("Character tab layout", () => {
     const html = renderSheet();
     expect(html).toContain("No weapons recorded.");
     expect(html).toContain('aria-label="Collapse Weapons"');
+    expect(html).toContain(
+      'aria-label="Collapse Feats &amp; Special Abilities"',
+    );
   });
   it("keeps Disabled and strenuous action outside the persistent health manager", () => {
     const html = renderSheet(0);

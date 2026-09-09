@@ -9,6 +9,7 @@ import {
   type DeathRules,
   type DerivedStat,
   type InventoryEquipmentSlot,
+  type WeaponAttackRolls,
 } from "@mathfinder/rules-engine";
 import {
   shouldDisplaySheetSkill,
@@ -44,6 +45,7 @@ import {
 import { Tooltip, TooltipTriggerContext } from "./Tooltip";
 import { useCharacterUiState } from "../features/characters/CharacterUiSession";
 import { CharacterDialog } from "./CharacterDialog";
+import { weaponAttackResults } from "../weaponAttackResults";
 
 const SKILL_DEFINITION_BY_KEY = new Map(
   SKILL_DEFINITIONS.map((skill) => [skill.key, skill] as const),
@@ -450,6 +452,7 @@ export function Sheet({
     ammoSpent?: number,
     attackNote?: string,
     ammoEntries?: Array<{ ammoType: string; amount: number }>,
+    rolls?: WeaponAttackRolls,
   ) => void;
   onSetWeaponLoadedAmmo?: (
     sourceKind: "race" | "equipment" | "build" | undefined,
@@ -510,6 +513,11 @@ export function Sheet({
   const [weaponsOpen, setWeaponsOpen] = useCharacterUiState(
     characterId,
     "weapons-open",
+    true,
+  );
+  const [referenceOpen, setReferenceOpen] = useCharacterUiState(
+    characterId,
+    "reference-open",
     true,
   );
   const rankedSkills = Object.values(sheet.skills)
@@ -1314,6 +1322,13 @@ export function Sheet({
                                         w.ammoPerAttack ?? 1,
                                         weaponAttackNote(w),
                                         w.ammoConsumptions,
+                                        weaponAttackResults(
+                                          attackRollDrafts[runtimeKey],
+                                          damageRollDrafts[runtimeKey],
+                                          w.attack.total,
+                                          w.damageBonus,
+                                          critMultiplier(w.crit),
+                                        ),
                                       )
                                     }
                                   >
@@ -1581,93 +1596,113 @@ export function Sheet({
           <div className="sheet-sections sheet-sections-wide-right">
             <div className="sheet-stack">
               <section className="panel paper-panel sheet-reference-panel">
-                <h2>Feats &amp; Special Abilities</h2>
-                <details className="sheet-reference-group" open>
-                  <summary>
-                    Feats <span>{feats.length}</span>
-                  </summary>
-                  <div className="acquisitions">
-                    {feats.map((f, i) => (
-                      <Tooltip key={i} content={featTitle(f.name)}>
-                        <span className="chip">
-                          {f.name}
-                          <span className="chip-lvl">L{f.level}</span>
-                        </span>
-                      </Tooltip>
-                    ))}
-                  </div>
-                  {!feats.length ? (
-                    <p className="hint">No feats recorded.</p>
-                  ) : null}
-                </details>
-                <details className="sheet-reference-group" open>
-                  <summary>
-                    Traits{" "}
-                    <span>
-                      {raceNotes.traits.length +
-                        campaignTraits.filter(Boolean).length}
-                    </span>
-                  </summary>
-                  <div className="sheet-reference-notes">
-                    {raceNotes.traits.map((note, i) => (
-                      <span key={i}>{note}</span>
-                    ))}
-                    {campaignTraits.filter(Boolean).map((trait, i) => (
-                      <span key={`campaign-${i}`}>
-                        {trait}
-                        <small> Campaign trait</small>
-                      </span>
-                    ))}
-                  </div>
-                  {!raceNotes.traits.length &&
-                  !campaignTraits.filter(Boolean).length ? (
-                    <p className="hint">No traits recorded.</p>
-                  ) : null}
-                </details>
-                <details className="sheet-reference-group" open>
-                  <summary>
-                    Special Abilities{" "}
-                    <span>{displayedFeatures.length + archetypes.length}</span>
-                  </summary>
-                  <div className="acquisitions">
-                    {[...archetypes, ...displayedFeatures].map((f, i) => (
-                      <Tooltip key={i} content={featTitle(f.name)}>
-                        <span className="chip feature">
-                          {f.name}
-                          <span className="chip-lvl">L{f.level}</span>
-                        </span>
-                      </Tooltip>
-                    ))}
-                    {suppressedFeatures.map((f, i) => (
-                      <Tooltip key={`sup-${i}`} content={f.reason}>
-                        <span className="chip suppressed">
-                          {f.name}
-                          <span className="chip-lvl">Suppressed</span>
-                        </span>
-                      </Tooltip>
-                    ))}
-                  </div>
-                  {!displayedFeatures.length && !archetypes.length ? (
-                    <p className="hint">No special abilities recorded.</p>
-                  ) : null}
-                </details>
-                <div className="sheet-language-reference">
-                  <h3>Languages &amp; Senses</h3>
-                  <div className="sheet-reference-notes">
-                    {sheet.raceMetadata?.senses?.darkvisionFeet ? (
+                <div className="sheet-panel-heading">
+                  <h2>Feats &amp; Special Abilities</h2>
+                  <button
+                    type="button"
+                    className="ghost small"
+                    aria-label={
+                      referenceOpen
+                        ? "Collapse Feats & Special Abilities"
+                        : "Expand Feats & Special Abilities"
+                    }
+                    aria-expanded={referenceOpen}
+                    onClick={() => setReferenceOpen((open) => !open)}
+                  >
+                    {referenceOpen ? "−" : "+"}
+                  </button>
+                </div>
+                <div hidden={!referenceOpen}>
+                  <details className="sheet-reference-group" open>
+                    <summary>
+                      Feats <span>{feats.length}</span>
+                    </summary>
+                    <div className="acquisitions">
+                      {feats.map((f, i) => (
+                        <Tooltip key={i} content={featTitle(f.name)}>
+                          <span className="chip">
+                            {f.name}
+                            <span className="chip-lvl">L{f.level}</span>
+                          </span>
+                        </Tooltip>
+                      ))}
+                    </div>
+                    {!feats.length ? (
+                      <p className="hint">No feats recorded.</p>
+                    ) : null}
+                  </details>
+                  <details className="sheet-reference-group" open>
+                    <summary>
+                      Traits{" "}
                       <span>
-                        Darkvision {sheet.raceMetadata.senses.darkvisionFeet} ft
+                        {raceNotes.traits.length +
+                          campaignTraits.filter(Boolean).length}
                       </span>
+                    </summary>
+                    <div className="sheet-reference-notes">
+                      {raceNotes.traits.map((note, i) => (
+                        <span key={i}>{note}</span>
+                      ))}
+                      {campaignTraits.filter(Boolean).map((trait, i) => (
+                        <span key={`campaign-${i}`}>
+                          {trait}
+                          <small> Campaign trait</small>
+                        </span>
+                      ))}
+                    </div>
+                    {!raceNotes.traits.length &&
+                    !campaignTraits.filter(Boolean).length ? (
+                      <p className="hint">No traits recorded.</p>
                     ) : null}
-                    {sheet.raceMetadata?.senses?.lowLightVision ? (
-                      <span>Low-light vision</span>
+                  </details>
+                  <details className="sheet-reference-group" open>
+                    <summary>
+                      Special Abilities{" "}
+                      <span>
+                        {displayedFeatures.length + archetypes.length}
+                      </span>
+                    </summary>
+                    <div className="acquisitions">
+                      {[...archetypes, ...displayedFeatures].map((f, i) => (
+                        <Tooltip key={i} content={featTitle(f.name)}>
+                          <span className="chip feature">
+                            {f.name}
+                            <span className="chip-lvl">L{f.level}</span>
+                          </span>
+                        </Tooltip>
+                      ))}
+                      {suppressedFeatures.map((f, i) => (
+                        <Tooltip key={`sup-${i}`} content={f.reason}>
+                          <span className="chip suppressed">
+                            {f.name}
+                            <span className="chip-lvl">Suppressed</span>
+                          </span>
+                        </Tooltip>
+                      ))}
+                    </div>
+                    {!displayedFeatures.length && !archetypes.length ? (
+                      <p className="hint">No special abilities recorded.</p>
                     ) : null}
-                    {raceNotes.languagesAndSenses.map((note, i) => (
-                      <span key={i}>{note}</span>
-                    ))}
-                    {!raceNotes.languagesAndSenses.length ? (
-                      <span className="hint">Languages not recorded</span>
-                    ) : null}
+                  </details>
+                  <div className="sheet-language-reference">
+                    <h3>Languages &amp; Senses</h3>
+                    <div className="sheet-reference-notes">
+                      {sheet.raceMetadata?.senses?.darkvisionFeet ? (
+                        <span>
+                          Darkvision {sheet.raceMetadata.senses.darkvisionFeet}{" "}
+                          ft
+                        </span>
+                      ) : null}
+                      {sheet.raceMetadata?.senses?.lowLightVision ? (
+                        <span>Low-light vision</span>
+                      ) : null}
+                      {raceNotes.languagesAndSenses.map((note, i) => (
+                        <span key={i}>{note}</span>
+                      ))}
+                      {!raceNotes.languagesAndSenses.length ? (
+                        <span className="hint">Languages not recorded</span>
+                      ) : null}
+                    </div>
                   </div>
                 </div>
               </section>

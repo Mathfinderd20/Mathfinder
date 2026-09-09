@@ -1901,8 +1901,8 @@
   width: 100%;
   margin-bottom: 12px;
 }
-.runtime-rail-section > summary {
-  justify-content: initial;
+.app .runtime-rail-section > summary {
+  justify-content: flex-start;
   gap: 8px;
   font-size: 11px;
   letter-spacing: 0.1em;
@@ -2544,7 +2544,8 @@
   font-size: 11px;
 }
 
-.character-workspace-main .sheet-weapons-panel > div[hidden] {
+.character-workspace-main .sheet-weapons-panel > div[hidden],
+.character-workspace-main .sheet-reference-panel > div[hidden] {
   display: none;
 }
 .sheet-weapons-panel > div:not(.sheet-panel-heading) {
