@@ -32,6 +32,11 @@ the appropriate command before changing a hosted deployment. The normal
 promotion path is `feature/*` → `stage` → `main`; merge production hotfixes back
 into `stage` promptly.
 
+The staging custom domain is declared in `wrangler.jsonc`. A staging deployment
+creates and maintains Cloudflare's synthetic Worker DNS record for
+`stage.diresheets.com`; do not add a separate A, AAAA, or CNAME record for that
+hostname.
+
 ## 1. Prepare a focused branch
 
 Start from a clean, current `main`:

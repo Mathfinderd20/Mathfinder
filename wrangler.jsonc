@@ -11,6 +11,12 @@
   "env": {
     "stage": {
       "name": "mathfinder-stage",
+      "routes": [
+        {
+          "pattern": "stage.diresheets.com",
+          "custom_domain": true,
+        },
+      ],
     },
   },
 }
