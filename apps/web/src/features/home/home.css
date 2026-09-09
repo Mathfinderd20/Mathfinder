@@ -359,11 +359,6 @@
     border-color 140ms ease;
 }
 
-.button-link:hover {
-  border-color: var(--home-gold, #e2ad6f);
-  background: var(--home-gold, #e2ad6f);
-}
-
 .button-link.secondary {
   border-color: var(--home-line, rgba(217, 154, 91, 0.2));
   color: var(--home-ink, #f3e9dd);
@@ -706,12 +701,6 @@
   color: #24231f;
   background: var(--home-gold);
   font-weight: 650;
-}
-
-.button-link:hover {
-  border-color: #efd09c;
-  color: #24231f;
-  background: #efd09c;
 }
 
 .button-link.secondary {

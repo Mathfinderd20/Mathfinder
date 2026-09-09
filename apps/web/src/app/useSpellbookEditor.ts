@@ -3,6 +3,47 @@ import type { CharacterBuild } from "@mathfinder/rules-engine";
 
 type SpellSelectionMode = "prepared" | "known";
 
+/** One state update keeps multi-copy preparations atomic, including batched clicks. */
+export function appendSelectionToBuild(
+  previous: CharacterBuild,
+  classKey: string,
+  mode: SpellSelectionMode,
+  level: number,
+  spellName: string,
+  copies = 1,
+): CharacterBuild {
+  const name = spellName.trim();
+  if (!name || !Number.isFinite(copies) || copies < 1) return previous;
+  const selections = previous.spellSelections ?? {};
+  const source = selections[classKey] ?? {};
+  const byLevel = source[mode] ?? {};
+  const current = byLevel[level] ?? [];
+  if (
+    mode === "known" &&
+    current.some((value) => value.toLowerCase() === name.toLowerCase())
+  )
+    return previous;
+  return {
+    ...previous,
+    spellSelections: {
+      ...selections,
+      [classKey]: {
+        ...source,
+        [mode]: {
+          ...byLevel,
+          [level]: [
+            ...current,
+            ...Array.from(
+              { length: mode === "known" ? 1 : Math.floor(copies) },
+              () => name,
+            ),
+          ],
+        },
+      },
+    },
+  };
+}
+
 export function useSpellbookEditor(
   build: CharacterBuild,
   setBuild: Dispatch<SetStateAction<CharacterBuild>>,
@@ -88,12 +129,18 @@ export function useSpellbookEditor(
     mode: SpellSelectionMode,
     level: number,
     spellName: string,
+    copies = 1,
   ) {
-    const trimmed = spellName.trim();
-    if (!trimmed) return;
-    const current = build.spellSelections?.[classKey]?.[mode]?.[level] ?? [];
-    if (mode === "known" && current.includes(trimmed)) return;
-    updateSpellSelections(classKey, mode, level, [...current, trimmed]);
+    setBuild((previous) =>
+      appendSelectionToBuild(
+        previous,
+        classKey,
+        mode,
+        level,
+        spellName,
+        copies,
+      ),
+    );
   }
 
   function resetSpellSelectionsForClass(

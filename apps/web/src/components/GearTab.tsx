@@ -4,6 +4,7 @@ import {
   type CharacterBuild,
   type MagicItemDefinition,
   type WeaponDefinition,
+  type DerivedSheet,
 } from "@mathfinder/rules-engine";
 import { useMemo, useState, type ReactNode } from "react";
 import { CompendiumPicker, type CompendiumOption } from "./CompendiumPicker";
@@ -41,6 +42,10 @@ import {
   type WeaponAvailabilityFilter,
 } from "../weaponUx";
 import { compatibleAmmoEntries } from "../ammoCatalog";
+import {
+  InventoryWorkspace,
+  type InventoryEditTarget,
+} from "./InventoryWorkspace";
 
 interface EquipmentArmorEditorState {
   category: "none" | "light" | "medium" | "heavy";
@@ -98,7 +103,9 @@ const COMPONENT_CATEGORY_OPTIONS = [
   "kit",
 ] as const;
 
-interface Props {
+export interface GearTabProps {
+  characterId?: string;
+  sheet?: DerivedSheet;
   build: CharacterBuild;
   onUpdateCarriedWeight: (raw: string) => void;
   onUpdateCoinPurse: (
@@ -150,7 +157,35 @@ interface Props {
   onRemoveEquipment: (index: number) => void;
 }
 
+type Props = GearTabProps;
 export function GearTab(props: Props) {
+  return (
+    <InventoryWorkspace
+      {...props}
+      renderEditor={(target, close) => (
+        <InventoryEditor
+          {...props}
+          target={target}
+          onRemoveEquipment={(index) => {
+            props.onRemoveEquipment(index);
+            close();
+          }}
+          onSellEquipment={(index, quantity = 1) => {
+            props.onSellEquipment(index, quantity);
+            if (quantity >= (props.build.equipment?.[index]?.quantity ?? 1))
+              close();
+          }}
+          onRemoveWeapon={(index) => {
+            props.onRemoveWeapon(index);
+            close();
+          }}
+        />
+      )}
+    />
+  );
+}
+
+function InventoryEditor(props: Props & { target: InventoryEditTarget }) {
   const {
     build,
     weaponOptions,
@@ -374,11 +409,19 @@ export function GearTab(props: Props) {
   );
 
   const visibleMundaneEquipment = sortGearEntries(
-    mundaneEquipment.filter(({ item }) => matchesGearFilter(item)),
+    mundaneEquipment.filter(
+      ({ item, index }) =>
+        matchesGearFilter(item) &&
+        (props.target.kind !== "equipment" || index === props.target.index),
+    ),
     gearSortMode,
   );
   const visibleMagicEquipment = sortGearEntries(
-    magicEquipment.filter(({ item }) => matchesGearFilter(item)),
+    magicEquipment.filter(
+      ({ item, index }) =>
+        matchesGearFilter(item) &&
+        (props.target.kind !== "equipment" || index === props.target.index),
+    ),
     gearSortMode,
   );
   const groupedMundaneEquipment = groupGearEntries(
@@ -391,7 +434,19 @@ export function GearTab(props: Props) {
   );
 
   return (
-    <div className="build-page">
+    <div
+      className="build-page inventory-detail-editor"
+      data-editor={props.target.kind}
+      data-kind={
+        props.target.kind === "equipment" &&
+        (equipment[props.target.index]?.kind ??
+          (equipment[props.target.index]?.itemTemplateId
+            ? "magic"
+            : "mundane")) === "magic"
+          ? "magic"
+          : "mundane"
+      }
+    >
       <section className="panel build-panel inventory-panel">
         <h2>Inventory</h2>
         <p className="hint">
@@ -826,167 +881,175 @@ export function GearTab(props: Props) {
               huge consequences.
             </div>
           </div>
-          {(build.weapons ?? []).map((weapon, index) => (
-            <div className="item-card" key={`weapon-${index}`}>
-              <div className="editor-grid">
-                <label className="field compact">
-                  <span>Template</span>
-                  <select
-                    value={weapon.weaponTemplateId ?? ""}
-                    onChange={(e) => {
-                      if (e.target.value)
-                        props.onApplyWeaponTemplate(index, e.target.value);
-                      else
-                        props.onUpdateWeapon(index, {
-                          weaponTemplateId: undefined,
-                        });
-                    }}
-                  >
-                    <option value="">Custom / select template…</option>
-                    {filteredWeaponOptions.map((option) => (
-                      <option key={option.id} value={option.id}>
-                        {weaponTemplateLabel(option)}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="field compact">
-                  <span>Name</span>
-                  <input
-                    type="text"
-                    value={weapon.name}
-                    onChange={(e) =>
-                      props.onUpdateWeapon(index, { name: e.target.value })
-                    }
-                  />
-                </label>
-                <label className="field compact">
-                  <span>Category</span>
-                  <select
-                    value={weapon.category}
-                    onChange={(e) =>
-                      props.onUpdateWeapon(index, {
-                        category: e.target.value as "melee" | "ranged",
-                      })
-                    }
-                  >
-                    <option value="melee">Melee</option>
-                    <option value="ranged">Ranged</option>
-                  </select>
-                </label>
-                <label className="field compact">
-                  <span>Proficiency</span>
-                  <select
-                    value={weapon.proficiencyGroup ?? "simple"}
-                    onChange={(e) =>
-                      props.onUpdateWeapon(index, {
-                        proficiencyGroup: e.target.value as
-                          "simple" | "martial" | "exotic",
-                      })
-                    }
-                  >
-                    <option value="simple">Simple</option>
-                    <option value="martial">Martial</option>
-                    <option value="exotic">Exotic</option>
-                  </select>
-                </label>
-                <label className="field compact">
-                  <span>Damage dice</span>
-                  <input
-                    type="text"
-                    value={weapon.damageDice}
-                    onChange={(e) =>
-                      props.onUpdateWeapon(index, {
-                        damageDice: e.target.value || "1d6",
-                      })
-                    }
-                  />
-                </label>
-                <label className="field compact">
-                  <span>Handedness</span>
-                  <select
-                    value={weapon.handedness ?? "one"}
-                    onChange={(e) =>
-                      props.onUpdateWeapon(index, {
-                        handedness: e.target.value as
-                          "one" | "two" | "off" | "light",
-                      })
-                    }
-                  >
-                    <option value="one">One-Handed</option>
-                    <option value="two">Two-Handed</option>
-                    <option value="off">Off-Hand</option>
-                    <option value="light">Light</option>
-                  </select>
-                </label>
-                <label className="field compact">
-                  <span>Crit range</span>
-                  <input
-                    type="number"
-                    min={18}
-                    max={20}
-                    value={weapon.critRange ?? 20}
-                    onChange={(e) =>
-                      props.onUpdateWeapon(index, {
-                        critRange: Math.max(
-                          18,
-                          Math.min(20, Number(e.target.value) || 20),
-                        ),
-                      })
-                    }
-                  />
-                </label>
-                <label className="field compact">
-                  <span>Crit multiplier</span>
-                  <input
-                    type="number"
-                    min={2}
-                    max={5}
-                    value={weapon.critMultiplier ?? 2}
-                    onChange={(e) =>
-                      props.onUpdateWeapon(index, {
-                        critMultiplier: Math.max(
-                          2,
-                          Math.min(5, Number(e.target.value) || 2),
-                        ),
-                      })
-                    }
-                  />
-                </label>
-                {compatibleAmmoOptions(weapon.ammoType).length > 0 ? (
+          {(build.weapons ?? [])
+            .map((weapon, index) => ({ weapon, index }))
+            .filter(
+              ({ index }) =>
+                props.target.kind !== "weapon" || index === props.target.index,
+            )
+            .map(({ weapon, index }) => (
+              <div className="item-card" key={`weapon-${index}`}>
+                <div className="editor-grid">
                   <label className="field compact">
-                    <span>Loaded ammo</span>
+                    <span>Template</span>
                     <select
-                      value={weapon.loadedAmmoType ?? ""}
-                      onChange={(e) =>
-                        props.onUpdateWeapon(index, {
-                          loadedAmmoType: e.target.value || undefined,
-                        })
-                      }
+                      value={weapon.weaponTemplateId ?? ""}
+                      onChange={(e) => {
+                        if (e.target.value)
+                          props.onApplyWeaponTemplate(index, e.target.value);
+                        else
+                          props.onUpdateWeapon(index, {
+                            weaponTemplateId: undefined,
+                          });
+                      }}
                     >
-                      <option value="">Base ammo</option>
-                      {compatibleAmmoOptions(weapon.ammoType).map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
+                      <option value="">Custom / select template…</option>
+                      {filteredWeaponOptions.map((option) => (
+                        <option key={option.id} value={option.id}>
+                          {weaponTemplateLabel(option)}
                         </option>
                       ))}
                     </select>
                   </label>
+                  <label className="field compact">
+                    <span>Name</span>
+                    <input
+                      type="text"
+                      value={weapon.name}
+                      onChange={(e) =>
+                        props.onUpdateWeapon(index, { name: e.target.value })
+                      }
+                    />
+                  </label>
+                  <label className="field compact">
+                    <span>Category</span>
+                    <select
+                      value={weapon.category}
+                      onChange={(e) =>
+                        props.onUpdateWeapon(index, {
+                          category: e.target.value as "melee" | "ranged",
+                        })
+                      }
+                    >
+                      <option value="melee">Melee</option>
+                      <option value="ranged">Ranged</option>
+                    </select>
+                  </label>
+                  <label className="field compact">
+                    <span>Proficiency</span>
+                    <select
+                      value={weapon.proficiencyGroup ?? "simple"}
+                      onChange={(e) =>
+                        props.onUpdateWeapon(index, {
+                          proficiencyGroup: e.target.value as
+                            "simple" | "martial" | "exotic",
+                        })
+                      }
+                    >
+                      <option value="simple">Simple</option>
+                      <option value="martial">Martial</option>
+                      <option value="exotic">Exotic</option>
+                    </select>
+                  </label>
+                  <label className="field compact">
+                    <span>Damage dice</span>
+                    <input
+                      type="text"
+                      value={weapon.damageDice}
+                      onChange={(e) =>
+                        props.onUpdateWeapon(index, {
+                          damageDice: e.target.value || "1d6",
+                        })
+                      }
+                    />
+                  </label>
+                  <label className="field compact">
+                    <span>Handedness</span>
+                    <select
+                      value={weapon.handedness ?? "one"}
+                      onChange={(e) =>
+                        props.onUpdateWeapon(index, {
+                          handedness: e.target.value as
+                            "one" | "two" | "off" | "light",
+                        })
+                      }
+                    >
+                      <option value="one">One-Handed</option>
+                      <option value="two">Two-Handed</option>
+                      <option value="off">Off-Hand</option>
+                      <option value="light">Light</option>
+                    </select>
+                  </label>
+                  <label className="field compact">
+                    <span>Crit range</span>
+                    <input
+                      type="number"
+                      min={18}
+                      max={20}
+                      value={weapon.critRange ?? 20}
+                      onChange={(e) =>
+                        props.onUpdateWeapon(index, {
+                          critRange: Math.max(
+                            18,
+                            Math.min(20, Number(e.target.value) || 20),
+                          ),
+                        })
+                      }
+                    />
+                  </label>
+                  <label className="field compact">
+                    <span>Crit multiplier</span>
+                    <input
+                      type="number"
+                      min={2}
+                      max={5}
+                      value={weapon.critMultiplier ?? 2}
+                      onChange={(e) =>
+                        props.onUpdateWeapon(index, {
+                          critMultiplier: Math.max(
+                            2,
+                            Math.min(5, Number(e.target.value) || 2),
+                          ),
+                        })
+                      }
+                    />
+                  </label>
+                  {compatibleAmmoOptions(weapon.ammoType).length > 0 ? (
+                    <label className="field compact">
+                      <span>Loaded ammo</span>
+                      <select
+                        value={weapon.loadedAmmoType ?? ""}
+                        onChange={(e) =>
+                          props.onUpdateWeapon(index, {
+                            loadedAmmoType: e.target.value || undefined,
+                          })
+                        }
+                      >
+                        <option value="">Base ammo</option>
+                        {compatibleAmmoOptions(weapon.ammoType).map(
+                          (option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ),
+                        )}
+                      </select>
+                    </label>
+                  ) : null}
+                </div>
+                {weaponAmmoUxLabel(weapon) ? (
+                  <p className="hint">{weaponAmmoUxLabel(weapon)}</p>
                 ) : null}
+                <div className="item-actions">
+                  <button
+                    className="ghost small"
+                    onClick={() => props.onRemoveWeapon(index)}
+                  >
+                    Remove
+                  </button>
+                </div>
               </div>
-              {weaponAmmoUxLabel(weapon) ? (
-                <p className="hint">{weaponAmmoUxLabel(weapon)}</p>
-              ) : null}
-              <div className="item-actions">
-                <button
-                  className="ghost small"
-                  onClick={() => props.onRemoveWeapon(index)}
-                >
-                  Remove
-                </button>
-              </div>
-            </div>
-          ))}
+            ))}
         </EditorSection>
 
         <EditorSection

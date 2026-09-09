@@ -65,7 +65,7 @@ interface SpellOption {
   name: string;
 }
 
-interface Props {
+export interface SpellcastingManagerProps {
   casters: DerivedSpellcasting[];
   classArchetypes?: Partial<Record<string, string[]>>;
   spellOptions: SpellOption[];
@@ -82,6 +82,7 @@ interface Props {
     mode: SpellMode,
     level: number,
     spellName: string,
+    copies?: number,
   ) => void;
   onUpdateSelectionName: (
     classKey: string,
@@ -185,7 +186,7 @@ export function SpellcastingManager({
   onResetSpellSlotLevel,
   onResetSpellRuntimeClass,
   defaultOpen = false,
-}: Props) {
+}: SpellcastingManagerProps) {
   const [spellLevelTabs, setSpellLevelTabs] = useState<
     Record<string, SpellLevelTab>
   >({});

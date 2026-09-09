@@ -85,10 +85,6 @@
   cursor: pointer;
 }
 
-.auth-card button:hover {
-  background: #efd09c;
-}
-
 .auth-card button:focus-visible,
 .auth-card input:focus-visible {
   outline: 2px solid #d9b77d;

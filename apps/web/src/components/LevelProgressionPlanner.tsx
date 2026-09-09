@@ -21,6 +21,7 @@ import { effectiveRaceChoiceOptions } from "../skillRankProgression";
 import { sign } from "../util";
 
 interface LevelProgressionPlannerProps {
+  focusLevel?: number;
   build: CharacterBuild;
   currentLevel: number;
   abilityOrder: readonly AbilityKey[];
@@ -84,6 +85,7 @@ function SuggestionNotes({ notes }: { notes: PlannerSuggestionNote[] }) {
 const PLANNER_LEVEL_CAP = 20;
 
 export function LevelProgressionPlanner({
+  focusLevel,
   build,
   currentLevel,
   abilityOrder,
@@ -117,7 +119,7 @@ export function LevelProgressionPlanner({
     [build],
   );
   const [expandedLevels, setExpandedLevels] = useState<Record<number, boolean>>(
-    () => ({ [Math.max(0, currentLevel - 1)]: true }),
+    () => ({ [focusLevel ?? Math.max(0, currentLevel - 1)]: true }),
   );
   const [expandedAbilityLevels, setExpandedAbilityLevels] = useState<
     Record<number, boolean>
@@ -174,375 +176,384 @@ export function LevelProgressionPlanner({
             </tr>
           </thead>
           <tbody>
-            {Array.from({ length: PLANNER_LEVEL_CAP }, (_, index) => index).map(
-              (index) => {
-                const levelNumber = index + 1;
-                const level = build.levels[index];
-                const isActive = !!level;
-                const isApplied = levelNumber <= currentLevel;
-                const featSlots = isActive
-                  ? plannedFeatSlotsForLevel(build, index)
-                  : [];
-                const grantsAbilityIncrease = levelNumber % 4 === 0;
-                const defaultClass =
-                  build.levels[index - 1]?.className ??
-                  build.levels[build.levels.length - 1]?.className ??
-                  classOptions[0]?.name ??
-                  "Fighter";
-                const levelClassName = level?.className ?? defaultClass;
-                const favoredClassEligible =
-                  !!build.favoredClassName &&
-                  build.favoredClassName.toLowerCase() ===
-                    levelClassName.toLowerCase();
-                const favoredClassBonusOptions = buildFavoredClassBonusOptions(
-                  build.race,
-                  levelClassName,
-                ).filter((option) => favoredClassEligible || !option.value);
-                const hitDie =
-                  classOptions.find(
-                    (option) =>
-                      option.name === (level?.className ?? defaultClass),
-                  )?.hitDie ?? 20;
-                const suggestions = plannerSuggestions[index] ?? {
-                  guideChoices: [],
-                  classChoices: [],
-                  featChoices: [],
-                  featChoicesBySlot: [],
-                  favoredClassChoices: [],
-                  abilityChoices: [],
-                  notes: [],
-                };
-                const rowExpanded = !!expandedLevels[index];
-                const hasGuidedSuggestions =
-                  suggestions.guideChoices.length > 0;
-                const classAbilities = isActive
-                  ? classAbilitiesGrantedAtLevel({
-                      build,
-                      levelIndex: index,
-                      classFeatures: RUNTIME_CLASS_FEATURES,
-                      archetypes: RUNTIME_ARCHETYPES,
-                    })
-                  : [];
-                const abilitiesExpanded = !!expandedAbilityLevels[index];
-                const classAbilityFeatSlotIndex = classAbilities.some(
-                  (ability) => ability.name.toLowerCase() === "bonus feat",
-                )
-                  ? featSlots.findIndex(
-                      (slot) =>
-                        slot.label.toLowerCase() ===
-                        `${levelClassName.toLowerCase()} bonus feat`,
-                    )
-                  : -1;
-                const visibleFeatSlots = featSlots
-                  .map((slot, featIndex) => ({ slot, featIndex }))
-                  .filter(
-                    ({ featIndex }) => featIndex !== classAbilityFeatSlotIndex,
-                  );
-                const grantsFeat = visibleFeatSlots.length > 0;
-                if (!rowExpanded) {
-                  const featSummary = (level?.feats ?? [])
-                    .map((feat) => feat.trim())
-                    .filter(Boolean)
-                    .join(" · ");
-                  const abilitySummary = classAbilities
-                    .map((ability) => ability.name)
-                    .join(" · ");
-                  return [
-                    <tr
-                      key={`planner-row-${index + 1}`}
-                      className={`planner-level-summary-row ${
-                        isActive ? (isApplied ? "active" : "future") : "future"
-                      }`}
-                    >
-                      <td colSpan={10}>
-                        <div className="planner-level-summary-content">
-                          <span className="planner-level-number">
-                            Level <strong>{levelNumber}</strong>
-                          </span>
-                          <span className="planner-level-class">
-                            <strong>{levelClassName}</strong>
-                            <small>
-                              {isActive
-                                ? isApplied
-                                  ? "Current"
-                                  : "Planned"
-                                : "Empty"}
-                            </small>
-                          </span>
-                          <span className="planner-level-gains">
-                            {[
-                              abilitySummary,
-                              featSummary,
-                              isActive
-                                ? `${level?.hitPointRoll ?? 0} HP`
-                                : null,
-                            ]
-                              .filter(Boolean)
-                              .join(" · ") || "No choices recorded"}
-                          </span>
-                          <button
-                            className="ghost small"
-                            type="button"
-                            onClick={() => {
-                              onRequestPlannerSuggestions(index);
-                              setExpandedLevels((previous) => ({
-                                ...previous,
-                                [index]: true,
-                              }));
-                            }}
-                          >
-                            Edit
-                          </button>
-                          <span className="planner-level-expand-mark">+</span>
-                        </div>
-                      </td>
-                    </tr>,
-                  ];
-                }
+            {(focusLevel === undefined
+              ? Array.from({ length: PLANNER_LEVEL_CAP }, (_, index) => index)
+              : [focusLevel]
+            ).map((index) => {
+              const levelNumber = index + 1;
+              const level = build.levels[index];
+              const isActive = !!level;
+              const isApplied = levelNumber <= currentLevel;
+              const featSlots = isActive
+                ? plannedFeatSlotsForLevel(build, index)
+                : [];
+              const grantsAbilityIncrease = levelNumber % 4 === 0;
+              const defaultClass =
+                build.levels[index - 1]?.className ??
+                build.levels[build.levels.length - 1]?.className ??
+                classOptions[0]?.name ??
+                "Fighter";
+              const levelClassName = level?.className ?? defaultClass;
+              const favoredClassEligible =
+                !!build.favoredClassName &&
+                build.favoredClassName.toLowerCase() ===
+                  levelClassName.toLowerCase();
+              const favoredClassBonusOptions = buildFavoredClassBonusOptions(
+                build.race,
+                levelClassName,
+              ).filter((option) => favoredClassEligible || !option.value);
+              const hitDie =
+                classOptions.find(
+                  (option) =>
+                    option.name === (level?.className ?? defaultClass),
+                )?.hitDie ?? 20;
+              const suggestions = plannerSuggestions[index] ?? {
+                guideChoices: [],
+                classChoices: [],
+                featChoices: [],
+                featChoicesBySlot: [],
+                favoredClassChoices: [],
+                abilityChoices: [],
+                notes: [],
+              };
+              const rowExpanded =
+                focusLevel !== undefined || !!expandedLevels[index];
+              const hasGuidedSuggestions = suggestions.guideChoices.length > 0;
+              const classAbilities = isActive
+                ? classAbilitiesGrantedAtLevel({
+                    build,
+                    levelIndex: index,
+                    classFeatures: RUNTIME_CLASS_FEATURES,
+                    archetypes: RUNTIME_ARCHETYPES,
+                  })
+                : [];
+              const abilitiesExpanded = !!expandedAbilityLevels[index];
+              const classAbilityFeatSlotIndex = classAbilities.some(
+                (ability) => ability.name.toLowerCase() === "bonus feat",
+              )
+                ? featSlots.findIndex(
+                    (slot) =>
+                      slot.label.toLowerCase() ===
+                      `${levelClassName.toLowerCase()} bonus feat`,
+                  )
+                : -1;
+              const visibleFeatSlots = featSlots
+                .map((slot, featIndex) => ({ slot, featIndex }))
+                .filter(
+                  ({ featIndex }) => featIndex !== classAbilityFeatSlotIndex,
+                );
+              const grantsFeat = visibleFeatSlots.length > 0;
+              if (!rowExpanded) {
+                const featSummary = (level?.feats ?? [])
+                  .map((feat) => feat.trim())
+                  .filter(Boolean)
+                  .join(" · ");
+                const abilitySummary = classAbilities
+                  .map((ability) => ability.name)
+                  .join(" · ");
                 return [
                   <tr
                     key={`planner-row-${index + 1}`}
-                    className={
+                    className={`planner-level-summary-row ${
                       isActive ? (isApplied ? "active" : "future") : "future"
-                    }
+                    }`}
                   >
-                    <td>{levelNumber}</td>
-                    <td>
-                      {isActive ? (isApplied ? "Current" : "Planned") : "Empty"}
-                    </td>
-                    <td>
-                      {isActive ? (
-                        <>
-                          <select
-                            value={level.className}
-                            onChange={(e) =>
-                              onUpdateLevelField(
-                                index,
-                                "className",
-                                e.target.value,
-                              )
-                            }
-                          >
-                            {classOptions.map((option) => (
-                              <option key={option.name} value={option.name}>
-                                {option.name}
-                              </option>
-                            ))}
-                          </select>
-                        </>
-                      ) : (
-                        <span className="planner-empty">—</span>
-                      )}
-                    </td>
-                    <td className="planner-class-abilities-cell">
-                      {classAbilities.length > 0 ? (
+                    <td colSpan={10}>
+                      <div className="planner-level-summary-content">
+                        <span className="planner-level-number">
+                          Level <strong>{levelNumber}</strong>
+                        </span>
+                        <span className="planner-level-class">
+                          <strong>{levelClassName}</strong>
+                          <small>
+                            {isActive
+                              ? isApplied
+                                ? "Current"
+                                : "Planned"
+                              : "Empty"}
+                          </small>
+                        </span>
+                        <span className="planner-level-gains">
+                          {[
+                            abilitySummary,
+                            featSummary,
+                            isActive ? `${level?.hitPointRoll ?? 0} HP` : null,
+                          ]
+                            .filter(Boolean)
+                            .join(" · ") || "No choices recorded"}
+                        </span>
                         <button
-                          className="planner-ability-toggle"
+                          className="ghost small"
                           type="button"
-                          aria-expanded={abilitiesExpanded}
-                          title={classAbilities
-                            .map((ability) => ability.name)
-                            .join(", ")}
-                          onClick={() =>
-                            setExpandedAbilityLevels((previous) => ({
+                          onClick={() => {
+                            onRequestPlannerSuggestions(index);
+                            setExpandedLevels((previous) => ({
                               ...previous,
-                              [index]: !previous[index],
-                            }))
-                          }
+                              [index]: true,
+                            }));
+                          }}
                         >
-                          <span>{classAbilities[0]?.name}</span>
-                          {classAbilities.length > 1 ? (
-                            <span className="planner-ability-count">
-                              +{classAbilities.length - 1}
-                            </span>
-                          ) : null}
+                          Edit
                         </button>
-                      ) : (
-                        <span className="planner-empty">—</span>
-                      )}
+                        <span className="planner-level-expand-mark">+</span>
+                      </div>
                     </td>
-                    <td>
-                      {isActive ? (
-                        <input
-                          className="planner-hp-input"
-                          type="number"
-                          min={1}
-                          max={hitDie}
-                          value={level.hitPointRoll}
+                  </tr>,
+                ];
+              }
+              return [
+                <tr
+                  key={`planner-row-${index + 1}`}
+                  className={
+                    isActive ? (isApplied ? "active" : "future") : "future"
+                  }
+                >
+                  <td>{levelNumber}</td>
+                  <td>
+                    {isActive ? (isApplied ? "Current" : "Planned") : "Empty"}
+                  </td>
+                  <td>
+                    {isActive ? (
+                      <>
+                        <select
+                          value={level.className}
                           onChange={(e) =>
                             onUpdateLevelField(
                               index,
-                              "hitPointRoll",
-                              Math.max(1, Number(e.target.value) || 1),
+                              "className",
+                              e.target.value,
                             )
                           }
-                        />
-                      ) : (
-                        <span className="planner-empty">—</span>
-                      )}
-                    </td>
-                    <td>
-                      {isActive && grantsFeat ? (
-                        <div className="planner-feat-slots">
-                          {visibleFeatSlots.map(({ slot, featIndex }) => {
-                            const selectedFeat = level.feats?.[featIndex] ?? "";
-                            return (
-                              <div
-                                key={`${levelNumber}-${slot.source}-${featIndex}`}
-                                className="planner-feat-slot"
-                              >
-                                <span className="planner-slot-label">
-                                  {slot.label}
-                                  <span className="planner-slot-meta">
-                                    {featSlotTag(slot.kind)}
-                                  </span>
+                        >
+                          {classOptions.map((option) => (
+                            <option key={option.name} value={option.name}>
+                              {option.name}
+                            </option>
+                          ))}
+                        </select>
+                      </>
+                    ) : (
+                      <span className="planner-empty">—</span>
+                    )}
+                  </td>
+                  <td className="planner-class-abilities-cell">
+                    {classAbilities.length > 0 ? (
+                      <button
+                        className="planner-ability-toggle"
+                        type="button"
+                        aria-expanded={abilitiesExpanded}
+                        title={classAbilities
+                          .map((ability) => ability.name)
+                          .join(", ")}
+                        onClick={() =>
+                          setExpandedAbilityLevels((previous) => ({
+                            ...previous,
+                            [index]: !previous[index],
+                          }))
+                        }
+                      >
+                        <span>{classAbilities[0]?.name}</span>
+                        {classAbilities.length > 1 ? (
+                          <span className="planner-ability-count">
+                            +{classAbilities.length - 1}
+                          </span>
+                        ) : null}
+                      </button>
+                    ) : (
+                      <span className="planner-empty">—</span>
+                    )}
+                  </td>
+                  <td>
+                    {isActive ? (
+                      <input
+                        className="planner-hp-input"
+                        type="number"
+                        min={1}
+                        max={hitDie}
+                        value={level.hitPointRoll}
+                        onChange={(e) =>
+                          onUpdateLevelField(
+                            index,
+                            "hitPointRoll",
+                            Math.max(1, Number(e.target.value) || 1),
+                          )
+                        }
+                      />
+                    ) : (
+                      <span className="planner-empty">—</span>
+                    )}
+                  </td>
+                  <td>
+                    {isActive && grantsFeat ? (
+                      <div className="planner-feat-slots">
+                        {visibleFeatSlots.map(({ slot, featIndex }) => {
+                          const selectedFeat = level.feats?.[featIndex] ?? "";
+                          return (
+                            <div
+                              key={`${levelNumber}-${slot.source}-${featIndex}`}
+                              className="planner-feat-slot"
+                            >
+                              <span className="planner-slot-label">
+                                {slot.label}
+                                <span className="planner-slot-meta">
+                                  {featSlotTag(slot.kind)}
                                 </span>
-                                <FeatSelectionPicker
-                                  value={selectedFeat}
-                                  onChange={(value) =>
-                                    onSetLevelFeat(index, featIndex, value)
-                                  }
-                                  featRegistry={RUNTIME_FEATS}
-                                  grantKind={slot.kind}
-                                  availableWeaponNames={availableWeaponNames}
-                                  placeholder="Feat"
-                                />
-                              </div>
-                            );
-                          })}
-                        </div>
-                      ) : (
-                        <span className="planner-empty">—</span>
-                      )}
-                    </td>
-                    <td>
-                      {isActive ? (
-                        <>
-                          <select
-                            value={
-                              favoredClassEligible
-                                ? (level.favoredClass ?? "")
-                                : ""
-                            }
-                            disabled={!favoredClassEligible}
-                            title={
-                              favoredClassEligible
-                                ? "Favored-class bonus"
-                                : `${level.className} is not the build's favored class.`
-                            }
-                            onChange={(e) =>
-                              onUpdateLevelField(
-                                index,
-                                "favoredClass",
-                                e.target.value || undefined,
-                              )
-                            }
-                          >
-                            {favoredClassBonusOptions.map((option) => (
-                              <option
-                                key={option.value || "none"}
-                                value={option.value}
-                              >
-                                {option.label}
-                              </option>
-                            ))}
-                          </select>
-                        </>
-                      ) : (
-                        <span className="planner-empty">—</span>
-                      )}
-                    </td>
-                    <td>
-                      {isActive && grantsAbilityIncrease ? (
-                        <>
-                          <select
-                            value={level.abilityIncrease ?? ""}
-                            onChange={(e) =>
-                              onUpdateLevelField(
-                                index,
-                                "abilityIncrease",
-                                (e.target.value || undefined) as
-                                  AbilityKey | undefined,
-                              )
-                            }
-                          >
-                            <option value="">None</option>
-                            {abilityOrder.map((ability) => (
-                              <option key={ability} value={ability}>
-                                {ability.toUpperCase()}
-                              </option>
-                            ))}
-                          </select>
-                        </>
-                      ) : (
-                        <span className="planner-empty">—</span>
-                      )}
-                    </td>
-                    <td>
-                      {isActive ? (
-                        <div className="planner-row-actions">
-                          {isApplied ? (
-                            <button
-                              className="ghost small"
-                              onClick={() =>
-                                onSetCurrentLevel(Math.max(1, index))
-                              }
+                              </span>
+                              <FeatSelectionPicker
+                                value={selectedFeat}
+                                onChange={(value) =>
+                                  onSetLevelFeat(index, featIndex, value)
+                                }
+                                featRegistry={RUNTIME_FEATS}
+                                grantKind={slot.kind}
+                                availableWeaponNames={availableWeaponNames}
+                                placeholder="Feat"
+                              />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <span className="planner-empty">—</span>
+                    )}
+                  </td>
+                  <td>
+                    {isActive ? (
+                      <>
+                        <select
+                          value={
+                            favoredClassEligible
+                              ? (level.favoredClass ?? "")
+                              : ""
+                          }
+                          disabled={!favoredClassEligible}
+                          title={
+                            favoredClassEligible
+                              ? "Favored-class bonus"
+                              : `${level.className} is not the build's favored class.`
+                          }
+                          onChange={(e) =>
+                            onUpdateLevelField(
+                              index,
+                              "favoredClass",
+                              e.target.value || undefined,
+                            )
+                          }
+                        >
+                          {favoredClassBonusOptions.map((option) => (
+                            <option
+                              key={option.value || "none"}
+                              value={option.value}
                             >
-                              Set Before
-                            </button>
-                          ) : (
-                            <button
-                              className="ghost small"
-                              onClick={() => onSetCurrentLevel(index + 1)}
-                            >
-                              Apply to Here
-                            </button>
-                          )}
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      </>
+                    ) : (
+                      <span className="planner-empty">—</span>
+                    )}
+                  </td>
+                  <td>
+                    {isActive && grantsAbilityIncrease ? (
+                      <>
+                        <select
+                          value={level.abilityIncrease ?? ""}
+                          onChange={(e) =>
+                            onUpdateLevelField(
+                              index,
+                              "abilityIncrease",
+                              (e.target.value || undefined) as
+                                AbilityKey | undefined,
+                            )
+                          }
+                        >
+                          <option value="">None</option>
+                          {abilityOrder.map((ability) => (
+                            <option key={ability} value={ability}>
+                              {ability.toUpperCase()}
+                            </option>
+                          ))}
+                        </select>
+                      </>
+                    ) : (
+                      <span className="planner-empty">—</span>
+                    )}
+                  </td>
+                  <td>
+                    {isActive ? (
+                      <div className="planner-row-actions">
+                        {isApplied ? (
                           <button
                             className="ghost small"
-                            onClick={() => onApplyPlannerSuggestions(index)}
+                            onClick={() =>
+                              onSetCurrentLevel(Math.max(1, index))
+                            }
                           >
-                            Apply Top Picks
+                            Set Before
                           </button>
+                        ) : (
                           <button
                             className="ghost small"
-                            type="button"
-                            onClick={() => {
-                              if (!rowExpanded)
-                                onRequestPlannerSuggestions(index);
-                              setExpandedLevels((prev) => ({
-                                ...prev,
-                                [index]: !prev[index],
-                              }));
-                            }}
+                            onClick={() => onSetCurrentLevel(index + 1)}
                           >
-                            {rowExpanded ? "Close Level" : "Edit Level"}
+                            Apply to Here
                           </button>
-                          <button
-                            className="ghost small"
-                            onClick={() => {
-                              onClearPlannedLevelChoices(index);
-                              setExpandedLevels((prev) => ({
-                                ...prev,
-                                [index]: false,
-                              }));
-                            }}
-                          >
-                            Clear Picks
-                          </button>
-                        </div>
-                      ) : (
+                        )}
                         <button
                           className="ghost small"
-                          onClick={() => onEnsureLevelCount(index + 1)}
+                          onClick={() => onApplyPlannerSuggestions(index)}
                         >
-                          Plan to Here
+                          Apply Top Picks
                         </button>
-                      )}
-                    </td>
-                    <td>
-                      {rowExpanded ? (
-                        <>
+                        <button
+                          className="ghost small"
+                          type="button"
+                          onClick={() => {
+                            if (!rowExpanded || focusLevel !== undefined)
+                              onRequestPlannerSuggestions(index);
+                            setExpandedLevels((prev) => ({
+                              ...prev,
+                              [index]: !prev[index],
+                            }));
+                          }}
+                        >
+                          {focusLevel !== undefined
+                            ? "Guided choices"
+                            : rowExpanded
+                              ? "Close Level"
+                              : "Edit Level"}
+                        </button>
+                        <button
+                          className="ghost small"
+                          onClick={() => {
+                            onClearPlannedLevelChoices(index);
+                            setExpandedLevels((prev) => ({
+                              ...prev,
+                              [index]: false,
+                            }));
+                          }}
+                        >
+                          Clear Picks
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        className="ghost small"
+                        onClick={() => onEnsureLevelCount(index + 1)}
+                      >
+                        Plan to Here
+                      </button>
+                    )}
+                  </td>
+                  <td>
+                    {rowExpanded ? (
+                      <details
+                        className="planner-guided-details"
+                        open={focusLevel === undefined ? true : undefined}
+                      >
+                        <summary>Review recommendations</summary>
+                        <div className="planner-guided-grid">
                           <SuggestionPreviewList
                             title="Guide read"
                             choices={suggestions.guideChoices}
@@ -564,145 +575,143 @@ export function LevelProgressionPlanner({
                             choices={suggestions.abilityChoices}
                           />
                           <SuggestionNotes notes={suggestions.notes} />
-                        </>
-                      ) : hasGuidedSuggestions ? (
-                        <div className="planner-compact-note-count">
-                          Guided tips ready
                         </div>
-                      ) : (
-                        <span className="planner-empty">—</span>
-                      )}
+                      </details>
+                    ) : hasGuidedSuggestions ? (
+                      <div className="planner-compact-note-count">
+                        Guided tips ready
+                      </div>
+                    ) : (
+                      <span className="planner-empty">—</span>
+                    )}
+                  </td>
+                </tr>,
+                rowExpanded ? (
+                  <tr
+                    key={`planner-racial-details-${index}`}
+                    className="planner-ability-detail-row"
+                  >
+                    <td colSpan={10}>
+                      <div className="planner-racial-details">
+                        <strong>
+                          {build.race.name} · Racial build adjustments
+                        </strong>
+                        {index === 0 ? (
+                          <>
+                            {racialAbilityModifiers.map((modifier, i) => (
+                              <span key={i}>
+                                {modifier.target.toUpperCase()}{" "}
+                                {sign(modifier.value)}
+                              </span>
+                            ))}
+                            {raceOptions.flexibleAbilityBonus &&
+                            build.race.choiceSelection?.flexibleAbility ? (
+                              <span>
+                                Flexible racial bonus:{" "}
+                                {build.race.choiceSelection.flexibleAbility.toUpperCase()}{" "}
+                                {sign(raceOptions.flexibleAbilityBonus.value)}
+                              </span>
+                            ) : null}
+                            {build.race.choiceSelection?.bonusFeat ? (
+                              <span>
+                                Bonus feat:{" "}
+                                {build.race.choiceSelection.bonusFeat}
+                              </span>
+                            ) : null}
+                          </>
+                        ) : null}
+                        <span>
+                          Extra skill ranks this level:{" "}
+                          {sign(
+                            Math.max(
+                              0,
+                              raceOptions.extraSkillRanksPerLevel ?? 0,
+                            ),
+                          )}
+                        </span>
+                      </div>
                     </td>
-                  </tr>,
-                  rowExpanded ? (
-                    <tr
-                      key={`planner-racial-details-${index}`}
-                      className="planner-ability-detail-row"
-                    >
-                      <td colSpan={10}>
-                        <div className="planner-racial-details">
-                          <strong>
-                            {build.race.name} · Racial build adjustments
-                          </strong>
-                          {index === 0 ? (
-                            <>
-                              {racialAbilityModifiers.map((modifier, i) => (
-                                <span key={i}>
-                                  {modifier.target.toUpperCase()}{" "}
-                                  {sign(modifier.value)}
-                                </span>
-                              ))}
-                              {raceOptions.flexibleAbilityBonus &&
-                              build.race.choiceSelection?.flexibleAbility ? (
-                                <span>
-                                  Flexible racial bonus:{" "}
-                                  {build.race.choiceSelection.flexibleAbility.toUpperCase()}{" "}
-                                  {sign(raceOptions.flexibleAbilityBonus.value)}
-                                </span>
+                  </tr>
+                ) : null,
+                abilitiesExpanded ? (
+                  <tr
+                    key={`planner-ability-detail-${index + 1}`}
+                    className="planner-ability-detail-row"
+                  >
+                    <td colSpan={10}>
+                      <div className="planner-ability-detail-grid">
+                        {classAbilities.map((ability) => {
+                          const isGunTraining =
+                            levelClassName.toLowerCase() === "infantryman" &&
+                            ability.name.toLowerCase() === "gun training";
+                          const isBonusFeat =
+                            ability.name.toLowerCase() === "bonus feat" &&
+                            classAbilityFeatSlotIndex >= 0;
+                          return (
+                            <article
+                              className="planner-ability-card"
+                              key={ability.id}
+                            >
+                              <div className="planner-ability-card-head">
+                                <strong>{ability.name}</strong>
+                                <span>{ability.source}</span>
+                              </div>
+                              <p>{ability.description}</p>
+                              {isGunTraining ? (
+                                <label className="field compact">
+                                  <span>Trained firearm</span>
+                                  <CompendiumPicker
+                                    value={
+                                      build.gunTrainingSelections
+                                        ?.infantryman?.[0] ?? ""
+                                    }
+                                    onChange={onUpdateInfantrymanGunTraining}
+                                    options={firearmNames.map((name) => ({
+                                      id: `planner-gun-training-${name.toLowerCase()}`,
+                                      name,
+                                      tooltip: `Gun Training: add Dexterity to damage with ${name}.`,
+                                    }))}
+                                    placeholder="Choose trained firearm"
+                                    commitMode="select"
+                                    maxResults={40}
+                                  />
+                                </label>
                               ) : null}
-                              {build.race.choiceSelection?.bonusFeat ? (
-                                <span>
-                                  Bonus feat:{" "}
-                                  {build.race.choiceSelection.bonusFeat}
-                                </span>
+                              {isBonusFeat ? (
+                                <label className="field compact">
+                                  <span>Select bonus feat</span>
+                                  <FeatSelectionPicker
+                                    value={
+                                      level?.feats?.[
+                                        classAbilityFeatSlotIndex
+                                      ] ?? ""
+                                    }
+                                    onChange={(value) =>
+                                      onSetLevelFeat(
+                                        index,
+                                        classAbilityFeatSlotIndex,
+                                        value,
+                                      )
+                                    }
+                                    featRegistry={RUNTIME_FEATS}
+                                    grantKind={
+                                      featSlots[classAbilityFeatSlotIndex]
+                                        ?.kind ?? "general"
+                                    }
+                                    availableWeaponNames={availableWeaponNames}
+                                    placeholder="Choose bonus feat"
+                                  />
+                                </label>
                               ) : null}
-                            </>
-                          ) : null}
-                          <span>
-                            Extra skill ranks this level:{" "}
-                            {sign(
-                              Math.max(
-                                0,
-                                raceOptions.extraSkillRanksPerLevel ?? 0,
-                              ),
-                            )}
-                          </span>
-                        </div>
-                      </td>
-                    </tr>
-                  ) : null,
-                  abilitiesExpanded ? (
-                    <tr
-                      key={`planner-ability-detail-${index + 1}`}
-                      className="planner-ability-detail-row"
-                    >
-                      <td colSpan={10}>
-                        <div className="planner-ability-detail-grid">
-                          {classAbilities.map((ability) => {
-                            const isGunTraining =
-                              levelClassName.toLowerCase() === "infantryman" &&
-                              ability.name.toLowerCase() === "gun training";
-                            const isBonusFeat =
-                              ability.name.toLowerCase() === "bonus feat" &&
-                              classAbilityFeatSlotIndex >= 0;
-                            return (
-                              <article
-                                className="planner-ability-card"
-                                key={ability.id}
-                              >
-                                <div className="planner-ability-card-head">
-                                  <strong>{ability.name}</strong>
-                                  <span>{ability.source}</span>
-                                </div>
-                                <p>{ability.description}</p>
-                                {isGunTraining ? (
-                                  <label className="field compact">
-                                    <span>Trained firearm</span>
-                                    <CompendiumPicker
-                                      value={
-                                        build.gunTrainingSelections
-                                          ?.infantryman?.[0] ?? ""
-                                      }
-                                      onChange={onUpdateInfantrymanGunTraining}
-                                      options={firearmNames.map((name) => ({
-                                        id: `planner-gun-training-${name.toLowerCase()}`,
-                                        name,
-                                        tooltip: `Gun Training: add Dexterity to damage with ${name}.`,
-                                      }))}
-                                      placeholder="Choose trained firearm"
-                                      commitMode="select"
-                                      maxResults={40}
-                                    />
-                                  </label>
-                                ) : null}
-                                {isBonusFeat ? (
-                                  <label className="field compact">
-                                    <span>Select bonus feat</span>
-                                    <FeatSelectionPicker
-                                      value={
-                                        level?.feats?.[
-                                          classAbilityFeatSlotIndex
-                                        ] ?? ""
-                                      }
-                                      onChange={(value) =>
-                                        onSetLevelFeat(
-                                          index,
-                                          classAbilityFeatSlotIndex,
-                                          value,
-                                        )
-                                      }
-                                      featRegistry={RUNTIME_FEATS}
-                                      grantKind={
-                                        featSlots[classAbilityFeatSlotIndex]
-                                          ?.kind ?? "general"
-                                      }
-                                      availableWeaponNames={
-                                        availableWeaponNames
-                                      }
-                                      placeholder="Choose bonus feat"
-                                    />
-                                  </label>
-                                ) : null}
-                              </article>
-                            );
-                          })}
-                        </div>
-                      </td>
-                    </tr>
-                  ) : null,
-                ];
-              },
-            )}
+                            </article>
+                          );
+                        })}
+                      </div>
+                    </td>
+                  </tr>
+                ) : null,
+              ];
+            })}
           </tbody>
         </table>
       </div>
