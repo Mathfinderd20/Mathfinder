@@ -194,7 +194,7 @@ export function BuildEditorTab(props: Props) {
     showSpellcasting = true,
   } = props;
 
-  const [plannerOpen, setPlannerOpen] = useState(false);
+  const [plannerOpen, setPlannerOpen] = useState(true);
   const [coreSetupOpen, setCoreSetupOpen] = useState(true);
   const [coreSetupAutoCollapsed, setCoreSetupAutoCollapsed] = useState(false);
   const currentLevelIndex = Math.max(0, currentLevel - 1);
@@ -775,13 +775,16 @@ function EditorSection({
   action?: ReactNode;
   children: ReactNode;
 }) {
+  const sectionKey = title.toLowerCase().replace(/[^a-z0-9]+/g, "-");
   return (
-    <>
+    <section
+      className={`build-editor-section build-editor-section-${sectionKey}`}
+    >
       <div className="editor-section-head">
         <h3>{title}</h3>
         {action}
       </div>
       <div className="item-list">{children}</div>
-    </>
+    </section>
   );
 }

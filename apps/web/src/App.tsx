@@ -888,7 +888,7 @@ export function App({
       ) : null}
 
       {mountedTabs.build ? (
-        <div hidden={activeTab !== "build"}>
+        <div hidden={activeTab !== "build"} className="character-build-tab">
           <div className="build-action-bar">
             <div>
               <span className="character-eyebrow">Advancement</span>

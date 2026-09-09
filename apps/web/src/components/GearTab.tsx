@@ -2442,14 +2442,15 @@ function EditorSection({
   action?: ReactNode;
   children: ReactNode;
 }) {
+  const sectionKey = title.toLowerCase().replace(/[^a-z0-9]+/g, "-");
   return (
-    <>
+    <section className={`gear-editor-section gear-${sectionKey}`}>
       <div className="editor-section-head">
         <h3>{title}</h3>
         {action}
       </div>
       <div className="item-list">{children}</div>
-    </>
+    </section>
   );
 }
 

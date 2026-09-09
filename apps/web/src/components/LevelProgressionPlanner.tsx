@@ -105,7 +105,7 @@ export function LevelProgressionPlanner({
     [build],
   );
   const [expandedLevels, setExpandedLevels] = useState<Record<number, boolean>>(
-    {},
+    () => ({ [Math.max(0, currentLevel - 1)]: true }),
   );
   const [expandedAbilityLevels, setExpandedAbilityLevels] = useState<
     Record<number, boolean>
@@ -227,6 +227,66 @@ export function LevelProgressionPlanner({
                     ({ featIndex }) => featIndex !== classAbilityFeatSlotIndex,
                   );
                 const grantsFeat = visibleFeatSlots.length > 0;
+                if (!rowExpanded) {
+                  const featSummary = (level?.feats ?? [])
+                    .map((feat) => feat.trim())
+                    .filter(Boolean)
+                    .join(" · ");
+                  const abilitySummary = classAbilities
+                    .map((ability) => ability.name)
+                    .join(" · ");
+                  return [
+                    <tr
+                      key={`planner-row-${index + 1}`}
+                      className={`planner-level-summary-row ${
+                        isActive ? (isApplied ? "active" : "future") : "future"
+                      }`}
+                    >
+                      <td colSpan={10}>
+                        <div className="planner-level-summary-content">
+                          <span className="planner-level-number">
+                            Level <strong>{levelNumber}</strong>
+                          </span>
+                          <span className="planner-level-class">
+                            <strong>{levelClassName}</strong>
+                            <small>
+                              {isActive
+                                ? isApplied
+                                  ? "Current"
+                                  : "Planned"
+                                : "Empty"}
+                            </small>
+                          </span>
+                          <span className="planner-level-gains">
+                            {[
+                              abilitySummary,
+                              featSummary,
+                              isActive
+                                ? `${level?.hitPointRoll ?? 0} HP`
+                                : null,
+                            ]
+                              .filter(Boolean)
+                              .join(" · ") || "No choices recorded"}
+                          </span>
+                          <button
+                            className="ghost small"
+                            type="button"
+                            onClick={() => {
+                              onRequestPlannerSuggestions(index);
+                              setExpandedLevels((previous) => ({
+                                ...previous,
+                                [index]: true,
+                              }));
+                            }}
+                          >
+                            Edit
+                          </button>
+                          <span className="planner-level-expand-mark">+</span>
+                        </div>
+                      </td>
+                    </tr>,
+                  ];
+                }
                 return [
                   <tr
                     key={`planner-row-${index + 1}`}
