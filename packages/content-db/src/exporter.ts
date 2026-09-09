@@ -1096,13 +1096,6 @@ function buildScrapedSpells(rows: EntityExportRow[]) {
           school: normalizeSchool(payload.school),
           classes: parseSpellClasses(payload.levelText),
           description: payload.description || undefined,
-          castingTime: payload.castingTime || undefined,
-          components: payload.components || undefined,
-          range: payload.range || undefined,
-          targetEffectArea: payload.targetEffectArea || undefined,
-          duration: payload.duration || undefined,
-          savingThrow: payload.savingThrow || undefined,
-          spellResistance: payload.spellResistance || undefined,
           source: payload.source || "Archives of Nethys",
           sourceUrl: row.sourceUrl,
         } satisfies SpellDefinition;
