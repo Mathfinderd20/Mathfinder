@@ -178,9 +178,12 @@ export function CombatLogPanel({
   const allKindsVisible = Object.values(visibleKinds).every(Boolean);
 
   return (
-    <section className="panel paper-panel">
-      <div className="editor-section-head tight">
+    <details className="panel paper-panel combat-log-panel">
+      <summary>
         <h2>Combat Log</h2>
+        <span>{combatEventLog.length} entries</span>
+      </summary>
+      <div className="editor-section-head tight">
         {onClearCombatEventLog ? (
           <button
             className="ghost small"
@@ -289,6 +292,6 @@ export function CombatLogPanel({
           )}
         </>
       )}
-    </section>
+    </details>
   );
 }

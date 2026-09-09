@@ -545,6 +545,7 @@ export function App({
     applyNonlethalDamage,
     currentHp,
     deathRules,
+    healthStatus,
     diehardActive,
     ferocityUsed,
     fightOnSource,
@@ -652,7 +653,8 @@ export function App({
         currentHp={currentHp}
         details={details}
         onChange={updateCharacterDetails}
-        onRest={() => setResting(true)}
+        tempHp={tempHp}
+        healthCondition={healthStatus.condition}
         sheet={sheet}
       />
 
@@ -699,6 +701,7 @@ export function App({
           <main className="character-workspace-main">
             <div className="sheet-main-stack">
               <Sheet
+                characterId={characterId}
                 sheet={sheet}
                 wealthSummary={wealthSummary}
                 currentHp={currentHp}
@@ -721,6 +724,8 @@ export function App({
                 onSetFerocityActive={setFerocityActive}
                 onSetFerocityUsed={setFerocityUsed}
                 onResetHp={resetHp}
+                onRest={() => setResting(true)}
+                campaignTraits={details.campaignTraits}
                 spellCastCounts={spellCastCounts}
                 onCastSpell={requestSpellCast}
                 onResetSpellSlotLevel={resetSpellSlotLevel}
@@ -748,19 +753,27 @@ export function App({
             className="character-effects-rail"
             aria-label="Abilities and Effects"
           >
-            <button
-              type="button"
-              className="ghost character-rail-toggle"
-              onClick={() => setEffectsRailOpen((open) => !open)}
-              aria-expanded={effectsRailOpen}
-            >
-              {effectsRailOpen ? "›" : "‹"}
-              <span>
-                {effectsRailOpen ? "Collapse" : "Abilities & Effects"}
-              </span>
-            </button>
+            <div className="character-rail-heading">
+              {effectsRailOpen ? <h2>Abilities &amp; Effects</h2> : null}
+              <button
+                type="button"
+                className="ghost character-rail-toggle"
+                onClick={() => setEffectsRailOpen((open) => !open)}
+                aria-expanded={effectsRailOpen}
+                aria-label={
+                  effectsRailOpen
+                    ? "Collapse abilities and effects rail"
+                    : "Expand abilities and effects rail"
+                }
+              >
+                {effectsRailOpen ? "›" : "‹"}
+              </button>
+            </div>
             {effectsRailOpen ? (
               <RuntimeControlsPanel
+                runtimeFlags={runtime.runtimeState.flags}
+                onApplyRuntimeActions={runtime.applyActions}
+                showHeading={false}
                 activatableGroups={activatableGroups}
                 activatableConflicts={activatableConflicts}
                 activatableBlockedReasons={activatableBlockedReasons}
@@ -1132,13 +1145,6 @@ export function App({
                 <span className="character-eyebrow">Recovery</span>
                 <h2 id="rest-dialog-title">Take a Rest</h2>
               </div>
-              <button
-                type="button"
-                className="ghost"
-                onClick={() => setResting(false)}
-              >
-                Close
-              </button>
             </div>
             <p>
               Core recovery restores {Math.max(1, effectiveBuild.levels.length)}{" "}

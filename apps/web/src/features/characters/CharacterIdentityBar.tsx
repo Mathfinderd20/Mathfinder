@@ -1,7 +1,9 @@
+import { healthPresentation } from "../../characterPresentation";
 import { useRef, useState } from "react";
 import {
   ALIGNMENT_LABELS,
   type CharacterBuild,
+  type HealthCondition,
   type DerivedSheet,
 } from "@mathfinder/rules-engine";
 import type { CharacterDetails, CharacterProfile } from "./characterRepository";
@@ -11,7 +13,8 @@ interface Props {
   currentHp: number;
   details: CharacterDetails;
   onChange: (details: CharacterDetails) => void;
-  onRest: () => void;
+  tempHp: number;
+  healthCondition: HealthCondition;
   sheet: DerivedSheet;
 }
 
@@ -48,9 +51,15 @@ export function CharacterIdentityBar({
   currentHp,
   details,
   onChange,
-  onRest,
+  tempHp,
+  healthCondition,
   sheet,
 }: Props) {
+  const health = healthPresentation(
+    currentHp,
+    sheet.hitPoints.total,
+    healthCondition,
+  );
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<CharacterProfile>(details.profile ?? {});
   const uploadRef = useRef<HTMLInputElement>(null);
@@ -115,7 +124,11 @@ export function CharacterIdentityBar({
           </span>
           <div className="character-identity-title">
             <h1>{sheet.name}</h1>
-            <button type="button" className="ghost small" onClick={openEditor}>
+            <button
+              type="button"
+              className="character-edit-profile"
+              onClick={openEditor}
+            >
               Edit profile
             </button>
           </div>
@@ -137,19 +150,17 @@ export function CharacterIdentityBar({
             <dd>{details.profile?.deity || "—"}</dd>
           </div>
         </dl>
-        <div className="character-vitals">
+        <div className={`character-vitals health-tone-${health.tone}`}>
           <span>Hit points</span>
           <strong>
             {currentHp}
-            <small> / {sheet.hitPoints.total}</small>
+            <small>
+              {" "}
+              / {sheet.hitPoints.total}
+              {tempHp > 0 ? ` + ${tempHp} HP` : ""}
+            </small>
           </strong>
-          <button
-            type="button"
-            className="character-rest-button"
-            onClick={onRest}
-          >
-            Rest
-          </button>
+          <span className="character-header-status">{health.label}</span>
         </div>
       </section>
 
@@ -171,29 +182,47 @@ export function CharacterIdentityBar({
                 <span className="character-eyebrow">Identity &amp; flavor</span>
                 <h2 id="character-profile-title">Character profile</h2>
               </div>
-              <button
-                type="button"
-                className="ghost"
-                onClick={() => setEditing(false)}
-              >
-                Close
-              </button>
             </div>
-            <div className="character-profile-grid">
-              {PROFILE_FIELDS.map((field) => (
-                <label className="field compact" key={field.key}>
-                  <span>{field.label}</span>
-                  <input
-                    value={draft[field.key] ?? ""}
-                    placeholder={field.placeholder}
-                    onChange={(event) =>
-                      setDraft((current) => ({
-                        ...current,
-                        [field.key]: event.target.value,
-                      }))
-                    }
-                  />
-                </label>
+            <p className="profile-dialog-intro">
+              Personal details for {sheet.name}. These free-text fields do not
+              change your character’s stats.
+            </p>
+            <div className="profile-field-sections">
+              {[
+                {
+                  title: "Identity & origins",
+                  keys: ["deity", "gender", "homeland", "associations"],
+                },
+                {
+                  title: "Physical details",
+                  keys: ["age", "height", "weight"],
+                },
+              ].map((group) => (
+                <fieldset key={group.title}>
+                  <legend>{group.title}</legend>
+                  <div className="character-profile-grid">
+                    {PROFILE_FIELDS.filter((field) =>
+                      group.keys.includes(field.key),
+                    ).map((field) => (
+                      <label
+                        className={`field compact profile-field-${field.key}`}
+                        key={field.key}
+                      >
+                        <span>{field.label}</span>
+                        <input
+                          value={draft[field.key] ?? ""}
+                          placeholder={field.placeholder}
+                          onChange={(event) =>
+                            setDraft((current) => ({
+                              ...current,
+                              [field.key]: event.target.value,
+                            }))
+                          }
+                        />
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
               ))}
             </div>
             <div className="modal-actions">
