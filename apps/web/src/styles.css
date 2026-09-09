@@ -161,9 +161,6 @@ button {
   font-weight: 600;
   cursor: pointer;
 }
-button:hover {
-  background: var(--accent-2);
-}
 button.ghost {
   background: transparent;
   border: 1px solid var(--line);
@@ -1444,7 +1441,6 @@ button:disabled {
   color: var(--ink);
   text-align: left;
 }
-.searchable-picker-option:hover,
 .searchable-picker-option.selected {
   background: rgba(194, 104, 58, 0.12);
   border-color: rgba(194, 104, 58, 0.45);
@@ -1577,8 +1573,8 @@ button:disabled {
   line-height: 1;
 }
 .alignment-picker-option:hover {
-  border-color: rgba(217, 154, 91, 0.45);
-  background: rgba(217, 154, 91, 0.08);
+  border-color: var(--line);
+  background: transparent;
   color: var(--ink);
 }
 .alignment-picker-option.selected {
@@ -4033,10 +4029,8 @@ button {
   box-shadow: none;
 }
 
-button:hover {
-  border-color: #efd09c;
-  background: #efd09c;
-}
+/* Buttons retain their own surface on hover. A global accent fill washes out
+   dark sheet tiles (daily magic, level rows, references, and catalog results). */
 
 button.ghost {
   border-color: #50514a;

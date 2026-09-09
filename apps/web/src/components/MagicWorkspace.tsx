@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useContext, useMemo, useState } from "react";
 import {
   spellSaveDcForSchool,
   type DerivedSpellcasting,
@@ -8,6 +8,7 @@ import {
   type SpellcastingManagerProps,
 } from "./SpellcastingManager";
 import { CharacterDialog } from "./CharacterDialog";
+import { SectionSaveContext } from "./SaveSection";
 import { useCharacterUiState } from "../features/characters/CharacterUiSession";
 import { buildSpellCompendiumOptions } from "../spellOptionData";
 import { spellTitle } from "../rulesText";
@@ -102,6 +103,7 @@ export function MagicWorkspace(
   },
 ) {
   const { casters, characterId = "local" } = props;
+  const saveSection = useContext(SectionSaveContext);
   const [source, setSource] = useCharacterUiState(
     characterId,
     "magic-source",
@@ -288,6 +290,7 @@ export function MagicWorkspace(
               role="tab"
               aria-selected={caster?.className === entry.className}
               onClick={() => {
+                if (source !== entry.className) saveSection();
                 setSource(entry.className);
                 setLevelFilter("");
                 setQuery("");
@@ -776,6 +779,7 @@ export function MagicWorkspace(
       {manage && caster && (
         <CharacterDialog
           label="Manage casting source"
+          saveOnExit
           onClose={() => setManage(false)}
         >
           <section className="modal v2-editor-dialog">
@@ -859,6 +863,7 @@ export function MagicWorkspace(
       )}
       {preparation && caster && (
         <CharacterDialog
+          saveOnExit
           label={
             preparation.index === undefined
               ? "Prepare spell"

@@ -3,6 +3,7 @@ import { ALIGNMENT_LABELS } from "@mathfinder/rules-engine";
 import type { BuildEditorProps } from "./BuildEditorTab";
 import { LevelProgressionPlanner } from "./LevelProgressionPlanner";
 import { CharacterDialog } from "./CharacterDialog";
+import { SaveSection } from "./SaveSection";
 import { useCharacterUiState } from "../features/characters/CharacterUiSession";
 import { classAbilitiesGrantedAtLevel } from "../classAbilityProgression";
 import { RUNTIME_CLASS_FEATURES, RUNTIME_ARCHETYPES } from "../content";
@@ -287,7 +288,7 @@ export function BuildWorkspace(
                     </button>
                   </div>
                   {expanded[index] && (
-                    <div className="build-level-breakdown">
+                    <SaveSection className="build-level-breakdown">
                       <LevelProgressionPlanner {...props} focusLevel={index} />
                       <button
                         className="ghost small"
@@ -303,7 +304,7 @@ export function BuildWorkspace(
                         Inventory, notes, and character identity stay with this
                         character.
                       </p>
-                    </div>
+                    </SaveSection>
                   )}
                 </section>
               );
@@ -316,7 +317,11 @@ export function BuildWorkspace(
         existing validation and guided suggestions.
       </p>
       {editor && (
-        <CharacterDialog label="Build editor" onClose={() => setEditor(null)}>
+        <CharacterDialog
+          saveOnExit
+          label="Build editor"
+          onClose={() => setEditor(null)}
+        >
           <section className="modal v2-editor-dialog">
             <header className="modal-head">
               <div>

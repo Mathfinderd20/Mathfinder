@@ -1,4 +1,6 @@
 import { HeaderProfile } from "./components/ProfileMenu";
+import { SaveSection, SectionSaveProvider } from "./components/SaveSection";
+import { useSectionDraft } from "./features/characters/useSectionDraft";
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import {
   applyLevelUp,
@@ -47,7 +49,7 @@ import {
 } from "./features/characters/characterRepository";
 import { CharacterIdentityBar } from "./features/characters/CharacterIdentityBar";
 import { CharacterNotes } from "./features/characters/CharacterNotes";
-import { accountStorage } from "./lib/accountCache";
+import { accountStorage, cacheWritable } from "./lib/accountCache";
 import { runtimeWeaponOptions } from "./app/buildNormalization";
 import { useBuildPersistence } from "./app/useBuildPersistence";
 import { useSpellbookEditor } from "./app/useSpellbookEditor";
@@ -122,6 +124,7 @@ export function App({
   onHome,
   onTabChange,
 }: AppProps = {}) {
+  const [activeTab, setActiveTab] = useState<WorkspaceTab>(initialTab);
   const {
     build,
     setBuild,
@@ -133,7 +136,8 @@ export function App({
     resetPersistedBuild,
     restoreBuildSlot,
     saveNewBuildSlot,
-  } = useBuildPersistence(characterId);
+    flushBuildPersistence,
+  } = useBuildPersistence(characterId, activeTab === "character");
   const deferredBuild = useDeferredValue(build);
   const plannerExpansion = useRef<PlannerExpansion | null>(null);
   const {
@@ -214,13 +218,33 @@ export function App({
     "idle" | "holding" | "charged" | "celebrating"
   >("idle");
   const levelUpEffectTimer = useRef<number | undefined>(undefined);
-  const [activeTab, setActiveTab] = useState<WorkspaceTab>(initialTab);
-  const [details, setDetails] = useState<CharacterDetails>(
+  const [details, setDetails, flushDetails] = useSectionDraft<CharacterDetails>(
+    characterId ?? "local",
+    "details-section-draft",
     () =>
       (characterId
         ? getCharacter(accountStorage, characterId)?.details
         : undefined) ?? {},
+    (next) => {
+      if (!characterId) return true;
+      if (!cacheWritable() || !getCharacter(accountStorage, characterId))
+        return false;
+      saveCharacterDetails(accountStorage, characterId, next);
+      return true;
+    },
+    false,
   );
+  const flushSection = () => {
+    flushBuildPersistence();
+    flushDetails();
+  };
+  const sectionSaveRef = useRef(flushSection);
+  sectionSaveRef.current = flushSection;
+  const previousTab = useRef(activeTab);
+  useEffect(() => {
+    if (previousTab.current !== activeTab) sectionSaveRef.current();
+    previousTab.current = activeTab;
+  }, [activeTab]);
   const [effectsRailOpen, setEffectsRailOpen] = useState(true);
   const [resting, setResting] = useState(false);
   const [pendingSpellCast, setPendingSpellCast] = useState<PendingSpellCast>();
@@ -564,9 +588,12 @@ export function App({
 
   const viewingLatestLevel = currentLevel >= build.levels.length;
 
-  function updateCharacterDetails(next: CharacterDetails) {
+  function updateCharacterDetails(
+    next: CharacterDetails,
+    immediate = activeTab === "character",
+  ) {
     setDetails(next);
-    if (characterId) saveCharacterDetails(accountStorage, characterId, next);
+    if (immediate) flushDetails();
   }
 
   function completeRest() {
@@ -604,6 +631,7 @@ export function App({
 
   function confirmSpellCast() {
     if (!pendingSpellCast) return;
+    if (activeTab !== "character") flushSection();
     castSpell(
       pendingSpellCast.classKey,
       pendingSpellCast.level,
@@ -615,7 +643,10 @@ export function App({
   }
 
   return (
-    <div className={`app level-up-effect-${levelUpEffect}`}>
+    <SectionSaveProvider
+      save={flushSection}
+      className={`app level-up-effect-${levelUpEffect}`}
+    >
       <div className="level-up-sheet-effect" aria-hidden="true">
         <span className="level-up-aura" />
         <span className="level-up-edge level-up-edge-top" />
@@ -652,7 +683,7 @@ export function App({
         build={effectiveBuild}
         currentHp={currentHp}
         details={details}
-        onChange={updateCharacterDetails}
+        onChange={(next) => updateCharacterDetails(next, true)}
         tempHp={tempHp}
         healthCondition={healthStatus.condition}
         sheet={sheet}
@@ -684,9 +715,20 @@ export function App({
       {mountedTabs.notes ? (
         <div hidden={activeTab !== "notes"} className="character-tab-panel">
           <CharacterNotes
+            active={activeTab === "notes"}
             characterId={characterId}
             notes={details.notes ?? []}
-            onChange={(notes) => updateCharacterDetails({ ...details, notes })}
+            onChange={(notes) => {
+              if (characterId && !cacheWritable()) return false;
+              // Read current profile fields at flush time, including route cleanup.
+              const current = characterId
+                ? getCharacter(accountStorage, characterId)?.details
+                : details;
+              if (characterId && !getCharacter(accountStorage, characterId))
+                return false;
+              updateCharacterDetails({ ...current, notes }, true);
+              return true;
+            }}
           />
         </div>
       ) : null}
@@ -799,7 +841,7 @@ export function App({
       </div>
 
       {mountedTabs.inventory ? (
-        <div hidden={activeTab !== "inventory"}>
+        <SaveSection hidden={activeTab !== "inventory"}>
           <GearTab
             characterId={characterId}
             sheet={sheet}
@@ -837,11 +879,14 @@ export function App({
             onStepMagicItemTier={stepMagicItemTier}
             onRemoveEquipment={removeEquipment}
           />
-        </div>
+        </SaveSection>
       ) : null}
 
       {mountedTabs.magic ? (
-        <div hidden={activeTab !== "magic"} className="character-tab-panel">
+        <SaveSection
+          hidden={activeTab !== "magic"}
+          className="character-tab-panel"
+        >
           <div className="magic-workspace">
             <header className="character-section-header">
               <div>
@@ -888,11 +933,14 @@ export function App({
               onResetSpellRuntimeClass={resetSpellClassRuntime}
             />
           </div>
-        </div>
+        </SaveSection>
       ) : null}
 
       {mountedTabs.build ? (
-        <div hidden={activeTab !== "build"} className="character-build-tab">
+        <SaveSection
+          hidden={activeTab !== "build"}
+          className="character-build-tab"
+        >
           {!characterId ? (
             <div className="build-slots-wrap">
               <BuildSlotsPanel
@@ -937,7 +985,7 @@ export function App({
               </div>
             }
             campaignTraitsPanel={
-              <section className="build-traits-panel panel">
+              <SaveSection className="build-traits-panel panel">
                 <div className="editor-section-head tight">
                   <div>
                     <span className="character-eyebrow">
@@ -1005,7 +1053,7 @@ export function App({
                     to the GM’s creation rules.
                   </p>
                 )}
-              </section>
+              </SaveSection>
             }
             build={build}
             currentLevel={currentLevel}
@@ -1123,7 +1171,7 @@ export function App({
             onResetSpellSlotLevel={resetSpellSlotLevel}
             onResetSpellRuntimeClass={resetSpellClassRuntime}
           />
-        </div>
+        </SaveSection>
       ) : null}
 
       {resting ? (
@@ -1288,6 +1336,6 @@ export function App({
           }}
         />
       ) : null}
-    </div>
+    </SectionSaveProvider>
   );
 }

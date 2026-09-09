@@ -399,6 +399,17 @@
   background: #282e2b;
   padding-left: 15px;
 }
+.app .workspace-v2 .notebook-list button:hover {
+  background: transparent;
+  color: var(--ink);
+}
+.app .workspace-v2 .notebook-list button.active:hover {
+  background: #282e2b;
+}
+.app .workspace-v2 .notebook-list button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -3px;
+}
 .notebook-privacy {
   margin: 0;
   padding: 18px;
@@ -406,6 +417,15 @@
   color: var(--muted);
   border-top: 1px solid var(--line);
   line-height: 1.7;
+}
+.app .notebook-delete-dialog {
+  width: min(460px, calc(100vw - 32px));
+  padding: 24px;
+}
+.notebook-delete-dialog p {
+  color: var(--muted);
+  line-height: 1.6;
+  overflow-wrap: anywhere;
 }
 .notebook-editor {
   display: flex;

@@ -762,6 +762,7 @@ export function InventoryWorkspace(
       {target && (
         <CharacterDialog
           label="Manage inventory"
+          saveOnExit
           onClose={() => setTarget(null)}
         >
           <section className="modal v2-editor-dialog">
@@ -787,6 +788,7 @@ export function InventoryWorkspace(
       {coins && (
         <CharacterDialog
           label="Edit coin purse"
+          saveOnExit
           onClose={() => setCoins(false)}
         >
           <section className="modal v2-coin-dialog">

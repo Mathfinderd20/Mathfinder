@@ -3,7 +3,8 @@ import {
   cacheGeneration,
   cacheWritable,
 } from "../lib/accountCache";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useSectionDraft } from "../features/characters/useSectionDraft";
 import type { CharacterBuild } from "@mathfinder/rules-engine";
 import { initialBuild } from "../data";
 import {
@@ -119,80 +120,68 @@ export function loadBuildSlots(
   }
 }
 
-export function useBuildPersistence(characterId?: string) {
+export function useBuildPersistence(characterId?: string, autosave = true) {
   const mountedGeneration = useRef(cacheGeneration());
-  const [build, setBuild] = useState<CharacterBuild>(() =>
-    loadCurrentBuild(characterId),
-  );
-  const [currentLevel, setCurrentLevel] = useState(() =>
-    loadCurrentLevel(characterId),
-  );
-  const [savedBuildSlots, setSavedBuildSlots] = useState<SavedBuildSlot[]>(() =>
-    loadBuildSlots(),
-  );
-  const persistedCharacterSnapshot = useRef(
-    JSON.stringify({ build, currentLevel }),
-  );
-  const pendingPersistence = useRef({ build, currentLevel });
-  pendingPersistence.current = { build, currentLevel };
-
-  useEffect(() => {
-    const timeout = window.setTimeout(() => {
+  const [pending, setPending, flushBuildPersistence] = useSectionDraft(
+    characterId ?? "local",
+    "build-section-draft",
+    () => ({
+      build: loadCurrentBuild(characterId),
+      currentLevel: loadCurrentLevel(characterId),
+    }),
+    (next) => {
       if (!cacheWritable() || mountedGeneration.current !== cacheGeneration())
-        return;
+        return false;
       if (characterId) {
-        const snapshot = JSON.stringify({ build, currentLevel });
-        if (snapshot === persistedCharacterSnapshot.current) return;
-        persistedCharacterSnapshot.current = snapshot;
-        saveCharacter(accountStorage, characterId, build, currentLevel);
-        return;
-      }
-      accountStorage.setItem(CURRENT_BUILD_STORAGE_KEY, JSON.stringify(build));
-      accountStorage.setItem(CURRENT_LEVEL_STORAGE_KEY, `${currentLevel}`);
-    }, 300);
-    return () => window.clearTimeout(timeout);
-  }, [build, characterId, currentLevel]);
-
-  useEffect(() => {
-    function flushPendingPersistence() {
-      if (!cacheWritable() || mountedGeneration.current !== cacheGeneration())
-        return;
-      const pending = pendingPersistence.current;
-      if (characterId) {
-        const snapshot = JSON.stringify(pending);
-        if (snapshot === persistedCharacterSnapshot.current) return;
-        persistedCharacterSnapshot.current = snapshot;
+        if (!getCharacter(accountStorage, characterId)) return false;
         saveCharacter(
           accountStorage,
           characterId,
-          pending.build,
-          pending.currentLevel,
+          next.build,
+          next.currentLevel,
         );
-        return;
+      } else {
+        accountStorage.setItem(
+          CURRENT_BUILD_STORAGE_KEY,
+          JSON.stringify(next.build),
+        );
+        accountStorage.setItem(
+          CURRENT_LEVEL_STORAGE_KEY,
+          `${next.currentLevel}`,
+        );
       }
-      accountStorage.setItem(
-        CURRENT_BUILD_STORAGE_KEY,
-        JSON.stringify(pending.build),
-      );
-      accountStorage.setItem(
-        CURRENT_LEVEL_STORAGE_KEY,
-        `${pending.currentLevel}`,
-      );
-    }
-    window.addEventListener("pagehide", flushPendingPersistence);
-    window.addEventListener("mathfinder:flush", flushPendingPersistence);
-    return () => {
-      window.removeEventListener("pagehide", flushPendingPersistence);
-      window.removeEventListener("mathfinder:flush", flushPendingPersistence);
-      flushPendingPersistence();
-    };
-  }, [characterId]);
-
+      return true;
+    },
+    autosave,
+  );
+  const { build, currentLevel } = pending;
+  const setBuild: React.Dispatch<React.SetStateAction<CharacterBuild>> =
+    useCallback(
+      (next) =>
+        setPending((previous) => ({
+          ...previous,
+          build: typeof next === "function" ? next(previous.build) : next,
+        })),
+      [setPending],
+    );
+  const setCurrentLevel: React.Dispatch<React.SetStateAction<number>> =
+    useCallback(
+      (next) =>
+        setPending((previous) => ({
+          ...previous,
+          currentLevel:
+            typeof next === "function" ? next(previous.currentLevel) : next,
+        })),
+      [setPending],
+    );
+  const [savedBuildSlots, setSavedBuildSlots] = useState<SavedBuildSlot[]>(() =>
+    loadBuildSlots(),
+  );
   useEffect(() => {
     setCurrentLevel((previous) =>
       Math.max(1, Math.min(build.levels.length, previous)),
     );
-  }, [build.levels.length]);
+  }, [build.levels.length, setCurrentLevel]);
 
   useEffect(() => {
     accountStorage.setItem(
@@ -256,6 +245,7 @@ export function useBuildPersistence(characterId?: string) {
   }
 
   return {
+    flushBuildPersistence,
     build,
     setBuild,
     currentLevel,

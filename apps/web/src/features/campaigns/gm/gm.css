@@ -71,7 +71,7 @@ body:has(.gm-page) {
   font-weight: 650;
 }
 .gm-page .gm-primary:hover {
-  background: #efd09c;
+  background: var(--gm-gold);
 }
 .gm-page .gm-danger {
   color: #f1a79a;
