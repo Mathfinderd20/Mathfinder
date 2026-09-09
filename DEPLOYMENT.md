@@ -8,10 +8,10 @@ Docker, and rebuilding Docker does not apply database migrations.
 
 Production and staging are isolated deployments:
 
-| Environment | Branch  | Worker             | Domain                 | Backend                     |
-| ----------- | ------- | ------------------ | ---------------------- | --------------------------- |
-| Production  | `main`  | `mathfinder`       | `diresheets.com`       | Production Supabase project |
-| Staging     | `stage` | `mathfinder-stage` | `stage.diresheets.com` | Staging Supabase project    |
+| Environment | Branch  | Worker             | Domain                 | Supabase project       |
+| ----------- | ------- | ------------------ | ---------------------- | ---------------------- |
+| Production  | `main`  | `mathfinder`       | `diresheets.com`       | `guronltdufvmnwnjqggd` |
+| Staging     | `stage` | `mathfinder-stage` | `stage.diresheets.com` | `pkupqzdnefnjwndwzhdr` |
 
 Each Cloudflare Worker requires these Vite build variables:
 
