@@ -1,11 +1,22 @@
-import { useRef, useState, type FocusEvent, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type FocusEvent,
+  type ReactNode,
+} from "react";
 import { createPortal } from "react-dom";
 
 interface TooltipProps {
   content?: string;
   children: ReactNode;
   className?: string;
+  trigger?: "hover" | "click";
 }
+
+export const TooltipTriggerContext = createContext<"hover" | "click">("hover");
 
 interface TooltipPosition {
   left: number;
@@ -13,9 +24,39 @@ interface TooltipPosition {
   below: boolean;
 }
 
-export function Tooltip({ content, children, className = "" }: TooltipProps) {
+export function Tooltip({
+  content,
+  children,
+  className = "",
+  trigger,
+}: TooltipProps) {
+  const inheritedTrigger = useContext(TooltipTriggerContext);
+  const clickToOpen = (trigger ?? inheritedTrigger) === "click";
   const anchorRef = useRef<HTMLSpanElement>(null);
+  const panelRef = useRef<HTMLSpanElement>(null);
   const [position, setPosition] = useState<TooltipPosition>();
+  useEffect(() => {
+    if (!clickToOpen || !position) return;
+    function dismiss(event: PointerEvent) {
+      if (
+        !anchorRef.current?.contains(event.target as Node) &&
+        !panelRef.current?.contains(event.target as Node)
+      )
+        setPosition(undefined);
+    }
+    function escape(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setPosition(undefined);
+        anchorRef.current?.focus();
+      }
+    }
+    document.addEventListener("pointerdown", dismiss);
+    document.addEventListener("keydown", escape);
+    return () => {
+      document.removeEventListener("pointerdown", dismiss);
+      document.removeEventListener("keydown", escape);
+    };
+  }, [clickToOpen, position]);
   if (!content?.trim()) return <>{children}</>;
 
   const sections = content
@@ -47,8 +88,10 @@ export function Tooltip({ content, children, className = "" }: TooltipProps) {
 
   const panel = position ? (
     <span
-      className={`mf-tooltip-panel mf-tooltip-panel-portal ${position.below ? "below" : "above"}`}
-      role="tooltip"
+      ref={panelRef}
+      className={`mf-tooltip-panel mf-tooltip-panel-portal ${clickToOpen ? "click-math-panel" : ""} ${position.below ? "below" : "above"}`}
+      role={clickToOpen ? "dialog" : "tooltip"}
+      aria-label={clickToOpen ? "Stat details" : undefined}
       style={{ left: position.left, top: position.top }}
     >
       {sections.map((section, index) => (
@@ -63,10 +106,42 @@ export function Tooltip({ content, children, className = "" }: TooltipProps) {
     <span
       ref={anchorRef}
       className={`mf-tooltip ${className}`.trim()}
-      onMouseEnter={showTooltip}
-      onMouseLeave={() => setPosition(undefined)}
-      onFocusCapture={showTooltip}
-      onBlurCapture={handleBlur}
+      role={clickToOpen ? "button" : undefined}
+      tabIndex={clickToOpen ? 0 : undefined}
+      aria-label={
+        clickToOpen ? `Show details: ${content.split("\n")[0]}` : undefined
+      }
+      aria-expanded={clickToOpen ? !!position : undefined}
+      onMouseEnter={clickToOpen ? undefined : showTooltip}
+      onMouseLeave={clickToOpen ? undefined : () => setPosition(undefined)}
+      onFocusCapture={clickToOpen ? undefined : showTooltip}
+      onBlurCapture={clickToOpen ? undefined : handleBlur}
+      onClick={
+        clickToOpen
+          ? (event) => {
+              if (
+                (event.target as Element).closest(
+                  "button, input, select, summary, a",
+                )
+              )
+                return;
+              if (position) setPosition(undefined);
+              else showTooltip();
+            }
+          : undefined
+      }
+      onKeyDown={
+        clickToOpen
+          ? (event) => {
+              if (event.target !== event.currentTarget) return;
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                if (position) setPosition(undefined);
+                else showTooltip();
+              }
+            }
+          : undefined
+      }
     >
       {children}
       {panel && typeof document !== "undefined"

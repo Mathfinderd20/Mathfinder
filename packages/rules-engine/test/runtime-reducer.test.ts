@@ -14,6 +14,34 @@ import {
 } from "../src";
 
 describe("runtime reducer + helpers", () => {
+  it("snapshots roll results without changing ammo bookkeeping", () => {
+    const rolls = {
+      attackRoll: 10,
+      attackTotal: 16,
+      damageRoll: 3,
+      damageTotal: 8,
+      criticalMultiplier: 3,
+    };
+    const state = reduceRuntimeState(createRuntimeStateSnapshot(), {
+      type: "record-weapon-attack",
+      weaponKey: "bow",
+      weaponName: "Bow",
+      ammoType: "arrow",
+      ammoSpentForAttack: 1,
+      rolls,
+    });
+    rolls.attackTotal = 100;
+    expect(state.histories.bow?.[0]?.rolls?.attackTotal).toBe(16);
+    expect(state.events[0]?.rolls?.attackTotal).toBe(16);
+    expect(state.ledgers.arrow).toBe(1);
+    const undone = reduceRuntimeState(state, {
+      type: "undo-weapon-attack",
+      weaponKey: "bow",
+      weaponName: "Bow",
+    });
+    expect(undone.ledgers.arrow).toBe(0);
+    expect(undone.histories.bow).toHaveLength(0);
+  });
   it("updates and resets ledgers safely", () => {
     expect(updateLedger({ arrow: 2 }, "arrow", 3).arrow).toBe(5);
     expect(updateLedger({ arrow: 2 }, "arrow", -10).arrow).toBe(0);

@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { HomePage } from "../features/home/HomePage";
 import { CharacterWorkspace } from "../features/characters/CharacterWorkspace";
+import { CharacterUiSession } from "../features/characters/CharacterUiSession";
 import { NewCharacterPage } from "../features/characters/NewCharacterPage";
 import { ManageCharacterPage } from "../features/characters/ManageCharacterPage";
 import { CreateCampaignPage } from "../features/campaigns/CreateCampaignPage";
@@ -68,13 +69,15 @@ function ProtectedApplication() {
           <Link to="/">Back to characters</Link>
         </main>
       ) : (
-        <fieldset
-          className="application-fields"
-          disabled={cloud.syncing}
-          key={`${cloud.userId}:${cloud.generation}`}
-        >
-          <ApplicationRoutes />
-        </fieldset>
+        <CharacterUiSession key={cloud.userId}>
+          <fieldset
+            className="application-fields"
+            disabled={cloud.syncing}
+            key={`${cloud.userId}:${cloud.generation}`}
+          >
+            <ApplicationRoutes />
+          </fieldset>
+        </CharacterUiSession>
       )}
     </>
   );

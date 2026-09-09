@@ -17,6 +17,8 @@ import {
 import { classAbilitiesGrantedAtLevel } from "../classAbilityProgression";
 import { FeatSelectionPicker } from "./FeatSelectionPicker";
 import { CompendiumPicker } from "./CompendiumPicker";
+import { effectiveRaceChoiceOptions } from "../skillRankProgression";
+import { sign } from "../util";
 
 interface LevelProgressionPlannerProps {
   build: CharacterBuild;
@@ -96,6 +98,16 @@ export function LevelProgressionPlanner({
   onClearPlannedLevelChoices,
   onUpdateInfantrymanGunTraining,
 }: LevelProgressionPlannerProps) {
+  const raceOptions = effectiveRaceChoiceOptions(build.race);
+  const alternateTraits = (build.race.alternateTraits ?? []).filter((trait) =>
+    build.race.choiceSelection?.alternateTraits?.some(
+      (id) => id.toLowerCase() === trait.id.toLowerCase(),
+    ),
+  );
+  const racialAbilityModifiers = [
+    ...(build.race.abilityModifiers ?? []),
+    ...alternateTraits.flatMap((trait) => trait.abilityModifiers ?? []),
+  ];
   const availableWeaponNames = useMemo(
     () => collectFeatWeaponNames(build, RUNTIME_WEAPONS),
     [build],
@@ -562,6 +574,53 @@ export function LevelProgressionPlanner({
                       )}
                     </td>
                   </tr>,
+                  rowExpanded ? (
+                    <tr
+                      key={`planner-racial-details-${index}`}
+                      className="planner-ability-detail-row"
+                    >
+                      <td colSpan={10}>
+                        <div className="planner-racial-details">
+                          <strong>
+                            {build.race.name} · Racial build adjustments
+                          </strong>
+                          {index === 0 ? (
+                            <>
+                              {racialAbilityModifiers.map((modifier, i) => (
+                                <span key={i}>
+                                  {modifier.target.toUpperCase()}{" "}
+                                  {sign(modifier.value)}
+                                </span>
+                              ))}
+                              {raceOptions.flexibleAbilityBonus &&
+                              build.race.choiceSelection?.flexibleAbility ? (
+                                <span>
+                                  Flexible racial bonus:{" "}
+                                  {build.race.choiceSelection.flexibleAbility.toUpperCase()}{" "}
+                                  {sign(raceOptions.flexibleAbilityBonus.value)}
+                                </span>
+                              ) : null}
+                              {build.race.choiceSelection?.bonusFeat ? (
+                                <span>
+                                  Bonus feat:{" "}
+                                  {build.race.choiceSelection.bonusFeat}
+                                </span>
+                              ) : null}
+                            </>
+                          ) : null}
+                          <span>
+                            Extra skill ranks this level:{" "}
+                            {sign(
+                              Math.max(
+                                0,
+                                raceOptions.extraSkillRanksPerLevel ?? 0,
+                              ),
+                            )}
+                          </span>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : null,
                   abilitiesExpanded ? (
                     <tr
                       key={`planner-ability-detail-${index + 1}`}

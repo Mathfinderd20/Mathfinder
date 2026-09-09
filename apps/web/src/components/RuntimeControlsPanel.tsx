@@ -1,16 +1,17 @@
 import { useMemo, useState } from "react";
-import {
-  analyzeRuntimeBuff,
-  tacticalCategoryLabel,
-  type RuntimeBuffView,
-  type RuntimeProfile,
-  type RuntimeTacticalCategory,
-} from "../runtimeInsights";
+import { type RuntimeBuffView, type RuntimeProfile } from "../runtimeInsights";
 import type {
+  RuntimeAction,
   ActivatableResourceCost,
   DerivedResourcePool,
 } from "@mathfinder/rules-engine";
-import { Tooltip } from "./Tooltip";
+import { EffectLibraryModal } from "./EffectLibraryModal";
+import {
+  FATIGUED_EFFECT_ID,
+  retainedEffectKey,
+  selectEffectActions,
+} from "../effectSelection";
+import { Tooltip, TooltipTriggerContext } from "./Tooltip";
 
 interface ActivatableView {
   id: string;
@@ -20,6 +21,9 @@ interface ActivatableView {
 }
 
 interface RuntimeControlsPanelProps {
+  showHeading?: boolean;
+  runtimeFlags?: Record<string, boolean>;
+  onApplyRuntimeActions?: (actions: RuntimeAction[]) => void;
   activatableGroups: {
     ungrouped: ActivatableView[];
     grouped: Record<string, ActivatableView[]>;
@@ -128,14 +132,10 @@ export function activatableResourceFailure(
     : undefined;
 }
 
-const TACTICAL_CATEGORIES: RuntimeTacticalCategory[] = [
-  "offense",
-  "defense",
-  "mobility",
-  "casting",
-  "utility",
-];
 export function RuntimeControlsPanel({
+  showHeading = true,
+  runtimeFlags = {},
+  onApplyRuntimeActions,
   activatableGroups,
   activatableConflicts,
   activatableBlockedReasons,
@@ -154,102 +154,28 @@ export function RuntimeControlsPanel({
   onAdjustResource,
   onResetResource,
 }: RuntimeControlsPanelProps) {
-  const [showAllBuffs, setShowAllBuffs] = useState(false);
-  const [effectSearch, setEffectSearch] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState<
-    RuntimeTacticalCategory | "all"
-  >("all");
-  const activeEffectIds = useMemo(
-    () =>
-      new Set(
-        Object.entries(activeBuffs)
-          .filter(([, value]) => value)
-          .map(([id]) => id),
-      ),
-    [activeBuffs],
-  );
-  const normalizedSearch = effectSearch.trim().toLowerCase();
-  const ownedSpellNameSet = useMemo(
-    () => new Set(ownedSpellNames.map((name) => name.trim().toLowerCase())),
-    [ownedSpellNames],
-  );
-  const searchTerms = useMemo(
-    () => normalizedSearch.split(/\s+/).filter(Boolean),
-    [normalizedSearch],
-  );
+  const [libraryOpen, setLibraryOpen] = useState(false);
   const buffCards = useMemo(
     () =>
       buffs.map((buff) => ({
         buff,
-        insight: analyzeRuntimeBuff(buff, profile),
-        ownedSpell: ownedSpellNameSet.has(buff.name.trim().toLowerCase()),
+        ownedSpell: ownedSpellNames.some(
+          (name) =>
+            name.trim().toLowerCase() === buff.name.trim().toLowerCase(),
+        ),
       })),
-    [buffs, ownedSpellNameSet, profile],
+    [buffs, ownedSpellNames],
   );
-  const matchingBuffCards = useMemo(
-    () =>
-      buffCards.filter(({ insight }) => {
-        const matchesSearch =
-          searchTerms.length === 0 ||
-          searchTerms.every((term) => insight.searchText.includes(term));
-        const matchesCategory =
-          categoryFilter === "all" ||
-          insight.categories.includes(categoryFilter);
-        return matchesSearch && matchesCategory;
-      }),
-    [buffCards, categoryFilter, searchTerms],
+  const ownedCards = buffCards.filter((card) => card.ownedSpell);
+  const retainedBuffs = buffs.filter(
+    (buff) => activeBuffs[buff.id] || runtimeFlags[retainedEffectKey(buff.id)],
   );
-  const featuredBuffCards = useMemo(() => {
-    const activeCards = matchingBuffCards.filter(({ buff }) =>
-      activeEffectIds.has(buff.id),
-    );
-    const ownedSpellCards = matchingBuffCards.filter(
-      ({ buff, ownedSpell }) => ownedSpell && !activeEffectIds.has(buff.id),
-    );
-    const browsingEffects = searchTerms.length > 0 || categoryFilter !== "all";
-    const topSuggestedByCategory = browsingEffects
-      ? TACTICAL_CATEGORIES.flatMap((category) =>
-          matchingBuffCards
-            .filter(
-              ({ buff, insight }) =>
-                !activeEffectIds.has(buff.id) &&
-                insight.categories.includes(category) &&
-                insight.score >= 3,
-            )
-            .sort(
-              (a, b) =>
-                b.insight.score - a.insight.score ||
-                a.buff.name.localeCompare(b.buff.name),
-            )
-            .slice(0, 4),
-        )
-      : [];
-    const seen = new Set<string>();
-    return [
-      ...activeCards,
-      ...ownedSpellCards,
-      ...topSuggestedByCategory,
-    ].filter(({ buff }) => {
-      if (seen.has(buff.id)) return false;
-      seen.add(buff.id);
-      return true;
-    });
-  }, [activeEffectIds, categoryFilter, matchingBuffCards, searchTerms.length]);
-  const otherBuffCards = useMemo(
-    () =>
-      matchingBuffCards.filter(
-        ({ buff }) =>
-          !featuredBuffCards.some((entry) => entry.buff.id === buff.id),
-      ),
-    [featuredBuffCards, matchingBuffCards],
-  );
-  const activeNamedBuffs = useMemo(
-    () =>
-      buffCards
-        .filter(({ buff }) => activeEffectIds.has(buff.id))
-        .map(({ buff }) => buff),
-    [activeEffectIds, buffCards],
-  );
+  const fatigueRetained =
+    fatigued || !!runtimeFlags[retainedEffectKey(FATIGUED_EFFECT_ID)];
+  const addedIds = [
+    ...retainedBuffs.map((buff) => buff.id),
+    ...(fatigueRetained ? [FATIGUED_EFFECT_ID] : []),
+  ];
   const activatableById = useMemo(
     () =>
       new Map(
@@ -277,33 +203,25 @@ export function RuntimeControlsPanel({
         .map((id) => activatableById.get(id)?.name ?? id),
     [activeBuffs, activatableById, availableActivatableIds],
   );
-  const tacticalSections = useMemo(() => {
-    const sections: Record<RuntimeTacticalCategory, typeof featuredBuffCards> =
-      {
-        offense: [],
-        defense: [],
-        mobility: [],
-        casting: [],
-        utility: [],
-      };
-    for (const card of featuredBuffCards)
-      sections[card.insight.primaryCategory].push(card);
-    return sections;
-  }, [featuredBuffCards]);
-  const resourceActivatables = activatableGroups.ungrouped.filter(
+  const visibleUngrouped = activatableGroups.ungrouped;
+  const visiblePools = resourcePools;
+  const abilityCount =
+    availableActivatableIds.size +
+    resourcePools.length +
+    buffCards.filter((card) => card.ownedSpell).length;
+  const resourceActivatables = visibleUngrouped.filter(
     (feature) => resourceMaxes[feature.id] !== undefined,
   );
-  const passiveActivatables = activatableGroups.ungrouped.filter(
+  const passiveActivatables = visibleUngrouped.filter(
     (feature) => resourceMaxes[feature.id] === undefined,
   );
   const rageActive = !!activeBuffs.rage;
   const [railSections, setRailSections] = useState(() => ({
     active:
-      activeNamedBuffs.length > 0 || activeAbilityNames.length > 0 || fatigued,
-    abilities:
-      resourcePools.length > 0 ||
-      resourceActivatables.length > 0 ||
-      passiveActivatables.length > 0,
+      retainedBuffs.length > 0 ||
+      activeAbilityNames.length > 0 ||
+      fatigueRetained,
+    abilities: abilityCount > 0,
     effects: true,
   }));
 
@@ -331,6 +249,7 @@ export function RuntimeControlsPanel({
       spendActivationCost(feature);
     }
     onSetToggle(feature.id, value);
+    if (value) setRailSections((current) => ({ ...current, active: true }));
   }
 
   function selectActivatableGroup(
@@ -339,6 +258,7 @@ export function RuntimeControlsPanel({
   ) {
     if (activationFailure(feature)) return;
     spendActivationCost(feature);
+    setRailSections((current) => ({ ...current, active: true }));
     onSetExclusiveToggleGroup(
       items.map((item) => item.id),
       feature.id,
@@ -357,459 +277,431 @@ export function RuntimeControlsPanel({
 
   function clearAllRuntimeEffects() {
     applyTogglePreset([]);
-    if (fatigued) onSetFlag("fatigued", false);
+    applySelection(selectEffectActions(addedIds, false));
+  }
+  function applySelection(actions: RuntimeAction[]) {
+    if (onApplyRuntimeActions) onApplyRuntimeActions(actions);
+    else
+      for (const action of actions) {
+        if (action.type === "set-toggle") onSetToggle(action.id, action.value);
+        if (action.type === "set-flag") onSetFlag(action.key, action.value);
+      }
+  }
+  function removeEffect(id: string) {
+    applySelection(selectEffectActions([id], false, false));
+  }
+
+  function setEffect(id: string, active: boolean) {
+    applySelection(selectEffectActions([id], active));
+    if (active) setRailSections((current) => ({ ...current, active: true }));
+  }
+  function renderEffectCard(buff: RuntimeBuffView, active: boolean) {
+    return (
+      <div
+        className={`buff-block runtime-effect-card ${active ? "active" : ""}`}
+        key={buff.id}
+      >
+        <label className="buff">
+          <input
+            type="checkbox"
+            role="switch"
+            checked={active}
+            onChange={(event) => setEffect(buff.id, event.target.checked)}
+          />
+          <span>
+            <strong>{buff.name}</strong>
+            <small className="runtime-card-source">Effect</small>
+            <span className="buff-desc">{buff.description}</span>
+            {buff.limitations?.length ? (
+              <span className="buff-desc">
+                Manual: {buff.limitations.join(" ")}
+              </span>
+            ) : null}
+          </span>
+        </label>
+        <button
+          type="button"
+          className="ghost small effect-remove-button"
+          aria-label={`Remove ${buff.name}`}
+          onClick={() => removeEffect(buff.id)}
+        >
+          Remove
+        </button>
+        <ResourceControls
+          featureId={buff.id}
+          resourceMaxes={resourceMaxes}
+          resourceLabels={resourceLabels}
+          resourcesUsed={resourcesUsed}
+          onAdjustResource={onAdjustResource}
+          onResetResource={onResetResource}
+        />
+      </div>
+    );
   }
 
   return (
-    <section className="panel">
-      <h2>Abilities &amp; Effects</h2>
-      <p className="hint">
-        Your abilities, owned spells, and active effects stay up front. Browse
-        the effect catalog when an ally, item, or encounter adds something else.
-      </p>
-      <label className="field compact runtime-effect-search runtime-effect-search-top">
-        <span>Search abilities and effects</span>
-        <input
-          type="search"
-          value={effectSearch}
-          onChange={(e) => setEffectSearch(e.target.value)}
-          placeholder="Haste, rage, morale, AC…"
-        />
-      </label>
-      <details
-        className="runtime-rail-section"
-        open={railSections.active}
-        onToggle={(event) => {
-          const open = event.currentTarget.open;
-          setRailSections((current) =>
-            current.active === open ? current : { ...current, active: open },
-          );
-        }}
-      >
-        <summary>
-          Active Now{" "}
-          <span>
-            {activeNamedBuffs.length +
-              activeAbilityNames.length +
-              Number(fatigued)}
-          </span>
-        </summary>
-        <div className="runtime-rail-section-body">
-          <div className="runtime-smart-summary">
-            <span className="chip">
-              {profile.classNames
-                .map((name) => name.replace(/\b\w/g, (c) => c.toUpperCase()))
-                .join(" / ") || "No class"}
-            </span>
-            {profile.meleeFocus ? (
-              <span className="chip">Melee leaning</span>
-            ) : null}
-            {profile.rangedFocus ? (
-              <span className="chip">Ranged capable</span>
-            ) : null}
-            {profile.casterFocus ? <span className="chip">Caster</span> : null}
-            {fatigued ? <span className="chip warn-pill">Fatigued</span> : null}
-            {rageActive ? <span className="chip ok-pill">Raging</span> : null}
-          </div>
-          {rageActive ? (
-            <p className="hint warn-text">
-              Ending Rage automatically applies Fatigued. Because consequences
-              are a thing now.
-            </p>
-          ) : null}
-          {activeNamedBuffs.length > 0 ||
-          activeAbilityNames.length > 0 ||
-          fatigued ? (
-            <div className="mode-group runtime-active-tray">
-              <div className="runtime-active-tray-head">
-                <div className="mode-title">active effects tray</div>
-                <button
-                  type="button"
-                  className="ghost small"
-                  onClick={clearAllRuntimeEffects}
-                >
-                  Clear All
-                </button>
-              </div>
-              <div className="runtime-chip-cloud">
-                {activeAbilityNames.map((name) => (
-                  <span key={`active-ability-${name}`} className="chip ok-pill">
-                    {name}
-                  </span>
-                ))}
-                {activeNamedBuffs.map((buff) => (
-                  <button
-                    key={`active-effect-${buff.id}`}
-                    type="button"
-                    className="chip runtime-active-chip"
-                    onClick={() => onSetToggle(buff.id, false)}
-                  >
-                    {buff.name} ×
-                  </button>
-                ))}
-                {fatigued ? (
-                  <button
-                    type="button"
-                    className="chip runtime-active-chip warn-pill"
-                    onClick={() => onSetFlag("fatigued", false)}
-                  >
-                    Fatigued ×
-                  </button>
-                ) : null}
-              </div>
-            </div>
-          ) : null}
-        </div>
-      </details>
-      <details
-        className="runtime-rail-section"
-        open={railSections.abilities}
-        onToggle={(event) => {
-          const open = event.currentTarget.open;
-          setRailSections((current) =>
-            current.abilities === open
-              ? current
-              : { ...current, abilities: open },
-          );
-        }}
-      >
-        <summary>
-          My Abilities{" "}
-          <span>
-            {resourcePools.length +
-              resourceActivatables.length +
-              passiveActivatables.length}
-          </span>
-        </summary>
-        <div className="runtime-rail-section-body">
-          {resourcePools.length > 0 ? (
-            <div className="mode-group">
-              <div className="mode-title">resource pools</div>
-              {resourcePools.map((pool) => (
-                <div className="buff-block" key={pool.id}>
-                  <div className="buff">
-                    <span>
-                      <strong>{pool.name}</strong>
-                      <span className="buff-desc">{pool.description}</span>
-                    </span>
-                  </div>
-                  <ResourceControls
-                    featureId={pool.id}
-                    resourceMaxes={resourceMaxes}
-                    resourceLabels={resourceLabels}
-                    resourcesUsed={resourcesUsed}
-                    onAdjustResource={onAdjustResource}
-                    onResetResource={onResetResource}
-                    poolMode
-                    mathTooltip={resourcePoolMathTooltip(pool)}
-                  />
-                </div>
-              ))}
-            </div>
-          ) : null}
-          {resourceActivatables.length > 0 ? (
-            <div className="mode-group">
-              <div className="mode-title">limited-use abilities</div>
-              {resourceActivatables.map((feature) => {
-                const max = resourceMaxes[feature.id];
-                const used = resourcesUsed[feature.id] ?? 0;
-                const blockedReason =
-                  activationFailure(feature) ??
-                  (max !== undefined && used >= max && !activeBuffs[feature.id]
-                    ? "resource exhausted"
-                    : undefined);
-                return (
-                  <div className="buff-block" key={feature.id}>
-                    <label className="buff">
-                      <input
-                        type="checkbox"
-                        disabled={
-                          (!activeBuffs[feature.id] && !!blockedReason) ||
-                          (feature.id === "rage" && fatigued)
-                        }
-                        checked={!!activeBuffs[feature.id]}
-                        onChange={(e) =>
-                          setActivatable(feature, e.target.checked)
-                        }
-                      />
-                      <span>
-                        <strong>{feature.name} (ability)</strong>
-                        <span className="buff-desc">
-                          {feature.description}
-                          {feature.id === "rage" && fatigued
-                            ? " Currently blocked by fatigue."
-                            : blockedReason
-                              ? ` Blocked: ${blockedReason}.`
-                              : ""}
-                        </span>
-                      </span>
-                    </label>
-                    <ResourceControls
-                      featureId={feature.id}
-                      resourceMaxes={resourceMaxes}
-                      resourceLabels={resourceLabels}
-                      resourcesUsed={resourcesUsed}
-                      onAdjustResource={onAdjustResource}
-                      onResetResource={onResetResource}
-                    />
-                  </div>
-                );
-              })}
-            </div>
-          ) : null}
-          {passiveActivatables.length > 0 ? (
-            <div className="mode-group">
-              <div className="mode-title">toggle abilities</div>
-              {passiveActivatables.map((feature) => {
-                return (
-                  <div className="buff-block" key={feature.id}>
-                    <label className="buff">
-                      <input
-                        type="checkbox"
-                        disabled={
-                          !activeBuffs[feature.id] &&
-                          !!activationFailure(feature)
-                        }
-                        checked={!!activeBuffs[feature.id]}
-                        onChange={(e) =>
-                          setActivatable(feature, e.target.checked)
-                        }
-                      />
-                      <span>
-                        <strong>{feature.name} (ability)</strong>
-                        <span className="buff-desc">
-                          {feature.description}
-                          {activationFailure(feature)
-                            ? ` Blocked: ${activationFailure(feature)}.`
-                            : ""}
-                        </span>
-                      </span>
-                    </label>
-                  </div>
-                );
-              })}
-            </div>
-          ) : null}
-          {Object.entries(activatableGroups.grouped).map(([group, items]) => (
-            <div className="mode-group" key={group}>
-              <div className="mode-title">{group.replace(/-/g, " ")}</div>
-              {items.map((feature) => {
-                const blockedReason = activationFailure(feature);
-                return (
-                  <div className="buff-block" key={feature.id}>
-                    <label className="buff">
-                      <input
-                        type="radio"
-                        name={`mode-${group}`}
-                        disabled={!activeBuffs[feature.id] && !!blockedReason}
-                        checked={!!activeBuffs[feature.id]}
-                        onChange={() => selectActivatableGroup(items, feature)}
-                      />
-                      <span>
-                        <strong>{feature.name} (ability)</strong>
-                        <span className="buff-desc">
-                          {feature.description}
-                          {blockedReason ? ` Blocked: ${blockedReason}.` : ""}
-                        </span>
-                      </span>
-                    </label>
-                    <ResourceControls
-                      featureId={feature.id}
-                      resourceMaxes={resourceMaxes}
-                      resourceLabels={resourceLabels}
-                      resourcesUsed={resourcesUsed}
-                      onAdjustResource={onAdjustResource}
-                      onResetResource={onResetResource}
-                    />
-                  </div>
-                );
-              })}
-              <button
-                className="ghost small"
-                onClick={() =>
-                  onSetExclusiveToggleGroup(items.map((item) => item.id))
-                }
-              >
-                Clear mode
-              </button>
-            </div>
-          ))}
-          {activatableConflicts.length > 0 ? (
-            <p className="hint warn-text">
-              Conflicting modes were selected; only one per group applies.
-            </p>
-          ) : null}
-        </div>
-      </details>
-      <details
-        className="runtime-rail-section"
-        open={railSections.effects}
-        onToggle={(event) => {
-          const open = event.currentTarget.open;
-          setRailSections((current) =>
-            current.effects === open ? current : { ...current, effects: open },
-          );
-        }}
-      >
-        <summary>
-          Effects &amp; Conditions{" "}
-          <span>{matchingBuffCards.length + Number(fatigued)}</span>
-        </summary>
-        <div className="runtime-rail-section-body">
-          <div className="mode-group">
-            <div className="mode-title">conditions</div>
-            <label className="buff">
-              <input
-                type="checkbox"
-                checked={fatigued}
-                onChange={(e) => onSetFlag("fatigued", e.target.checked)}
-              />
-              <span>
-                <strong>Fatigued</strong>
-                <span className="buff-desc">
-                  Blocks Rage and can suppress other abilities later.
-                </span>
-              </span>
-            </label>
-          </div>
-          <div className="mode-group">
-            <div className="mode-title">effect finder</div>
-            <div className="runtime-smart-summary">
-              <button
-                type="button"
-                className={
-                  categoryFilter === "all"
-                    ? "ghost small runtime-filter-chip active"
-                    : "ghost small runtime-filter-chip"
-                }
-                onClick={() => setCategoryFilter("all")}
-              >
-                All
-              </button>
-              {TACTICAL_CATEGORIES.map((category) => (
-                <button
-                  key={`filter-${category}`}
-                  type="button"
-                  className={
-                    categoryFilter === category
-                      ? "ghost small runtime-filter-chip active"
-                      : "ghost small runtime-filter-chip"
-                  }
-                  onClick={() => setCategoryFilter(category)}
-                >
-                  {tacticalCategoryLabel(category)}
-                </button>
-              ))}
-            </div>
+    <TooltipTriggerContext.Provider value="click">
+      <section className="panel runtime-controls-panel">
+        {showHeading ? <h2>Abilities &amp; Effects</h2> : null}
+
+        <details
+          className="runtime-rail-section"
+          open={railSections.effects}
+          onToggle={(event) => {
+            const open = event.currentTarget.open;
+            setRailSections((current) =>
+              current.effects === open
+                ? current
+                : { ...current, effects: open },
+            );
+          }}
+        >
+          <summary>Effects &amp; Conditions</summary>
+          <div className="runtime-rail-section-body">
+            <button
+              type="button"
+              className="ghost runtime-browse-button"
+              onClick={() => setLibraryOpen(true)}
+            >
+              Browse effects &amp; conditions
+            </button>
             <p className="hint">
-              Search matches names, descriptions, modifier targets, categories,
-              and suggestion reasons.
+              Search the library and apply several effects at once. Added cards
+              stay in Active Now until removed.
             </p>
           </div>
-          {TACTICAL_CATEGORIES.map((category) =>
-            tacticalSections[category].length > 0 ? (
-              <div className="mode-group" key={`tactical-${category}`}>
-                <div className="mode-title">
-                  {tacticalCategoryLabel(category)}
-                </div>
-                {tacticalSections[category].map(
-                  ({ buff, insight, ownedSpell }) => (
-                    <div className="buff-block" key={buff.id}>
+        </details>
+        <details
+          className="runtime-rail-section"
+          open={railSections.abilities}
+          onToggle={(event) => {
+            const open = event.currentTarget.open;
+            setRailSections((current) =>
+              current.abilities === open
+                ? current
+                : { ...current, abilities: open },
+            );
+          }}
+        >
+          <summary>
+            My Abilities <span>{abilityCount}</span>
+          </summary>
+          <div className="runtime-rail-section-body">
+            {visiblePools.length > 0 ? (
+              <div className="mode-group">
+                <div className="mode-title">resource pools</div>
+                {visiblePools.map((pool) => (
+                  <div className="buff-block" key={pool.id}>
+                    <div className="buff">
+                      <span>
+                        <strong>{pool.name}</strong>
+                        <span className="buff-desc">{pool.description}</span>
+                      </span>
+                    </div>
+                    <ResourceControls
+                      featureId={pool.id}
+                      resourceMaxes={resourceMaxes}
+                      resourceLabels={resourceLabels}
+                      resourcesUsed={resourcesUsed}
+                      onAdjustResource={onAdjustResource}
+                      onResetResource={onResetResource}
+                      poolMode
+                      mathTooltip={resourcePoolMathTooltip(pool)}
+                    />
+                  </div>
+                ))}
+              </div>
+            ) : null}
+            {resourceActivatables.length > 0 ? (
+              <div className="mode-group">
+                <div className="mode-title">limited-use abilities</div>
+                {resourceActivatables.map((feature) => {
+                  const max = resourceMaxes[feature.id];
+                  const used = resourcesUsed[feature.id] ?? 0;
+                  const blockedReason =
+                    activationFailure(feature) ??
+                    (max !== undefined &&
+                    used >= max &&
+                    !activeBuffs[feature.id]
+                      ? "resource exhausted"
+                      : undefined);
+                  return (
+                    <div className="buff-block" key={feature.id}>
                       <label className="buff">
                         <input
                           type="checkbox"
-                          checked={!!activeBuffs[buff.id]}
+                          disabled={
+                            (!activeBuffs[feature.id] && !!blockedReason) ||
+                            (feature.id === "rage" && fatigued)
+                          }
+                          checked={!!activeBuffs[feature.id]}
                           onChange={(e) =>
-                            onSetToggle(buff.id, e.target.checked)
+                            setActivatable(feature, e.target.checked)
                           }
                         />
                         <span>
-                          <strong>{buff.name}</strong>
-                          <span className="buff-desc">{buff.description}</span>
-                          {buff.limitations?.length ? (
-                            <span className="buff-desc">
-                              Manual: {buff.limitations.join(" ")}
-                            </span>
-                          ) : null}
+                          <strong>{feature.name}</strong>
                           <span className="buff-desc">
-                            {ownedSpell
-                              ? "Available because your character knows this spell."
-                              : `Why suggested: ${insight.reasons.join(", ")}`}
+                            {feature.description}
+                            {feature.id === "rage" && fatigued
+                              ? " Currently blocked by fatigue."
+                              : blockedReason
+                                ? ` Blocked: ${blockedReason}.`
+                                : ""}
                           </span>
                         </span>
                       </label>
-                      {buff.trackerMax !== undefined ? (
-                        <ResourceControls
-                          featureId={buff.id}
-                          resourceMaxes={resourceMaxes}
-                          resourceLabels={resourceLabels}
-                          resourcesUsed={resourcesUsed}
-                          onAdjustResource={onAdjustResource}
-                          onResetResource={onResetResource}
-                        />
-                      ) : null}
+                      <ResourceControls
+                        featureId={feature.id}
+                        resourceMaxes={resourceMaxes}
+                        resourceLabels={resourceLabels}
+                        resourcesUsed={resourcesUsed}
+                        onAdjustResource={onAdjustResource}
+                        onResetResource={onResetResource}
+                      />
                     </div>
-                  ),
-                )}
+                  );
+                })}
               </div>
-            ) : null,
-          )}
-          {matchingBuffCards.length === 0 ? (
-            <p className="hint warn-text">
-              No effects matched that search/filter combo. Congratulations, you
-              outsmarted the UI.
-            </p>
-          ) : null}
-          {otherBuffCards.length > 0 ? (
-            <div className="mode-group">
-              <div className="mode-title">other effects</div>
-              <button
-                className="ghost small"
-                type="button"
-                onClick={() => setShowAllBuffs((value) => !value)}
-              >
-                {showAllBuffs
-                  ? "Hide Niche Effects"
-                  : `Show ${otherBuffCards.length} More Effects`}
-              </button>
-              {showAllBuffs
-                ? otherBuffCards.map(({ buff }) => (
-                    <div className="buff-block" key={buff.id}>
+            ) : null}
+            {passiveActivatables.length > 0 ? (
+              <div className="mode-group">
+                <div className="mode-title">toggle abilities</div>
+                {passiveActivatables.map((feature) => {
+                  return (
+                    <div className="buff-block" key={feature.id}>
                       <label className="buff">
                         <input
                           type="checkbox"
-                          checked={!!activeBuffs[buff.id]}
+                          disabled={
+                            !activeBuffs[feature.id] &&
+                            !!activationFailure(feature)
+                          }
+                          checked={!!activeBuffs[feature.id]}
                           onChange={(e) =>
-                            onSetToggle(buff.id, e.target.checked)
+                            setActivatable(feature, e.target.checked)
                           }
                         />
                         <span>
-                          <strong>{buff.name}</strong>
-                          <span className="buff-desc">{buff.description}</span>
-                          {buff.limitations?.length ? (
-                            <span className="buff-desc">
-                              Manual: {buff.limitations.join(" ")}
-                            </span>
-                          ) : null}
+                          <strong>{feature.name}</strong>
+                          <span className="buff-desc">
+                            {feature.description}
+                            {activationFailure(feature)
+                              ? ` Blocked: ${activationFailure(feature)}.`
+                              : ""}
+                          </span>
                         </span>
                       </label>
-                      {buff.trackerMax !== undefined ? (
-                        <ResourceControls
-                          featureId={buff.id}
-                          resourceMaxes={resourceMaxes}
-                          resourceLabels={resourceLabels}
-                          resourcesUsed={resourcesUsed}
-                          onAdjustResource={onAdjustResource}
-                          onResetResource={onResetResource}
-                        />
-                      ) : null}
                     </div>
-                  ))
-                : null}
-            </div>
-          ) : null}
-        </div>
-      </details>
-    </section>
+                  );
+                })}
+              </div>
+            ) : null}
+            {Object.entries(activatableGroups.grouped).map(([group, items]) => (
+              <div className="mode-group" key={group}>
+                <div className="mode-title">{group.replace(/-/g, " ")}</div>
+                {items.map((feature) => {
+                  const blockedReason = activationFailure(feature);
+                  return (
+                    <div className="buff-block" key={feature.id}>
+                      <label className="buff">
+                        <input
+                          type="radio"
+                          name={`mode-${group}`}
+                          disabled={!activeBuffs[feature.id] && !!blockedReason}
+                          checked={!!activeBuffs[feature.id]}
+                          onChange={() =>
+                            selectActivatableGroup(items, feature)
+                          }
+                        />
+                        <span>
+                          <strong>{feature.name}</strong>
+                          <span className="buff-desc">
+                            {feature.description}
+                            {blockedReason ? ` Blocked: ${blockedReason}.` : ""}
+                          </span>
+                        </span>
+                      </label>
+                      <ResourceControls
+                        featureId={feature.id}
+                        resourceMaxes={resourceMaxes}
+                        resourceLabels={resourceLabels}
+                        resourcesUsed={resourcesUsed}
+                        onAdjustResource={onAdjustResource}
+                        onResetResource={onResetResource}
+                      />
+                    </div>
+                  );
+                })}
+                <button
+                  className="ghost small"
+                  onClick={() =>
+                    onSetExclusiveToggleGroup(items.map((item) => item.id))
+                  }
+                >
+                  Clear mode
+                </button>
+              </div>
+            ))}
+            {ownedCards.length ? (
+              <div className="mode-group">
+                <div className="mode-title">My spell effects</div>
+                {ownedCards.map(({ buff }) => (
+                  <div className="buff-block" key={buff.id}>
+                    <label className="buff">
+                      <input
+                        type="checkbox"
+                        checked={!!activeBuffs[buff.id]}
+                        onChange={(event) =>
+                          setEffect(buff.id, event.target.checked)
+                        }
+                      />
+                      <span>
+                        <strong>{buff.name}</strong>
+                        <span className="buff-desc">{buff.description}</span>
+                        {buff.limitations?.length ? (
+                          <span className="buff-desc">
+                            Manual: {buff.limitations.join(" ")}
+                          </span>
+                        ) : null}
+                      </span>
+                    </label>
+                    <ResourceControls
+                      featureId={buff.id}
+                      resourceMaxes={resourceMaxes}
+                      resourceLabels={resourceLabels}
+                      resourcesUsed={resourcesUsed}
+                      onAdjustResource={onAdjustResource}
+                      onResetResource={onResetResource}
+                    />
+                  </div>
+                ))}
+              </div>
+            ) : null}
+            {!visibleUngrouped.length &&
+            !visiblePools.length &&
+            !ownedCards.length &&
+            !Object.values(activatableGroups.grouped).flat().length ? (
+              <p className="hint">No abilities recorded.</p>
+            ) : null}
+            {activatableConflicts.length > 0 ? (
+              <p className="hint warn-text">
+                Conflicting modes were selected; only one per group applies.
+              </p>
+            ) : null}
+          </div>
+        </details>
+        <details
+          className="runtime-rail-section"
+          open={railSections.active}
+          onToggle={(event) => {
+            const open = event.currentTarget.open;
+            setRailSections((current) =>
+              current.active === open ? current : { ...current, active: open },
+            );
+          }}
+        >
+          <summary>
+            Active Now{" "}
+            <span>
+              {retainedBuffs.length +
+                activeAbilityNames.length +
+                Number(fatigueRetained)}
+            </span>
+          </summary>
+          <div className="runtime-rail-section-body">
+            {rageActive ? (
+              <p className="hint warn-text">Ending Rage applies Fatigued.</p>
+            ) : null}
+            {[...availableActivatableIds]
+              .filter((id) => activeBuffs[id])
+              .map((id) => {
+                const feature = activatableById.get(id)!;
+                return (
+                  <div
+                    className="buff-block runtime-effect-card active"
+                    key={id}
+                  >
+                    <label className="buff">
+                      <input
+                        type="checkbox"
+                        role="switch"
+                        checked
+                        onChange={() => onSetToggle(id, false)}
+                      />
+                      <span>
+                        <strong>{feature.name}</strong>
+                        <small className="runtime-card-source">
+                          Character ability
+                        </small>
+                        <span className="buff-desc">{feature.description}</span>
+                      </span>
+                    </label>
+                  </div>
+                );
+              })}
+            {retainedBuffs
+              .filter((buff) => !availableActivatableIds.has(buff.id))
+              .map((buff) => renderEffectCard(buff, !!activeBuffs[buff.id]))}
+            {fatigueRetained ? (
+              <div className="buff-block runtime-effect-card">
+                <label className="buff">
+                  <input
+                    type="checkbox"
+                    role="switch"
+                    checked={fatigued}
+                    onChange={(event) =>
+                      setEffect(FATIGUED_EFFECT_ID, event.target.checked)
+                    }
+                  />
+                  <span>
+                    <strong>Fatigued</strong>
+                    <small className="runtime-card-source">Condition</small>
+                    <span className="buff-desc">
+                      −2 Strength and Dexterity; cannot run or charge. Blocks
+                      Rage.
+                    </span>
+                  </span>
+                </label>
+                <button
+                  type="button"
+                  className="ghost small effect-remove-button"
+                  onClick={() => removeEffect(FATIGUED_EFFECT_ID)}
+                >
+                  Remove Fatigued
+                </button>
+              </div>
+            ) : null}
+            {!retainedBuffs.length &&
+            !activeAbilityNames.length &&
+            !fatigued ? (
+              <p className="hint">No active abilities or effects.</p>
+            ) : (
+              <button
+                type="button"
+                className="ghost small"
+                onClick={clearAllRuntimeEffects}
+              >
+                Turn All Off
+              </button>
+            )}
+          </div>
+        </details>
+        {libraryOpen ? (
+          <EffectLibraryModal
+            buffs={buffs}
+            profile={profile}
+            ownedSpellNames={ownedSpellNames}
+            addedIds={addedIds}
+            onClose={() => setLibraryOpen(false)}
+            onApply={(ids) => {
+              applySelection(selectEffectActions(ids, true));
+              setRailSections((current) => ({ ...current, active: true }));
+              setLibraryOpen(false);
+            }}
+          />
+        ) : null}
+      </section>
+    </TooltipTriggerContext.Provider>
   );
 }

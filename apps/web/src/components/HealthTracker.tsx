@@ -102,16 +102,12 @@ export function HealthTracker({
   stable,
   deathRules,
   fightOnSource,
-  diehardActive,
   ferocityUsed,
   onApplyDamage,
   onApplyHealing,
-  onApplyHpLoss,
   onSetTempHp,
   onApplyNonlethal,
   onHealNonlethal,
-  onSetStable,
-  onSetDiehardActive,
   onSetFerocityActive,
   onSetFerocityUsed,
   onReset,
@@ -122,9 +118,6 @@ export function HealthTracker({
   const [tempHpInput, setTempHpInput] = useState("");
   const [nonlethalInput, setNonlethalInput] = useState("");
   const [nonlethalHealingInput, setNonlethalHealingInput] = useState("");
-  const [stabilizationRoll, setStabilizationRoll] = useState("");
-  const [lastStabilization, setLastStabilization] =
-    useState<StabilizationCheckResult>();
 
   const health = deriveHealthStatus({
     maxHp,
@@ -137,12 +130,6 @@ export function HealthTracker({
   });
   const hpPercent = Math.max(0, Math.min(100, (currentHp / maxHp) * 100));
   const criticalHealth = isCriticalHealth(currentHp, maxHp);
-  const constitutionModifier = Math.floor((constitutionScore - 10) / 2);
-  const stabilizationModifier = constitutionModifier + Math.min(0, currentHp);
-  const belowZeroAndAlive = currentHp < 0 && currentHp > health.deathThreshold;
-  const canActivateHalfOrcFerocity =
-    belowZeroAndAlive && deathRules.ferocity === "half-orc" && !ferocityUsed;
-
   function positiveAmount(raw: string) {
     return Math.max(0, Number(raw) || 0);
   }
@@ -151,7 +138,6 @@ export function HealthTracker({
     const amount = positiveAmount(damageInput);
     if (!amount) return;
     onApplyDamage(amount, damageType === "untyped" ? undefined : damageType);
-    setLastStabilization(undefined);
     setDamageInput("");
   }
 
@@ -159,7 +145,6 @@ export function HealthTracker({
     const amount = positiveAmount(healingInput);
     if (!amount) return;
     onApplyHealing(amount);
-    setLastStabilization(undefined);
     setHealingInput("");
   }
 
@@ -168,16 +153,6 @@ export function HealthTracker({
     if (!amount) return;
     onApplyNonlethal(amount);
     setNonlethalInput("");
-  }
-
-  function attemptStabilization() {
-    const roll = Number(stabilizationRoll);
-    if (!Number.isFinite(roll) || roll < 1) return;
-    const result = stabilizationCheck(currentHp, constitutionScore, roll);
-    setLastStabilization(result);
-    setStabilizationRoll("");
-    if (result.success) onSetStable(true);
-    else onApplyHpLoss(result.hpLoss);
   }
 
   return (
@@ -191,7 +166,7 @@ export function HealthTracker({
             <strong>{currentHp}</strong>
             <span>/ {maxHp} HP</span>
             {tempHp > 0 ? (
-              <span className="health-temp">+{tempHp} temp</span>
+              <span className="health-temp">+ {tempHp} HP</span>
             ) : null}
           </div>
         </div>
@@ -227,7 +202,7 @@ export function HealthTracker({
           <strong>{nonlethalDamage}</strong>
         </div>
         <div>
-          <span>Death at</span>
+          <span>True Death</span>
           <strong>{health.deathThreshold}</strong>
         </div>
       </div>
@@ -320,9 +295,6 @@ export function HealthTracker({
             >
               Set Temp
             </button>
-            <button type="button" className="ghost" onClick={onReset}>
-              Reset / Revive
-            </button>
           </div>
         </div>
 
@@ -373,10 +345,86 @@ export function HealthTracker({
         </div>
       </div>
 
+      <div className="health-revive-row">
+        <span>GM-authorized full recovery</span>
+        <button type="button" className="ghost small" onClick={onReset}>
+          Revive
+        </button>
+      </div>
+    </section>
+  );
+}
+
+export function HealthStatusControls({
+  maxHp,
+  currentHp,
+  constitutionScore,
+  nonlethalDamage,
+  stable,
+  fightOnSource,
+  deathRules,
+  diehardActive,
+  ferocityUsed,
+  onApplyHpLoss,
+  onSetStable,
+  onSetDiehardActive,
+  onSetFerocityActive,
+  onSetFerocityUsed,
+}: Pick<
+  HealthTrackerProps,
+  | "maxHp"
+  | "currentHp"
+  | "constitutionScore"
+  | "nonlethalDamage"
+  | "stable"
+  | "fightOnSource"
+  | "deathRules"
+  | "diehardActive"
+  | "ferocityUsed"
+  | "onApplyHpLoss"
+  | "onSetStable"
+  | "onSetDiehardActive"
+  | "onSetFerocityActive"
+  | "onSetFerocityUsed"
+>) {
+  const [stabilizationRoll, setStabilizationRoll] = useState("");
+  const [lastStabilization, setLastStabilization] =
+    useState<StabilizationCheckResult>();
+  const health = deriveHealthStatus({
+    maxHp,
+    currentHp,
+    constitutionScore,
+    nonlethalDamage,
+    stable,
+    fightOn: !!fightOnSource,
+    deathThresholdBonus: deathRules.deathThresholdBonus,
+  });
+  const constitutionModifier = Math.floor((constitutionScore - 10) / 2);
+  const stabilizationModifier = constitutionModifier + Math.min(0, currentHp);
+  const belowZeroAndAlive = currentHp < 0 && currentHp > health.deathThreshold;
+  const canActivateHalfOrcFerocity =
+    belowZeroAndAlive && deathRules.ferocity === "half-orc" && !ferocityUsed;
+
+  function attemptStabilization() {
+    const roll = Number(stabilizationRoll);
+    if (!Number.isFinite(roll) || roll < 1) return;
+    const result = stabilizationCheck(currentHp, constitutionScore, roll);
+    setLastStabilization(result);
+    setStabilizationRoll("");
+    if (result.success) onSetStable(true);
+    else onApplyHpLoss(result.hpLoss);
+  }
+
+  return (
+    <>
+      {" "}
       {["disabled", "fighting-on", "dying", "stable", "dead"].includes(
         health.condition,
       ) ? (
-        <div className="death-mechanics-panel">
+        <div
+          className={`death-mechanics-panel health-alert health-alert-${health.condition}`}
+          role="status"
+        >
           <div>
             <strong>{healthConditionLabel(health.condition)}</strong>
             <p>{conditionRules(health.condition, health.deathThreshold)}</p>
@@ -429,6 +477,7 @@ export function HealthTracker({
           {health.condition === "disabled" && !fightOnSource ? (
             <button
               type="button"
+              className="ghost small health-strenuous-action"
               onClick={() => {
                 setLastStabilization(undefined);
                 onApplyHpLoss(1);
@@ -451,6 +500,7 @@ export function HealthTracker({
           {canActivateHalfOrcFerocity ? (
             <button
               type="button"
+              className="ghost small health-strenuous-action"
               onClick={() => {
                 onSetStable(false);
                 onSetFerocityUsed(true);
@@ -461,7 +511,11 @@ export function HealthTracker({
             </button>
           ) : null}
           {fightOnSource === "diehard" || fightOnSource === "half-orc" ? (
-            <button type="button" onClick={() => onApplyHpLoss(1)}>
+            <button
+              type="button"
+              className="ghost small health-strenuous-action"
+              onClick={() => onApplyHpLoss(1)}
+            >
               Take Strenuous Action (−1 HP)
             </button>
           ) : null}
@@ -478,7 +532,11 @@ export function HealthTracker({
             </button>
           ) : null}
           {fightOnSource === "orc" ? (
-            <button type="button" onClick={() => onApplyHpLoss(1)}>
+            <button
+              type="button"
+              className="ghost small health-strenuous-action"
+              onClick={() => onApplyHpLoss(1)}
+            >
               End Ferocity Round (−1 HP)
             </button>
           ) : null}
@@ -494,6 +552,6 @@ export function HealthTracker({
           ) : null}
         </div>
       ) : null}
-    </section>
+    </>
   );
 }

@@ -93,6 +93,21 @@ function eventDetail(event: CombatEventRecord) {
   return `${outcome ? outcome : "no ammo tracked"}${note}`;
 }
 
+export function attackResultDetail(event: CombatEventRecord) {
+  if (event.kind !== "attack") return null;
+  const rolls = event.rolls;
+  if (!rolls) return "Roll results not recorded";
+  const attack =
+    rolls.attackTotal === undefined
+      ? "Attack not rolled"
+      : `Attack ${rolls.attackTotal} (roll ${rolls.attackRoll})`;
+  const damage =
+    rolls.damageTotal === undefined
+      ? "Damage not rolled"
+      : `Damage ${event.outcome === "crit" ? rolls.damageTotal * (rolls.criticalMultiplier ?? 1) : rolls.damageTotal} (roll ${rolls.damageRoll}${event.outcome === "crit" ? ` · ${rolls.criticalMultiplier ?? 1}× critical` : ""})`;
+  return `${attack} · ${damage}`;
+}
+
 function groupTitle(event: CombatEventRecord, mode: CombatLogGroupMode) {
   switch (mode) {
     case "type":
@@ -178,9 +193,12 @@ export function CombatLogPanel({
   const allKindsVisible = Object.values(visibleKinds).every(Boolean);
 
   return (
-    <section className="panel paper-panel">
-      <div className="editor-section-head tight">
+    <details className="panel paper-panel combat-log-panel">
+      <summary>
         <h2>Combat Log</h2>
+        <span>{combatEventLog.length} entries</span>
+      </summary>
+      <div className="editor-section-head tight">
         {onClearCombatEventLog ? (
           <button
             className="ghost small"
@@ -278,6 +296,11 @@ export function CombatLogPanel({
                           </div>
                         </div>
                         <div className="combat-log-detail">
+                          {event.kind === "attack" ? (
+                            <div className="combat-log-attack-results">
+                              {attackResultDetail(event)}
+                            </div>
+                          ) : null}
                           {eventDetail(event)}
                         </div>
                       </div>
@@ -289,6 +312,6 @@ export function CombatLogPanel({
           )}
         </>
       )}
-    </section>
+    </details>
   );
 }

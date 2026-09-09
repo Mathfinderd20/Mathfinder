@@ -6,6 +6,7 @@ import {
   type CharacterBuild,
   type SpellEffectRuntimeContext,
   type WeaponAttackHistory,
+  type WeaponAttackRolls,
 } from "@mathfinder/rules-engine";
 import {
   consumeAmmoFromEquipment,
@@ -124,6 +125,7 @@ export function useCombatEquipmentRuntime(
     ammoSpentForAttack?: number,
     attackNote?: string,
     ammoEntries?: Array<{ ammoType: string; amount: number }>,
+    rolls?: WeaponAttackRolls,
   ) {
     const requestedEntries = (ammoEntries ?? [])
       .filter((entry) => entry.amount > 0 && entry.ammoType?.trim())
@@ -153,6 +155,7 @@ export function useCombatEquipmentRuntime(
       consumedEntries[0]?.ammoType ?? ammoType,
       consumedEntries[0]?.amount ?? ammoSpentForAttack,
       consumedEntries,
+      rolls,
     );
     if (attackNote?.trim()) {
       runtime.setLatestWeaponAttackNote(weaponKey, attackNote.trim());

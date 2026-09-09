@@ -174,6 +174,7 @@ export function useCharacterHealth(
     applyNonlethalDamage,
     currentHp,
     deathRules,
+    healthStatus,
     diehardActive: diehardActive,
     ferocityUsed: ferocityUsed,
     fightOnSource,

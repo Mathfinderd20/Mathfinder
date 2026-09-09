@@ -10,7 +10,7 @@
    visual hierarchy and presentation. */
 .character-workspace-main .paper-sheet {
   display: grid;
-  grid-template-columns: minmax(590px, 1.65fr) minmax(260px, 0.7fr);
+  grid-template-columns: minmax(0, 1.65fr) minmax(230px, 0.7fr);
   align-items: start;
   gap: 10px 12px;
 }
@@ -24,6 +24,7 @@
 
 .character-workspace-main .paper-panel {
   overflow: visible;
+  margin: 0;
   padding: 0;
   border: 1px solid var(--line);
   border-radius: 7px;
@@ -51,8 +52,8 @@
   font:
     700 12px "Segoe UI",
     sans-serif;
-  letter-spacing: 0.02em;
-  text-transform: none;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
 .character-workspace-main .paper-panel > h2 {
@@ -112,7 +113,7 @@
   position: sticky;
   top: 66px;
   grid-column: 2;
-  grid-row: 1 / span 6;
+  grid-row: 1;
   overflow: visible;
 }
 
@@ -1563,5 +1564,1132 @@
   }
   .gm-codex-addbar {
     flex-wrap: wrap;
+  }
+}
+/* Independent columns keep the skill list from stretching the left-hand cards. */
+.character-workspace-main .sheet-left-column {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 10px;
+}
+.character-identity-title h1 {
+  font:
+    500 clamp(27px, 2vw, 34px)/1.05 Georgia,
+    "Times New Roman",
+    serif;
+}
+.character-identity-main .character-eyebrow {
+  font-size: 12px;
+  letter-spacing: 0.12em;
+}
+.character-identity-main p {
+  font-size: 14px;
+}
+.character-identity-facts dt {
+  font-size: 11px;
+}
+.character-identity-facts dd {
+  font-size: 13px;
+}
+.character-vitals > small {
+  grid-column: 1 / -1;
+  font:
+    11px "Segoe UI",
+    sans-serif;
+}
+.sheet-panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 42px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--line);
+}
+.character-workspace-main .sheet-panel-heading h2 {
+  margin: 0;
+  color: var(--accent-2);
+  font:
+    700 12px "Segoe UI",
+    sans-serif;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.sheet-defense-reference {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  padding: 8px 10px;
+  border-top: 1px solid var(--line);
+}
+.sheet-reference-notes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.sheet-reference-notes > span {
+  max-width: 100%;
+}
+.sheet-reference-notes small {
+  color: var(--muted);
+  font-size: 10px;
+}
+.sheet-reference-notes .hint {
+  margin: 0;
+}
+.sheet-reference-group {
+  border-bottom: 1px solid var(--line);
+}
+.sheet-reference-group > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+}
+.sheet-reference-group > summary::-webkit-details-marker {
+  display: none;
+}
+.sheet-reference-group > summary::before {
+  content: "›";
+  color: var(--accent);
+}
+.sheet-reference-group[open] > summary::before {
+  transform: rotate(90deg);
+}
+.sheet-reference-group > summary > span {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 11px;
+}
+.sheet-reference-group > .sheet-reference-notes {
+  padding: 0 12px 10px;
+}
+.sheet-reference-group > .hint {
+  margin: 0;
+  padding: 0 12px 10px;
+}
+.character-workspace-main .sheet-reference-group .acquisitions {
+  padding: 0 10px 10px;
+}
+.sheet-language-reference {
+  padding: 10px 12px;
+}
+.sheet-language-reference h3 {
+  margin: 0 0 8px;
+  font:
+    700 11px "Segoe UI",
+    sans-serif;
+  color: var(--accent-2);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.character-workspace-main .paper-sheet-combat-grid {
+  grid-template-columns: minmax(190px, 2fr) repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  padding: 1px;
+}
+.sheet-attack-group {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border-right: 1px solid var(--line);
+}
+.sheet-attack-group > .stat-card {
+  grid-column: 1 / -1;
+}
+.character-workspace-main .sheet-attack-group .stat-card {
+  border: 0;
+  border-radius: 0;
+  min-height: 50px;
+}
+.character-workspace-main .sheet-attack-group .combat-secondary-stat {
+  min-height: 30px;
+  padding: 4px 8px;
+}
+.character-workspace-main
+  .sheet-attack-group
+  .combat-secondary-stat
+  .summary-label {
+  font-size: 10px;
+}
+.character-workspace-main
+  .sheet-attack-group
+  .combat-secondary-stat
+  .summary-value {
+  font-size: 16px;
+}
+.character-workspace-main
+  .paper-sheet-combat-grid
+  > .mf-tooltip:has(.combat-secondary-stat) {
+  order: 1;
+}
+.character-workspace-main .paper-sheet-combat-grid > .mf-tooltip > .stat-card {
+  height: 100%;
+  min-height: 80px;
+  justify-content: center;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+.character-workspace-main .paper-sheet-combat-grid .encumbrance-value {
+  font:
+    500 16px Georgia,
+    serif;
+  text-transform: capitalize;
+  letter-spacing: 0;
+}
+.sheet-movement-strip {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  border-top: 1px solid var(--line);
+}
+.sheet-movement-strip > span {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 6px;
+}
+.sheet-movement-strip .mf-tooltip > span {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.sheet-movement-strip small {
+  color: var(--muted);
+  font:
+    10px "Segoe UI",
+    sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.sheet-movement-strip strong {
+  margin-top: 4px;
+  font:
+    18px Georgia,
+    serif;
+}
+.mf-tooltip[role="button"] {
+  cursor: pointer;
+}
+.mf-tooltip[role="button"]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+.mf-tooltip-panel.click-math-panel {
+  pointer-events: auto;
+  max-height: min(65vh, 480px);
+  overflow-y: auto;
+}
+.health-manager-body .health-tracker {
+  padding: 10px;
+  background: #181d1f;
+}
+.health-manager-body .health-tracker-head,
+.health-manager-body .health-meter {
+  display: none;
+}
+.health-manager-body .health-stat-strip {
+  margin: 0 0 10px;
+}
+.health-manager-body .health-action-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.health-manager-body .health-action-card {
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: #202628;
+}
+.character-workspace-main .health-manager-body .health-action-card h3 {
+  margin: 0 0 10px;
+  font:
+    500 17px Georgia,
+    serif;
+  color: var(--accent-2);
+  text-transform: none;
+  letter-spacing: 0;
+}
+.health-manager-body .health-input-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
+}
+.health-manager-body .health-input-row:has(select) {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+.health-manager-body .health-input-row:has(select) > button {
+  grid-column: 1 / -1;
+}
+.health-manager-body .health-input-row input,
+.health-manager-body .health-input-row select {
+  min-width: 0;
+  width: 100%;
+  padding: 7px;
+  font-size: 12px;
+}
+.health-manager-body .health-input-row button {
+  padding: 7px 9px;
+  font-size: 11px;
+}
+.health-revive-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 10px;
+  padding-top: 9px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 11px;
+}
+.planner-racial-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  padding: 10px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.planner-racial-details strong {
+  color: var(--accent-2);
+}
+
+/* Rail: one surface, compact cards, actual active counts, and explicit browsing. */
+.app .character-effects-rail {
+  align-self: start;
+  position: sticky;
+  top: 49px;
+  max-height: calc(100vh - 49px);
+  overflow-y: auto;
+  padding: 10px 12px 24px;
+}
+.app .character-effects-rail > .runtime-controls-panel {
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.character-effects-rail .runtime-controls-panel > h2 {
+  margin: 12px 0;
+  font:
+    500 23px Georgia,
+    serif;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.runtime-effect-search-top > span {
+  color: var(--muted);
+  font-size: 11px;
+}
+.runtime-effect-search-top input {
+  padding: 9px 10px;
+  font-size: 13px;
+}
+.runtime-browse-button {
+  width: 100%;
+  margin-bottom: 12px;
+}
+.app .runtime-rail-section > summary {
+  justify-content: flex-start;
+  gap: 8px;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  list-style: none;
+}
+.runtime-rail-section > summary::-webkit-details-marker {
+  display: none;
+}
+.runtime-rail-section > summary::before {
+  content: "›";
+  font-size: 17px;
+}
+.runtime-rail-section[open] > summary::before {
+  transform: rotate(90deg);
+}
+.runtime-rail-section > summary > span {
+  margin-left: auto;
+}
+.runtime-rail-section-body .mode-group {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.runtime-rail-section-body .mode-title {
+  margin: 4px 0 8px;
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+}
+.runtime-rail-section-body .buff-block {
+  margin-bottom: 7px;
+  padding: 9px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: #202628;
+}
+.runtime-rail-section-body .buff-block:has(input:checked) {
+  border-color: rgba(159, 189, 132, 0.5);
+  background: rgba(159, 189, 132, 0.07);
+}
+.runtime-rail-section-body .buff {
+  margin: 0;
+  padding: 0;
+  gap: 9px;
+  align-items: start;
+}
+.runtime-rail-section-body .buff > span {
+  min-width: 0;
+}
+.runtime-rail-section-body .buff strong {
+  font-size: 13px;
+  color: var(--ink);
+}
+.runtime-rail-section-body .buff-desc {
+  margin-top: 4px;
+  font-size: 11px;
+  line-height: 1.5;
+}
+.runtime-rail-section-body .buff input {
+  margin-top: 3px;
+  accent-color: var(--accent);
+}
+.runtime-rail-section-body .resource-row {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.runtime-rail-section-body .resource-buttons {
+  display: flex;
+  gap: 4px;
+}
+.runtime-rail-section-body .resource-buttons button {
+  padding: 4px 7px;
+  font-size: 10px;
+}
+.runtime-rail-section-body .runtime-active-chip {
+  text-align: left;
+  padding: 7px 9px;
+}
+.runtime-rail-section-body .runtime-chip-cloud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+@media (max-width: 1260px) {
+  .character-workspace-main .sheet-skills-panel {
+    grid-column: 1;
+    grid-row: auto;
+    position: static;
+  }
+}
+@media (max-width: 700px) {
+  .character-workspace-main .paper-sheet-combat-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .sheet-attack-group {
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .sheet-attack-group > .stat-card {
+    grid-column: auto;
+  }
+  .health-manager-body .health-action-grid {
+    grid-template-columns: 1fr;
+  }
+  .app .character-effects-rail {
+    position: static;
+    max-height: none;
+  }
+  .character-workspace-main .sheet-reference-group .acquisitions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+/* Health display uses actual HP, never the temporary-HP buffer, for severity. */
+.health-tone-green {
+  --health-color: #a9ca86;
+}
+.health-tone-yellow {
+  --health-color: #e1c56c;
+}
+.health-tone-orange {
+  --health-color: #e5a368;
+}
+.health-tone-red {
+  --health-color: #e89b91;
+}
+.character-workspace-main .health-manager-details .health-inline-meter i {
+  background: var(--health-color);
+  transition:
+    width 0.2s ease,
+    background-color 0.2s ease;
+}
+.character-workspace-main .health-inline-status {
+  color: var(--health-color);
+  font-weight: 600;
+}
+.health-inline-summary {
+  cursor: default;
+}
+.health-manager-body[hidden] {
+  display: none;
+}
+.character-workspace-main .health-alert {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 8px;
+  padding: 12px;
+  border: 1px solid rgba(232, 155, 145, 0.45);
+  border-left: 3px solid #e89b91;
+  border-radius: 5px;
+  background: rgba(232, 155, 145, 0.08);
+}
+.character-workspace-main .health-alert > div:first-child {
+  flex: 1 1 240px;
+}
+.character-workspace-main .health-alert strong {
+  color: #f0b6ad;
+  font-size: 14px;
+}
+.character-workspace-main .health-alert p {
+  margin: 4px 0 0;
+  color: #dec6c1;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.character-workspace-main .health-alert button {
+  border-color: rgba(232, 155, 145, 0.4);
+  color: #f3c4bb;
+  background: rgba(232, 155, 145, 0.06);
+  padding: 7px 10px;
+  font-size: 12px;
+}
+.character-workspace-main .health-alert button:hover {
+  background: rgba(232, 155, 145, 0.16);
+}
+.character-workspace-main .health-alert .stabilization-controls {
+  flex-basis: 100%;
+}
+.character-vitals > .character-header-status {
+  grid-column: 2;
+  grid-row: 2;
+  color: var(--health-color);
+  font-size: 10px;
+  line-height: 1.4;
+  letter-spacing: 0.04em;
+  text-align: right;
+  max-width: 90px;
+}
+.character-vitals > strong {
+  grid-column: 1;
+  grid-row: 2;
+  white-space: nowrap;
+}
+.character-vitals {
+  border-color: var(--health-color);
+}
+.character-identity-title .character-edit-profile {
+  padding: 4px 7px;
+  border: 1px solid transparent;
+  color: var(--accent);
+  background: transparent;
+  font:
+    13px "Segoe UI",
+    sans-serif;
+  white-space: nowrap;
+}
+.character-identity-title .character-edit-profile:hover {
+  color: var(--accent-2);
+  border-color: var(--line);
+  background: rgba(217, 183, 125, 0.06);
+}
+.app .character-profile-dialog {
+  width: min(680px, calc(100vw - 32px));
+  max-width: 680px;
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #1b2022;
+}
+.app .character-profile-dialog .modal-head,
+.app .character-rest-dialog .modal-head {
+  margin-bottom: 14px;
+}
+.app .character-profile-dialog .modal-head h2,
+.app .character-rest-dialog .modal-head h2 {
+  margin: 0;
+  font:
+    500 28px Georgia,
+    serif;
+  color: var(--ink);
+  text-transform: none;
+  letter-spacing: 0;
+}
+.profile-dialog-intro {
+  margin: 0 0 20px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.profile-field-sections {
+  display: grid;
+  gap: 18px;
+}
+.profile-field-sections fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+.profile-field-sections legend {
+  padding: 0 6px;
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.profile-field-sections .character-profile-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  padding: 0;
+}
+.profile-field-sections .field {
+  margin: 0;
+  min-width: 0;
+}
+.profile-field-sections .field > span {
+  margin-bottom: 5px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.profile-field-sections input {
+  width: 100%;
+  min-width: 0;
+  padding: 9px 10px;
+  border-color: var(--line);
+  border-radius: 4px;
+  background: #121719;
+}
+.profile-field-sections .profile-field-associations {
+  grid-column: 1 / -1;
+}
+.app .character-profile-dialog .modal-actions {
+  margin-top: 22px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+.character-rail-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 4px 0 14px;
+}
+.app .character-rail-heading h2 {
+  margin: 0;
+  color: var(--accent-2);
+  font:
+    500 23px Georgia,
+    serif;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.app .character-rail-heading .character-rail-toggle {
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
+  margin: 0;
+  padding: 0;
+  font:
+    24px Georgia,
+    serif;
+  writing-mode: horizontal-tb;
+}
+.rail-collapsed .character-rail-heading {
+  justify-content: center;
+}
+.app .character-effects-rail .runtime-rail-section-body .buff-block {
+  border-left: 3px solid #59605d;
+  color: #f1ede4;
+  background: #1b2022;
+}
+.app
+  .character-effects-rail
+  .runtime-rail-section-body
+  .buff-block:has(input:checked) {
+  border-left-color: #9fbd84;
+  background: #232d28;
+  color: #f1ede4;
+}
+.app .character-effects-rail .runtime-rail-section-body .buff {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+}
+.app .character-effects-rail .runtime-rail-section-body .buff > span {
+  flex: 1;
+  color: #f1ede4;
+}
+.app .character-effects-rail .runtime-rail-section-body .buff strong {
+  color: #f1ede4;
+  font:
+    600 13px "Segoe UI",
+    sans-serif;
+}
+.app .character-effects-rail .runtime-rail-section-body .buff-desc {
+  color: #d7d5cc;
+  font-size: 12px;
+  line-height: 1.4;
+}
+.runtime-card-source {
+  display: block;
+  margin-top: 3px;
+  color: #b9b9ad;
+  font-size: 10px;
+}
+.app .runtime-controls-panel .buff input[type="checkbox"] {
+  appearance: none;
+  position: relative;
+  order: 2;
+  flex: 0 0 32px;
+  width: 32px;
+  height: 19px;
+  min-height: 19px;
+  margin: 1px 0 0 8px;
+  padding: 0;
+  border: 1px solid #59605d;
+  border-radius: 20px;
+  background: #101314;
+  cursor: pointer;
+}
+.app .runtime-controls-panel .buff input[type="checkbox"]::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: #b9b9ad;
+  transition: left 0.15s ease;
+}
+.app .runtime-controls-panel .buff input[type="checkbox"]:checked {
+  border-color: #ddb978;
+  background: rgba(221, 185, 120, 0.18);
+}
+.app .runtime-controls-panel .buff input[type="checkbox"]:checked::after {
+  left: 16px;
+  background: #f0d19a;
+}
+.app .runtime-controls-panel .buff input[type="checkbox"]:focus-visible {
+  outline: 2px solid #f0d19a;
+  outline-offset: 3px;
+}
+.app .runtime-controls-panel .buff input[type="checkbox"]:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.app .runtime-controls-panel .resource-label {
+  color: #dcd8cf;
+}
+.character-workspace-main .combat-log-panel {
+  padding: 0;
+  margin: 0;
+}
+.combat-log-panel > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px;
+  cursor: pointer;
+  list-style: none;
+}
+.combat-log-panel > summary::before {
+  content: "›";
+  color: var(--accent);
+}
+.combat-log-panel[open] > summary::before {
+  transform: rotate(90deg);
+}
+.character-workspace-main .combat-log-panel > summary h2 {
+  flex: 1;
+  margin: 0;
+  font:
+    700 12px "Segoe UI",
+    sans-serif;
+  letter-spacing: 0.12em;
+}
+.combat-log-panel > summary > span {
+  color: var(--muted);
+  font-size: 11px;
+}
+.combat-log-panel > div,
+.combat-log-panel > p {
+  margin: 10px 12px;
+}
+.character-workspace-main .sheet-attack-group .combat-secondary-stat {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-height: 42px;
+}
+@media (max-width: 700px) {
+  .profile-field-sections .character-profile-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .character-vitals > span:first-child {
+    grid-row: 1 / 3;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .character-workspace-main .health-inline-meter i,
+  .app .runtime-controls-panel .buff input[type="checkbox"]::after {
+    transition: none;
+  }
+}
+/* Selected effects retain their neutral card surface; only switches change color. */
+.app
+  .character-effects-rail
+  .runtime-rail-section-body
+  .buff-block:has(input:checked),
+.app .character-effects-rail .runtime-rail-section-body .buff-block.active {
+  border-color: var(--line);
+  border-left-color: #59605d;
+  background: #1b2022;
+  color: #f1ede4;
+}
+.effect-remove-button {
+  margin-top: 8px;
+}
+.app .effect-library-dialog {
+  width: min(1000px, calc(100vw - 32px));
+  max-width: 1000px;
+  max-height: calc(100vh - 40px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 22px;
+  overflow: auto;
+  background: #1b2022;
+}
+.app .effect-library-dialog .modal-head {
+  margin: 0;
+}
+.character-dialog-backdrop {
+  width: 100vw;
+  height: 100dvh;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  border: 0;
+  color: var(--ink);
+}
+.character-dialog-backdrop::backdrop {
+  background: transparent;
+}
+.character-dialog-backdrop .modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.character-dialog-backdrop input[type="search"] {
+  width: 100%;
+}
+.app .effect-library-dialog h2,
+.app .weapon-attack-dialog h2 {
+  margin: 0;
+  font:
+    500 27px Georgia,
+    serif;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--ink);
+}
+.effect-library-dialog > .field {
+  margin: 0;
+}
+.effect-library-count {
+  color: var(--accent);
+  font-size: 13px;
+  white-space: nowrap;
+}
+.effect-library-filters {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+.effect-library-filters label {
+  display: grid;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.effect-library-filters select {
+  min-width: 0;
+  width: 100%;
+  padding: 7px;
+  font-size: 12px;
+}
+.effect-library-alphabet {
+  display: grid;
+  gap: 8px;
+  padding-block: 10px;
+  border-block: 1px solid var(--line);
+}
+.effect-library-alphabet > label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.effect-library-alphabet input {
+  flex: 1;
+  height: 16px;
+  padding: 0;
+  accent-color: var(--accent);
+}
+.effect-library-alphabet > div {
+  display: flex;
+  gap: 3px;
+  overflow-x: auto;
+}
+.effect-library-alphabet button {
+  flex: 1 0 24px;
+  padding: 4px;
+  font-size: 11px;
+}
+.effect-library-alphabet button[aria-pressed="true"] {
+  border-color: var(--accent);
+  color: var(--accent-2);
+}
+.effect-library-result-head,
+.effect-library-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.effect-library-results {
+  overflow-y: auto;
+  min-height: 140px;
+  max-height: 40vh;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+}
+.effect-library-option {
+  display: flex;
+  align-items: start;
+  gap: 12px;
+  padding: 12px;
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+}
+.effect-library-option:last-child {
+  border-bottom: 0;
+}
+.effect-library-option > input {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 17px;
+  margin-top: 2px;
+  accent-color: var(--accent);
+}
+.effect-library-option > span {
+  display: grid;
+  gap: 5px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #d7d5cc;
+}
+.effect-library-option strong {
+  color: var(--ink);
+  font-size: 14px;
+}
+.effect-library-option small {
+  color: var(--muted);
+  font-size: 10px;
+}
+.effect-library-dialog .modal-actions {
+  margin: 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.effect-library-dialog .modal-actions > span {
+  flex: 1;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.character-workspace-main .sheet-weapons-panel > div[hidden],
+.character-workspace-main .sheet-reference-panel > div[hidden] {
+  display: none;
+}
+.sheet-weapons-panel > div:not(.sheet-panel-heading) {
+  overflow-x: auto;
+}
+.weapon-reference-table {
+  min-width: 550px;
+}
+.weapon-reference-heading,
+.weapon-reference-row {
+  display: grid;
+  grid-template-columns:
+    minmax(90px, 1.5fr) 42px minmax(60px, 0.85fr)
+    50px 60px 44px minmax(66px, 1fr) 60px;
+  gap: 6px;
+  align-items: center;
+  padding: 10px;
+}
+.weapon-reference-heading {
+  color: var(--muted);
+  background: rgba(0, 0, 0, 0.12);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.weapon-reference-row {
+  border-top: 1px solid var(--line);
+  min-height: 58px;
+  font-size: 12px;
+}
+.weapon-reference-row > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.weapon-reference-row strong {
+  color: var(--accent-2);
+  font:
+    18px Georgia,
+    serif;
+}
+.weapon-reference-name {
+  color: var(--ink);
+  font-weight: 600;
+}
+.weapon-reference-name small,
+.weapon-reference-ammo small {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 400;
+}
+.weapon-empty-state {
+  margin: 0;
+  padding: 18px 12px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.app .weapon-attack-dialog {
+  width: min(900px, calc(100vw - 32px));
+  max-width: 900px;
+  padding: 22px;
+  background: #1b2022;
+}
+.weapon-attack-dialog > .weapon-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  font-size: 12px;
+}
+.weapon-attack-dialog .weapon-stats > .mf-tooltip,
+.weapon-attack-dialog .weapon-stats > .weapon-crit:not(.weapon-actions-block) {
+  min-width: 0;
+  margin: 0;
+  padding: 9px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: #171c1e;
+}
+.weapon-attack-dialog .weapon-atk,
+.weapon-attack-dialog .weapon-dmg,
+.weapon-attack-dialog .weapon-crit {
+  text-align: left;
+  white-space: normal;
+}
+.weapon-attack-dialog .weapon-actions-block {
+  grid-column: 1/-1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: #202628;
+}
+.weapon-attack-dialog .weapon-actions-block:has(input[type="number"]) {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.weapon-attack-dialog .weapon-note-editor {
+  display: grid;
+  min-width: 0;
+  gap: 5px;
+}
+.weapon-attack-dialog .weapon-note-editor input {
+  min-width: 0;
+  width: 100%;
+}
+.weapon-attack-dialog
+  .weapon-actions-block
+  > .weapon-note-editor:has(input[type="text"]) {
+  display: flex;
+  flex: 1 1 100%;
+}
+.weapon-attack-dialog .weapon-history-editor {
+  grid-column: 1/-1;
+  padding-top: 12px;
+}
+.weapon-attack-dialog .weapon-history-list {
+  max-height: 260px;
+  overflow-y: auto;
+}
+.weapon-attack-dialog .weapon-actions-block button {
+  color: var(--accent-2);
+}
+@media (min-width: 1101px) {
+  .character-identity-bar {
+    grid-template-columns: 76px minmax(240px, 1.35fr) minmax(300px, 0.9fr) 230px;
+  }
+}
+@media (max-width: 700px) {
+  .effect-library-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .effect-library-dialog .modal-actions {
+    flex-wrap: wrap;
+  }
+  .effect-library-dialog .modal-actions > span {
+    flex-basis: 100%;
+  }
+  .weapon-attack-dialog > .weapon-stats,
+  .weapon-attack-dialog .weapon-actions-block:has(input[type="number"]) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

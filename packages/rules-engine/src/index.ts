@@ -59,6 +59,7 @@ export {
   type RuntimeStateSnapshot,
   type WeaponAttackHistory,
   type WeaponAttackRecord,
+  type WeaponAttackRolls,
   type WeaponTargetDefense,
 } from "./runtime";
 export { deriveAbilities } from "./abilities";

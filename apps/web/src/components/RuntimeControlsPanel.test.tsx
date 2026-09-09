@@ -27,13 +27,17 @@ const haste = {
 function renderPanel(
   ownedSpellNames: string[],
   resourcePools: DerivedResourcePool[] = [],
+  fatigued = false,
+  activeBuffs: Record<string, boolean> = {},
+  runtimeFlags: Record<string, boolean> = {},
 ) {
   return renderToStaticMarkup(
     <RuntimeControlsPanel
       activatableGroups={{ ungrouped: [], grouped: {} }}
       activatableConflicts={[]}
       activatableBlockedReasons={{}}
-      activeBuffs={{}}
+      activeBuffs={activeBuffs}
+      runtimeFlags={runtimeFlags}
       resourcesUsed={{}}
       resourceMaxes={Object.fromEntries(
         resourcePools.map((pool) => [pool.id, pool.max]),
@@ -42,7 +46,7 @@ function renderPanel(
         resourcePools.map((pool) => [pool.id, pool.unit]),
       )}
       resourcePools={resourcePools}
-      fatigued={false}
+      fatigued={fatigued}
       buffs={[haste]}
       ownedSpellNames={ownedSpellNames}
       profile={fighterProfile}
@@ -87,14 +91,59 @@ describe("activatable resource costs", () => {
 });
 
 describe("RuntimeControlsPanel", () => {
+  it("retains off effects with an explicit removal action", () => {
+    const html = renderPanel(
+      [],
+      [],
+      false,
+      { haste: false },
+      { "ui:retained-effect:haste": true },
+    );
+    expect(html).toContain("<strong>Haste</strong>");
+    expect(html).toContain('aria-label="Remove Haste"');
+    expect(html).not.toContain('checked=""');
+  });
+  it("orders the rail and moves applied effects into readable active cards", () => {
+    const html = renderPanel([], [], false, { haste: true });
+    expect(html.indexOf("Effects &amp; Conditions")).toBeLessThan(
+      html.indexOf("My Abilities"),
+    );
+    expect(html.indexOf("My Abilities")).toBeLessThan(
+      html.indexOf("<summary>Active Now"),
+    );
+    expect(html.indexOf("Browse effects &amp; conditions")).toBeLessThan(
+      html.indexOf("My Abilities"),
+    );
+    expect(html.indexOf("<strong>Haste</strong>")).toBeGreaterThan(
+      html.indexOf("<summary>Active Now"),
+    );
+    expect(html).toContain("runtime-effect-card active");
+    expect(html).toContain('role="switch"');
+    expect(html).toContain("A useful spell effect.");
+  });
   it("does not promote unowned spells on a fighter by default", () => {
     const html = renderPanel([]);
     expect(html).not.toContain("<strong>Haste</strong>");
-    expect(html).toContain("Show 1 More Effects");
+    expect(html).toContain("Browse effects &amp; conditions");
+    expect(html).not.toContain("<strong>Fatigued</strong>");
+    expect(html).toContain('open=""');
   });
 
   it("keeps owned spells visible", () => {
-    expect(renderPanel(["Haste"])).toContain("<strong>Haste</strong>");
+    const html = renderPanel(["Haste"]);
+    expect(html).toContain("<strong>Haste</strong>");
+    expect(html.indexOf("My spell effects")).toBeGreaterThan(
+      html.indexOf("Effects &amp; Conditions"),
+    );
+  });
+
+  it("shows fatigue only when the condition is actually applied", () => {
+    const html = renderPanel([], [], true);
+    expect(html).toContain("<strong>Fatigued</strong>");
+    expect(html.indexOf("<strong>Fatigued</strong>")).toBeGreaterThan(
+      html.indexOf("<summary>Active Now"),
+    );
+    expect(html).toContain('open=""');
   });
 
   it("renders standalone class resource pools without an ability toggle", () => {
@@ -123,7 +172,7 @@ describe("RuntimeControlsPanel", () => {
     expect(html).not.toContain("Grit (ability)");
   });
 
-  it("explains grit maximum math for hover and keyboard focus", () => {
+  it("explains grit maximum math in the stat details", () => {
     expect(
       resourcePoolMathTooltip({
         id: "infantryman-grit",
