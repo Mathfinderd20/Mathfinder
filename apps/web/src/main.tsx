@@ -5,6 +5,7 @@ import {
   markAssetLoadSucceeded,
 } from "./assetReloadRecovery";
 import "./styles.css";
+import "./character-workspace.css";
 
 installAssetReloadRecovery();
 

@@ -8,6 +8,9 @@ export const LEGACY_SLOTS_KEY = "mathfinder:web-build-slots:v1";
 export const LEGACY_RUNTIME_KEY = "mathfinder:web-runtime:v1";
 export const LOCAL_DATA_CHANGED_EVENT = "mathfinder:local-data-changed";
 
+const CHARACTER_DETAILS_KEY = "__mathfinderCharacterDetails";
+const CHARACTER_PRIVATE_DETAILS_KEY = "__mathfinderPrivateCharacterDetails";
+
 const STORE_VERSION = 1;
 
 export interface CharacterRecord {
@@ -15,9 +18,35 @@ export interface CharacterRecord {
   ownerId?: string;
   name: string;
   build: CharacterBuild;
+  details?: CharacterDetails;
   currentLevel: number;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface CharacterNote {
+  id: string;
+  title: string;
+  category: string;
+  pinned: boolean;
+  body: string;
+}
+
+export interface CharacterProfile {
+  portraitDataUrl?: string;
+  deity?: string;
+  gender?: string;
+  age?: string;
+  height?: string;
+  weight?: string;
+  homeland?: string;
+  associations?: string;
+}
+
+export interface CharacterDetails {
+  profile?: CharacterProfile;
+  notes?: CharacterNote[];
+  campaignTraits?: string[];
 }
 
 interface CharacterStore {
@@ -61,6 +90,116 @@ function isCharacterBuild(value: unknown): value is CharacterBuild {
   );
 }
 
+function cleanText(value: unknown) {
+  return typeof value === "string" ? value.trim() : undefined;
+}
+
+function normalizeDetails(value: unknown): CharacterDetails | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const candidate = value as Partial<CharacterDetails>;
+  const profileCandidate =
+    candidate.profile && typeof candidate.profile === "object"
+      ? candidate.profile
+      : undefined;
+  const profile = profileCandidate
+    ? Object.fromEntries(
+        Object.entries(profileCandidate)
+          .map(([key, entry]) => [key, cleanText(entry)] as const)
+          .filter(([, entry]) => !!entry),
+      )
+    : undefined;
+  const notes = Array.isArray(candidate.notes)
+    ? candidate.notes
+        .filter(
+          (note): note is CharacterNote =>
+            !!note &&
+            typeof note.id === "string" &&
+            typeof note.title === "string" &&
+            typeof note.category === "string" &&
+            typeof note.pinned === "boolean" &&
+            typeof note.body === "string",
+        )
+        .map((note) => ({ ...note }))
+    : undefined;
+  const campaignTraits = Array.isArray(candidate.campaignTraits)
+    ? candidate.campaignTraits
+        .map(cleanText)
+        .filter((trait): trait is string => !!trait)
+    : undefined;
+  if (
+    (!profile || Object.keys(profile).length === 0) &&
+    (!notes || notes.length === 0) &&
+    (!campaignTraits || campaignTraits.length === 0)
+  ) {
+    return undefined;
+  }
+  return {
+    profile:
+      profile && Object.keys(profile).length > 0
+        ? (profile as CharacterProfile)
+        : undefined,
+    notes: notes?.length ? notes : undefined,
+    campaignTraits: campaignTraits?.length ? campaignTraits : undefined,
+  };
+}
+
+export function serializeCharacterBuild(record: CharacterRecord): unknown {
+  if (!record.details) return record.build;
+  const sharedDetails = { ...record.details };
+  delete sharedDetails.notes;
+  if (Object.keys(sharedDetails).length === 0) return record.build;
+  return {
+    ...record.build,
+    [CHARACTER_DETAILS_KEY]: sharedDetails,
+  };
+}
+
+export function serializeCharacterRuntime(
+  state: unknown,
+  record: CharacterRecord,
+): unknown {
+  const runtimeState =
+    state && typeof state === "object"
+      ? (state as Record<string, unknown>)
+      : {};
+  if (!record.details?.notes?.length) return runtimeState;
+  return {
+    ...runtimeState,
+    [CHARACTER_PRIVATE_DETAILS_KEY]: { notes: record.details.notes },
+  };
+}
+
+export function deserializeCharacterRuntime(value: unknown): {
+  state: Record<string, unknown>;
+  privateDetails?: Pick<CharacterDetails, "notes">;
+} {
+  if (!value || typeof value !== "object") return { state: {} };
+  const serialized = value as Record<string, unknown>;
+  const { [CHARACTER_PRIVATE_DETAILS_KEY]: rawPrivateDetails, ...state } =
+    serialized;
+  const details = normalizeDetails(rawPrivateDetails);
+  return {
+    state,
+    privateDetails: details?.notes ? { notes: details.notes } : undefined,
+  };
+}
+
+export function deserializeCharacterBuild(value: unknown):
+  | {
+      build: CharacterBuild;
+      details?: CharacterDetails;
+    }
+  | undefined {
+  if (!isCharacterBuild(value)) return undefined;
+  const serialized = value as CharacterBuild &
+    Record<typeof CHARACTER_DETAILS_KEY, unknown>;
+  const { [CHARACTER_DETAILS_KEY]: rawDetails, ...rawBuild } = serialized;
+  if (!isCharacterBuild(rawBuild)) return undefined;
+  const details = normalizeDetails(rawDetails);
+  if (details) delete details.notes;
+  return { build: rawBuild, details };
+}
+
 function clampLevel(build: CharacterBuild, level: unknown) {
   const parsed = typeof level === "number" ? level : Number(level);
   const maximum = Math.max(1, build.levels.length);
@@ -89,6 +228,7 @@ function normalizeRecord(value: unknown): CharacterRecord | undefined {
     name:
       candidate.build.name.trim() || candidate.name?.trim() || "Unnamed Hero",
     build: candidate.build,
+    details: normalizeDetails(candidate.details),
     currentLevel: clampLevel(candidate.build, candidate.currentLevel),
     createdAt,
     updatedAt: validTimestamp(candidate.updatedAt, createdAt),
@@ -261,6 +401,30 @@ export function saveCharacter(
     name: build.name.trim() || "Unnamed Hero",
     build,
     currentLevel: clampLevel(build, currentLevel),
+    updatedAt: options.now?.() ?? new Date().toISOString(),
+  };
+  writeStore(storage, {
+    ...store,
+    characters: [
+      updated,
+      ...store.characters.filter((record) => record.id !== characterId),
+    ],
+  });
+  return updated;
+}
+
+export function saveCharacterDetails(
+  storage: StorageLike,
+  characterId: string,
+  details: CharacterDetails,
+  options: RepositoryOptions = {},
+): CharacterRecord | undefined {
+  const store = initializeCharacterStore(storage, options);
+  const existing = store.characters.find((record) => record.id === characterId);
+  if (!existing) return undefined;
+  const updated: CharacterRecord = {
+    ...existing,
+    details: normalizeDetails(details),
     updatedAt: options.now?.() ?? new Date().toISOString(),
   };
   writeStore(storage, {

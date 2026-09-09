@@ -170,6 +170,38 @@ describe("authenticated persistence", () => {
     expect(mocks.mutations).toEqual([]);
     expect(mocks.cache).toMatchObject({ userId: "user-a", version: 1 });
   });
+  it("keeps player notes out of campaign-readable character builds", async () => {
+    const cloud = await import("./cloudPersistence");
+    const cache = await import("./accountCache");
+    await cloud.initializeCloudPersistence();
+    const key = "mathfinder:characters:v1";
+    const store = JSON.parse(cache.accountStorage.getItem(key)!);
+    store.characters[0].details = {
+      profile: { deity: "Iomedae" },
+      notes: [
+        {
+          id: "secret",
+          title: "Secret",
+          category: "General",
+          pinned: false,
+          body: "The GM must not receive this note.",
+        },
+      ],
+    };
+    const changes = cloud.changesFor(
+      { ...cache.currentEntries(), [key]: JSON.stringify(store) },
+      "user-a",
+    );
+    const character = [...changes.values()].find(
+      (entry) => entry.table === "characters",
+    )!;
+    const runtime = [...changes.values()].find(
+      (entry) => entry.table === "character_runtime_states",
+    )!;
+
+    expect(JSON.stringify(character.payload)).not.toContain("GM must not");
+    expect(JSON.stringify(runtime.payload)).toContain("GM must not");
+  });
   it("caches offline edits, restores them after reload, and syncs on reconnection", async () => {
     const cloud = await import("./cloudPersistence");
     const cache = await import("./accountCache");

@@ -444,7 +444,7 @@ export function LevelProgressionPlanner({
                               }));
                             }}
                           >
-                            {rowExpanded ? "Hide Tips" : "Show Tips"}
+                            {rowExpanded ? "Close Level" : "Edit Level"}
                           </button>
                           <button
                             className="ghost small"

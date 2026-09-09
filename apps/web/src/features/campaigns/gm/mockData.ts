@@ -1,3 +1,5 @@
+import type { CharacterBuild, Modifier } from "@mathfinder/rules-engine";
+
 export type ActorKind = "Player" | "Ally" | "NPC" | "Monster" | "Villain";
 export interface Actor {
   id: string;
@@ -19,6 +21,10 @@ export interface Actor {
   stance: "Normal" | "Delayed" | "Readied";
   conditions: string;
   notes: string;
+  /** A campaign-scoped build snapshot when the actor came from a real character. */
+  build?: CharacterBuild;
+  manualModifiers?: Modifier[];
+  campaignTraits?: string[];
 }
 
 export const initialActors: Actor[] = [

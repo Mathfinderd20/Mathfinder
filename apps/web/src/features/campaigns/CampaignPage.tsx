@@ -123,6 +123,11 @@ function LiveCampaign({
             stance: "Normal",
             conditions: "",
             notes: "",
+            build: {
+              ...character.build,
+              levels: character.build.levels.slice(0, character.currentLevel),
+            },
+            campaignTraits: character.details?.campaignTraits,
           };
         },
       );
@@ -130,14 +135,25 @@ function LiveCampaign({
       const assigned = new Set(
         characterIdsForCampaign(accountStorage, campaignId),
       );
-      const initial = (data?.state as WorkspaceState | undefined) ?? {
-        actors: templates.filter((actor) => assigned.has(actor.id)),
-        notes: [],
-        phase: "Exploration",
-        round: 1,
-        turnId: "",
-        surprise: false,
-      };
+      const loadedState = data?.state as WorkspaceState | undefined;
+      const initial = loadedState
+        ? {
+            ...loadedState,
+            actors: ((loadedState.actors ?? []) as Actor[]).map((actor) => ({
+              ...actor,
+              build:
+                actor.build ??
+                templates.find((template) => template.id === actor.id)?.build,
+            })),
+          }
+        : {
+            actors: templates.filter((actor) => assigned.has(actor.id)),
+            notes: [],
+            phase: "Exploration",
+            round: 1,
+            turnId: "",
+            surprise: false,
+          };
       revision.current = data?.revision ?? 0;
       saved.current = data ? initial : null;
       setCatalog(templates);

@@ -348,6 +348,8 @@ export function Sheet({
   onResetWeaponAttackHistory,
   onResetAmmo,
   onSetWeaponLoadedAmmo,
+  showIdentity = true,
+  showSpellcasting = true,
 }: {
   sheet: DerivedSheet;
   wealthSummary: WealthSummary;
@@ -415,6 +417,8 @@ export function Sheet({
     weaponName?: string,
   ) => void;
   onResetAmmo?: (ammoType?: string) => void;
+  showIdentity?: boolean;
+  showSpellcasting?: boolean;
 }) {
   const [attackNoteDrafts, setAttackNoteDrafts] = useState<
     Record<string, string>
@@ -494,33 +498,35 @@ export function Sheet({
 
   return (
     <div className="sheet paper-sheet">
-      <section className="sheet-hero panel paper-panel">
-        <div className="sheet-title-block">
-          <div className="sheet-name-row">
-            <h1>{sheet.name}</h1>
-            <span className="paper-badge">Level {sheet.level}</span>
-          </div>
-          <div className="sheet-meta-line">
-            <span>{identity || "Unspecified heroics"}</span>
-            {sheet.descriptor.alignment ? (
-              <span>{ALIGNMENT_LABELS[sheet.descriptor.alignment]}</span>
-            ) : null}
-            <span>Size: {sheet.size}</span>
-            <Tooltip content={encumbranceTooltip(sheet.encumbrance)}>
-              <span>Load: {encumbranceLabel(sheet.encumbrance)}</span>
-            </Tooltip>
-            <Tooltip
-              content={`Current HP ${currentHp} / ${sheet.hitPoints.total}\n\nDeath threshold ${healthStatus.deathThreshold} HP`}
-            >
-              <span
-                className={`tag hp-status ${healthConditionTone(healthStatus.condition)}`}
+      {showIdentity ? (
+        <section className="sheet-hero panel paper-panel">
+          <div className="sheet-title-block">
+            <div className="sheet-name-row">
+              <h1>{sheet.name}</h1>
+              <span className="paper-badge">Level {sheet.level}</span>
+            </div>
+            <div className="sheet-meta-line">
+              <span>{identity || "Unspecified heroics"}</span>
+              {sheet.descriptor.alignment ? (
+                <span>{ALIGNMENT_LABELS[sheet.descriptor.alignment]}</span>
+              ) : null}
+              <span>Size: {sheet.size}</span>
+              <Tooltip content={encumbranceTooltip(sheet.encumbrance)}>
+                <span>Load: {encumbranceLabel(sheet.encumbrance)}</span>
+              </Tooltip>
+              <Tooltip
+                content={`Current HP ${currentHp} / ${sheet.hitPoints.total}\n\nDeath threshold ${healthStatus.deathThreshold} HP`}
               >
-                {healthConditionLabel(healthStatus.condition)}
-              </span>
-            </Tooltip>
+                <span
+                  className={`tag hp-status ${healthConditionTone(healthStatus.condition)}`}
+                >
+                  {healthConditionLabel(healthStatus.condition)}
+                </span>
+              </Tooltip>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      ) : null}
 
       <div className="sheet-top-grid">
         <section className="abilities paper-abilities panel paper-panel">
@@ -1771,7 +1777,7 @@ export function Sheet({
         </div>
       </div>
 
-      {sheet.spellcasting.length > 0 ? (
+      {showSpellcasting && sheet.spellcasting.length > 0 ? (
         <section className="panel paper-panel">
           <h2>Spellcasting</h2>
           <div className="spell-sheet-grid">

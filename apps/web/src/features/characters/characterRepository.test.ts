@@ -8,12 +8,17 @@ import {
   LEGACY_SLOTS_KEY,
   createCharacter,
   deleteCharacter,
+  deserializeCharacterBuild,
+  deserializeCharacterRuntime,
   getCharacter,
   initializeCharacterStore,
   listCharacters,
   renameCharacter,
   runtimeStorageKey,
   saveCharacter,
+  saveCharacterDetails,
+  serializeCharacterBuild,
+  serializeCharacterRuntime,
   type StorageLike,
 } from "./characterRepository";
 
@@ -184,5 +189,48 @@ describe("character repository", () => {
 
     deleteCharacter(storage, character.id);
     expect(getCharacter(storage, character.id)).toBeUndefined();
+  });
+
+  it("persists profile, campaign traits, and player-only notes beside the build", () => {
+    const storage = new MemoryStorage();
+    const character = createCharacter(storage, build("Seelah"), {
+      now: () => NOW,
+      createId: sequentialIds(),
+    });
+
+    saveCharacterDetails(storage, character.id, {
+      profile: { deity: "Iomedae", gender: "Woman" },
+      campaignTraits: ["Taldan Duelist"],
+      notes: [
+        {
+          id: "oath",
+          title: "My oath",
+          category: "Character",
+          pinned: true,
+          body: "Do not forget the chapel.",
+        },
+      ],
+    });
+
+    const updated = getCharacter(storage, character.id)!;
+    expect(updated.details?.profile?.deity).toBe("Iomedae");
+    const decoded = deserializeCharacterBuild(serializeCharacterBuild(updated));
+    expect(decoded?.build).toEqual(character.build);
+    expect(decoded?.details).toEqual({
+      profile: { deity: "Iomedae", gender: "Woman" },
+      campaignTraits: ["Taldan Duelist"],
+    });
+    const privateRuntime = deserializeCharacterRuntime(
+      serializeCharacterRuntime({ resources: {} }, updated),
+    );
+    expect(privateRuntime.state).toEqual({ resources: {} });
+    expect(privateRuntime.privateDetails?.notes).toEqual(
+      updated.details?.notes,
+    );
+
+    saveCharacter(storage, character.id, build("Seelah", 2), 2);
+    expect(getCharacter(storage, character.id)?.details).toEqual(
+      updated.details,
+    );
   });
 });

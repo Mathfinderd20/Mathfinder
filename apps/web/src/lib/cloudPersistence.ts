@@ -1,8 +1,12 @@
 import type { User } from "@supabase/supabase-js";
 import {
   CHARACTER_STORE_KEY,
+  deserializeCharacterBuild,
+  deserializeCharacterRuntime,
   LOCAL_DATA_CHANGED_EVENT,
   runtimeStorageKey,
+  serializeCharacterBuild,
+  serializeCharacterRuntime,
   type CharacterRecord,
 } from "../features/characters/characterRepository";
 import {
@@ -153,16 +157,22 @@ export function changesFor(
           ...new Set(c.build.levels.map((l) => l.className)),
         ].join(" / "),
         level: c.currentLevel,
-        build: c.build,
+        build: serializeCharacterBuild(c),
         build_version: 1,
       },
     );
     const runtime = entries[runtimeStorageKey(c.id)];
-    if (runtime)
+    if (runtime || c.details?.notes?.length)
       add(
         "character_runtime_states",
         { character_id: c.id },
-        { state: JSON.parse(runtime), state_version: 1 },
+        {
+          state: serializeCharacterRuntime(
+            runtime ? JSON.parse(runtime) : {},
+            c,
+          ),
+          state_version: 1,
+        },
       );
   }
   const campaigns = parse<{
@@ -280,6 +290,23 @@ async function loadCloud(expected: number) {
     );
   }
   const roles = new Map(members.map((r) => [r.campaign_id, r.role]));
+  const loadedCharacters: CharacterRecord[] = characters.flatMap((r) => {
+    const decoded = deserializeCharacterBuild(r.build);
+    return decoded
+      ? [
+          {
+            id: r.id as string,
+            ownerId: r.owner_id as string,
+            name: r.name as string,
+            build: decoded.build,
+            details: decoded.details,
+            currentLevel: r.level as number,
+            createdAt: r.created_at as string,
+            updatedAt: r.updated_at as string,
+          },
+        ]
+      : [];
+  });
   const entries: Entries = {
     "mathfinder:web-build-slots:v1": JSON.stringify(
       profiles[0]?.saved_build_slots ?? [],
@@ -287,15 +314,7 @@ async function loadCloud(expected: number) {
     [CHARACTER_STORE_KEY]: JSON.stringify({
       version: 1,
       initializedAt: stamp,
-      characters: characters.map((r) => ({
-        id: r.id,
-        ownerId: r.owner_id,
-        name: r.name,
-        build: r.build,
-        currentLevel: r.level,
-        createdAt: r.created_at,
-        updatedAt: r.updated_at,
-      })),
+      characters: loadedCharacters,
     }),
     [CAMPAIGN_STORE_KEY]: JSON.stringify({
       version: 1,
@@ -318,8 +337,26 @@ async function loadCloud(expected: number) {
       })),
     }),
   };
-  for (const r of runtime)
-    entries[runtimeStorageKey(r.character_id)] = JSON.stringify(r.state);
+  for (const r of runtime.filter((row) => row.campaign_id == null)) {
+    const decoded = deserializeCharacterRuntime(r.state);
+    entries[runtimeStorageKey(r.character_id)] = JSON.stringify(decoded.state);
+    if (decoded.privateDetails?.notes) {
+      const character = loadedCharacters.find(
+        (entry) => entry.id === r.character_id,
+      );
+      if (character) {
+        character.details = {
+          ...character.details,
+          notes: decoded.privateDetails.notes,
+        };
+      }
+    }
+  }
+  entries[CHARACTER_STORE_KEY] = JSON.stringify({
+    version: 1,
+    initializedAt: stamp,
+    characters: loadedCharacters,
+  });
   entries.__server = JSON.stringify(
     Object.fromEntries(
       tables.map((table, i) => [table, results[i]?.data ?? []]),

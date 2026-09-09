@@ -11,7 +11,11 @@ import {
   setCampaignCharacterAssignment,
 } from "../campaigns/campaignRepository";
 import { CreationRulesSummary } from "../campaigns/CampaignCreationRules";
-import { createCharacter } from "./characterRepository";
+import {
+  createCharacter,
+  saveCharacterDetails,
+  type CharacterDetails,
+} from "./characterRepository";
 import "../home/home.css";
 import "../home/home-responsive.css";
 
@@ -26,7 +30,7 @@ export function NewCharacterPage() {
     ComponentType<{
       characterName: string;
       creationRules?: CharacterCreationRules;
-      onConfirm: (build: CharacterBuild) => void;
+      onConfirm: (build: CharacterBuild, details?: CharacterDetails) => void;
       onClose: () => void;
     }>
   >();
@@ -53,8 +57,11 @@ export function NewCharacterPage() {
     }
   }
 
-  function finishCreation(build: CharacterBuild) {
+  function finishCreation(build: CharacterBuild, details?: CharacterDetails) {
     const character = createCharacter(accountStorage, build);
+    if (details) {
+      saveCharacterDetails(accountStorage, character.id, details);
+    }
     if (campaign) {
       setCampaignCharacterAssignment(
         accountStorage,

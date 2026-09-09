@@ -92,7 +92,7 @@ export function useSpellbookEditor(
     const trimmed = spellName.trim();
     if (!trimmed) return;
     const current = build.spellSelections?.[classKey]?.[mode]?.[level] ?? [];
-    if (current.includes(trimmed)) return;
+    if (mode === "known" && current.includes(trimmed)) return;
     updateSpellSelections(classKey, mode, level, [...current, trimmed]);
   }
 

@@ -4,10 +4,17 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { getCharacter } from "./characterRepository";
 import { useCloudConnection } from "../../lib/useCloudConnection";
 
-type WorkspaceTab = "sheet" | "gear" | "build";
+type WorkspaceTab = "notes" | "character" | "inventory" | "magic" | "build";
 
 function workspaceTab(value: string | undefined): WorkspaceTab {
-  return value === "gear" || value === "build" ? value : "sheet";
+  if (value === "sheet") return "character";
+  if (value === "gear") return "inventory";
+  return value === "notes" ||
+    value === "inventory" ||
+    value === "magic" ||
+    value === "build"
+    ? value
+    : "character";
 }
 
 export function CharacterWorkspace() {
