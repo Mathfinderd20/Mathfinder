@@ -182,13 +182,13 @@ describe("inventory math", () => {
     expect(sheet.encumbrance.carriedWeight).toBe(15);
   });
 
-  it("lets manual carried weight override auto-summed gear weight", () => {
+  it("ignores retired carried weight overrides and uses calculated gear weight", () => {
     const build = grukkLevel1();
     build.equipment = [{ name: "Anvil, tragically", weight: 10, costGp: 5 }];
     build.carriedWeight = 50;
     const sheet = computeSheet(buildCharacter(build));
     expect(sheet.inventory.totalWeight).toBe(10);
-    expect(sheet.encumbrance.carriedWeight).toBe(50);
+    expect(sheet.encumbrance.carriedWeight).toBe(10);
   });
 
   it("applies modifiers and armor rules only from equipped gear", () => {

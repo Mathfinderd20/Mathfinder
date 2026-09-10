@@ -270,7 +270,7 @@ export function normalizeBuild(build: CharacterBuild): CharacterBuild {
     race: normalizedRace,
     classArchetypes: normalizedArchetypes,
     // Legacy fresh builds wrote a zero total-weight override, masking gear/coins.
-    carriedWeight: build.carriedWeight === 0 ? undefined : build.carriedWeight,
+    carriedWeight: undefined,
     equipment: build.equipment?.map(normalizeEquipmentItem),
   };
 }

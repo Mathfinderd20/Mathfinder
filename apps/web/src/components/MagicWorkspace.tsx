@@ -368,7 +368,6 @@ export function MagicWorkspace(
             <section className="v2-panel casting-slot-ledger">
               <header className="v2-panel-heading">
                 <h2>Daily magic</h2>
-                <small>Prepared · available · spent</small>
               </header>
               <div className="casting-level-ledger">
                 {levels.map((level) => {
@@ -392,7 +391,12 @@ export function MagicWorkspace(
                       <small>
                         {(selections[level] ?? []).length}{" "}
                         {prepared ? "prepared" : "known"} ·{" "}
-                        {caster.slotsUsed[level] ?? 0} spent
+                        {level === 0
+                          ? Object.values(
+                              props.spellCastCounts[key]?.[0] ?? {},
+                            ).reduce((total, count) => total + count, 0)
+                          : (caster.slotsUsed[level] ?? 0)}{" "}
+                        spent
                       </small>
                       {(diag?.restrictedSlotCapacity ?? 0) > 0 && (
                         <em>
@@ -601,11 +605,6 @@ export function MagicWorkspace(
                 )}
               </div>
             </section>
-            <p className="v2-footnote">
-              Casting uses the existing target-selection flow. Saves and effects
-              are resolved by the affected characters or GM; no battle map is
-              required.
-            </p>
           </>
         ) : (
           <section className="v2-panel v2-empty">

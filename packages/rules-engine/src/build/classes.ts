@@ -388,6 +388,21 @@ export const SAMPLE_CLASSES: ClassRegistry = {
         3: spellsByLevel(6, 5),
         4: spellsByLevel(6, 6, 3),
         5: spellsByLevel(6, 6, 4),
+        6: spellsByLevel(7, 6, 5, 3),
+        7: spellsByLevel(7, 6, 6, 4),
+        8: spellsByLevel(8, 6, 6, 5, 3),
+        9: spellsByLevel(8, 6, 6, 6, 4),
+        10: spellsByLevel(9, 6, 6, 6, 5, 3),
+        11: spellsByLevel(9, 6, 6, 6, 6, 4),
+        12: spellsByLevel(9, 6, 6, 6, 6, 5, 3),
+        13: spellsByLevel(9, 6, 6, 6, 6, 6, 4),
+        14: spellsByLevel(9, 6, 6, 6, 6, 6, 5, 3),
+        15: spellsByLevel(9, 6, 6, 6, 6, 6, 6, 4),
+        16: spellsByLevel(9, 6, 6, 6, 6, 6, 6, 5, 3),
+        17: spellsByLevel(9, 6, 6, 6, 6, 6, 6, 6, 4),
+        18: spellsByLevel(9, 6, 6, 6, 6, 6, 6, 6, 5, 3),
+        19: spellsByLevel(9, 6, 6, 6, 6, 6, 6, 6, 6, 4),
+        20: spellsByLevel(9, 6, 6, 6, 6, 6, 6, 6, 6, 6),
       },
       spellsKnown: {
         1: spellsByLevel(4, 2),
@@ -395,6 +410,21 @@ export const SAMPLE_CLASSES: ClassRegistry = {
         3: spellsByLevel(5, 3),
         4: spellsByLevel(6, 3, 1),
         5: spellsByLevel(6, 4, 2),
+        6: spellsByLevel(7, 4, 2, 1),
+        7: spellsByLevel(7, 5, 3, 2),
+        8: spellsByLevel(8, 5, 3, 2, 1),
+        9: spellsByLevel(8, 5, 4, 3, 2),
+        10: spellsByLevel(9, 5, 4, 3, 2, 1),
+        11: spellsByLevel(9, 5, 5, 4, 3, 2),
+        12: spellsByLevel(9, 5, 5, 4, 3, 2, 1),
+        13: spellsByLevel(9, 5, 5, 4, 4, 3, 2),
+        14: spellsByLevel(9, 5, 5, 4, 4, 3, 2, 1),
+        15: spellsByLevel(9, 5, 5, 4, 4, 4, 3, 2),
+        16: spellsByLevel(9, 5, 5, 4, 4, 4, 3, 2, 1),
+        17: spellsByLevel(9, 5, 5, 4, 4, 4, 3, 3, 2),
+        18: spellsByLevel(9, 5, 5, 4, 4, 4, 3, 3, 2, 1),
+        19: spellsByLevel(9, 5, 5, 4, 4, 4, 3, 3, 3, 2),
+        20: spellsByLevel(9, 5, 5, 4, 4, 4, 3, 3, 3, 3),
       },
     },
   },
@@ -642,5 +672,32 @@ export function getClassDefinition(
   registry: ClassRegistry,
   name: string,
 ): ClassDefinition | undefined {
-  return registry[name.toLowerCase()];
+  const definition = registry[name.toLowerCase()];
+  return definition ? completeCoreSpellProgression(definition) : undefined;
+}
+
+/** Older exported catalogs contain only Sorcerer levels 1–5. Preserve explicit
+ * catalog rows while filling missing levels from the core progression.
+ * Source: https://legacy.aonprd.com/coreRuleBook/classes/sorcerer.html
+ */
+export function completeCoreSpellProgression(
+  definition: ClassDefinition,
+): ClassDefinition {
+  if (definition.name.toLowerCase() !== "sorcerer" || !definition.spellcasting)
+    return definition;
+  const core = SAMPLE_CLASSES.sorcerer!.spellcasting!;
+  return {
+    ...definition,
+    spellcasting: {
+      ...definition.spellcasting,
+      spellsPerDay: {
+        ...core.spellsPerDay,
+        ...definition.spellcasting.spellsPerDay,
+      },
+      spellsKnown: {
+        ...core.spellsKnown,
+        ...definition.spellcasting.spellsKnown,
+      },
+    },
+  };
 }

@@ -3,6 +3,7 @@ import { SaveSection, SectionSaveProvider } from "./components/SaveSection";
 import { useSectionDraft } from "./features/characters/useSectionDraft";
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { CharacterLanguages } from "./components/CharacterLanguages";
+import { BuildSection } from "./components/BuildSection";
 import {
   applyLevelUp,
   levelDown,
@@ -178,7 +179,7 @@ export function App({
   const {
     buyEquipment,
     sellEquipment,
-    updateCarriedWeight,
+    adjustCoinPurse,
     updateCoinPurse,
     updateCoinWeightCountsTowardEncumbrance,
   } = useInventoryCommerce(setBuild);
@@ -754,12 +755,7 @@ export function App({
             <div className="sheet-main-stack">
               <Sheet
                 languagesPanel={
-                  <CharacterLanguages
-                    build={effectiveBuild}
-                    onChange={(languages) =>
-                      setBuild((prev) => ({ ...prev, languages }))
-                    }
-                  />
+                  <CharacterLanguages build={effectiveBuild} hideHeading />
                 }
                 characterId={characterId}
                 sheet={sheet}
@@ -874,7 +870,7 @@ export function App({
             characterId={characterId}
             sheet={sheet}
             build={build}
-            onUpdateCarriedWeight={updateCarriedWeight}
+            onAdjustCoinPurse={adjustCoinPurse}
             onUpdateCoinPurse={updateCoinPurse}
             onUpdateCoinWeightCountsTowardEncumbrance={
               updateCoinWeightCountsTowardEncumbrance
@@ -1013,14 +1009,12 @@ export function App({
               </div>
             }
             campaignTraitsPanel={
-              <SaveSection className="build-traits-panel panel">
-                <div className="editor-section-head tight">
-                  <div>
-                    <span className="character-eyebrow">
-                      Optional campaign choices
-                    </span>
-                    <h3>Campaign Traits</h3>
-                  </div>
+              <BuildSection
+                characterId={characterId ?? "local"}
+                title="Campaign Traits"
+                eyebrow="Optional campaign choices"
+                className="build-traits-panel"
+                actions={
                   <button
                     type="button"
                     className="ghost small"
@@ -1033,55 +1027,60 @@ export function App({
                   >
                     + Trait
                   </button>
-                </div>
-                {(details.campaignTraits ?? []).length ? (
-                  <div className="character-trait-list">
-                    {(details.campaignTraits ?? []).map((trait, index) => (
-                      <div
-                        className="character-trait-row"
-                        key={`campaign-trait-${index}`}
-                      >
-                        <input
-                          aria-label={`Campaign trait ${index + 1}`}
-                          value={trait}
-                          placeholder="Trait name or campaign-granted benefit"
-                          onChange={(event) =>
-                            updateCharacterDetails({
-                              ...details,
-                              campaignTraits: (
-                                details.campaignTraits ?? []
-                              ).map((value, entryIndex) =>
-                                entryIndex === index
-                                  ? event.target.value
-                                  : value,
-                              ),
-                            })
-                          }
-                        />
-                        <button
-                          type="button"
-                          className="ghost small"
-                          onClick={() =>
-                            updateCharacterDetails({
-                              ...details,
-                              campaignTraits: (
-                                details.campaignTraits ?? []
-                              ).filter((_, entryIndex) => entryIndex !== index),
-                            })
-                          }
+                }
+              >
+                <SaveSection>
+                  {(details.campaignTraits ?? []).length ? (
+                    <div className="character-trait-list">
+                      {(details.campaignTraits ?? []).map((trait, index) => (
+                        <div
+                          className="character-trait-row"
+                          key={`campaign-trait-${index}`}
                         >
-                          Remove
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="hint">
-                    Optional. Most campaigns allow one to three traits, subject
-                    to the GM’s creation rules.
-                  </p>
-                )}
-              </SaveSection>
+                          <input
+                            aria-label={`Campaign trait ${index + 1}`}
+                            value={trait}
+                            placeholder="Trait name or campaign-granted benefit"
+                            onChange={(event) =>
+                              updateCharacterDetails({
+                                ...details,
+                                campaignTraits: (
+                                  details.campaignTraits ?? []
+                                ).map((value, entryIndex) =>
+                                  entryIndex === index
+                                    ? event.target.value
+                                    : value,
+                                ),
+                              })
+                            }
+                          />
+                          <button
+                            type="button"
+                            className="ghost small"
+                            onClick={() =>
+                              updateCharacterDetails({
+                                ...details,
+                                campaignTraits: (
+                                  details.campaignTraits ?? []
+                                ).filter(
+                                  (_, entryIndex) => entryIndex !== index,
+                                ),
+                              })
+                            }
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="hint">
+                      Optional. Most campaigns allow one to three traits,
+                      subject to the GM’s creation rules.
+                    </p>
+                  )}
+                </SaveSection>
+              </BuildSection>
             }
             build={build}
             currentLevel={currentLevel}

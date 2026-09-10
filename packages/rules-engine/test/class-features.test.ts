@@ -340,7 +340,7 @@ describe("class feature effects auto-apply through buildCharacter", () => {
   it("suppresses Fast Movement under heavy load", () => {
     const heavyLoadBuild: CharacterBuild = {
       ...build,
-      carriedWeight: 230,
+      equipment: [{ name: "Heavy cargo", weight: 230, carryState: "carried" }],
     };
     const heavyLoadSheet = computeSheet(buildCharacter(heavyLoadBuild));
     expect(heavyLoadSheet.encumbrance.band).toBe("heavy");
@@ -350,7 +350,7 @@ describe("class feature effects auto-apply through buildCharacter", () => {
     ]);
   });
 
-  it("counts coin weight when no manual total-weight override is present", () => {
+  it("counts coin weight toward carried load", () => {
     const coinBuild: CharacterBuild = {
       ...build,
       coinPurse: { gp: 100_000 },
@@ -366,7 +366,7 @@ describe("class feature effects auto-apply through buildCharacter", () => {
   it("keeps load-restricted features active when encumbrance is ignored", () => {
     const ignoredLoadBuild: CharacterBuild = {
       ...build,
-      carriedWeight: 230,
+      equipment: [{ name: "Heavy cargo", weight: 230, carryState: "carried" }],
       campaignRules: { ignoreEncumbrance: true },
     };
     const ignoredLoadSheet = computeSheet(buildCharacter(ignoredLoadBuild));

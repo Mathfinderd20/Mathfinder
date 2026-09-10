@@ -63,6 +63,10 @@ export function InventoryWorkspace(
   const { build, sheet, characterId = "local" } = props;
   const equipment = build.equipment ?? [];
   const wealth = summarizeWealth(build);
+  const [coinAmount, setCoinAmount] = useState("");
+  const amountGp = Number(coinAmount);
+  const validAmount =
+    Number.isFinite(amountGp) && amountGp > 0 && Math.round(amountGp * 100) > 0;
   const [railOpen, setRailOpen] = useCharacterUiState(
     characterId,
     "inventory-rail",
@@ -321,7 +325,13 @@ export function InventoryWorkspace(
             </div>
           ))}
           <div>
-            <small>Total wealth</small>
+            <small>Carried GP</small>
+            <strong>
+              {number(wealth.liquidWealthGp)} <em>gp</em>
+            </strong>
+          </div>
+          <div>
+            <small>Total Wealth</small>
             <strong>
               {number(wealth.totalWealthGp)} <em>gp</em>
             </strong>
@@ -329,10 +339,7 @@ export function InventoryWorkspace(
           <div>
             <small>Carried load</small>
             <strong>
-              {number(
-                sheet?.encumbrance.carriedWeight ?? build.carriedWeight ?? 0,
-              )}{" "}
-              <em>lb</em>
+              {number(sheet?.encumbrance.carriedWeight ?? 0)} <em>lb</em>
             </strong>
           </div>
           <button className="ghost small" onClick={() => setCoins(true)}>
@@ -816,6 +823,58 @@ export function InventoryWorkspace(
                 </label>
               ))}
             </div>
+            <section className="coin-calculator" aria-label="Coin calculator">
+              <div className="sheet-panel-heading">
+                <h3>Adjust purse</h3>
+                <span>
+                  {number(wealth.liquidWealthGp)} GP ·{" "}
+                  {number(wealth.coinWeightLb)} lb
+                </span>
+              </div>
+              <div className="coin-calculator-actions">
+                <label className="field">
+                  Amount in GP
+                  <input
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    value={coinAmount}
+                    placeholder="0.00"
+                    onChange={(event) => setCoinAmount(event.target.value)}
+                  />
+                </label>
+                <button
+                  disabled={!validAmount}
+                  onClick={() => {
+                    props.onAdjustCoinPurse(amountGp);
+                    setCoinAmount("");
+                  }}
+                >
+                  Add GP
+                </button>
+                <button
+                  className="ghost"
+                  disabled={
+                    !validAmount ||
+                    Math.round(amountGp * 100) >
+                      Math.round(wealth.liquidWealthGp * 100)
+                  }
+                  onClick={() => {
+                    props.onAdjustCoinPurse(-amountGp);
+                    setCoinAmount("");
+                  }}
+                >
+                  Subtract GP
+                </button>
+              </div>
+              <p className="hint">
+                Makes change using the fewest coins: platinum, gold, silver,
+                then copper. Rounded to the nearest copper.
+              </p>
+              {validAmount && amountGp > wealth.liquidWealthGp && (
+                <p className="hint">Not enough GP to subtract this amount.</p>
+              )}
+            </section>
             <label>
               <input
                 type="checkbox"
@@ -827,18 +886,6 @@ export function InventoryWorkspace(
                 }
               />{" "}
               Count coin weight toward encumbrance
-            </label>
-            <label>
-              Carried weight override (lb)
-              <input
-                type="number"
-                min={0}
-                placeholder="Automatic: equipment + coins"
-                value={build.carriedWeight ?? ""}
-                onChange={(event) =>
-                  props.onUpdateCarriedWeight(event.target.value)
-                }
-              />
             </label>
           </section>
         </CharacterDialog>

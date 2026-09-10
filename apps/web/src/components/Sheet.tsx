@@ -1689,28 +1689,6 @@ export function Sheet({
                     campaignTraits={campaignTraits}
                     runtime={referenceRuntime}
                   />
-                  <div className="sheet-language-reference">
-                    <h3>Languages &amp; Senses</h3>
-                    {languagesPanel}
-                    <div className="sheet-reference-notes">
-                      {sheet.raceMetadata?.senses?.darkvisionFeet ? (
-                        <span>
-                          Darkvision {sheet.raceMetadata.senses.darkvisionFeet}{" "}
-                          ft
-                        </span>
-                      ) : null}
-                      {sheet.raceMetadata?.senses?.lowLightVision ? (
-                        <span>Low-light vision</span>
-                      ) : null}
-                      {raceNotes.languagesAndSenses.map((note, i) => (
-                        <span key={i}>{note}</span>
-                      ))}
-                      {!languagesPanel &&
-                      !raceNotes.languagesAndSenses.length ? (
-                        <span className="hint">Languages not recorded</span>
-                      ) : null}
-                    </div>
-                  </div>
                 </div>
               </section>
 
@@ -2096,6 +2074,46 @@ export function Sheet({
               );
             })}
           </div>
+          <details className="sheet-skill-details">
+            <summary>Languages</summary>
+            {languagesPanel ?? (
+              <div className="sheet-reference-notes">
+                {raceNotes.languagesAndSenses
+                  .filter((note) => /language/i.test(note))
+                  .map((note, i) => (
+                    <span key={i}>{note}</span>
+                  ))}
+                {!raceNotes.languagesAndSenses.some((note) =>
+                  /language/i.test(note),
+                ) && <span className="hint">Languages not recorded</span>}
+              </div>
+            )}
+          </details>
+          <details className="sheet-skill-details">
+            <summary>Senses</summary>
+            <div className="sheet-reference-notes">
+              {sheet.raceMetadata?.senses?.darkvisionFeet ? (
+                <span>
+                  Darkvision {sheet.raceMetadata.senses.darkvisionFeet} ft
+                </span>
+              ) : null}
+              {sheet.raceMetadata?.senses?.lowLightVision ? (
+                <span>Low-light vision</span>
+              ) : null}
+              {raceNotes.languagesAndSenses
+                .filter((note) => !/language/i.test(note))
+                .map((note, i) => (
+                  <span key={i}>{note}</span>
+                ))}
+              {!sheet.raceMetadata?.senses?.darkvisionFeet &&
+                !sheet.raceMetadata?.senses?.lowLightVision &&
+                !raceNotes.languagesAndSenses.some(
+                  (note) => !/language/i.test(note),
+                ) && (
+                  <span className="hint">No additional senses recorded</span>
+                )}
+            </div>
+          </details>
         </section>
 
         {showSpellcasting && sheet.spellcasting.length > 0 ? (

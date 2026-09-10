@@ -24,11 +24,14 @@ function build(): CharacterBuild {
 }
 
 describe("build normalization", () => {
-  it("removes the legacy zero weight override so gear and coins can count", () => {
-    const source = build();
-    source.carriedWeight = 0;
-    expect(normalizeBuild(source).carriedWeight).toBeUndefined();
-  });
+  it.each([0, 1, 999])(
+    "removes legacy weight override %s so gear and coins count",
+    (weight) => {
+      const source = build();
+      source.carriedWeight = weight;
+      expect(normalizeBuild(source).carriedWeight).toBeUndefined();
+    },
+  );
 });
 
 describe("campaign equipment pricing", () => {

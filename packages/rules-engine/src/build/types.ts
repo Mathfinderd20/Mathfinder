@@ -188,6 +188,7 @@ export interface CharacterBuild {
   spellExtraSlots?: Record<string, SpellExtraSlotsByLevel>;
   spellSlotUsage?: Record<string, SpellSlotUsageByLevel>;
   conditions?: Condition[];
+  /** @deprecated Persisted legacy field, ignored. Carried load is calculated from equipment and coins. */
   carriedWeight?: number;
   otherModifiers?: Modifier[];
 }

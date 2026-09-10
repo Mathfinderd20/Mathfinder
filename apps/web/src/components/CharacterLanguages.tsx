@@ -75,9 +75,11 @@ export function LanguageFields({
 export function CharacterLanguages({
   build,
   onChange,
+  hideHeading = false,
 }: {
   build: CharacterBuild;
   onChange?: (languages: Choices) => void;
+  hideHeading?: boolean;
 }) {
   const [draft, setDraft] = useState<Choices | null>(null);
   const rules = deriveLanguages(build);
@@ -87,18 +89,20 @@ export function CharacterLanguages({
       (draft.learned?.length ?? 0) > rules.learnedCapacity);
   return (
     <div className="character-languages">
-      <div className="sheet-panel-heading">
-        <h4>Languages</h4>
-        {onChange && (
-          <button
-            type="button"
-            className="ghost small"
-            onClick={() => setDraft(build.languages ?? {})}
-          >
-            Edit languages
-          </button>
-        )}
-      </div>
+      {(!hideHeading || onChange) && (
+        <div className="sheet-panel-heading">
+          {!hideHeading && <h4>Languages</h4>}
+          {onChange && (
+            <button
+              type="button"
+              className="ghost small"
+              onClick={() => setDraft(build.languages ?? {})}
+            >
+              Edit languages
+            </button>
+          )}
+        </div>
+      )}
       <div className="sheet-reference-notes">
         {rules.all.map((name) => (
           <span key={name}>{name}</span>

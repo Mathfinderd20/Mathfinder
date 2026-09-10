@@ -107,7 +107,7 @@ export interface GearTabProps {
   characterId?: string;
   sheet?: DerivedSheet;
   build: CharacterBuild;
-  onUpdateCarriedWeight: (raw: string) => void;
+  onAdjustCoinPurse: (deltaGp: number) => void;
   onUpdateCoinPurse: (
     denomination: "pp" | "gp" | "sp" | "cp",
     value: number,
@@ -455,18 +455,6 @@ function InventoryEditor(props: Props & { target: InventoryEditTarget }) {
         </p>
 
         <EditorSection title="Inventory Overview">
-          <label className="field compact">
-            <span>
-              Total carried weight override (lb){" "}
-              <span className="muted">leave blank for gear + coins</span>
-            </span>
-            <input
-              type="number"
-              min={0}
-              value={build.carriedWeight ?? ""}
-              onChange={(e) => props.onUpdateCarriedWeight(e.target.value)}
-            />
-          </label>
           <div className="editor-grid">
             {(["pp", "gp", "sp", "cp"] as const).map((denomination) => (
               <label className="field compact" key={`coin-${denomination}`}>

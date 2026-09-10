@@ -978,7 +978,7 @@ export function buildCharacter(
     ((build.coinWeightCountsTowardEncumbrance ?? true)
       ? coinWeight(build.coinPurse)
       : 0);
-  const carriedWeight = build.carriedWeight ?? derivedCarriedWeight;
+  const carriedWeight = derivedCarriedWeight;
   const ignoreEncumbrance = !encumbranceRulesEnabled(build.campaignRules);
   const encumbrance = deriveEncumbrance(
     baseStr,

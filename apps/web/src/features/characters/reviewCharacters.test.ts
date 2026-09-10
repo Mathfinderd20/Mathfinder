@@ -5,7 +5,10 @@ import {
   computeSheet,
   validateBuild,
 } from "@mathfinder/rules-engine";
-import { createReviewCharacters } from "./reviewCharacters";
+import {
+  createReviewCharacters,
+  createReviewSorcerer,
+} from "./reviewCharacters";
 import {
   loadRuntimeContent,
   RUNTIME_ARCHETYPES,
@@ -27,6 +30,50 @@ beforeAll(async () => {
   await loadRuntimeContent();
 });
 afterAll(() => vi.unstubAllGlobals());
+it("builds a level-twenty Sorcerer with all base known spells and ninth-level slots", () => {
+  const { build } = createReviewSorcerer();
+  expect(build.levels).toHaveLength(20);
+  expect(
+    validateBuild(
+      build,
+      RUNTIME_CLASSES,
+      RUNTIME_SPELLS,
+      RUNTIME_ARCHETYPES,
+      RUNTIME_FEATS,
+    ).filter((issue) => issue.severity === "error"),
+  ).toEqual([]);
+  const sheet = computeSheet(
+    buildCharacter(
+      build,
+      RUNTIME_CLASSES,
+      RUNTIME_FEATS,
+      RUNTIME_CLASS_FEATURES,
+      RUNTIME_ARCHETYPES,
+    ),
+    { spellRegistry: RUNTIME_SPELLS },
+  );
+  expect(sheet.hitPoints.total).toBeGreaterThan(200);
+  expect(sheet.spellcasting[0]?.casterLevel).toBe(20);
+  expect(sheet.spellcasting[0]?.spellsPerDay[9]).toBe(7);
+  expect(sheet.spellcasting[0]?.spellsKnown[9]).toBe(3);
+  expect(
+    Object.values(build.spellSelections!.sorcerer!.known!).map(
+      (names) => names?.length,
+    ),
+  ).toEqual([9, 5, 5, 4, 4, 4, 3, 3, 3, 3]);
+  const overridden = computeSheet(
+    buildCharacter(
+      { ...build, carriedWeight: 9999 },
+      RUNTIME_CLASSES,
+      RUNTIME_FEATS,
+      RUNTIME_CLASS_FEATURES,
+      RUNTIME_ARCHETYPES,
+    ),
+  );
+  expect(overridden.encumbrance.carriedWeight).toBe(
+    sheet.encumbrance.carriedWeight,
+  );
+});
 it("builds four complete level-eight review characters against the actual catalog", () => {
   const characters = createReviewCharacters();
   expect(characters).toHaveLength(4);
