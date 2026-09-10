@@ -190,7 +190,7 @@ function activeRaceAlternateTraits(race: RaceChoice): RaceAlternateTrait[] {
   );
 }
 
-function resolveRaceChoice(race: RaceChoice): RaceChoice {
+export function resolveRaceChoice(race: RaceChoice): RaceChoice {
   const activeTraits = activeRaceAlternateTraits(race);
   const replacedTraits = new Set(
     activeTraits
@@ -207,6 +207,11 @@ function resolveRaceChoice(race: RaceChoice): RaceChoice {
   }
   return {
     ...race,
+    languageRules: Object.assign(
+      {},
+      race.languageRules,
+      ...activeTraits.map((trait) => trait.languageRules),
+    ),
     speed: activeTraits.reduce(
       (speed, trait) => trait.speed ?? speed,
       race.speed,
@@ -943,7 +948,11 @@ export function buildCharacter(
   const modifiers: Modifier[] = [
     ...raceAbilityModifiers(activeRace),
     ...(activeRace.traits ?? []),
-    ...featEffects(raceBonusFeatNames(activeRace), featRegistry),
+    ...featEffects(
+      raceBonusFeatNames(activeRace),
+      featRegistry,
+      build.levels.length,
+    ),
   ];
   const damageReductions: NonNullable<CharacterInput["damageReductions"]> = [];
 
@@ -1089,7 +1098,10 @@ export function buildCharacter(
     }
 
     if (lvl.modifiers) modifiers.push(...lvl.modifiers);
-    if (lvl.feats) modifiers.push(...featEffects(lvl.feats, featRegistry));
+    if (lvl.feats)
+      modifiers.push(
+        ...featEffects(lvl.feats, featRegistry, build.levels.length),
+      );
     modifiers.push(
       ...classFeatureEffects(
         granted.filter(
@@ -1129,6 +1141,7 @@ export function buildCharacter(
     ...featEffects(
       autoGrantedFeats.map((feat) => feat.name),
       featRegistry,
+      build.levels.length,
     ),
   );
 

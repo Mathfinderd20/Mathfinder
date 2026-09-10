@@ -2,10 +2,11 @@
   display: grid;
 }
 .app .reference-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 145px;
   align-items: center;
   gap: 12px;
-  padding: 10px 0;
+  padding: 12px 10px;
   border-bottom: 1px solid #41433d;
 }
 .app .reference-row:last-child {
@@ -15,7 +16,7 @@
   flex: 1;
   min-width: 0;
   display: grid;
-  grid-template-columns: minmax(120px, 0.65fr) minmax(0, 1.4fr);
+  grid-template-columns: minmax(115px, 0.8fr) minmax(0, 1.3fr);
   align-items: start;
   gap: 5px 12px;
   border: 0;
@@ -73,9 +74,67 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: flex-start;
   gap: 8px;
   max-width: 205px;
+}
+.app .sheet-reference-group {
+  margin: 12px 0;
+  border: 1px solid #52564b;
+  border-radius: 6px;
+  overflow: hidden;
+}
+.app .sheet-reference-group > summary {
+  background: #323a34;
+  color: #f1ede4;
+  padding: 10px 12px;
+  border-bottom: 1px solid #52564b;
+  font:
+    600 13px/1.4 "Segoe UI",
+    sans-serif;
+  letter-spacing: 0.04em;
+}
+.app .sheet-reference-group > summary > span {
+  margin-left: 10px;
+  padding: 1px 7px;
+  border-radius: 12px;
+  background: #202822;
+  color: #cad1c3;
+  font-size: 11px;
+}
+.app .sheet-reference-group .reference-rows {
+  padding: 0 4px;
+}
+.app .sheet-reference-group .reference-rows > .hint {
+  padding: 8px;
+}
+.notebook-sort {
+  display: grid;
+  gap: 5px;
+  padding: 0 16px 12px;
+  font-size: 12px;
+}
+.notebook-sort select {
+  width: 100%;
+}
+.language-fields {
+  display: grid;
+  gap: 14px;
+}
+.language-dialog {
+  width: min(580px, calc(100vw - 24px));
+  max-height: calc(100dvh - 40px);
+  overflow: auto;
+}
+.character-languages {
+  padding: 10px 12px;
+}
+.character-languages h4 {
+  margin: 0;
+}
+.language-fields textarea {
+  width: 100%;
+  box-sizing: border-box;
 }
 .app .reference-usage {
   display: grid;
@@ -179,7 +238,7 @@
     min-height: 44px;
   }
   .app .reference-row {
-    flex-wrap: wrap;
+    grid-template-columns: minmax(0, 1fr);
     gap: 7px;
   }
   .app button.reference-description {

@@ -2,12 +2,14 @@ import { HeaderProfile } from "./components/ProfileMenu";
 import { SaveSection, SectionSaveProvider } from "./components/SaveSection";
 import { useSectionDraft } from "./features/characters/useSectionDraft";
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import { CharacterLanguages } from "./components/CharacterLanguages";
 import {
   applyLevelUp,
   levelDown,
   SKILL_DEFINITIONS,
   type AbilityKey,
   type ArchetypeDefinitionLike,
+  type CharacterBuild,
   type LevelUpSelection,
 } from "@mathfinder/rules-engine";
 import {
@@ -319,10 +321,11 @@ export function App({
   function confirmLevelUp(
     selection: LevelUpSelection,
     spellSeedPlans: LevelUpSpellSeedPlan[],
+    languages?: CharacterBuild["languages"],
   ) {
     setBuild((b) => {
       const next = applyLevelUp(b, selection);
-      let seeded = next;
+      let seeded = languages ? { ...next, languages } : next;
       for (const plan of spellSeedPlans) {
         const library =
           seeded.spellLibrary?.[plan.classKey]?.[plan.level] ?? [];
@@ -750,6 +753,14 @@ export function App({
           <main className="character-workspace-main">
             <div className="sheet-main-stack">
               <Sheet
+                languagesPanel={
+                  <CharacterLanguages
+                    build={effectiveBuild}
+                    onChange={(languages) =>
+                      setBuild((prev) => ({ ...prev, languages }))
+                    }
+                  />
+                }
                 characterId={characterId}
                 sheet={sheet}
                 wealthSummary={wealthSummary}
@@ -1096,6 +1107,9 @@ export function App({
             spellCastCounts={spellCastCounts}
             showSpellcasting={false}
             onUpdateName={(name) => setBuild((prev) => ({ ...prev, name }))}
+            onUpdateLanguages={(languages) =>
+              setBuild((prev) => ({ ...prev, languages }))
+            }
             onUpdateAlignment={updateAlignment}
             onUpdateBaseAbilityScore={updateBaseAbilityScore}
             onUpdateRace={updateRace}

@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
 import {
   ALIGNMENT_LABELS,
   deriveHealthStatus,
@@ -407,6 +407,7 @@ export function Sheet({
   onRest,
   campaignTraits = [],
   referenceRuntime,
+  languagesPanel,
   spellCastCounts,
   onCastSpell,
   onResetSpellSlotLevel,
@@ -426,6 +427,7 @@ export function Sheet({
   characterId?: string;
   sheet: DerivedSheet;
   referenceRuntime?: ReferenceRuntime;
+  languagesPanel?: ReactNode;
   wealthSummary: WealthSummary;
   currentHp: number;
   hpDamageTaken: number;
@@ -1689,6 +1691,7 @@ export function Sheet({
                   />
                   <div className="sheet-language-reference">
                     <h3>Languages &amp; Senses</h3>
+                    {languagesPanel}
                     <div className="sheet-reference-notes">
                       {sheet.raceMetadata?.senses?.darkvisionFeet ? (
                         <span>
@@ -1702,7 +1705,8 @@ export function Sheet({
                       {raceNotes.languagesAndSenses.map((note, i) => (
                         <span key={i}>{note}</span>
                       ))}
-                      {!raceNotes.languagesAndSenses.length ? (
+                      {!languagesPanel &&
+                      !raceNotes.languagesAndSenses.length ? (
                         <span className="hint">Languages not recorded</span>
                       ) : null}
                     </div>

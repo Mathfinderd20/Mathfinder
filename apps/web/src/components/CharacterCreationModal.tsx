@@ -1,3 +1,4 @@
+import { LanguageFields } from "./CharacterLanguages";
 import {
   useCallback,
   useDeferredValue,
@@ -7,6 +8,7 @@ import {
 } from "react";
 import {
   buildCharacter,
+  deriveLanguages,
   classAllowsAlignment,
   computeSheet,
   SKILL_DEFINITIONS,
@@ -97,6 +99,9 @@ export function CharacterCreationModal({
     RUNTIME_CLASS_OPTIONS[0]?.name ??
     "Fighter";
   const [raceKey, setRaceKey] = useState(defaultRaceKey);
+  const [languages, setLanguages] = useState<
+    NonNullable<CharacterBuild["languages"]>
+  >({});
   const [alignment, setAlignment] = useState<Alignment>("true-neutral");
   const [ignoreAlignmentRestrictions, setIgnoreAlignmentRestrictions] =
     useState(false);
@@ -286,6 +291,10 @@ export function CharacterCreationModal({
     (hasRaceBonusFeat && !raceBonusFeat);
   const canConfirm =
     !!draftBuild &&
+    (languages.starting?.length ?? 0) <=
+      deriveLanguages(draftBuild).startingCapacity &&
+    (languages.learned?.length ?? 0) <=
+      deriveLanguages(draftBuild).learnedCapacity &&
     classAlignmentAllowed &&
     remainingSkills >= 0 &&
     !missingRequiredFeat;
@@ -625,6 +634,16 @@ export function CharacterCreationModal({
           </section>
         ) : null}
 
+        {draftBuild && (
+          <section className="creation-section">
+            <h3>Languages</h3>
+            <LanguageFields
+              build={draftBuild}
+              value={languages}
+              onChange={setLanguages}
+            />
+          </section>
+        )}
         {!classAlignmentAllowed ? (
           <p className="form-error">
             {classDefinition?.alignmentRestriction?.description}
@@ -647,11 +666,14 @@ export function CharacterCreationModal({
                 ? createBuild(abilityScores)
                 : undefined;
               if (finalBuild)
-                onConfirm(finalBuild, {
-                  campaignTraits: campaignTraits
-                    .map((trait) => trait.trim())
-                    .filter(Boolean),
-                });
+                onConfirm(
+                  { ...finalBuild, languages },
+                  {
+                    campaignTraits: campaignTraits
+                      .map((trait) => trait.trim())
+                      .filter(Boolean),
+                  },
+                );
             }}
           >
             Create Character

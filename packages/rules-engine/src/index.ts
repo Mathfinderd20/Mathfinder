@@ -307,3 +307,4 @@ export {
   STACKING_BONUS_TYPES,
 } from "./constants";
 export { referenceAbilityMechanics } from "./reference-abilities";
+export { deriveLanguages, uniqueLanguages } from "./languages";

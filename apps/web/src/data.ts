@@ -28,6 +28,7 @@ export const SAMPLE_RACES: Record<string, CharacterBuild["race"]> =
         choiceOptions: race.choiceOptions,
         alternateTraits: race.alternateTraits,
         movementModes: race.movementModes,
+        languageRules: race.languageRules,
         senses: race.senses,
         resistances: race.resistances,
         notes: race.notes,

@@ -425,6 +425,7 @@ export function raceOptionsFromDataSet(
       choiceOptions: race.choiceOptions,
       alternateTraits: race.alternateTraits,
       movementModes: race.movementModes,
+      languageRules: race.languageRules,
       senses: race.senses,
       resistances: race.resistances,
       ferocity: race.ferocity,

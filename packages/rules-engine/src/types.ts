@@ -271,6 +271,10 @@ export interface WeaponFamiliarityProfile {
 }
 
 export interface RaceMetadata {
+  languageRules?: {
+    automatic?: string[];
+    perLinguisticsRank?: number;
+  };
   movementModes?: Partial<Record<MovementMode, number>>;
   senses?: SenseProfile;
   resistances?: Partial<Record<EnergyType, number>>;
@@ -297,6 +301,7 @@ export interface RaceChoiceOptions {
 export type RaceChoiceOptionKey = keyof RaceChoiceOptions;
 
 export interface RaceAlternateTrait {
+  languageRules?: RaceMetadata["languageRules"];
   id: string;
   name: string;
   description: string;

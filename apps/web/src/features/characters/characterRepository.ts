@@ -25,6 +25,7 @@ export interface CharacterRecord {
 }
 
 export interface CharacterNote {
+  createdAt?: string;
   id: string;
   title: string;
   category: string;

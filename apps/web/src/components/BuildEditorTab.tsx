@@ -38,6 +38,9 @@ import { BuildWorkspace } from "./BuildWorkspace";
 type SpellMode = "prepared" | "known";
 
 export interface BuildEditorProps {
+  onUpdateLanguages?: (
+    languages: NonNullable<CharacterBuild["languages"]>,
+  ) => void;
   characterId?: string;
   advancementActions?: ReactNode;
   campaignTraitsPanel?: ReactNode;
