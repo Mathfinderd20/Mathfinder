@@ -22,6 +22,7 @@ import {
   RUNTIME_SPELLS,
 } from "../content";
 import { buildRuntimeBuffs } from "../data";
+import { characterReferences } from "../characterReferences";
 
 export function useDerivedSheet(args: {
   build: CharacterBuild;
@@ -82,10 +83,20 @@ export function useDerivedSheet(args: {
       context: activationContext,
     });
     const resourceMaxes: Record<string, number> = {};
+    for (const row of characterReferences(
+      baseSheet,
+      [],
+      RUNTIME_CLASS_FEATURES,
+      RUNTIME_FEATS,
+    ).flatMap((group) => group.rows)) {
+      if (row.pool && !resourcePools.some((pool) => pool.id === row.pool!.id))
+        resourcePools.push(row.pool);
+    }
     const resourceLabels: Record<string, string> = {};
     for (const feature of activatableFeatures) {
       const max = activatableResourceMax(feature, activationContext);
       if (max !== undefined) resourceMaxes[feature.id] = max;
+      if (feature.resource) resourceLabels[feature.id] = feature.resource.unit;
     }
     for (const pool of resourcePools) {
       resourceMaxes[pool.id] = pool.max;
@@ -98,10 +109,10 @@ export function useDerivedSheet(args: {
     }
     const activatableBlockedReasons = Object.fromEntries(
       activatableFeatures.flatMap((feature) => {
-        const reason = activatableRequirementFailure(
-          feature,
-          activationContext,
-        );
+        const reason =
+          feature.id === "rage" && fatigued
+            ? "Blocked by fatigue"
+            : activatableRequirementFailure(feature, activationContext);
         return reason ? [[feature.id, reason]] : [];
       }),
     );

@@ -15,6 +15,34 @@ export interface RuntimeBuffView {
   }>;
 }
 
+/** Mixed trade-offs stay neutral; color is semantic, not an activation highlight. */
+export function effectDisposition(effect: {
+  name: string;
+  modifiers?: Array<{ value: number }>;
+  effects?: Array<{ value: number }>;
+}) {
+  if (
+    /^(fatigued|exhausted|shaken|sickened|frightened|panicked|stunned|dazed|blinded|deafened|bane|doom|bestow curse|blindness\/deafness|hold person|slow|ray of enfeeblement)$/i.test(
+      effect.name,
+    )
+  )
+    return "detrimental";
+  if (
+    /^(bless|aid|shield|mage armor|mirror image|blur|displacement|haste|barkskin|stoneskin|protection from evil|resist energy)$/i.test(
+      effect.name,
+    )
+  )
+    return "beneficial";
+  const modifiers = effect.modifiers ?? effect.effects ?? [];
+  const positive = modifiers.some((modifier) => modifier.value > 0);
+  const negative = modifiers.some((modifier) => modifier.value < 0);
+  return positive && !negative
+    ? "beneficial"
+    : negative && !positive
+      ? "detrimental"
+      : "neutral";
+}
+
 export interface RuntimeProfile {
   classNames: string[];
   meleeFocus: boolean;

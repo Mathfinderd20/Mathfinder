@@ -27,7 +27,7 @@ import {
   displaySchoolName,
   displaySpellName,
 } from "../spellLabels";
-import { featTitle, spellTitle } from "../rulesText";
+import { spellTitle } from "../rulesText";
 import { sign } from "../util";
 import {
   hitPointExpression,
@@ -45,6 +45,10 @@ import {
 import { Tooltip, TooltipTriggerContext } from "./Tooltip";
 import { useCharacterUiState } from "../features/characters/CharacterUiSession";
 import { CharacterDialog } from "./CharacterDialog";
+import {
+  CharacterReferenceRows,
+  type ReferenceRuntime,
+} from "./CharacterReferenceRows";
 import { weaponAttackResults } from "../weaponAttackResults";
 
 const SKILL_DEFINITION_BY_KEY = new Map(
@@ -98,7 +102,15 @@ function compactWeaponTags(tags: string[] | undefined) {
 }
 
 function compactDamageTypes(types: string[] | undefined) {
-  return (types ?? []).join("/") || "—";
+  const labels: Record<string, string> = {
+    slashing: "S",
+    piercing: "P",
+    bludgeoning: "B",
+  };
+  return (
+    (types ?? []).map((type) => labels[type.toLowerCase()] ?? type).join("/") ||
+    "—"
+  );
 }
 
 function titleCaseLabel(value: string) {
@@ -394,6 +406,7 @@ export function Sheet({
   onResetHp,
   onRest,
   campaignTraits = [],
+  referenceRuntime,
   spellCastCounts,
   onCastSpell,
   onResetSpellSlotLevel,
@@ -412,6 +425,7 @@ export function Sheet({
 }: {
   characterId?: string;
   sheet: DerivedSheet;
+  referenceRuntime?: ReferenceRuntime;
   wealthSummary: WealthSummary;
   currentHp: number;
   hpDamageTaken: number;
@@ -520,15 +534,39 @@ export function Sheet({
     "reference-open",
     true,
   );
+  const [abilitiesOpen, setAbilitiesOpen] = useCharacterUiState(
+    characterId,
+    "ability-scores-open",
+    true,
+  );
+  const [defenseOpen, setDefenseOpen] = useCharacterUiState(
+    characterId,
+    "defense-open",
+    true,
+  );
+  const [combatOpen, setCombatOpen] = useCharacterUiState(
+    characterId,
+    "combat-open",
+    true,
+  );
+  function collapseButton(label: string, open: boolean, toggle: () => void) {
+    return (
+      <button
+        type="button"
+        className="ghost small"
+        aria-label={`${open ? "Collapse" : "Expand"} ${label}`}
+        aria-expanded={open}
+        onClick={toggle}
+      >
+        {open ? "−" : "+"}
+      </button>
+    );
+  }
   const rankedSkills = Object.values(sheet.skills)
     .filter(shouldDisplaySheetSkill)
     .sort((a, b) => a.name.localeCompare(b.name));
 
-  const { race, classes, archetypes, feats, features, suppressedFeatures } =
-    sheet.descriptor;
-  const displayedFeatures = features.filter(
-    (feature) => !/^bonus feats?$/i.test(feature.name.trim()),
-  );
+  const { race, classes, archetypes } = sheet.descriptor;
   const classLine = classes.map((c) => `${c.name} ${c.level}`).join(" / ");
   const archetypeLine = archetypes.map((a) => a.name).join(", ");
   const identity = [race, classLine, archetypeLine].filter(Boolean).join(" · ");
@@ -600,7 +638,7 @@ export function Sheet({
                 {sheet.descriptor.alignment ? (
                   <span>{ALIGNMENT_LABELS[sheet.descriptor.alignment]}</span>
                 ) : null}
-                <span>Size: {sheet.size}</span>
+                <span>Size: {titleCaseLabel(sheet.size)}</span>
                 <Tooltip content={encumbranceTooltip(sheet.encumbrance)}>
                   <span>Load: {encumbranceLabel(sheet.encumbrance)}</span>
                 </Tooltip>
@@ -621,8 +659,13 @@ export function Sheet({
         <div className="sheet-left-column">
           <div className="sheet-top-grid">
             <section className="abilities paper-abilities panel paper-panel">
-              <h2>Ability Scores</h2>
-              <div className="abilities-grid">
+              <div className="sheet-panel-heading">
+                <h2>Ability Scores</h2>
+                {collapseButton("Ability Scores", abilitiesOpen, () =>
+                  setAbilitiesOpen(!abilitiesOpen),
+                )}
+              </div>
+              <div className="abilities-grid" hidden={!abilitiesOpen}>
                 {ABILITY_ORDER.map((key) => {
                   const a = sheet.abilities[key];
                   return (
@@ -655,381 +698,406 @@ export function Sheet({
                       Rest
                     </button>
                   ) : null}
+                  {collapseButton("Defense & Health", defenseOpen, () =>
+                    setDefenseOpen(!defenseOpen),
+                  )}
                 </div>
-                <div className="sheet-ac-grid">
-                  <Tooltip
-                    content={statTooltip(sheet.ac.normal, true)}
-                    className="mf-tooltip-anchor-block"
-                  >
-                    <div className="summary-box ac-primary">
-                      <span className="summary-label">Armor Class</span>
-                      <span className="summary-value">
-                        {sheet.ac.normal.total}
-                      </span>
-                      <span className="stat-helper">Normal</span>
-                    </div>
-                  </Tooltip>
-                  <Tooltip
-                    content={statTooltip(sheet.ac.touch, true)}
-                    className="mf-tooltip-anchor-block"
-                  >
-                    <div className="summary-box">
-                      <span className="summary-label">Touch</span>
-                      <span className="summary-value">
-                        {sheet.ac.touch.total}
-                      </span>
-                    </div>
-                  </Tooltip>
-                  <Tooltip
-                    content={statTooltip(sheet.ac.flatFooted, true)}
-                    className="mf-tooltip-anchor-block"
-                  >
-                    <div className="summary-box">
-                      <span className="summary-label">Flat-Footed</span>
-                      <span className="summary-value">
-                        {sheet.ac.flatFooted.total}
-                      </span>
-                    </div>
-                  </Tooltip>
-                  {sheet.ac.contextual.map((profile) => (
+                <div hidden={!defenseOpen}>
+                  <div className="sheet-ac-grid">
                     <Tooltip
-                      key={profile.context}
-                      content={contextualAcTooltip(profile)}
+                      content={statTooltip(sheet.ac.normal, true)}
                       className="mf-tooltip-anchor-block"
                     >
-                      <div className="summary-box ac-contextual">
-                        <span className="summary-label">
-                          AC {profile.label}
-                        </span>
+                      <div className="summary-box ac-primary">
+                        <span className="summary-label">Armor Class</span>
                         <span className="summary-value">
-                          {profile.normal.total}
+                          {sheet.ac.normal.total}
                         </span>
                       </div>
                     </Tooltip>
-                  ))}
-                  {sheet.damageReductions.map((reduction) => (
                     <Tooltip
-                      key={reduction.id}
-                      content={damageReductionTooltip(reduction)}
+                      content={statTooltip(sheet.ac.touch, true)}
                       className="mf-tooltip-anchor-block"
                     >
-                      <div className="summary-box defense-contextual">
-                        <span className="summary-label">{reduction.label}</span>
+                      <div className="summary-box">
+                        <span className="summary-label">Touch</span>
                         <span className="summary-value">
-                          {reduction.value}/{reduction.bypass}
+                          {sheet.ac.touch.total}
                         </span>
                       </div>
                     </Tooltip>
-                  ))}
-                  <Tooltip
-                    content={hitPointTooltip(sheet)}
-                    className="mf-tooltip-anchor-block"
-                  >
-                    <div className="summary-box sheet-hp-summary">
-                      <span className="summary-label">Hit Points</span>
-                      <span className="summary-value">
-                        {hitPointExpression(
-                          currentHp,
-                          sheet.hitPoints.total,
-                          tempHp,
-                        )}
-                      </span>
-                    </div>
-                  </Tooltip>
-                  <Tooltip
-                    content={statTooltip(sheet.saves.fort)}
-                    className="mf-tooltip-anchor-block"
-                  >
-                    <div className="summary-box save-summary">
-                      <span className="summary-label">Fortitude</span>
-                      <span className="summary-value">
-                        {sign(sheet.saves.fort.total)}
-                      </span>
-                      <CompactRollControl
-                        label="Fortitude"
-                        value={saveRollDrafts.fort ?? ""}
-                        onChange={(value) =>
-                          setSaveRollDrafts((prev) => ({
-                            ...prev,
-                            fort: value,
-                          }))
-                        }
-                        total={checkTotal(
-                          saveRollDrafts.fort,
-                          sheet.saves.fort.total,
-                        )}
-                      />
-                    </div>
-                  </Tooltip>
-                  <Tooltip
-                    content={statTooltip(sheet.saves.ref)}
-                    className="mf-tooltip-anchor-block"
-                  >
-                    <div className="summary-box save-summary">
-                      <span className="summary-label">Reflex</span>
-                      <span className="summary-value">
-                        {sign(sheet.saves.ref.total)}
-                      </span>
-                      <CompactRollControl
-                        label="Reflex"
-                        value={saveRollDrafts.ref ?? ""}
-                        onChange={(value) =>
-                          setSaveRollDrafts((prev) => ({ ...prev, ref: value }))
-                        }
-                        total={checkTotal(
-                          saveRollDrafts.ref,
-                          sheet.saves.ref.total,
-                        )}
-                      />
-                    </div>
-                  </Tooltip>
-                  <Tooltip
-                    content={statTooltip(sheet.saves.will)}
-                    className="mf-tooltip-anchor-block"
-                  >
-                    <div className="summary-box save-summary">
-                      <span className="summary-label">Will</span>
-                      <span className="summary-value">
-                        {sign(sheet.saves.will.total)}
-                      </span>
-                      <CompactRollControl
-                        label="Will"
-                        value={saveRollDrafts.will ?? ""}
-                        onChange={(value) =>
-                          setSaveRollDrafts((prev) => ({
-                            ...prev,
-                            will: value,
-                          }))
-                        }
-                        total={checkTotal(
-                          saveRollDrafts.will,
-                          sheet.saves.will.total,
-                        )}
-                      />
-                    </div>
-                  </Tooltip>
-                </div>
-                <div className="sheet-defense-reference">
-                  <span className="summary-label">
-                    Resistances &amp; Immunities
-                  </span>
-                  <div className="sheet-reference-notes">
-                    {Object.entries(sheet.raceMetadata?.resistances ?? {}).map(
-                      ([kind, value]) => (
+                    <Tooltip
+                      content={statTooltip(sheet.ac.flatFooted, true)}
+                      className="mf-tooltip-anchor-block"
+                    >
+                      <div className="summary-box">
+                        <span className="summary-label">Flat-Footed</span>
+                        <span className="summary-value">
+                          {sheet.ac.flatFooted.total}
+                        </span>
+                      </div>
+                    </Tooltip>
+                    {sheet.ac.contextual.map((profile) => (
+                      <Tooltip
+                        key={profile.context}
+                        content={contextualAcTooltip(profile)}
+                        className="mf-tooltip-anchor-block"
+                      >
+                        <div className="summary-box ac-contextual">
+                          <span className="summary-label">
+                            AC {profile.label}
+                          </span>
+                          <span className="summary-value">
+                            {profile.normal.total}
+                          </span>
+                        </div>
+                      </Tooltip>
+                    ))}
+                    {sheet.damageReductions.map((reduction) => (
+                      <Tooltip
+                        key={reduction.id}
+                        content={damageReductionTooltip(reduction)}
+                        className="mf-tooltip-anchor-block"
+                      >
+                        <div className="summary-box defense-contextual">
+                          <span className="summary-label">
+                            {reduction.label}
+                          </span>
+                          <span className="summary-value">
+                            {reduction.value}/{reduction.bypass}
+                          </span>
+                        </div>
+                      </Tooltip>
+                    ))}
+                    <Tooltip
+                      content={hitPointTooltip(sheet)}
+                      className="mf-tooltip-anchor-block"
+                    >
+                      <div className="summary-box sheet-hp-summary">
+                        <span className="summary-label">Hit Points</span>
+                        <span className="summary-value">
+                          {hitPointExpression(
+                            currentHp,
+                            sheet.hitPoints.total,
+                            tempHp,
+                          )}
+                        </span>
+                      </div>
+                    </Tooltip>
+                    <Tooltip
+                      content={statTooltip(sheet.saves.fort)}
+                      className="mf-tooltip-anchor-block"
+                    >
+                      <div className="summary-box save-summary">
+                        <span className="summary-label">Fortitude</span>
+                        <span className="summary-value">
+                          {sign(sheet.saves.fort.total)}
+                        </span>
+                        <CompactRollControl
+                          label="Fortitude"
+                          value={saveRollDrafts.fort ?? ""}
+                          onChange={(value) =>
+                            setSaveRollDrafts((prev) => ({
+                              ...prev,
+                              fort: value,
+                            }))
+                          }
+                          total={checkTotal(
+                            saveRollDrafts.fort,
+                            sheet.saves.fort.total,
+                          )}
+                        />
+                      </div>
+                    </Tooltip>
+                    <Tooltip
+                      content={statTooltip(sheet.saves.ref)}
+                      className="mf-tooltip-anchor-block"
+                    >
+                      <div className="summary-box save-summary">
+                        <span className="summary-label">Reflex</span>
+                        <span className="summary-value">
+                          {sign(sheet.saves.ref.total)}
+                        </span>
+                        <CompactRollControl
+                          label="Reflex"
+                          value={saveRollDrafts.ref ?? ""}
+                          onChange={(value) =>
+                            setSaveRollDrafts((prev) => ({
+                              ...prev,
+                              ref: value,
+                            }))
+                          }
+                          total={checkTotal(
+                            saveRollDrafts.ref,
+                            sheet.saves.ref.total,
+                          )}
+                        />
+                      </div>
+                    </Tooltip>
+                    <Tooltip
+                      content={statTooltip(sheet.saves.will)}
+                      className="mf-tooltip-anchor-block"
+                    >
+                      <div className="summary-box save-summary">
+                        <span className="summary-label">Will</span>
+                        <span className="summary-value">
+                          {sign(sheet.saves.will.total)}
+                        </span>
+                        <CompactRollControl
+                          label="Will"
+                          value={saveRollDrafts.will ?? ""}
+                          onChange={(value) =>
+                            setSaveRollDrafts((prev) => ({
+                              ...prev,
+                              will: value,
+                            }))
+                          }
+                          total={checkTotal(
+                            saveRollDrafts.will,
+                            sheet.saves.will.total,
+                          )}
+                        />
+                      </div>
+                    </Tooltip>
+                  </div>
+                  <div className="sheet-defense-reference">
+                    <span className="summary-label">
+                      Resistances &amp; Immunities
+                    </span>
+                    <div className="sheet-reference-notes">
+                      {Object.entries(
+                        sheet.raceMetadata?.resistances ?? {},
+                      ).map(([kind, value]) => (
                         <span key={kind}>
                           {titleCaseLabel(kind)} {value}
                         </span>
-                      ),
-                    )}
-                    {raceNotes.defenses.map((note, index) => (
-                      <span key={index}>{note}</span>
-                    ))}
-                    {!Object.keys(sheet.raceMetadata?.resistances ?? {})
-                      .length && !raceNotes.defenses.length ? (
-                      <span className="hint">None recorded</span>
-                    ) : null}
+                      ))}
+                      {raceNotes.defenses.map((note, index) => (
+                        <span key={index}>{note}</span>
+                      ))}
+                      {!Object.keys(sheet.raceMetadata?.resistances ?? {})
+                        .length && !raceNotes.defenses.length ? (
+                        <span className="hint">None recorded</span>
+                      ) : null}
+                    </div>
                   </div>
-                </div>
-                <HealthStatusControls
-                  maxHp={sheet.hitPoints.total}
-                  currentHp={currentHp}
-                  constitutionScore={sheet.abilities.con.score}
-                  nonlethalDamage={nonlethalDamage}
-                  stable={stable}
-                  fightOnSource={fightOnSource}
-                  deathRules={deathRules}
-                  diehardActive={diehardActive}
-                  ferocityUsed={ferocityUsed}
-                  onApplyHpLoss={(amount) => onApplyHpLoss?.(amount)}
-                  onSetStable={(value) => onSetStable?.(value)}
-                  onSetDiehardActive={(value) => onSetDiehardActive?.(value)}
-                  onSetFerocityActive={(value) => onSetFerocityActive?.(value)}
-                  onSetFerocityUsed={(value) => onSetFerocityUsed?.(value)}
-                />
-                <div
-                  className={`health-manager-details health-tone-${healthDisplay.tone}`}
-                >
-                  <div className="health-inline-summary">
-                    <span className="health-inline-value">
-                      <strong>{currentHp}</strong> / {sheet.hitPoints.total}
-                      {tempHp > 0 ? (
-                        <span className="health-temp"> + {tempHp}</span>
-                      ) : null}{" "}
-                      HP
-                    </span>
-                    <span className="health-inline-meter" aria-hidden="true">
-                      <i
-                        style={{
-                          width: `${healthDisplay.percent}%`,
-                        }}
-                      />
-                    </span>
-                    <span className="health-inline-stat">
-                      Temp <strong>{tempHp}</strong>
-                    </span>
-                    <span className="health-inline-stat">
-                      Nonlethal <strong>{nonlethalDamage}</strong>
-                    </span>
-                    <span className="health-inline-status">
-                      {healthDisplay.label}
-                    </span>
-                    <button
-                      type="button"
-                      className="ghost small health-inline-action"
-                      aria-expanded={healthManagerOpen}
-                      onClick={() => setHealthManagerOpen((open) => !open)}
-                    >
-                      {healthManagerOpen
-                        ? "Close Manage Health"
-                        : "Manage Health"}
-                    </button>
-                  </div>
+                  <HealthStatusControls
+                    maxHp={sheet.hitPoints.total}
+                    currentHp={currentHp}
+                    constitutionScore={sheet.abilities.con.score}
+                    nonlethalDamage={nonlethalDamage}
+                    stable={stable}
+                    fightOnSource={fightOnSource}
+                    deathRules={deathRules}
+                    diehardActive={diehardActive}
+                    ferocityUsed={ferocityUsed}
+                    onApplyHpLoss={(amount) => onApplyHpLoss?.(amount)}
+                    onSetStable={(value) => onSetStable?.(value)}
+                    onSetDiehardActive={(value) => onSetDiehardActive?.(value)}
+                    onSetFerocityActive={(value) =>
+                      onSetFerocityActive?.(value)
+                    }
+                    onSetFerocityUsed={(value) => onSetFerocityUsed?.(value)}
+                  />
                   <div
-                    className="health-manager-body"
-                    hidden={!healthManagerOpen}
+                    className={`health-manager-details health-tone-${healthDisplay.tone}`}
                   >
-                    <HealthTracker
-                      maxHp={sheet.hitPoints.total}
-                      currentHp={currentHp}
-                      hpDamageTaken={hpDamageTaken}
-                      tempHp={tempHp}
-                      nonlethalDamage={nonlethalDamage}
-                      constitutionScore={sheet.abilities.con.score}
-                      stable={stable}
-                      deathRules={deathRules}
-                      fightOnSource={fightOnSource}
-                      diehardActive={diehardActive}
-                      ferocityUsed={ferocityUsed}
-                      onApplyDamage={(amount, damageType) =>
-                        onApplyDamage?.(amount, damageType)
-                      }
-                      onApplyHealing={(amount) => onApplyHealing?.(amount)}
-                      onApplyHpLoss={(amount) => onApplyHpLoss?.(amount)}
-                      onSetTempHp={(amount) => onSetTempHp?.(amount)}
-                      onApplyNonlethal={(amount) => onApplyNonlethal?.(amount)}
-                      onHealNonlethal={(amount) => onHealNonlethal?.(amount)}
-                      onSetStable={(value) => onSetStable?.(value)}
-                      onSetDiehardActive={(value) =>
-                        onSetDiehardActive?.(value)
-                      }
-                      onSetFerocityActive={(value) =>
-                        onSetFerocityActive?.(value)
-                      }
-                      onSetFerocityUsed={(value) => onSetFerocityUsed?.(value)}
-                      onReset={() => onResetHp?.()}
-                    />
+                    <div className="health-inline-summary">
+                      <span className="health-inline-value">
+                        <strong>{currentHp}</strong> / {sheet.hitPoints.total}
+                        {tempHp > 0 ? (
+                          <span className="health-temp"> + {tempHp}</span>
+                        ) : null}{" "}
+                        HP
+                      </span>
+                      <span className="health-inline-meter" aria-hidden="true">
+                        <i
+                          style={{
+                            width: `${healthDisplay.percent}%`,
+                          }}
+                        />
+                      </span>
+                      <span className="health-inline-stat">
+                        Temp <strong>{tempHp}</strong>
+                      </span>
+                      <span className="health-inline-stat">
+                        Nonlethal <strong>{nonlethalDamage}</strong>
+                      </span>
+                      <span className="health-inline-status">
+                        {healthDisplay.label}
+                      </span>
+                      <button
+                        type="button"
+                        className="ghost small health-inline-action"
+                        aria-expanded={healthManagerOpen}
+                        onClick={() => setHealthManagerOpen((open) => !open)}
+                      >
+                        {healthManagerOpen
+                          ? "Close Manage Health"
+                          : "Manage Health"}
+                      </button>
+                    </div>
+                    <div
+                      className="health-manager-body"
+                      hidden={!healthManagerOpen}
+                    >
+                      <HealthTracker
+                        maxHp={sheet.hitPoints.total}
+                        currentHp={currentHp}
+                        hpDamageTaken={hpDamageTaken}
+                        tempHp={tempHp}
+                        nonlethalDamage={nonlethalDamage}
+                        constitutionScore={sheet.abilities.con.score}
+                        stable={stable}
+                        deathRules={deathRules}
+                        fightOnSource={fightOnSource}
+                        diehardActive={diehardActive}
+                        ferocityUsed={ferocityUsed}
+                        onApplyDamage={(amount, damageType) =>
+                          onApplyDamage?.(amount, damageType)
+                        }
+                        onApplyHealing={(amount) => onApplyHealing?.(amount)}
+                        onApplyHpLoss={(amount) => onApplyHpLoss?.(amount)}
+                        onSetTempHp={(amount) => onSetTempHp?.(amount)}
+                        onApplyNonlethal={(amount) =>
+                          onApplyNonlethal?.(amount)
+                        }
+                        onHealNonlethal={(amount) => onHealNonlethal?.(amount)}
+                        onSetStable={(value) => onSetStable?.(value)}
+                        onSetDiehardActive={(value) =>
+                          onSetDiehardActive?.(value)
+                        }
+                        onSetFerocityActive={(value) =>
+                          onSetFerocityActive?.(value)
+                        }
+                        onSetFerocityUsed={(value) =>
+                          onSetFerocityUsed?.(value)
+                        }
+                        onReset={() => onResetHp?.()}
+                      />
+                    </div>
                   </div>
                 </div>
               </section>
 
               <section className="panel paper-panel sheet-combat-panel">
-                <h2>Combat & Movement</h2>
-                <div className="sheet-stat-grid sheet-stat-grid-compact paper-sheet-combat-grid">
-                  <div className="sheet-attack-group">
-                    <div className="stat-card">
-                      <span className="summary-label">Base Attack</span>
-                      <span className="summary-value">
-                        {sign(sheet.baseAttackBonus)}
-                      </span>
+                <div className="sheet-panel-heading">
+                  <h2>Combat &amp; Movement</h2>
+                  {collapseButton("Combat & Movement", combatOpen, () =>
+                    setCombatOpen(!combatOpen),
+                  )}
+                </div>
+                <div hidden={!combatOpen}>
+                  <div className="sheet-stat-grid sheet-stat-grid-compact paper-sheet-combat-grid">
+                    <div className="sheet-attack-group">
+                      <div className="stat-card">
+                        <span className="summary-label">Base Attack</span>
+                        <span className="summary-value">
+                          {sign(sheet.baseAttackBonus)}
+                        </span>
+                      </div>
+                      <Tooltip
+                        content={statTooltip(sheet.attack.melee)}
+                        className="mf-tooltip-anchor-block"
+                      >
+                        <div className="stat-card combat-secondary-stat">
+                          <span className="summary-label">Melee Attack</span>
+                          <span className="summary-value">
+                            {sign(sheet.attack.melee.total)}
+                          </span>
+                        </div>
+                      </Tooltip>
+                      <Tooltip
+                        content={statTooltip(sheet.attack.ranged)}
+                        className="mf-tooltip-anchor-block"
+                      >
+                        <div className="stat-card combat-secondary-stat">
+                          <span className="summary-label">Ranged Attack</span>
+                          <span className="summary-value">
+                            {sign(sheet.attack.ranged.total)}
+                          </span>
+                        </div>
+                      </Tooltip>
                     </div>
                     <Tooltip
-                      content={statTooltip(sheet.attack.melee)}
+                      content={statTooltip(sheet.initiative)}
                       className="mf-tooltip-anchor-block"
                     >
-                      <div className="stat-card combat-secondary-stat">
-                        <span className="summary-label">Melee Attack</span>
+                      <div className="stat-card">
+                        <span className="summary-label">Initiative</span>
                         <span className="summary-value">
-                          {sign(sheet.attack.melee.total)}
+                          {sign(sheet.initiative.total)}
                         </span>
+                        <CompactRollControl
+                          label="Initiative"
+                          value={initiativeRollDraft}
+                          onChange={setInitiativeRollDraft}
+                          total={checkTotal(
+                            initiativeRollDraft,
+                            sheet.initiative.total,
+                          )}
+                        />
                       </div>
                     </Tooltip>
                     <Tooltip
-                      content={statTooltip(sheet.attack.ranged)}
+                      content={statTooltip(sheet.cmb)}
+                      className="mf-tooltip-anchor-block"
+                    >
+                      <div className="stat-card">
+                        <span className="summary-label">CMB</span>
+                        <span className="summary-value">
+                          {sign(sheet.cmb.total)}
+                        </span>
+                        <CompactRollControl
+                          label="CMB"
+                          value={cmbRollDraft}
+                          onChange={setCmbRollDraft}
+                          total={checkTotal(cmbRollDraft, sheet.cmb.total)}
+                        />
+                      </div>
+                    </Tooltip>
+                    <Tooltip
+                      content={statTooltip(sheet.cmd, true)}
+                      className="mf-tooltip-anchor-block"
+                    >
+                      <div className="stat-card">
+                        <span className="summary-label">CMD</span>
+                        <span className="summary-value">{sheet.cmd.total}</span>
+                      </div>
+                    </Tooltip>
+                    <Tooltip
+                      content={encumbranceTooltip(sheet.encumbrance)}
                       className="mf-tooltip-anchor-block"
                     >
                       <div className="stat-card combat-secondary-stat">
-                        <span className="summary-label">Ranged Attack</span>
-                        <span className="summary-value">
-                          {sign(sheet.attack.ranged.total)}
+                        <span className="summary-label">Encumbrance</span>
+                        <span className="summary-value encumbrance-value">
+                          {encumbranceLabel(sheet.encumbrance)}
                         </span>
                       </div>
                     </Tooltip>
                   </div>
-                  <Tooltip
-                    content={statTooltip(sheet.initiative)}
-                    className="mf-tooltip-anchor-block"
-                  >
-                    <div className="stat-card">
-                      <span className="summary-label">Initiative</span>
-                      <span className="summary-value">
-                        {sign(sheet.initiative.total)}
+                  <div className="sheet-movement-strip">
+                    <Tooltip content={statTooltip(sheet.speed, true)}>
+                      <span>
+                        <small>Land</small>
+                        <strong>{sheet.speed.total} ft</strong>
                       </span>
-                      <CompactRollControl
-                        label="Initiative"
-                        value={initiativeRollDraft}
-                        onChange={setInitiativeRollDraft}
-                        total={checkTotal(
-                          initiativeRollDraft,
-                          sheet.initiative.total,
-                        )}
-                      />
-                    </div>
-                  </Tooltip>
-                  <Tooltip
-                    content={statTooltip(sheet.cmb)}
-                    className="mf-tooltip-anchor-block"
-                  >
-                    <div className="stat-card">
-                      <span className="summary-label">CMB</span>
-                      <span className="summary-value">
-                        {sign(sheet.cmb.total)}
-                      </span>
-                      <CompactRollControl
-                        label="CMB"
-                        value={cmbRollDraft}
-                        onChange={setCmbRollDraft}
-                        total={checkTotal(cmbRollDraft, sheet.cmb.total)}
-                      />
-                    </div>
-                  </Tooltip>
-                  <Tooltip
-                    content={statTooltip(sheet.cmd, true)}
-                    className="mf-tooltip-anchor-block"
-                  >
-                    <div className="stat-card">
-                      <span className="summary-label">CMD</span>
-                      <span className="summary-value">{sheet.cmd.total}</span>
-                    </div>
-                  </Tooltip>
-                  <Tooltip
-                    content={encumbranceTooltip(sheet.encumbrance)}
-                    className="mf-tooltip-anchor-block"
-                  >
-                    <div className="stat-card combat-secondary-stat">
-                      <span className="summary-label">Encumbrance</span>
-                      <span className="summary-value encumbrance-value">
-                        {encumbranceLabel(sheet.encumbrance)}
-                      </span>
-                    </div>
-                  </Tooltip>
-                </div>
-                <div className="sheet-movement-strip">
-                  <Tooltip content={statTooltip(sheet.speed, true)}>
-                    <span>
-                      <small>Land</small>
-                      <strong>{sheet.speed.total} ft</strong>
-                    </span>
-                  </Tooltip>
-                  {(["fly", "swim", "burrow", "climb"] as const).map((mode) => (
-                    <span key={mode}>
-                      <small>{titleCaseLabel(mode)}</small>
-                      <strong>
-                        {sheet.raceMetadata?.movementModes?.[mode] === undefined
-                          ? "—"
-                          : `${sheet.raceMetadata.movementModes[mode]} ft`}
-                      </strong>
-                    </span>
-                  ))}
+                    </Tooltip>
+                    {(["fly", "swim", "burrow", "climb"] as const).map(
+                      (mode) => (
+                        <span key={mode}>
+                          <small>{titleCaseLabel(mode)}</small>
+                          <strong>
+                            {sheet.raceMetadata?.movementModes?.[mode] ===
+                            undefined
+                              ? "—"
+                              : `${sheet.raceMetadata.movementModes[mode]} ft`}
+                          </strong>
+                        </span>
+                      ),
+                    )}
+                  </div>
                 </div>
               </section>
             </div>
@@ -1613,77 +1681,12 @@ export function Sheet({
                   </button>
                 </div>
                 <div hidden={!referenceOpen}>
-                  <details className="sheet-reference-group" open>
-                    <summary>
-                      Feats <span>{feats.length}</span>
-                    </summary>
-                    <div className="acquisitions">
-                      {feats.map((f, i) => (
-                        <Tooltip key={i} content={featTitle(f.name)}>
-                          <span className="chip">
-                            {f.name}
-                            <span className="chip-lvl">L{f.level}</span>
-                          </span>
-                        </Tooltip>
-                      ))}
-                    </div>
-                    {!feats.length ? (
-                      <p className="hint">No feats recorded.</p>
-                    ) : null}
-                  </details>
-                  <details className="sheet-reference-group" open>
-                    <summary>
-                      Traits{" "}
-                      <span>
-                        {raceNotes.traits.length +
-                          campaignTraits.filter(Boolean).length}
-                      </span>
-                    </summary>
-                    <div className="sheet-reference-notes">
-                      {raceNotes.traits.map((note, i) => (
-                        <span key={i}>{note}</span>
-                      ))}
-                      {campaignTraits.filter(Boolean).map((trait, i) => (
-                        <span key={`campaign-${i}`}>
-                          {trait}
-                          <small> Campaign trait</small>
-                        </span>
-                      ))}
-                    </div>
-                    {!raceNotes.traits.length &&
-                    !campaignTraits.filter(Boolean).length ? (
-                      <p className="hint">No traits recorded.</p>
-                    ) : null}
-                  </details>
-                  <details className="sheet-reference-group" open>
-                    <summary>
-                      Special Abilities{" "}
-                      <span>
-                        {displayedFeatures.length + archetypes.length}
-                      </span>
-                    </summary>
-                    <div className="acquisitions">
-                      {[...archetypes, ...displayedFeatures].map((f, i) => (
-                        <Tooltip key={i} content={featTitle(f.name)}>
-                          <span className="chip feature">
-                            {f.name}
-                            <span className="chip-lvl">L{f.level}</span>
-                          </span>
-                        </Tooltip>
-                      ))}
-                      {suppressedFeatures.map((f, i) => (
-                        <Tooltip key={`sup-${i}`} content={f.reason}>
-                          <span className="chip suppressed">
-                            {f.name}
-                            <span className="chip-lvl">Suppressed</span>
-                          </span>
-                        </Tooltip>
-                      ))}
-                    </div>
-                    {!displayedFeatures.length && !archetypes.length ? (
-                      <p className="hint">No special abilities recorded.</p>
-                    ) : null}
-                  </details>
+                  <CharacterReferenceRows
+                    characterId={characterId}
+                    sheet={sheet}
+                    campaignTraits={campaignTraits}
+                    runtime={referenceRuntime}
+                  />
                   <div className="sheet-language-reference">
                     <h3>Languages &amp; Senses</h3>
                     <div className="sheet-reference-notes">

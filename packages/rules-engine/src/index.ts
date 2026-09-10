@@ -306,3 +306,4 @@ export {
   SIZE_CMB_CMD_MOD,
   STACKING_BONUS_TYPES,
 } from "./constants";
+export { referenceAbilityMechanics } from "./reference-abilities";

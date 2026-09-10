@@ -58,6 +58,7 @@ export function useCombatEquipmentRuntime(
     max: number,
     spellName: string,
     remaining: number,
+    applySelfEffect = true,
   ) {
     const effect = getSpellEffectByName(spellName);
     const spellResourceMax = effect
@@ -70,6 +71,7 @@ export function useCombatEquipmentRuntime(
       spellName,
       remaining,
       spellResourceMax,
+      applySelfEffect,
     );
     const consumption = consumeSpellComponentFromEquipment(
       build.equipment ?? [],

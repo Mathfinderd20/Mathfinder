@@ -32,6 +32,7 @@ import {
 import { BuildEditorTab } from "./components/BuildEditorTab";
 import { GearTab } from "./components/GearTab";
 import { RuntimeControlsPanel } from "./components/RuntimeControlsPanel";
+import { restorableAbilityResourceIds } from "./characterReferences";
 import { MagicWorkspace as SpellcastingManager } from "./components/MagicWorkspace";
 import { BuildSlotsPanel } from "./components/BuildSlotsPanel";
 import { ValidationPanel } from "./components/ValidationPanel";
@@ -604,7 +605,11 @@ export function App({
     healNonlethal(nonlethalDamage);
     setTempHp(0);
     setFlag("fatigued", false);
-    for (const pool of resourcePools) resetResource(pool.id);
+    for (const id of restorableAbilityResourceIds(
+      resourceMaxes,
+      runtimeBuffs.map((buff) => buff.id),
+    ))
+      resetResource(id);
     for (const caster of sheet.spellcasting) {
       resetSpellClassRuntime(
         caster.className.toLowerCase(),
@@ -638,6 +643,7 @@ export function App({
       pendingSpellCast.max,
       pendingSpellCast.spellName,
       pendingSpellCast.remaining,
+      !!characterId && spellTargetIds.includes(characterId),
     );
     setPendingSpellCast(undefined);
   }
@@ -769,6 +775,17 @@ export function App({
                 onResetHp={resetHp}
                 onRest={() => setResting(true)}
                 campaignTraits={details.campaignTraits}
+                referenceRuntime={{
+                  activatableGroups,
+                  activatableBlockedReasons,
+                  activeBuffs,
+                  resourcesUsed,
+                  resourceMaxes,
+                  resourceLabels,
+                  onSetToggle: setToggle,
+                  onSetExclusiveToggleGroup: setExclusiveToggleGroup,
+                  onAdjustResource: adjustResource,
+                }}
                 spellCastCounts={spellCastCounts}
                 onCastSpell={requestSpellCast}
                 onResetSpellSlotLevel={resetSpellSlotLevel}
@@ -1269,8 +1286,10 @@ export function App({
             </div>
             <p>
               Select every character affected. Area placement is resolved on
-              your physical or shared table; Mathfinder records the chosen
-              characters; the spell slot is spent when you confirm.
+              your physical or shared table. The spell slot is spent when you
+              confirm. Supported effects apply here only if this character is
+              selected. Other recipients add the effect on their own sheets
+              after resolving any saving throw.
             </p>
             <div className="spell-target-list">
               {availableSpellTargets.length ? (

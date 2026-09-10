@@ -195,7 +195,17 @@ export function activatableResourceMax(
   a: ActivatableEffect,
   ctx: ActivationContext,
 ): number | undefined {
-  if (!a.resource || typeof a.resource.max !== "function") return undefined;
+  if (!a.resource) return undefined;
+  // JSON content cannot carry executable formulas. Preserve the canonical Rage
+  // pool when the imported core definition has lost its max function.
+  if (a.id === "rage" && typeof a.resource.max !== "function") {
+    const level = ctx.classLevels?.barbarian ?? ctx.characterLevel;
+    return Math.max(
+      0,
+      4 + (ctx.abilityModifiers?.con ?? 0) + 2 * Math.max(0, level - 1),
+    );
+  }
+  if (typeof a.resource.max !== "function") return undefined;
   return Math.max(0, a.resource.max(ctx));
 }
 

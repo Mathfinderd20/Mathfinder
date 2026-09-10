@@ -143,7 +143,7 @@ export function CharacterIdentityBar({
           </div>
           <div>
             <dt>Size</dt>
-            <dd>{sheet.size}</dd>
+            <dd>{sheet.size.charAt(0).toUpperCase() + sheet.size.slice(1)}</dd>
           </div>
           <div>
             <dt>Deity</dt>

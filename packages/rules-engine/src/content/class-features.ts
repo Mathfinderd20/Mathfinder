@@ -64,11 +64,12 @@ export const CORE_CLASS_FEATURES: ClassFeatureDefinition[] = [
       resource: {
         name: "Rage",
         unit: "rounds/day",
-        // 4 + Con mod at 1st level, +2 per level after (single-class assumption).
+        // 4 + Con mod at 1st barbarian level, +2 per barbarian level after.
         max: (ctx) =>
           4 +
           (ctx.abilityModifiers?.con ?? 0) +
-          2 * Math.max(0, ctx.characterLevel - 1),
+          2 *
+            Math.max(0, (ctx.classLevels?.barbarian ?? ctx.characterLevel) - 1),
       },
     },
   },

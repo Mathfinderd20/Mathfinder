@@ -787,13 +787,13 @@ export function InventoryWorkspace(
       )}
       {coins && (
         <CharacterDialog
-          label="Edit coin purse"
+          label="Edit Coin Purse"
           saveOnExit
           onClose={() => setCoins(false)}
         >
           <section className="modal v2-coin-dialog">
             <header className="modal-head">
-              <h2>Coin purse</h2>
+              <h2>Coin Purse</h2>
               <button className="ghost" onClick={() => setCoins(false)}>
                 Done
               </button>

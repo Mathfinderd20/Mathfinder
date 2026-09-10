@@ -544,6 +544,21 @@ export function reduceRuntimeState(
       )
         return state;
       const nextToggles = { ...state.toggles, [action.id]: action.value };
+      const oppositeSizeSpell =
+        action.id === "spell-enlarge-person"
+          ? "spell-reduce-person"
+          : action.id === "spell-reduce-person"
+            ? "spell-enlarge-person"
+            : undefined;
+      // These spells counter and dispel one another rather than stacking.
+      if (
+        action.value &&
+        oppositeSizeSpell &&
+        state.toggles[oppositeSizeSpell]
+      ) {
+        nextToggles[oppositeSizeSpell] = false;
+        nextToggles[action.id] = false;
+      }
       const nextFlags = { ...state.flags };
       if (action.id === "rage" && state.toggles.rage && !action.value)
         nextFlags.fatigued = true;
@@ -624,7 +639,11 @@ export function reduceRuntimeState(
       return {
         ...state,
         toggles: action.spellEffectId
-          ? { ...state.toggles, [action.spellEffectId]: true }
+          ? reduceRuntimeState(
+              state,
+              { type: "set-toggle", id: action.spellEffectId, value: true },
+              { eventHistoryLimit },
+            ).toggles
           : state.toggles,
         resources:
           action.spellEffectId && action.spellResourceMax !== undefined

@@ -1,0 +1,193 @@
+.app .reference-rows {
+  display: grid;
+}
+.app .reference-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid #41433d;
+}
+.app .reference-row:last-child {
+  border-bottom: 0;
+}
+.app button.reference-description {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(120px, 0.65fr) minmax(0, 1.4fr);
+  align-items: start;
+  gap: 5px 12px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  padding: 2px;
+  color: inherit;
+  text-align: left;
+  font: inherit;
+  text-transform: none;
+  letter-spacing: normal;
+}
+.app button.reference-description:hover {
+  background: transparent;
+}
+.app .reference-name {
+  display: grid;
+  gap: 4px;
+}
+.app .reference-name strong {
+  font:
+    600 13px "Segoe UI",
+    sans-serif;
+  color: #f1ede4;
+}
+.app .reference-name small,
+.app .reference-summary {
+  color: #c5c5ba;
+  font:
+    12px/1.5 "Segoe UI",
+    sans-serif;
+}
+.app .reference-summary {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.app .reference-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  grid-column: 2;
+}
+.app .reference-metrics > span {
+  font:
+    600 11px/1.4 "Segoe UI",
+    sans-serif;
+  color: #dcd4b7;
+  border: 1px solid #4b4e46;
+  border-radius: 4px;
+  padding: 2px 6px;
+}
+.app .reference-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  max-width: 205px;
+}
+.app .reference-usage {
+  display: grid;
+  gap: 4px;
+  font:
+    11px/1.4 "Segoe UI",
+    sans-serif;
+  color: #c5c5ba;
+}
+.app .reference-usage > div {
+  display: flex;
+  gap: 4px;
+}
+.app .reference-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+}
+.app .reference-toggle input {
+  appearance: none;
+  width: 30px;
+  height: 17px;
+  min-width: 30px;
+  border-radius: 12px;
+  background: #474e4b;
+  border: 1px solid #77817a;
+  position: relative;
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
+}
+.app .reference-toggle input::after {
+  content: "";
+  position: absolute;
+  width: 11px;
+  height: 11px;
+  left: 2px;
+  top: 2px;
+  background: #e6e5db;
+  border-radius: 50%;
+}
+.app .reference-toggle input:checked {
+  background: #617f53;
+  border-color: #aac990;
+}
+.app .reference-toggle input:checked::after {
+  left: 15px;
+}
+.app .reference-toggle input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.app .reference-detail-dialog {
+  width: min(740px, calc(100vw - 32px));
+  max-height: calc(100dvh - 40px);
+  overflow: auto;
+}
+.app .reference-full-description {
+  white-space: pre-wrap;
+  line-height: 1.65;
+  color: #e2dfd4;
+}
+.app .reference-detail-dialog .reference-controls {
+  max-width: none;
+  justify-content: flex-start;
+  padding: 12px 0;
+}
+.app .sheet-defense-panel > [hidden],
+.app .sheet-combat-panel > [hidden],
+.app .paper-abilities > [hidden] {
+  display: none !important;
+}
+.app .sheet-panel-heading > h2 {
+  flex: 1;
+}
+.app
+  .character-effects-rail
+  .runtime-controls-panel
+  .runtime-rail-section-body
+  .buff-block.effect-beneficial {
+  border-left-color: #86af79;
+}
+.app
+  .character-effects-rail
+  .runtime-controls-panel
+  .runtime-rail-section-body
+  .buff-block.effect-detrimental {
+  border-left-color: #cc7773;
+}
+.app
+  .character-effects-rail
+  .runtime-controls-panel
+  .runtime-rail-section-body
+  .buff-block.effect-neutral {
+  border-left-color: #59605d;
+}
+@media (max-width: 650px) {
+  .app .sheet-panel-heading > button[aria-expanded] {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .app .reference-row {
+    flex-wrap: wrap;
+    gap: 7px;
+  }
+  .app button.reference-description {
+    flex-basis: 100%;
+    grid-template-columns: minmax(95px, 0.75fr) minmax(0, 1.25fr);
+  }
+  .app .reference-controls {
+    max-width: none;
+    justify-content: flex-start;
+  }
+}
