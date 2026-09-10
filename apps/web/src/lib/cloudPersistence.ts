@@ -154,7 +154,9 @@ export function changesFor(
         name: c.name,
         ancestry_name: c.build.race?.name ?? "",
         class_summary: [
-          ...new Set(c.build.levels.map((l) => l.className)),
+          ...new Set(
+            c.build.levels.slice(0, c.currentLevel).map((l) => l.className),
+          ),
         ].join(" / "),
         level: c.currentLevel,
         build: serializeCharacterBuild(c),

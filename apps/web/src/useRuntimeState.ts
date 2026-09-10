@@ -77,6 +77,7 @@ export function useRuntimeState(storageKey: string) {
         spellName: string,
         remaining: number,
         spellResourceMax?: number,
+        applySelfEffect = true,
       ) =>
         dispatch({
           type: "cast-spell",
@@ -85,7 +86,9 @@ export function useRuntimeState(storageKey: string) {
           max,
           spellName,
           remaining,
-          spellEffectId: getSpellEffectByName(spellName)?.id,
+          spellEffectId: applySelfEffect
+            ? getSpellEffectByName(spellName)?.id
+            : undefined,
           spellResourceMax,
         }),
       resetSpellClassRuntime: (classKey: string, levels: number[]) =>

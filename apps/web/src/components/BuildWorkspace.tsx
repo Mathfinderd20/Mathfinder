@@ -8,6 +8,7 @@ import { useCharacterUiState } from "../features/characters/CharacterUiSession";
 import { classAbilitiesGrantedAtLevel } from "../classAbilityProgression";
 import { RUNTIME_CLASS_FEATURES, RUNTIME_ARCHETYPES } from "../content";
 import { sign } from "../util";
+import { CharacterLanguages } from "./CharacterLanguages";
 
 export function buildClassProgression(
   levels: BuildEditorProps["build"]["levels"],
@@ -201,6 +202,10 @@ export function BuildWorkspace(
         </div>
       </div>
       <section className="v2-panel build-progression">
+        <CharacterLanguages
+          build={{ ...build, levels: appliedLevels }}
+          onChange={props.onUpdateLanguages}
+        />
         <header className="v2-panel-heading">
           <div>
             <span className="character-eyebrow">
@@ -252,9 +257,11 @@ export function BuildWorkspace(
                     <button
                       className="build-level-toggle"
                       aria-expanded={!!expanded[index]}
-                      onClick={() =>
-                        setExpanded({ ...expanded, [index]: !expanded[index] })
-                      }
+                      onClick={() => {
+                        setExpanded({ ...expanded, [index]: !expanded[index] });
+                        if (!expanded[index])
+                          props.onRequestPlannerSuggestions(index);
+                      }}
                     >
                       <span className="build-level-index">
                         Level {index + 1}
@@ -277,15 +284,6 @@ export function BuildWorkspace(
                       </small>
                       <em>{expanded[index] ? "−" : "+"}</em>
                     </button>
-                    <button
-                      className="ghost small"
-                      onClick={() => {
-                        setExpanded({ ...expanded, [index]: true });
-                        props.onRequestPlannerSuggestions(index);
-                      }}
-                    >
-                      Edit
-                    </button>
                   </div>
                   {expanded[index] && (
                     <SaveSection className="build-level-breakdown">
@@ -293,11 +291,10 @@ export function BuildWorkspace(
                       <button
                         className="ghost small"
                         onClick={() => {
-                          props.onSetCurrentLevel(index + 1);
                           setEditor("skills");
                         }}
                       >
-                        Review skill ranks at level {index + 1}
+                        Review skill rank allocations
                       </button>
                       <p className="v2-footnote">
                         Changes recalculate this build and its later levels.

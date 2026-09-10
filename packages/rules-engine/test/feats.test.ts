@@ -25,6 +25,36 @@ const baseCtx: FeatContext = {
   characterLevel: 1,
   featNames: [],
 };
+it("scales Toughness with Hit Dice, replacing imported flat HP values", () => {
+  expect(
+    featEffects(["Toughness"], FEATS, 1).find(
+      (effect) => effect.target === "hp",
+    )?.value,
+  ).toBe(3);
+  expect(
+    featEffects(["Toughness"], FEATS, 3).find(
+      (effect) => effect.target === "hp",
+    )?.value,
+  ).toBe(3);
+  expect(
+    featEffects(["Toughness"], FEATS, 8).find(
+      (effect) => effect.target === "hp",
+    )?.value,
+  ).toBe(8);
+  const registry = buildFeatRegistry([
+    {
+      ...getFeat(FEATS, "Toughness")!,
+      effects: [
+        { target: "hp", type: "untyped", source: "Toughness", value: 4 },
+      ],
+    },
+  ]);
+  expect(
+    featEffects(["Toughness"], registry, 8).filter(
+      (effect) => effect.target === "hp",
+    ),
+  ).toEqual([{ target: "hp", type: "untyped", source: "Toughness", value: 8 }]);
+});
 
 describe("feat prerequisites", () => {
   it("passes a feat with no prerequisites", () => {

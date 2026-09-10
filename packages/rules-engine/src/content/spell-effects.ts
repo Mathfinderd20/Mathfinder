@@ -232,9 +232,11 @@ export const SPELL_EFFECTS: SpellEffectDefinition[] = [
   trackedEffect({
     spellName: "Enlarge Person",
     tier: 3,
-    description: "Tracked size-changing state for Enlarge Person",
+    description:
+      "One size larger; +2 STR, −2 DEX; size-based combat math and melee damage adjusted",
+    modifiers: [modifier("Enlarge Person", "size.person", "size", 1)],
     limitations: [
-      "Size, reach, weapon dice, and STR/DEX adjustments remain manual.",
+      "Humanoid eligibility, available space, reach and carried equipment weight are adjudicated by the GM. Unrecognized custom weapon dice require a manual adjustment.",
     ],
     tracker: {
       label: "minutes remaining",
@@ -516,9 +518,11 @@ export const SPELL_EFFECTS: SpellEffectDefinition[] = [
   trackedEffect({
     spellName: "Reduce Person",
     tier: 3,
-    description: "Tracked size-changing state for Reduce Person",
+    description:
+      "One size smaller; +2 DEX, −2 STR; size-based combat math and weapon damage adjusted",
+    modifiers: [modifier("Reduce Person", "size.person", "size", -1)],
     limitations: [
-      "Size, reach, weapon dice, and STR/DEX adjustments remain manual.",
+      "Humanoid eligibility, reach and carried equipment weight are adjudicated by the GM. Unrecognized custom weapon dice require a manual adjustment.",
     ],
     tracker: {
       label: "minutes remaining",

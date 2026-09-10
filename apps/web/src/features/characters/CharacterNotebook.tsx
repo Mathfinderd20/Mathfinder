@@ -4,20 +4,8 @@ import { useCharacterUiState } from "./CharacterUiSession";
 import { useCloudConnection } from "../../lib/useCloudConnection";
 import { NoteDraft, noteCategories } from "./noteDraft";
 import { CharacterDialog } from "../../components/CharacterDialog";
-
-export function filterCharacterNotes(notes: CharacterNote[], search: string) {
-  const query = search.trim().toLowerCase();
-  return [...notes]
-    .filter((note) =>
-      `${note.title} ${note.category} ${note.body}`
-        .toLowerCase()
-        .includes(query),
-    )
-    .sort(
-      (a, b) =>
-        Number(b.pinned) - Number(a.pinned) || a.title.localeCompare(b.title),
-    );
-}
+import { filterCharacterNotes, noteSorts, parseNoteSort } from "./noteSort";
+export { filterCharacterNotes } from "./noteSort";
 
 export function CharacterNotebook({
   notes: savedNotes,
@@ -31,6 +19,22 @@ export function CharacterNotebook({
   active?: boolean;
 }) {
   const cloud = useCloudConnection();
+  const sortKey = `mathfinder:note-sort:${"userId" in cloud ? cloud.userId : "local"}:${characterId}`;
+  const readSort = () => {
+    try {
+      return parseNoteSort(localStorage.getItem(sortKey));
+    } catch {
+      return parseNoteSort(null);
+    }
+  };
+  const [sort, setSort] = useState(readSort);
+  useEffect(() => {
+    try {
+      setSort(parseNoteSort(localStorage.getItem(sortKey)));
+    } catch {
+      setSort("title");
+    }
+  }, [sortKey]);
   const [draft, keepDraft] = useCharacterUiState(
     characterId,
     "note-draft",
@@ -102,7 +106,7 @@ export function CharacterNotebook({
     if (input && saved.start !== null && saved.end !== null)
       input.setSelectionRange(saved.start, saved.end);
   }, []);
-  const ordered = filterCharacterNotes(notes, search);
+  const ordered = filterCharacterNotes(notes, search, sort);
   const selected = notes.find((note) => note.id === selectedId) ?? ordered[0];
   function update(patch: Partial<CharacterNote>) {
     if (!selected) return;
@@ -119,6 +123,7 @@ export function CharacterNotebook({
       category: "General",
       pinned: false,
       body: "",
+      createdAt: new Date().toISOString(),
     };
     setSelectedId(note.id);
     setCustomCategory(false);
@@ -142,6 +147,27 @@ export function CharacterNotebook({
           value={search}
           onChange={(event) => setSearch(event.target.value)}
         />
+        <label className="notebook-sort">
+          Sort notes
+          <select
+            value={sort}
+            onChange={(event) => {
+              const next = parseNoteSort(event.target.value);
+              setSort(next);
+              try {
+                localStorage.setItem(sortKey, next);
+              } catch {
+                /* Session sorting still works if storage is unavailable. */
+              }
+            }}
+          >
+            {Object.entries(noteSorts).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </label>
         <div className="notebook-list">
           {ordered.map((note) => (
             <button
@@ -341,6 +367,7 @@ export function CharacterNotebook({
                   const remaining = filterCharacterNotes(
                     draft.view(latest.current.notes),
                     search,
+                    sort,
                   );
                   setSelectedId(remaining[0]?.id);
                   setCustomCategory(false);

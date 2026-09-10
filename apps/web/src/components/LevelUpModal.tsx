@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
+import { LanguageFields } from "./CharacterLanguages";
 import {
   buildCharacter,
   classAllowsAlignment,
   computeSheet,
+  deriveLanguages,
   featContextFromSheet,
   planLevelUp,
   createPreLevelBuild,
@@ -149,6 +151,7 @@ interface Props {
   onConfirm: (
     selection: LevelUpSelection,
     spellSeedPlans: LevelUpSpellSeedPlan[],
+    languages?: CharacterBuild["languages"],
   ) => void;
   onClose: () => void;
 }
@@ -160,6 +163,7 @@ export function LevelUpModal({
   onConfirm,
   onClose,
 }: Props) {
+  const [languages, setLanguages] = useState(build.languages ?? {});
   const [className, setClassName] = useState(() =>
     normalizeClassKey(
       plannerSuggestions.classChoices[0]?.value ??
@@ -409,7 +413,12 @@ export function LevelUpModal({
         "This class does not allow the character's alignment.",
     });
   }
-  const hasError = issues.some((i) => i.severity === "error");
+  const languageRules = deriveLanguages(preview.build);
+  const languageOverBudget =
+    (languages.starting?.length ?? 0) > languageRules.startingCapacity ||
+    (languages.learned?.length ?? 0) > languageRules.learnedCapacity;
+  const hasError =
+    languageOverBudget || issues.some((i) => i.severity === "error");
 
   function commitHpInput(nextInput = hpInput) {
     const parsed = Number(nextInput);
@@ -496,6 +505,7 @@ export function LevelUpModal({
         favoredClass: favoredClassEligible ? favoredClass : undefined,
       },
       spellSeedPlans,
+      languages,
     );
   }
 
@@ -963,6 +973,19 @@ export function LevelUpModal({
           ) : null}
         </section>
 
+        <section className="creation-section">
+          <h3>Languages</h3>
+          <LanguageFields
+            build={preview.build}
+            value={languages}
+            onChange={setLanguages}
+          />
+          {languageOverBudget && (
+            <p className="form-error">
+              Language choices exceed the available allowance.
+            </p>
+          )}
+        </section>
         {issues.length > 0 ? (
           <ul className="modal-issues">
             {issues.map((i, idx) => (

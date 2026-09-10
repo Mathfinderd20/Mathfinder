@@ -2,12 +2,14 @@ import { HeaderProfile } from "./components/ProfileMenu";
 import { SaveSection, SectionSaveProvider } from "./components/SaveSection";
 import { useSectionDraft } from "./features/characters/useSectionDraft";
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import { CharacterLanguages } from "./components/CharacterLanguages";
 import {
   applyLevelUp,
   levelDown,
   SKILL_DEFINITIONS,
   type AbilityKey,
   type ArchetypeDefinitionLike,
+  type CharacterBuild,
   type LevelUpSelection,
 } from "@mathfinder/rules-engine";
 import {
@@ -32,6 +34,7 @@ import {
 import { BuildEditorTab } from "./components/BuildEditorTab";
 import { GearTab } from "./components/GearTab";
 import { RuntimeControlsPanel } from "./components/RuntimeControlsPanel";
+import { restorableAbilityResourceIds } from "./characterReferences";
 import { MagicWorkspace as SpellcastingManager } from "./components/MagicWorkspace";
 import { BuildSlotsPanel } from "./components/BuildSlotsPanel";
 import { ValidationPanel } from "./components/ValidationPanel";
@@ -318,10 +321,11 @@ export function App({
   function confirmLevelUp(
     selection: LevelUpSelection,
     spellSeedPlans: LevelUpSpellSeedPlan[],
+    languages?: CharacterBuild["languages"],
   ) {
     setBuild((b) => {
       const next = applyLevelUp(b, selection);
-      let seeded = next;
+      let seeded = languages ? { ...next, languages } : next;
       for (const plan of spellSeedPlans) {
         const library =
           seeded.spellLibrary?.[plan.classKey]?.[plan.level] ?? [];
@@ -604,7 +608,11 @@ export function App({
     healNonlethal(nonlethalDamage);
     setTempHp(0);
     setFlag("fatigued", false);
-    for (const pool of resourcePools) resetResource(pool.id);
+    for (const id of restorableAbilityResourceIds(
+      resourceMaxes,
+      runtimeBuffs.map((buff) => buff.id),
+    ))
+      resetResource(id);
     for (const caster of sheet.spellcasting) {
       resetSpellClassRuntime(
         caster.className.toLowerCase(),
@@ -638,6 +646,7 @@ export function App({
       pendingSpellCast.max,
       pendingSpellCast.spellName,
       pendingSpellCast.remaining,
+      !!characterId && spellTargetIds.includes(characterId),
     );
     setPendingSpellCast(undefined);
   }
@@ -744,6 +753,14 @@ export function App({
           <main className="character-workspace-main">
             <div className="sheet-main-stack">
               <Sheet
+                languagesPanel={
+                  <CharacterLanguages
+                    build={effectiveBuild}
+                    onChange={(languages) =>
+                      setBuild((prev) => ({ ...prev, languages }))
+                    }
+                  />
+                }
                 characterId={characterId}
                 sheet={sheet}
                 wealthSummary={wealthSummary}
@@ -769,6 +786,17 @@ export function App({
                 onResetHp={resetHp}
                 onRest={() => setResting(true)}
                 campaignTraits={details.campaignTraits}
+                referenceRuntime={{
+                  activatableGroups,
+                  activatableBlockedReasons,
+                  activeBuffs,
+                  resourcesUsed,
+                  resourceMaxes,
+                  resourceLabels,
+                  onSetToggle: setToggle,
+                  onSetExclusiveToggleGroup: setExclusiveToggleGroup,
+                  onAdjustResource: adjustResource,
+                }}
                 spellCastCounts={spellCastCounts}
                 onCastSpell={requestSpellCast}
                 onResetSpellSlotLevel={resetSpellSlotLevel}
@@ -1079,6 +1107,9 @@ export function App({
             spellCastCounts={spellCastCounts}
             showSpellcasting={false}
             onUpdateName={(name) => setBuild((prev) => ({ ...prev, name }))}
+            onUpdateLanguages={(languages) =>
+              setBuild((prev) => ({ ...prev, languages }))
+            }
             onUpdateAlignment={updateAlignment}
             onUpdateBaseAbilityScore={updateBaseAbilityScore}
             onUpdateRace={updateRace}
@@ -1269,8 +1300,10 @@ export function App({
             </div>
             <p>
               Select every character affected. Area placement is resolved on
-              your physical or shared table; Mathfinder records the chosen
-              characters; the spell slot is spent when you confirm.
+              your physical or shared table. The spell slot is spent when you
+              confirm. Supported effects apply here only if this character is
+              selected. Other recipients add the effect on their own sheets
+              after resolving any saving throw.
             </p>
             <div className="spell-target-list">
               {availableSpellTargets.length ? (

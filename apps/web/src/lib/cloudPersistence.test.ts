@@ -163,6 +163,25 @@ afterEach(() => {
 });
 
 describe("authenticated persistence", () => {
+  it("keeps planned levels in the build but out of the applied level and class summary", async () => {
+    const cloud = await import("./cloudPersistence");
+    const cache = await import("./accountCache");
+    await cloud.initializeCloudPersistence();
+    const key = "mathfinder:characters:v1";
+    const store = JSON.parse(cache.accountStorage.getItem(key)!);
+    store.characters[0].currentLevel = 1;
+    store.characters[0].build.levels.push({ className: "Wizard" });
+    const changes = cloud.changesFor(
+      { ...cache.currentEntries(), [key]: JSON.stringify(store) },
+      "user-a",
+    );
+    const character = [...changes.values()].find(
+      (entry) => entry.table === "characters",
+    )!;
+    expect(character.payload.level).toBe(1);
+    expect(character.payload.class_summary).toBe("Fighter");
+    expect(JSON.stringify(character.payload.build)).toContain("Wizard");
+  });
   it("loads server data without uploading legacy browser records", async () => {
     const cloud = await import("./cloudPersistence");
     await cloud.initializeCloudPersistence();

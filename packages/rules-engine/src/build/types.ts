@@ -156,6 +156,11 @@ export interface EquipmentEntry {
 }
 
 export interface CharacterBuild {
+  languages?: {
+    starting?: string[];
+    learned?: string[];
+    additional?: string[];
+  };
   name: string;
   /** Optional only for backward compatibility with persisted pre-alignment builds. */
   alignment?: Alignment;

@@ -1,4 +1,5 @@
 import { abilityModifier, deriveAbilities } from "./abilities";
+import { applyPersonSizeEffects } from "./size-effects";
 import {
   CMD_RELEVANT_AC_TYPES,
   FLAT_FOOTED_EXCLUDED_AC_TYPES,
@@ -103,6 +104,7 @@ export function computeSheet(
   input: CharacterInput,
   options: ComputeSheetOptions = {},
 ): DerivedSheet {
+  input = applyPersonSizeEffects(input);
   const abilities = deriveAbilities(input);
   const strScore = abilities.str.score;
   const strMod = abilities.str.mod;
@@ -260,9 +262,16 @@ export function computeSheet(
   const initiative = stat(initBreakdown);
 
   // ---- CMB / CMD ---------------------------------------------------------
+  const usesDexForManeuvers = ["fine", "diminutive", "tiny"].includes(
+    input.size,
+  );
   const cmbBreakdown: BreakdownEntry[] = [
     { source: "BAB", type: "base", value: bab },
-    { source: "Strength", type: "ability", value: strMod },
+    {
+      source: usesDexForManeuvers ? "Dexterity" : "Strength",
+      type: "ability",
+      value: usesDexForManeuvers ? dexMod : strMod,
+    },
   ];
   if (sizeCmbCmd !== 0) {
     cmbBreakdown.push({

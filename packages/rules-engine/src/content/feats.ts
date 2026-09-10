@@ -60,9 +60,8 @@ export type FeatGrantKind = "general" | "fighter-bonus";
 export type FeatRegistry = Record<string, FeatDefinition>;
 
 /**
- * Core feats. Note: a few feats (e.g. Toughness, Weapon Focus) are simplified
- * to static effects for now; level-scaling and weapon specificity arrive with
- * the fuller content model.
+ * Core feat definitions. Contextual scaling and selected-weapon effects are
+ * resolved by featEffects, rather than frozen into these base modifiers.
  */
 export const CORE_FEATS: FeatDefinition[] = [
   {
@@ -768,12 +767,27 @@ export function featParameterOptions(
 export function featEffects(
   featNames: string[],
   registry: FeatRegistry,
+  hitDice?: number,
 ): Modifier[] {
   const out: Modifier[] = [];
   for (const name of featNames) {
     const selection = parseFeatSelection(registry, name);
     if (!selection) continue;
-    out.push(...selection.feat.effects, ...parameterizedFeatEffects(selection));
+    const effects =
+      selection.feat.name.toLowerCase() === "toughness" && hitDice !== undefined
+        ? [
+            ...selection.feat.effects.filter(
+              (effect) => effect.target !== "hp",
+            ),
+            {
+              target: "hp",
+              type: "untyped",
+              value: Math.max(3, Math.floor(hitDice)),
+              source: "Toughness",
+            } satisfies Modifier,
+          ]
+        : selection.feat.effects;
+    out.push(...effects, ...parameterizedFeatEffects(selection));
   }
   return out;
 }

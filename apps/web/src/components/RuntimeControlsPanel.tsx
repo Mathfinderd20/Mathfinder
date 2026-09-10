@@ -1,5 +1,9 @@
 import { useMemo, useState } from "react";
-import { type RuntimeBuffView, type RuntimeProfile } from "../runtimeInsights";
+import {
+  effectDisposition,
+  type RuntimeBuffView,
+  type RuntimeProfile,
+} from "../runtimeInsights";
 import type {
   RuntimeAction,
   ActivatableResourceCost,
@@ -18,9 +22,10 @@ interface ActivatableView {
   name: string;
   description: string;
   resourceCost?: ActivatableResourceCost;
+  effects?: Array<{ value: number }>;
 }
 
-interface RuntimeControlsPanelProps {
+export interface RuntimeControlsPanelProps {
   showHeading?: boolean;
   runtimeFlags?: Record<string, boolean>;
   onApplyRuntimeActions?: (actions: RuntimeAction[]) => void;
@@ -298,7 +303,7 @@ export function RuntimeControlsPanel({
   function renderEffectCard(buff: RuntimeBuffView, active: boolean) {
     return (
       <div
-        className={`buff-block runtime-effect-card ${active ? "active" : ""}`}
+        className={`buff-block runtime-effect-card ${active ? "active" : ""} effect-${effectDisposition(buff)}`}
         key={buff.id}
       >
         <label className="buff">
@@ -426,7 +431,10 @@ export function RuntimeControlsPanel({
                       ? "resource exhausted"
                       : undefined);
                   return (
-                    <div className="buff-block" key={feature.id}>
+                    <div
+                      className={`buff-block effect-${effectDisposition(feature)}`}
+                      key={feature.id}
+                    >
                       <label className="buff">
                         <input
                           type="checkbox"
@@ -469,7 +477,10 @@ export function RuntimeControlsPanel({
                 <div className="mode-title">toggle abilities</div>
                 {passiveActivatables.map((feature) => {
                   return (
-                    <div className="buff-block" key={feature.id}>
+                    <div
+                      className={`buff-block effect-${effectDisposition(feature)}`}
+                      key={feature.id}
+                    >
                       <label className="buff">
                         <input
                           type="checkbox"
@@ -503,7 +514,10 @@ export function RuntimeControlsPanel({
                 {items.map((feature) => {
                   const blockedReason = activationFailure(feature);
                   return (
-                    <div className="buff-block" key={feature.id}>
+                    <div
+                      className={`buff-block effect-${effectDisposition(feature)}`}
+                      key={feature.id}
+                    >
                       <label className="buff">
                         <input
                           type="radio"
@@ -547,7 +561,10 @@ export function RuntimeControlsPanel({
               <div className="mode-group">
                 <div className="mode-title">My spell effects</div>
                 {ownedCards.map(({ buff }) => (
-                  <div className="buff-block" key={buff.id}>
+                  <div
+                    className={`buff-block effect-${effectDisposition(buff)}`}
+                    key={buff.id}
+                  >
                     <label className="buff">
                       <input
                         type="checkbox"
@@ -619,7 +636,7 @@ export function RuntimeControlsPanel({
                 const feature = activatableById.get(id)!;
                 return (
                   <div
-                    className="buff-block runtime-effect-card active"
+                    className={`buff-block runtime-effect-card active effect-${effectDisposition(feature)}`}
                     key={id}
                   >
                     <label className="buff">
@@ -644,7 +661,7 @@ export function RuntimeControlsPanel({
               .filter((buff) => !availableActivatableIds.has(buff.id))
               .map((buff) => renderEffectCard(buff, !!activeBuffs[buff.id]))}
             {fatigueRetained ? (
-              <div className="buff-block runtime-effect-card">
+              <div className="buff-block runtime-effect-card effect-detrimental">
                 <label className="buff">
                   <input
                     type="checkbox"
