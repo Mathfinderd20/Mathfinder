@@ -280,6 +280,7 @@ export {
 } from "./build/archetype-rules";
 export {
   SAMPLE_CLASSES,
+  completeCoreSpellProgression,
   getClassDefinition,
   babForLevels,
   goodSaveBase,

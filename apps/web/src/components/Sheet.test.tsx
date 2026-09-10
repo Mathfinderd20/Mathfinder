@@ -112,7 +112,18 @@ describe("Character tab layout", () => {
     expect(defense).toContain("Immune to magical sleep");
     expect(combat).not.toContain("Adaptable");
     expect(reference).toContain("Adaptable");
-    expect(reference).toContain("Languages: Common");
+    const skills = html.slice(html.indexOf("sheet-skills-panel"));
+    expect(reference).not.toContain("Languages: Common");
+    expect(skills).toContain("Languages: Common");
+    expect(skills).toContain(
+      '<details class="sheet-skill-details"><summary>Languages</summary>',
+    );
+    expect(skills).toContain(
+      '<details class="sheet-skill-details"><summary>Senses</summary>',
+    );
+    expect(skills.indexOf("<summary>Languages</summary>")).toBeLessThan(
+      skills.indexOf("<summary>Senses</summary>"),
+    );
     expect(reference.match(/class="sheet-reference-group"/g)).toHaveLength(3);
     expect(combat).toContain("40 ft");
     expect(combat).toContain("20 ft");

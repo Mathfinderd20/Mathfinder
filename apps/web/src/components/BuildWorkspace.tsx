@@ -9,6 +9,7 @@ import { classAbilitiesGrantedAtLevel } from "../classAbilityProgression";
 import { RUNTIME_CLASS_FEATURES, RUNTIME_ARCHETYPES } from "../content";
 import { sign } from "../util";
 import { CharacterLanguages } from "./CharacterLanguages";
+import { BuildSection } from "./BuildSection";
 
 export function buildClassProgression(
   levels: BuildEditorProps["build"]["levels"],
@@ -72,53 +73,54 @@ export function BuildWorkspace(
   ];
   return (
     <main className="workspace-v2 build-v2">
-      <section className="v2-panel build-v2-summary">
-        <div>
-          <span className="character-eyebrow">Character progression</span>
-          <h2>
-            Level {props.currentLevel} · {summary}
-          </h2>
-          <p>
-            {build.race.name} ·{" "}
-            {build.alignment
-              ? ALIGNMENT_LABELS[build.alignment]
-              : "Alignment not set"}
-          </p>
-        </div>
-        <div className="build-score-strip">
-          {props.abilityOrder.map((ability) => (
-            <span key={ability}>
-              <small>{ability.toUpperCase()}</small>
-              <strong>{build.baseAbilityScores[ability]}</strong>
-            </span>
-          ))}
-        </div>
-        <div className="build-v2-actions">
-          <button className="ghost" onClick={() => setEditor("foundation")}>
-            Edit foundation
-          </button>
-          <button className="ghost" onClick={() => setEditor("skills")}>
-            Skill ranks
-          </button>
-          {props.advancementActions}
-        </div>
-      </section>
-      <div className="build-v2-foundation">
-        <section className="v2-panel build-race-record">
-          <header className="v2-panel-heading">
-            <div>
-              <span className="character-eyebrow">
-                Creation choice · editable
+      <BuildSection characterId={characterId} title="Level">
+        <div className="build-v2-summary">
+          <div>
+            <span className="character-eyebrow">Character progression</span>
+            <h2>
+              Level {props.currentLevel} · {summary}
+            </h2>
+            <p>
+              {build.race.name} ·{" "}
+              {build.alignment
+                ? ALIGNMENT_LABELS[build.alignment]
+                : "Alignment not set"}
+            </p>
+          </div>
+          <div className="build-score-strip">
+            {props.abilityOrder.map((ability) => (
+              <span key={ability}>
+                <small>{ability.toUpperCase()}</small>
+                <strong>{build.baseAbilityScores[ability]}</strong>
               </span>
-              <h2>Race</h2>
-            </div>
+            ))}
+          </div>
+          <div className="build-v2-actions">
+            <button className="ghost" onClick={() => setEditor("foundation")}>
+              Edit foundation
+            </button>
+            <button className="ghost" onClick={() => setEditor("skills")}>
+              Skill ranks
+            </button>
+            {props.advancementActions}
+          </div>
+        </div>
+      </BuildSection>
+      <div className="build-v2-foundation">
+        <BuildSection
+          characterId={characterId}
+          title="Race"
+          eyebrow="Creation choice · editable"
+          className="build-race-record"
+          actions={
             <button
               className="ghost small"
               onClick={() => setEditor("foundation")}
             >
               Modify race
             </button>
-          </header>
+          }
+        >
           <div className="build-foundation-record">
             <strong>{build.race.name}</strong>
             <span>
@@ -189,23 +191,23 @@ export function BuildWorkspace(
                 </p>
               )}
           </div>
-        </section>
+        </BuildSection>
         <div className="build-campaign-traits">
           {props.campaignTraitsPanel ?? (
-            <section className="v2-panel">
-              <header className="v2-panel-heading">
-                <h2>Campaign Traits</h2>
-              </header>
+            <BuildSection characterId={characterId} title="Campaign Traits">
               <p className="v2-empty">No campaign traits recorded.</p>
-            </section>
+            </BuildSection>
           )}
         </div>
       </div>
-      <section className="v2-panel build-progression">
+      <BuildSection characterId={characterId} title="Languages">
         <CharacterLanguages
+          hideHeading
           build={{ ...build, levels: appliedLevels }}
           onChange={props.onUpdateLanguages}
         />
+      </BuildSection>
+      <section className="v2-panel build-progression">
         <header className="v2-panel-heading">
           <div>
             <span className="character-eyebrow">
@@ -237,6 +239,7 @@ export function BuildWorkspace(
                   : "Expand level progression"
               }
               onClick={() => setAllOpen(!allOpen)}
+              aria-expanded={allOpen}
             >
               {allOpen ? "−" : "+"}
             </button>

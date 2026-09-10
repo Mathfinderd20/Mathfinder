@@ -1,5 +1,6 @@
 import {
   buildClassFeatureRegistry,
+  completeCoreSpellProgression,
   buildFeatRegistry,
   buildSpellRegistry,
   equipmentMagicItemTemplate,
@@ -558,7 +559,10 @@ export async function loadRuntimeContent() {
           (cls): cls is ClassDefinition =>
             !!cls && typeof cls.name === "string" && cls.name.trim().length > 0,
         )
-        .map((cls) => [cls.name.toLowerCase(), cls]),
+        .map((cls) => [
+          cls.name.toLowerCase(),
+          completeCoreSpellProgression(cls),
+        ]),
     ) as Record<string, ClassDefinition>;
     const races = raceOptionsFromDataSet(rulesData);
     const archetypes = rulesIndex.archetypes as Record<

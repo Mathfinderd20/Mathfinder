@@ -167,7 +167,7 @@ function base(
   scores: CharacterBuild["baseAbilityScores"],
   skills: SkillKey[],
   feats: string[][],
-  increase: "str" | "dex" | "wis",
+  increase: "str" | "dex" | "wis" | "cha",
 ): CharacterBuild {
   const build: CharacterBuild = {
     name,
@@ -209,6 +209,187 @@ function base(
   return build;
 }
 const eight = (className: string) => Array.from({ length: 8 }, () => className);
+
+export function createReviewSorcerer(): {
+  build: CharacterBuild;
+  details: CharacterDetails;
+} {
+  const build = base(
+    "Vael Ashcrown, the Last Eclipse",
+    "Human",
+    Array.from({ length: 20 }, () => "Sorcerer"),
+    { str: 10, dex: 14, con: 14, int: 12, wis: 10, cha: 17 },
+    ["spellcraft", "knowledge.arcana", "use-magic-device", "fly"],
+    [
+      ["Toughness"],
+      [],
+      ["Spell Focus (Evocation)"],
+      [],
+      ["Greater Spell Focus (Evocation)"],
+      [],
+      ["Spell Penetration"],
+      [],
+      ["Greater Spell Penetration"],
+      [],
+      ["Empower Spell"],
+      [],
+      ["Maximize Spell"],
+      [],
+      ["Quicken Spell"],
+      [],
+      ["Combat Casting"],
+      [],
+      ["Iron Will"],
+    ],
+    "cha",
+  );
+  build.race.choiceSelection!.flexibleAbility = "cha";
+  build.race.choiceSelection!.bonusFeat = "Improved Initiative";
+  build.languages = { starting: ["Draconic"] };
+  build.coinPurse = { pp: 500, gp: 8, sp: 4, cp: 2 };
+  build.equipment!.push(
+    weapon("Quarterstaff"),
+    weapon("Dagger"),
+    magic("Headband of Alluring Charisma +6"),
+    magic("Belt of Mighty Constitution +6"),
+    magic("Bracers of Armor +8"),
+    magic("Cloak of Resistance +5"),
+    magic("Ring of Protection +5"),
+    magic("Amulet of Natural Armor +5"),
+    {
+      name: "Black-star signet (arcane bond)",
+      quantity: 1,
+      weight: 0,
+      costGp: 250,
+      carryState: "carried",
+    },
+    {
+      name: "Spell component pouch",
+      componentCategory: "kit",
+      quantity: 1,
+      weight: 2,
+      costGp: 5,
+      carryState: "carried",
+    },
+  );
+  build.levels[0]!.features = [
+    "Arcane Bloodline",
+    "Arcane Bond: Black-star signet",
+    "Eschew Materials",
+  ];
+  build.levels[2]!.features = ["Metamagic Adept"];
+  build.levels[6]!.features = ["Bloodline bonus feat: Scribe Scroll"];
+  build.levels[8]!.features = ["New Arcana"];
+  build.levels[12]!.features = ["Bloodline bonus feat: Still Spell"];
+  build.levels[14]!.features = ["School Power: Evocation"];
+  build.levels[18]!.features = [
+    "Bloodline bonus feat: Skill Focus (Knowledge [arcana])",
+  ];
+  build.levels[19]!.features = ["Arcane Apotheosis"];
+  const known: Record<number, string[]> = {
+    0: [
+      "Acid Splash",
+      "Detect Magic",
+      "Light",
+      "Mage Hand",
+      "Mending",
+      "Message",
+      "Prestidigitation",
+      "Ray of Frost",
+      "Read Magic",
+    ],
+    1: [
+      "Magic Missile",
+      "Shield",
+      "Grease",
+      "Feather Fall",
+      "Protection from Evil",
+    ],
+    2: [
+      "Mirror Image",
+      "Scorching Ray",
+      "Glitterdust",
+      "Resist Energy",
+      "See Invisibility",
+    ],
+    3: ["Fireball", "Haste", "Fly", "Dispel Magic"],
+    4: [
+      "Dimension Door",
+      "Greater Invisibility",
+      "Black Tentacles",
+      "Stoneskin",
+    ],
+    5: ["Teleport", "Wall of Force", "Cone of Cold", "Dominate Person"],
+    6: ["Disintegrate", "Chain Lightning", "Greater Dispel Magic"],
+    7: ["Delayed Blast Fireball", "Reverse Gravity", "Plane Shift"],
+    8: ["Maze", "Mind Blank", "Moment of Prescience"],
+    9: ["Meteor Swarm", "Time Stop", "Shapechange"],
+  };
+  // Use catalog names (some spell titles are indexed noun-first).
+  const aliases: Record<string, string> = {
+    "Greater Invisibility": "Invisibility, Greater",
+    "Greater Dispel Magic": "Dispel Magic, Greater",
+  };
+  for (const [level, names] of Object.entries(known)) {
+    known[Number(level)] = names.map((name) => {
+      const spell = Object.values(RUNTIME_SPELLS).find(
+        (entry) =>
+          [name.toLowerCase(), aliases[name]?.toLowerCase()].includes(
+            entry.name.toLowerCase(),
+          ) &&
+          entry.classes.some(
+            (source) =>
+              source.className.toLowerCase() === "sorcerer" &&
+              source.level === Number(level),
+          ),
+      );
+      if (!spell) throw new Error(`Missing Sorcerer ${level} spell: ${name}`);
+      return spell.name;
+    });
+  }
+  build.spellSelections = { sorcerer: { known } };
+  build.spellLibrary = { sorcerer: known };
+  return {
+    build,
+    details: {
+      profile: {
+        gender: "Man",
+        age: "52",
+        height: "6 ft 2 in",
+        weight: "180 lb",
+        deity: "Nethys",
+        homeland: "Nex",
+        associations: "The Eclipse Compact · Keeper of the Black-star Signet",
+      },
+      notes: [
+        {
+          id: "vael-origin",
+          title: "The Last Eclipse",
+          category: "Origin",
+          pinned: false,
+          createdAt: "2026-09-09T15:00:00.000Z",
+          body: "Vael survived the night a cabal tried to extinguish the sun. He returned wearing their broken crown and carrying their last star in a signet ring. Calm, immaculate, and catastrophically powerful. His promise to the party: You handle the door. I will handle whatever is behind it.",
+        },
+        {
+          id: "vael-playbook",
+          title: "Archmage review playbook",
+          category: "General",
+          pinned: true,
+          createdAt: "2026-09-09T15:01:00.000Z",
+          body: "Level 20 spontaneous caster with a 25-point starting array, all five increases in Charisma, defensive magic equipment, allocated skills, and a complete base known-spell selection from cantrips through level 9. Review source DCs, high-level slots, at-will counts, target selection, spell details, and Rest. Haste and battlefield control support the party; Meteor Swarm is the loud option. Expensive spell components and conditional metamagic must still be adjudicated at the table.",
+        },
+        {
+          id: "vael-bloodline",
+          title: "Arcane bloodline — reference choices",
+          category: "General",
+          pinned: false,
+          createdAt: "2026-09-09T15:02:00.000Z",
+          body: "Arcane bloodline powers and bonus feats are recorded in Build as reference choices. The current engine does not automate bloodline bonus spells, New Arcana, School Power, bonded-object casting, or Arcane Apotheosis. The Magic tab contains the full base Sorcerer known-spell allowance, not these extras; apply those benefits manually for play. Bloodline rules: https://legacy.aonprd.com/coreRuleBook/classes/sorcerer.html#arcane",
+        },
+      ],
+    },
+  };
+}
 export function createReviewCharacters(): Array<{
   build: CharacterBuild;
   details: CharacterDetails;

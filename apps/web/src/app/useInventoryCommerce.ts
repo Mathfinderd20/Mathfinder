@@ -7,11 +7,15 @@ type CoinDenomination = "pp" | "gp" | "sp" | "cp";
 export function useInventoryCommerce(
   setBuild: Dispatch<SetStateAction<CharacterBuild>>,
 ) {
-  function updateCarriedWeight(raw: string) {
-    setBuild((previous) => ({
-      ...previous,
-      carriedWeight: raw === "" ? undefined : Math.max(0, Number(raw) || 0),
-    }));
+  function adjustCoinPurse(deltaGp: number) {
+    if (!Number.isFinite(deltaGp) || deltaGp === 0) return;
+    setBuild((previous) => {
+      const coinPurse =
+        deltaGp < 0
+          ? spendCoinPurse(previous.coinPurse, -deltaGp)
+          : addCoinPurseValue(previous.coinPurse, deltaGp);
+      return coinPurse ? { ...previous, coinPurse } : previous;
+    });
   }
 
   function updateCoinPurse(denomination: CoinDenomination, value: number) {
@@ -95,7 +99,7 @@ export function useInventoryCommerce(
   return {
     buyEquipment,
     sellEquipment,
-    updateCarriedWeight,
+    adjustCoinPurse,
     updateCoinPurse,
     updateCoinWeightCountsTowardEncumbrance,
   };

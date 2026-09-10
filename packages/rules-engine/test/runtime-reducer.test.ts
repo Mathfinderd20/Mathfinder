@@ -263,6 +263,21 @@ describe("runtime reducer + helpers", () => {
     ).toHaveLength(1);
   });
 
+  it("counts every cantrip cast without consuming or exhausting slots", () => {
+    const cast = {
+      type: "cast-spell" as const,
+      classKey: "sorcerer",
+      level: 0,
+      max: 0,
+      remaining: 0,
+      spellName: "Light",
+    };
+    const once = reduceRuntimeState(createRuntimeStateSnapshot(), cast);
+    const twice = reduceRuntimeState(once, cast);
+    expect(twice.collections.sorcerer?.[0]?.Light).toBe(2);
+    expect(twice.slotUsage.sorcerer?.[0] ?? 0).toBe(0);
+  });
+
   it("auto-consumes one-shot spell effects on tracked weapon attacks", () => {
     let state = createRuntimeStateSnapshot({
       toggles: { "spell-true-strike": true, "spell-guidance": true },
