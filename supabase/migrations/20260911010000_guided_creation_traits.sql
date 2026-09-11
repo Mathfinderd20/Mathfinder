@@ -1,4 +1,4 @@
--- Extend the existing creation-rule document without changing campaign authority.
+-- Extend the existing creation-rule document while retaining campaign authority checks.
 create or replace function public.valid_campaign_creation_rules(value jsonb)
 returns boolean language plpgsql immutable set search_path = '' as $$
 declare item jsonb;
@@ -61,3 +61,8 @@ begin
   update public.campaigns set creation_rules = p_rules where id = p_campaign_id;
 end;
 $$;
+
+-- Supabase default privileges can grant anon directly; revoking PUBLIC alone
+-- in the original migration did not remove that grant.
+revoke all on function public.set_campaign_creation_rules(uuid, jsonb) from public, anon;
+grant execute on function public.set_campaign_creation_rules(uuid, jsonb) to authenticated;
