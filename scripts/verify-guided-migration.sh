@@ -44,3 +44,5 @@ for test_file in supabase/tests/*.sql; do
   echo "Running $test_file"
   docker exec -i "$db_container" psql -U postgres -d postgres -v ON_ERROR_STOP=1 < "$test_file"
 done
+
+supabase db lint --local --fail-on error
