@@ -45,10 +45,15 @@ import {
 import { FeatSelectionPicker } from "./FeatSelectionPicker";
 import { FavoredClassBonusPicker } from "./FavoredClassBonusPicker";
 import { SpellSeedPicker } from "./SpellSeedPicker";
+import { SpellbookFreeSpellPicker } from "./SpellbookFreeSpellPicker";
 import {
+  buildSpellbookGrantPlans,
+  buildSpellbookGrantGroups,
   buildSpellSeedGroups,
   buildSpellSeedPlans,
-  type SpellSeedPlan,
+  classFeaturesIncludeSpellbook,
+  selectedSpellCount,
+  type SpellLibraryPlan,
   type SpellSeedSelections,
 } from "../spellSeedPlans";
 
@@ -148,7 +153,7 @@ interface Props {
   plannerSuggestions: LevelPlannerSuggestions;
   onConfirm: (
     selection: LevelUpSelection,
-    spellSeedPlans: SpellSeedPlan[],
+    spellPlans: SpellLibraryPlan[],
     languages?: CharacterBuild["languages"],
   ) => void;
   onClose: () => void;
@@ -183,6 +188,8 @@ export function LevelUpModal({
   const [favoredClass, setFavoredClass] = useState<string>();
   const [favoredClassSelection, setFavoredClassSelection] = useState<string>();
   const [selectedSpellSeeds, setSelectedSpellSeeds] =
+    useState<SpellSeedSelections>({});
+  const [selectedSpellbookGrants, setSelectedSpellbookGrants] =
     useState<SpellSeedSelections>({});
 
   const remaining = plan.skillPoints - skills.size;
@@ -355,14 +362,41 @@ export function LevelUpModal({
     suggestedFeatNames,
   ]);
 
-  const spellSeedGroups = buildSpellSeedGroups(
+  const allSpellSeedGroups = buildSpellSeedGroups(
     previewSheet.spellcasting,
     modalSuggestionBundle.spellChoices,
   );
+  const leveledClassKey = resolvedClassName.toLowerCase();
+  const spellbookCaster = previewSheet.spellcasting.find(
+    (caster) => caster.className.toLowerCase() === leveledClassKey,
+  );
+  const grantsSpellbookSpells =
+    !!spellbookCaster &&
+    classFeaturesIncludeSpellbook(RUNTIME_CLASS_FEATURES[leveledClassKey]);
+  const spellSeedGroups = grantsSpellbookSpells
+    ? allSpellSeedGroups.filter((group) => group.classKey !== leveledClassKey)
+    : allSpellSeedGroups;
   const spellSeedPlans = buildSpellSeedPlans(
     spellSeedGroups,
     selectedSpellSeeds,
   );
+  const spellbookGrantGroups =
+    grantsSpellbookSpells && spellbookCaster
+      ? buildSpellbookGrantGroups(
+          spellbookCaster,
+          modalSuggestionBundle.spellChoices[leveledClassKey] ?? {},
+        )
+      : [];
+  const spellbookGrantPlans = buildSpellbookGrantPlans(
+    spellbookGrantGroups,
+    selectedSpellbookGrants,
+  );
+  const spellbookGrantCount = selectedSpellCount(
+    spellbookGrantGroups,
+    selectedSpellbookGrants,
+  );
+  const spellbookGrantsComplete =
+    !grantsSpellbookSpells || spellbookGrantCount === 2;
 
   const issues = validateLevelUpSelection(preview.plan, preview.selection);
   if (!classAlignmentAllowed) {
@@ -386,7 +420,8 @@ export function LevelUpModal({
   const hasError =
     languageOverBudget ||
     issues.some((i) => i.severity === "error") ||
-    !favoredClassSelectionComplete;
+    !favoredClassSelectionComplete ||
+    !spellbookGrantsComplete;
 
   function commitHpInput(nextInput = hpInput) {
     const parsed = Number(nextInput);
@@ -429,7 +464,7 @@ export function LevelUpModal({
           ? favoredClassSelection
           : undefined,
       },
-      spellSeedPlans,
+      [...spellSeedPlans, ...spellbookGrantPlans],
       languages,
     );
   }
@@ -789,6 +824,21 @@ export function LevelUpModal({
               </li>
             </ul>
           </div>
+          {grantsSpellbookSpells ? (
+            <div className="modal-preview-subsection">
+              <div className="modal-preview-label">Spellbook Advancement</div>
+              <p className="hint">
+                This {resolvedClassName} level grants exactly two free spells of
+                spell levels the character can cast. They are added to the
+                spellbook without changing today’s prepared spells.
+              </p>
+              <SpellbookFreeSpellPicker
+                groups={spellbookGrantGroups}
+                selections={selectedSpellbookGrants}
+                onChange={setSelectedSpellbookGrants}
+              />
+            </div>
+          ) : null}
           {spellSeedGroups.length > 0 ? (
             <div className="modal-preview-subsection">
               <div className="modal-preview-label">Spell Suggestions</div>

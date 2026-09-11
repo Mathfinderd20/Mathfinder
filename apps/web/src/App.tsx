@@ -29,7 +29,7 @@ import { applyWeaponLoadoutsToBuild } from "./weaponLoadouts";
 import { Sheet } from "./components/Sheet";
 import { CombatLogPanel } from "./components/CombatLogPanel";
 import { LevelUpModal } from "./components/LevelUpModal";
-import { applySpellSeedPlans, type SpellSeedPlan } from "./spellSeedPlans";
+import { applySpellSeedPlans, type SpellLibraryPlan } from "./spellSeedPlans";
 import { BuildEditorTab } from "./components/BuildEditorTab";
 import { GearTab } from "./components/GearTab";
 import { RuntimeControlsPanel } from "./components/RuntimeControlsPanel";
@@ -319,13 +319,13 @@ export function App({
 
   function confirmLevelUp(
     selection: LevelUpSelection,
-    spellSeedPlans: SpellSeedPlan[],
+    spellPlans: SpellLibraryPlan[],
     languages?: CharacterBuild["languages"],
   ) {
     setBuild((b) => {
       const next = applyLevelUp(b, selection);
       const withLanguages = languages ? { ...next, languages } : next;
-      return applySpellSeedPlans(withLanguages, spellSeedPlans);
+      return applySpellSeedPlans(withLanguages, spellPlans);
     });
     setCurrentLevel((prev) =>
       clampCurrentLevel(prev + 1, build.levels.length + 1),

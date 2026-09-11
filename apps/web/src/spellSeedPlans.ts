@@ -6,11 +6,15 @@ import type { SpellSuggestionChoice } from "./buildSuggestions";
 
 export type SpellSeedMode = "prepared" | "known";
 
-export interface SpellSeedPlan {
+export interface SpellLibraryPlan {
   classKey: string;
-  mode: SpellSeedMode;
   level: number;
   spells: string[];
+  mode?: SpellSeedMode;
+}
+
+export interface SpellSeedPlan extends SpellLibraryPlan {
+  mode: SpellSeedMode;
 }
 
 export interface SpellSeedGroup extends Omit<SpellSeedPlan, "spells"> {
@@ -116,16 +120,112 @@ export function spellSeedSelectionsAreComplete(
   });
 }
 
+export function classFeaturesIncludeSpellbook(
+  features: Array<{ name: string }> | undefined,
+) {
+  return (
+    features?.some((feature) => /^spellbooks?$/i.test(feature.name.trim())) ??
+    false
+  );
+}
+
+export function buildSpellbookGrantGroups(
+  caster: DerivedSpellcasting,
+  spellChoices: Partial<Record<number, SpellSuggestionChoice[]>>,
+): SpellSeedGroup[] {
+  const classKey = caster.className.trim().toLowerCase();
+  return Object.entries(caster.selectionDiagnostics).flatMap(
+    ([levelText, diagnostic]) => {
+      const level = Number(levelText);
+      if (!diagnostic || level <= 0 || !diagnostic.canCastLevel) return [];
+      const owned = new Set(
+        [
+          ...(caster.librarySpells[level] ?? []),
+          ...(caster.selectedPreparedSpells[level] ?? []),
+          ...(caster.selectedKnownSpells[level] ?? []),
+        ].map((name) => name.trim().toLowerCase()),
+      );
+      const suggestions = spellChoices[level] ?? [];
+      const suggestedByName = new Map(
+        suggestions.map((choice) => [choice.spellName.toLowerCase(), choice]),
+      );
+      const available = diagnostic.availableSpellNames
+        .filter((name) => !owned.has(name.trim().toLowerCase()))
+        .map(
+          (name): SpellSuggestionChoice =>
+            suggestedByName.get(name.toLowerCase()) ?? {
+              spellName: name,
+              reason: `Available ${caster.className} level ${level} spell.`,
+              score: 0,
+            },
+        )
+        .sort(
+          (a, b) => b.score - a.score || a.spellName.localeCompare(b.spellName),
+        );
+      return available.length > 0
+        ? [
+            {
+              classKey,
+              className: caster.className,
+              mode: "prepared" as const,
+              level,
+              capacity: 2,
+              suggestions: available,
+            },
+          ]
+        : [];
+    },
+  );
+}
+
+export function selectedSpellCount(
+  groups: SpellSeedGroup[],
+  selections: SpellSeedSelections,
+) {
+  return groups.reduce(
+    (count, group) =>
+      count +
+      group.suggestions.filter((entry) =>
+        Boolean(
+          selections[
+            spellSeedKey(group.classKey, group.level, entry.spellName)
+          ],
+        ),
+      ).length,
+    0,
+  );
+}
+
+export function buildSpellbookGrantPlans(
+  groups: SpellSeedGroup[],
+  selections: SpellSeedSelections,
+): SpellLibraryPlan[] {
+  return groups.flatMap((group) => {
+    const spells = group.suggestions
+      .filter((entry) =>
+        Boolean(
+          selections[
+            spellSeedKey(group.classKey, group.level, entry.spellName)
+          ],
+        ),
+      )
+      .map((entry) => entry.spellName);
+    return spells.length > 0
+      ? [{ classKey: group.classKey, level: group.level, spells }]
+      : [];
+  });
+}
+
 export function applySpellSeedPlans(
   build: CharacterBuild,
-  plans: SpellSeedPlan[],
+  plans: SpellLibraryPlan[],
 ) {
   return plans.reduce<CharacterBuild>((seeded, plan) => {
     const library = seeded.spellLibrary?.[plan.classKey]?.[plan.level] ?? [];
     const nextLibrary = [...library];
     for (const spellName of plan.spells)
       if (!nextLibrary.includes(spellName)) nextLibrary.push(spellName);
-    return {
+    const withLibrary: CharacterBuild = {
       ...seeded,
       spellLibrary: {
         ...(seeded.spellLibrary ?? {}),
@@ -134,13 +234,18 @@ export function applySpellSeedPlans(
           [plan.level]: nextLibrary,
         },
       },
+    };
+    if (!plan.mode) return withLibrary;
+    return {
+      ...withLibrary,
       spellSelections: {
-        ...(seeded.spellSelections ?? {}),
+        ...(withLibrary.spellSelections ?? {}),
         [plan.classKey]: {
-          ...((seeded.spellSelections ?? {})[plan.classKey] ?? {}),
+          ...((withLibrary.spellSelections ?? {})[plan.classKey] ?? {}),
           [plan.mode]: {
-            ...((seeded.spellSelections ?? {})[plan.classKey]?.[plan.mode] ??
-              {}),
+            ...((withLibrary.spellSelections ?? {})[plan.classKey]?.[
+              plan.mode
+            ] ?? {}),
             [plan.level]: plan.spells,
           },
         },

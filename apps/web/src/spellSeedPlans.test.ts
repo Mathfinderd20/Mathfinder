@@ -5,8 +5,12 @@ import type {
 } from "@mathfinder/rules-engine";
 import {
   applySpellSeedPlans,
+  buildSpellbookGrantGroups,
+  buildSpellbookGrantPlans,
   buildSpellSeedGroups,
   buildSpellSeedPlans,
+  classFeaturesIncludeSpellbook,
+  selectedSpellCount,
   spellSeedKey,
   spellSeedSelectionsAreComplete,
 } from "./spellSeedPlans";
@@ -18,9 +22,20 @@ function caster(
   return {
     className,
     castingType,
+    librarySpells: {},
+    selectedKnownSpells: {},
+    selectedPreparedSpells: {},
     selectionDiagnostics: {
-      0: { capacity: 2 },
-      1: { capacity: 1 },
+      0: {
+        capacity: 2,
+        canCastLevel: true,
+        availableSpellNames: ["Detect Magic", "Light"],
+      },
+      1: {
+        capacity: 1,
+        canCastLevel: true,
+        availableSpellNames: ["Burning Hands", "Magic Missile"],
+      },
     },
   } as unknown as DerivedSpellcasting;
 }
@@ -31,7 +46,10 @@ const choices = {
       { spellName: "Detect Magic", reason: "Useful", score: 80 },
       { spellName: "Light", reason: "Useful", score: 70 },
     ],
-    1: [{ spellName: "Magic Missile", reason: "Reliable", score: 90 }],
+    1: [
+      { spellName: "Magic Missile", reason: "Reliable", score: 90 },
+      { spellName: "Burning Hands", reason: "Useful", score: 80 },
+    ],
   },
   bard: {
     0: [{ spellName: "Dancing Lights", reason: "Useful", score: 70 }],
@@ -96,5 +114,46 @@ describe("initial spell seed plans", () => {
     expect(build.spellSelections?.sorcerer?.known?.[1]).toEqual([
       "Magic Missile",
     ]);
+  });
+
+  it("identifies spellbook classes from their class feature", () => {
+    expect(classFeaturesIncludeSpellbook([{ name: "Spellbooks" }])).toBe(true);
+    expect(classFeaturesIncludeSpellbook([{ name: "Spells" }])).toBe(false);
+    expect(classFeaturesIncludeSpellbook(undefined)).toBe(false);
+  });
+
+  it("grants two selected non-cantrip spells without preparing them", () => {
+    const groups = buildSpellbookGrantGroups(
+      caster("Wizard", "prepared"),
+      choices.wizard,
+    );
+    const selections = {
+      [spellSeedKey("wizard", 1, "Magic Missile")]: true,
+      [spellSeedKey("wizard", 1, "Burning Hands")]: true,
+    } as const;
+    const plans = buildSpellbookGrantPlans(groups, selections);
+    const build = applySpellSeedPlans(
+      {
+        spellLibrary: { wizard: { 1: ["Shield"] } },
+        spellSelections: { wizard: { prepared: { 1: ["Shield"] } } },
+      } as unknown as CharacterBuild,
+      plans,
+    );
+
+    expect(groups.map((group) => group.level)).toEqual([1]);
+    expect(selectedSpellCount(groups, selections)).toBe(2);
+    expect(plans).toEqual([
+      {
+        classKey: "wizard",
+        level: 1,
+        spells: ["Magic Missile", "Burning Hands"],
+      },
+    ]);
+    expect(build.spellLibrary?.wizard?.[1]).toEqual([
+      "Shield",
+      "Magic Missile",
+      "Burning Hands",
+    ]);
+    expect(build.spellSelections?.wizard?.prepared?.[1]).toEqual(["Shield"]);
   });
 });
