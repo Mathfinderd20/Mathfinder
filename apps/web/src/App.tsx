@@ -28,10 +28,8 @@ import { useRuntimeState } from "./useRuntimeState";
 import { applyWeaponLoadoutsToBuild } from "./weaponLoadouts";
 import { Sheet } from "./components/Sheet";
 import { CombatLogPanel } from "./components/CombatLogPanel";
-import {
-  LevelUpModal,
-  type LevelUpSpellSeedPlan,
-} from "./components/LevelUpModal";
+import { LevelUpModal } from "./components/LevelUpModal";
+import { applySpellSeedPlans, type SpellSeedPlan } from "./spellSeedPlans";
 import { BuildEditorTab } from "./components/BuildEditorTab";
 import { GearTab } from "./components/GearTab";
 import { RuntimeControlsPanel } from "./components/RuntimeControlsPanel";
@@ -321,42 +319,13 @@ export function App({
 
   function confirmLevelUp(
     selection: LevelUpSelection,
-    spellSeedPlans: LevelUpSpellSeedPlan[],
+    spellSeedPlans: SpellSeedPlan[],
     languages?: CharacterBuild["languages"],
   ) {
     setBuild((b) => {
       const next = applyLevelUp(b, selection);
-      let seeded = languages ? { ...next, languages } : next;
-      for (const plan of spellSeedPlans) {
-        const library =
-          seeded.spellLibrary?.[plan.classKey]?.[plan.level] ?? [];
-        const nextLibrary = [...library];
-        for (const spellName of plan.spells)
-          if (!nextLibrary.includes(spellName)) nextLibrary.push(spellName);
-        seeded = {
-          ...seeded,
-          spellLibrary: {
-            ...(seeded.spellLibrary ?? {}),
-            [plan.classKey]: {
-              ...((seeded.spellLibrary ?? {})[plan.classKey] ?? {}),
-              [plan.level]: nextLibrary,
-            },
-          },
-          spellSelections: {
-            ...(seeded.spellSelections ?? {}),
-            [plan.classKey]: {
-              ...((seeded.spellSelections ?? {})[plan.classKey] ?? {}),
-              [plan.mode]: {
-                ...((seeded.spellSelections ?? {})[plan.classKey]?.[
-                  plan.mode
-                ] ?? {}),
-                [plan.level]: plan.spells,
-              },
-            },
-          },
-        };
-      }
-      return seeded;
+      const withLanguages = languages ? { ...next, languages } : next;
+      return applySpellSeedPlans(withLanguages, spellSeedPlans);
     });
     setCurrentLevel((prev) =>
       clampCurrentLevel(prev + 1, build.levels.length + 1),

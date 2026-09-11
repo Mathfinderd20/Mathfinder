@@ -19,6 +19,7 @@ import {
 } from "@mathfinder/rules-engine";
 import {
   RUNTIME_ARCHETYPES,
+  RUNTIME_BUILD_GUIDES,
   RUNTIME_CLASSES,
   RUNTIME_CLASS_FEATURES,
   RUNTIME_CLASS_OPTIONS,
@@ -27,6 +28,7 @@ import {
   RUNTIME_SPELLS,
   RUNTIME_WEAPONS,
 } from "../content";
+import { buildSuggestions } from "../buildSuggestions";
 import {
   buildFeatBaseEligibilityOptions,
   collectFeatWeaponNames,
@@ -51,6 +53,14 @@ import {
   parseAbilityScoreInput,
 } from "../abilityScoreInput";
 import type { CharacterDetails } from "../features/characters/characterRepository";
+import { SpellSeedPicker } from "./SpellSeedPicker";
+import {
+  applySpellSeedPlans,
+  buildSpellSeedGroups,
+  buildSpellSeedPlans,
+  spellSeedSelectionsAreComplete,
+  type SpellSeedSelections,
+} from "../spellSeedPlans";
 
 const ABILITIES: AbilityKey[] = ["str", "dex", "con", "int", "wis", "cha"];
 const DEFAULT_SCORE_INPUTS: Record<AbilityKey, string> = {
@@ -148,6 +158,8 @@ export function CharacterCreationModal({
   const [favoredClass, setFavoredClass] = useState<string | undefined>("hp");
   const [campaignTraits, setCampaignTraits] = useState<string[]>([]);
   const [favoredClassSelection, setFavoredClassSelection] = useState<string>();
+  const [selectedSpellSeeds, setSelectedSpellSeeds] =
+    useState<SpellSeedSelections>({});
 
   const race =
     RUNTIME_RACE_OPTIONS.find(([key]) => key === raceKey)?.[1] ??
@@ -220,6 +232,37 @@ export function CharacterCreationModal({
           )
         : undefined,
     [draftBuild],
+  );
+  const creationSuggestionBundle = useMemo(
+    () =>
+      draftBuild && previewSheet
+        ? buildSuggestions({
+            build: draftBuild,
+            currentLevel: 1,
+            sheetSpellcasting: previewSheet.spellcasting,
+            classes: RUNTIME_CLASSES,
+            feats: RUNTIME_FEATS,
+            spells: RUNTIME_SPELLS,
+            classFeatures: RUNTIME_CLASS_FEATURES,
+            archetypes: RUNTIME_ARCHETYPES,
+            buildGuides: RUNTIME_BUILD_GUIDES,
+            plannerLevelIndexes: [],
+          })
+        : undefined,
+    [draftBuild, previewSheet],
+  );
+  const initialSpellSeedGroups = useMemo(
+    () =>
+      buildSpellSeedGroups(
+        previewSheet?.spellcasting ?? [],
+        creationSuggestionBundle?.spellChoices ?? {},
+        { fullCastersOnly: true },
+      ),
+    [creationSuggestionBundle?.spellChoices, previewSheet?.spellcasting],
+  );
+  const initialSpellSeedPlans = buildSpellSeedPlans(
+    initialSpellSeedGroups,
+    selectedSpellSeeds,
   );
   const featSlots = useMemo(
     () => (draftBuild ? plannedFeatSlotsForLevel(draftBuild, 0) : []),
@@ -312,6 +355,10 @@ export function CharacterCreationModal({
     favoredClass,
     favoredClassSelection,
   );
+  const initialSpellSelectionsComplete = spellSeedSelectionsAreComplete(
+    initialSpellSeedGroups,
+    selectedSpellSeeds,
+  );
   const canConfirm =
     !!draftBuild &&
     (languages.starting?.length ?? 0) <=
@@ -321,7 +368,8 @@ export function CharacterCreationModal({
     classAlignmentAllowed &&
     remainingSkills >= 0 &&
     !missingRequiredFeat &&
-    favoredClassSelectionComplete;
+    favoredClassSelectionComplete &&
+    initialSpellSelectionsComplete;
 
   function updateAbility(ability: AbilityKey, rawValue: string) {
     setAbilityScoreInputs((previous) => ({
@@ -561,6 +609,23 @@ export function CharacterCreationModal({
           />
         </div>
 
+        {initialSpellSeedGroups.length > 0 ? (
+          <section className="creation-section">
+            <h3>Initial Spells</h3>
+            <p className="hint">
+              Choose the spells this full caster starts with. These populate the
+              character’s spell library and initial{" "}
+              {initialSpellSeedGroups[0]?.mode} choices.
+            </p>
+            <SpellSeedPicker
+              groups={initialSpellSeedGroups}
+              selections={selectedSpellSeeds}
+              onChange={setSelectedSpellSeeds}
+              required
+            />
+          </section>
+        ) : null}
+
         <div className="field">
           <span>Campaign Traits · optional</span>
           <p>
@@ -679,7 +744,10 @@ export function CharacterCreationModal({
                 : undefined;
               if (finalBuild)
                 onConfirm(
-                  { ...finalBuild, languages },
+                  applySpellSeedPlans(
+                    { ...finalBuild, languages },
+                    initialSpellSeedPlans,
+                  ),
                   {
                     campaignTraits: campaignTraits
                       .map((trait) => trait.trim())
