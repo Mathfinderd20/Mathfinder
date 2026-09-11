@@ -1,6 +1,8 @@
 import { useState } from "react";
 import "../character-references.css";
 import {
+  CANONICAL_LANGUAGES,
+  SELECTABLE_CANONICAL_LANGUAGES,
   deriveLanguages,
   uniqueLanguages,
   type CharacterBuild,
@@ -8,7 +10,95 @@ import {
 import { CharacterDialog } from "./CharacterDialog";
 
 type Choices = NonNullable<CharacterBuild["languages"]>;
-const parse = (value: string) => uniqueLanguages(value.split(/[,;\n]/));
+
+function LanguageSlots({
+  category,
+  label,
+  values,
+  capacity,
+  blocked,
+  allowRestricted = false,
+  onChange,
+}: {
+  category: "starting" | "learned" | "additional";
+  label: string;
+  values: string[];
+  capacity?: number;
+  blocked: Set<string>;
+  allowRestricted?: boolean;
+  onChange: (values: string[]) => void;
+}) {
+  const options = allowRestricted
+    ? CANONICAL_LANGUAGES
+    : SELECTABLE_CANONICAL_LANGUAGES;
+  const slotCount =
+    capacity === undefined
+      ? Math.max(1, values.length + 1)
+      : Math.max(capacity, values.length);
+  return (
+    <fieldset className="field language-choice-group">
+      <legend>
+        {label}
+        {capacity !== undefined ? (
+          <small className={values.length > capacity ? "form-error" : "hint"}>
+            {" "}
+            {values.length}/{capacity}
+          </small>
+        ) : null}
+      </legend>
+      {slotCount === 0 ? (
+        <span className="hint">No choices available.</span>
+      ) : (
+        Array.from({ length: slotCount }, (_, index) => {
+          const current = values[index] ?? "";
+          const canonicalCurrent = CANONICAL_LANGUAGES.find(
+            (language) => language.toLowerCase() === current.toLowerCase(),
+          );
+          const availableCurrent = options.find(
+            (language) => language.toLowerCase() === current.toLowerCase(),
+          );
+          return (
+            <select
+              key={`${category}-${index}`}
+              aria-label={`${label} choice ${index + 1}`}
+              value={availableCurrent ?? current}
+              onChange={(event) => {
+                const next = [...values];
+                if (event.target.value) next[index] = event.target.value;
+                else next.splice(index, 1);
+                onChange(uniqueLanguages(next));
+              }}
+            >
+              <option value="">Choose a language</option>
+              {current && !availableCurrent ? (
+                <option value={current}>
+                  {current} ({canonicalCurrent ? "restricted" : "legacy"} value)
+                </option>
+              ) : null}
+              {options.map((language) => (
+                <option
+                  key={language}
+                  value={language}
+                  disabled={
+                    language.toLowerCase() !== current.toLowerCase() &&
+                    (blocked.has(language.toLowerCase()) ||
+                      values.some(
+                        (value) =>
+                          value.toLowerCase() === language.toLowerCase(),
+                      ))
+                  }
+                >
+                  {language}
+                </option>
+              ))}
+            </select>
+          );
+        })
+      )}
+    </fieldset>
+  );
+}
+
 export function LanguageFields({
   build,
   value,
@@ -19,56 +109,58 @@ export function LanguageFields({
   onChange: (value: Choices) => void;
 }) {
   const rules = deriveLanguages(build);
-  const [text, setText] = useState({
-    starting: value.starting?.join(", ") ?? "",
-    learned: value.learned?.join(", ") ?? "",
-    additional: value.additional?.join(", ") ?? "",
-  });
+  const starting = value.starting ?? [];
+  const learned = value.learned ?? [];
+  const additional = value.additional ?? [];
+  const automatic = new Set(
+    rules.automatic.map((language) => language.toLowerCase()),
+  );
+
+  function update(category: keyof Choices, languages: string[]) {
+    onChange({ ...value, [category]: languages });
+  }
+
+  function blocked(except: keyof Choices) {
+    const selected = [
+      ...(except === "starting" ? [] : starting),
+      ...(except === "learned" ? [] : learned),
+      ...(except === "additional" ? [] : additional),
+    ];
+    return new Set([
+      ...automatic,
+      ...selected.map((language) => language.toLowerCase()),
+    ]);
+  }
+
   return (
     <div className="language-fields">
       <p className="language-automatic">
         {rules.automatic.join(" · ") || "No ancestry languages recorded"}
       </p>
-      {(["starting", "learned", "additional"] as const).map((key) => {
-        const capacity =
-          key === "starting"
-            ? rules.startingCapacity
-            : key === "learned"
-              ? rules.learnedCapacity
-              : undefined;
-        const count = parse(text[key]).length;
-        return (
-          <label className="field" key={key}>
-            <span>
-              {key === "starting"
-                ? "Starting languages"
-                : key === "learned"
-                  ? "Learned languages"
-                  : "Additional / GM-granted languages"}
-              {capacity !== undefined ? (
-                <small className={count > capacity ? "form-error" : "hint"}>
-                  {" "}
-                  {count}/{capacity}
-                </small>
-              ) : null}
-            </span>
-            <textarea
-              rows={2}
-              placeholder="Language names, separated by commas"
-              value={text[key]}
-              onChange={(event) => {
-                const next = { ...text, [key]: event.target.value };
-                setText(next);
-                onChange({
-                  starting: parse(next.starting),
-                  learned: parse(next.learned),
-                  additional: parse(next.additional),
-                });
-              }}
-            />
-          </label>
-        );
-      })}
+      <LanguageSlots
+        category="starting"
+        label="Starting languages"
+        values={starting}
+        capacity={rules.startingCapacity}
+        blocked={blocked("starting")}
+        onChange={(languages) => update("starting", languages)}
+      />
+      <LanguageSlots
+        category="learned"
+        label="Learned languages"
+        values={learned}
+        capacity={rules.learnedCapacity}
+        blocked={blocked("learned")}
+        onChange={(languages) => update("learned", languages)}
+      />
+      <LanguageSlots
+        category="additional"
+        label="Additional / GM-granted languages"
+        values={additional}
+        blocked={blocked("additional")}
+        allowRestricted
+        onChange={(languages) => update("additional", languages)}
+      />
     </div>
   );
 }

@@ -1,6 +1,36 @@
 import { resolveRaceChoice } from "./build/character";
 import type { CharacterBuild } from "./build/types";
 
+export const CANONICAL_LANGUAGES = [
+  "Abyssal",
+  "Aklo",
+  "Aquan",
+  "Auran",
+  "Celestial",
+  "Common",
+  "Draconic",
+  "Druidic",
+  "Dwarven",
+  "Elven",
+  "Giant",
+  "Gnoll",
+  "Gnome",
+  "Goblin",
+  "Halfling",
+  "Ignan",
+  "Infernal",
+  "Necril",
+  "Orc",
+  "Sylvan",
+  "Tengu",
+  "Terran",
+  "Undercommon",
+] as const;
+
+export const SELECTABLE_CANONICAL_LANGUAGES = CANONICAL_LANGUAGES.filter(
+  (language) => language !== "Druidic",
+);
+
 const ancestryLanguages: Record<string, string[]> = {
   human: ["Common"],
   elf: ["Common", "Elven"],

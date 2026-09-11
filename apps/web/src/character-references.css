@@ -132,7 +132,18 @@
 .character-languages h4 {
   margin: 0;
 }
-.language-fields textarea {
+.language-choice-group {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.language-choice-group legend {
+  margin-bottom: 6px;
+}
+.language-choice-group select {
   width: 100%;
   box-sizing: border-box;
 }
