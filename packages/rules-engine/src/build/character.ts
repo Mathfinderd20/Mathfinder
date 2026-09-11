@@ -2454,6 +2454,7 @@ export function createPreLevelBuild(
     feats: selection.feats?.filter((feat) => feat.trim().length > 0),
     abilityIncrease: selection.abilityIncrease,
     favoredClass: selection.favoredClass,
+    favoredClassSelection: selection.favoredClassSelection,
   };
   return {
     plan,
@@ -2474,6 +2475,7 @@ export function applyLevelUp(
     feats: selection.feats,
     abilityIncrease: selection.abilityIncrease,
     favoredClass: selection.favoredClass,
+    favoredClassSelection: selection.favoredClassSelection,
   });
 }
 

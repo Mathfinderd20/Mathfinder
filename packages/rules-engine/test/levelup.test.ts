@@ -61,6 +61,21 @@ describe("planLevelUp", () => {
     expect(planLevelUp(l2, "Barbarian").grantsFeat).toBe(true); // -> level 3
   });
 
+  it("preserves the detail chosen for a parameterized favored-class bonus", () => {
+    const build = applyLevelUp(grukk(), {
+      className: "Barbarian",
+      hitPointRoll: 7,
+      skillRanks: {},
+      favoredClass: "terrain-magic",
+      favoredClassSelection: "Forest",
+    });
+
+    expect(build.levels[1]).toMatchObject({
+      favoredClass: "terrain-magic",
+      favoredClassSelection: "Forest",
+    });
+  });
+
   it("grants an ability increase every 4th level", () => {
     let build = grukk();
     for (let i = 0; i < 2; i++) {

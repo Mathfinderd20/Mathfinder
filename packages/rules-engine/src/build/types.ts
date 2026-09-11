@@ -48,6 +48,7 @@ export interface LevelEntry {
   features?: string[];
   abilityIncrease?: AbilityKey;
   favoredClass?: string;
+  favoredClassSelection?: string;
   modifiers?: Modifier[];
 }
 
@@ -228,6 +229,7 @@ export interface LevelUpSelection {
   feats?: string[];
   abilityIncrease?: AbilityKey;
   favoredClass?: string;
+  favoredClassSelection?: string;
 }
 
 export interface PreLevelBuildSelection {
@@ -237,6 +239,7 @@ export interface PreLevelBuildSelection {
   feats?: string[];
   abilityIncrease?: AbilityKey;
   favoredClass?: string;
+  favoredClassSelection?: string;
 }
 
 export interface PreLevelBuildResult {

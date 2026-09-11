@@ -202,6 +202,9 @@ export function LevelProgressionPlanner({
                 build.race,
                 levelClassName,
               ).filter((option) => favoredClassEligible || !option.value);
+              const favoredClassDetail = favoredClassBonusOptions.find(
+                (option) => option.value === level?.favoredClass,
+              )?.detail;
               const hitDie =
                 classOptions.find(
                   (option) =>
@@ -432,13 +435,18 @@ export function LevelProgressionPlanner({
                               ? "Favored-class bonus"
                               : `${level.className} is not the build's favored class.`
                           }
-                          onChange={(e) =>
+                          onChange={(e) => {
                             onUpdateLevelField(
                               index,
                               "favoredClass",
                               e.target.value || undefined,
-                            )
-                          }
+                            );
+                            onUpdateLevelField(
+                              index,
+                              "favoredClassSelection",
+                              undefined,
+                            );
+                          }}
                         >
                           {favoredClassBonusOptions.map((option) => (
                             <option
@@ -449,6 +457,39 @@ export function LevelProgressionPlanner({
                             </option>
                           ))}
                         </select>
+                        {favoredClassDetail?.control === "select" ? (
+                          <select
+                            aria-label={favoredClassDetail.label}
+                            value={level.favoredClassSelection ?? ""}
+                            onChange={(event) =>
+                              onUpdateLevelField(
+                                index,
+                                "favoredClassSelection",
+                                event.target.value || undefined,
+                              )
+                            }
+                          >
+                            <option value="">Choose terrain</option>
+                            {favoredClassDetail.options?.map((option) => (
+                              <option key={option} value={option}>
+                                {option}
+                              </option>
+                            ))}
+                          </select>
+                        ) : favoredClassDetail ? (
+                          <input
+                            aria-label={favoredClassDetail.label}
+                            value={level.favoredClassSelection ?? ""}
+                            placeholder="Bloodline power"
+                            onChange={(event) =>
+                              onUpdateLevelField(
+                                index,
+                                "favoredClassSelection",
+                                event.target.value || undefined,
+                              )
+                            }
+                          />
+                        ) : null}
                       </>
                     ) : (
                       <span className="planner-empty">—</span>

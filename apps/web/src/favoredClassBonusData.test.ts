@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildFavoredClassBonusOptions,
+  favoredClassBonusDetailIsComplete,
   favoredClassBonusCoverage,
 } from "./favoredClassBonusData";
 
@@ -30,6 +31,41 @@ describe("favored-class bonus options", () => {
         (option) => option.value,
       ),
     ).not.toContain("orc-fighter-death-threshold");
+  });
+
+  it("adds required controls for parameterized sorcerer bonuses", () => {
+    const sorcererRace = {
+      ...race,
+      favoredClassBonuses: [
+        {
+          id: "terrain",
+          className: "Sorcerer",
+          label: "Terrain magic",
+          description:
+            "Choose a terrain type from the ranger’s favored terrain list.",
+        },
+        {
+          id: "bloodline",
+          className: "Sorcerer",
+          label: "Bloodline uses",
+          description: "Select one bloodline power at 1st level.",
+        },
+      ],
+    };
+    const options = buildFavoredClassBonusOptions(sorcererRace, "Sorcerer");
+
+    expect(
+      options.find((option) => option.value === "terrain")?.detail,
+    ).toMatchObject({ control: "select", label: "Chosen favored terrain" });
+    expect(
+      options.find((option) => option.value === "bloodline")?.detail,
+    ).toEqual({ control: "text", label: "Chosen bloodline power" });
+    expect(
+      favoredClassBonusDetailIsComplete(options, "terrain", undefined),
+    ).toBe(false);
+    expect(
+      favoredClassBonusDetailIsComplete(options, "terrain", "Forest"),
+    ).toBe(true);
   });
 
   it("reports ancestry-specific coverage honestly", () => {
