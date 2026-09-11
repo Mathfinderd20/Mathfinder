@@ -35,6 +35,8 @@ Before deployment:
 3. Run `npx.cmd supabase db push --linked --dry-run` and reconcile any unexpected pending or remote-only migrations before proceeding.
 4. With approval for the hosted database change, apply the reviewed migration through the deployment process in `DEPLOYMENT.md`, verify migration history, and then release the dependent frontend.
 
-Hosted staging verification completed on 2026-09-11 after explicitly linking project `pkupqzdnefnjwndwzhdr` (`DIreSheets Staging`). All eleven prior migration versions match the local history, with no remote-only versions. `supabase db push --linked --dry-run` lists only `20260911010000_guided_creation_traits.sql`, with no seeds or roles to apply. The migration remains unapplied pending approval for the hosted database change.
+Hosted staging migration completed with user approval on 2026-09-11 against project `pkupqzdnefnjwndwzhdr` (`DIreSheets Staging`). All eleven prior migration versions matched the local history, and the pre-apply dry run listed only `20260911010000_guided_creation_traits.sql`. After applying it, all twelve versions match and a repeat dry run reports the remote database is up to date.
 
-The local preview uses staging data; campaign-trait saves require the hosted migration. This PR does not apply hosted migrations or deploy or promote production.
+Read-only hosted checks confirmed valid traits are accepted, duplicate traits are rejected, anonymous setter execution is denied, authenticated execution is granted, and the security-definer setter retains the full validated rules document. These checks did not modify campaign data.
+
+The local preview uses staging data and can now save campaign-trait settings. The hosted frontend has not been deployed by this integration, and production remains unchanged.
