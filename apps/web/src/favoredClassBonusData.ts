@@ -8,6 +8,43 @@ export interface FavoredClassBonusOption {
   label: string;
   description: string;
   disabled?: boolean;
+  detail?: FavoredClassBonusDetail;
+}
+
+export interface FavoredClassBonusDetail {
+  label: string;
+  control: "text" | "select";
+  options?: string[];
+}
+
+const FAVORED_TERRAINS = [
+  "Cold",
+  "Desert",
+  "Forest",
+  "Jungle",
+  "Mountain",
+  "Plains",
+  "Planes (choose one)",
+  "Swamp",
+  "Underground",
+  "Urban",
+  "Water",
+];
+
+function detailForDescription(
+  description: string,
+): FavoredClassBonusDetail | undefined {
+  if (
+    /terrain type from the ranger['’]s favored terrain list/i.test(description)
+  )
+    return {
+      label: "Chosen favored terrain",
+      control: "select",
+      options: FAVORED_TERRAINS,
+    };
+  if (/\b(?:select|choose) (?:one )?bloodline power\b/i.test(description))
+    return { label: "Chosen bloodline power", control: "text" };
+  return undefined;
 }
 
 export function buildFavoredClassBonusOptions(
@@ -30,8 +67,18 @@ export function buildFavoredClassBonusOptions(
       value: bonus.id,
       label: bonus.label,
       description: bonus.description,
+      detail: detailForDescription(bonus.description),
     })),
   ];
+}
+
+export function favoredClassBonusDetailIsComplete(
+  options: FavoredClassBonusOption[],
+  value: string | undefined,
+  detailValue: string | undefined,
+) {
+  const selected = options.find((option) => option.value === value);
+  return !selected?.detail || !!detailValue?.trim();
 }
 
 export function favoredClassBonusCoverage(

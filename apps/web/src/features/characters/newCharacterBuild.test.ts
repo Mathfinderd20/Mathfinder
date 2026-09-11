@@ -30,6 +30,7 @@ describe("createFreshCharacterBuild", () => {
       skillRanks: { acrobatics: 1, stealth: 1 },
       feats: ["Weapon Finesse"],
       favoredClass: "skill",
+      favoredClassSelection: "Forest",
       ignoreAlignmentRestrictions: true,
       ignoreEncumbrance: true,
     });
@@ -49,6 +50,7 @@ describe("createFreshCharacterBuild", () => {
         skillRanks: { acrobatics: 1, stealth: 1 },
         feats: ["Weapon Finesse"],
         favoredClass: "skill",
+        favoredClassSelection: "Forest",
       }),
     ]);
     expect(build.weapons).toEqual([]);

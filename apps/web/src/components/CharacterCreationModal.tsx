@@ -32,7 +32,10 @@ import {
   collectFeatWeaponNames,
 } from "../featOptionData";
 import { plannedFeatSlotsForLevel } from "../featSlots";
-import { buildFavoredClassBonusOptions } from "../favoredClassBonusData";
+import {
+  buildFavoredClassBonusOptions,
+  favoredClassBonusDetailIsComplete,
+} from "../favoredClassBonusData";
 import { createFreshCharacterBuild } from "../features/characters/newCharacterBuild";
 import { AlignmentPicker } from "./AlignmentPicker";
 import {
@@ -41,6 +44,7 @@ import {
   type CharacterCreationRules,
 } from "@mathfinder/rules-engine";
 import { FeatSelectionPicker } from "./FeatSelectionPicker";
+import { FavoredClassBonusPicker } from "./FavoredClassBonusPicker";
 import {
   MAX_ABILITY_SCORE,
   MIN_ABILITY_SCORE,
@@ -143,6 +147,7 @@ export function CharacterCreationModal({
   const [raceBonusFeat, setRaceBonusFeat] = useState("");
   const [favoredClass, setFavoredClass] = useState<string | undefined>("hp");
   const [campaignTraits, setCampaignTraits] = useState<string[]>([]);
+  const [favoredClassSelection, setFavoredClassSelection] = useState<string>();
 
   const race =
     RUNTIME_RACE_OPTIONS.find(([key]) => key === raceKey)?.[1] ??
@@ -150,9 +155,9 @@ export function CharacterCreationModal({
   const classKey = classKeyForName(className);
   const classDefinition = RUNTIME_CLASSES[classKey];
   const resolvedRace = race ?? RUNTIME_RACE_OPTIONS[0]![1];
-  const creationFavoredClassBonusOptions = buildFavoredClassBonusOptions(
-    resolvedRace,
-    className,
+  const creationFavoredClassBonusOptions = useMemo(
+    () => buildFavoredClassBonusOptions(resolvedRace, className),
+    [className, resolvedRace],
   );
   const hasFlexibleAbility = !!race?.choiceOptions?.flexibleAbilityBonus;
   const hasRaceBonusFeat = !!race?.choiceOptions?.bonusFeat;
@@ -172,6 +177,7 @@ export function CharacterCreationModal({
         ),
         feats: selectedFeats,
         favoredClass,
+        favoredClassSelection,
         ignoreAlignmentRestrictions,
         ignoreEncumbrance,
       });
@@ -181,6 +187,7 @@ export function CharacterCreationModal({
       characterName,
       classDefinition,
       favoredClass,
+      favoredClassSelection,
       flexibleAbility,
       hasFlexibleAbility,
       hasRaceBonusFeat,
@@ -247,6 +254,17 @@ export function CharacterCreationModal({
     if (!hasRaceBonusFeat) setRaceBonusFeat("");
   }, [hasRaceBonusFeat]);
 
+  useEffect(() => {
+    if (
+      !creationFavoredClassBonusOptions.some(
+        (option) => option.value === (favoredClass ?? ""),
+      )
+    ) {
+      setFavoredClass("hp");
+      setFavoredClassSelection(undefined);
+    }
+  }, [creationFavoredClassBonusOptions, favoredClass]);
+
   const availableWeaponNames = useMemo(
     () =>
       draftBuild ? collectFeatWeaponNames(draftBuild, RUNTIME_WEAPONS) : [],
@@ -289,6 +307,11 @@ export function CharacterCreationModal({
   const missingRequiredFeat =
     selectedFeats.filter(Boolean).length < featSlots.length ||
     (hasRaceBonusFeat && !raceBonusFeat);
+  const favoredClassSelectionComplete = favoredClassBonusDetailIsComplete(
+    creationFavoredClassBonusOptions,
+    favoredClass,
+    favoredClassSelection,
+  );
   const canConfirm =
     !!draftBuild &&
     (languages.starting?.length ?? 0) <=
@@ -297,7 +320,8 @@ export function CharacterCreationModal({
       deriveLanguages(draftBuild).learnedCapacity &&
     classAlignmentAllowed &&
     remainingSkills >= 0 &&
-    !missingRequiredFeat;
+    !missingRequiredFeat &&
+    favoredClassSelectionComplete;
 
   function updateAbility(ability: AbilityKey, rawValue: string) {
     setAbilityScoreInputs((previous) => ({
@@ -527,26 +551,14 @@ export function CharacterCreationModal({
 
         <div className="field">
           <span>Favored class bonus</span>
-          <div className="ability-picker">
-            {creationFavoredClassBonusOptions.map((option) => {
-              const value = option.value || undefined;
-              return (
-                <label
-                  className={`pick ${favoredClass === value ? "on" : ""}`}
-                  key={option.value || "none"}
-                  title={option.description}
-                >
-                  <input
-                    type="radio"
-                    name="creation-favored-class"
-                    checked={favoredClass === value}
-                    onChange={() => setFavoredClass(value)}
-                  />
-                  {option.label}
-                </label>
-              );
-            })}
-          </div>
+          <FavoredClassBonusPicker
+            options={creationFavoredClassBonusOptions}
+            value={favoredClass}
+            detailValue={favoredClassSelection}
+            radioName="creation-favored-class"
+            onChange={setFavoredClass}
+            onDetailChange={setFavoredClassSelection}
+          />
         </div>
 
         <div className="field">

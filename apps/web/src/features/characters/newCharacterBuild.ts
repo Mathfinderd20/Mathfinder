@@ -15,6 +15,7 @@ interface FreshCharacterChoices {
   skillRanks?: Partial<Record<SkillKey, number>>;
   feats?: string[];
   favoredClass?: string;
+  favoredClassSelection?: string;
   ignoreAlignmentRestrictions?: boolean;
   ignoreEncumbrance?: boolean;
 }
@@ -45,6 +46,7 @@ export function createFreshCharacterBuild(
         skillRanks: choices.skillRanks ?? {},
         feats: choices.feats ?? [],
         favoredClass: choices.favoredClass,
+        favoredClassSelection: choices.favoredClassSelection,
         modifiers: [],
       },
     ],

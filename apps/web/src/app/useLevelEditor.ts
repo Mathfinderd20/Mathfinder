@@ -41,6 +41,12 @@ export function levelAfterClassChange(
       availableBonuses.has(level.favoredClass)
         ? level.favoredClass
         : undefined,
+    favoredClassSelection:
+      favoredClassEligible &&
+      level.favoredClass !== undefined &&
+      availableBonuses.has(level.favoredClass)
+        ? level.favoredClassSelection
+        : undefined,
   };
   const previewLevels = previous.levels.map((entry, previewIndex) =>
     previewIndex === levelIndex ? changedLevel : entry,

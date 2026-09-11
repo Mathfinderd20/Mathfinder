@@ -37,6 +37,7 @@ import { spellTitle } from "../rulesText";
 import { featSlotTag } from "../featSlots";
 import {
   buildFavoredClassBonusOptions,
+  favoredClassBonusDetailIsComplete,
   favoredClassBonusLabel,
 } from "../favoredClassBonusData";
 import {
@@ -45,6 +46,7 @@ import {
   normalizeSelectedFeatSelection,
 } from "../featOptionData";
 import { FeatSelectionPicker } from "./FeatSelectionPicker";
+import { FavoredClassBonusPicker } from "./FavoredClassBonusPicker";
 import { Tooltip } from "./Tooltip";
 
 const ABILITIES: AbilityKey[] = ["str", "dex", "con", "int", "wis", "cha"];
@@ -183,6 +185,7 @@ export function LevelUpModal({
     AbilityKey | undefined
   >();
   const [favoredClass, setFavoredClass] = useState<string>();
+  const [favoredClassSelection, setFavoredClassSelection] = useState<string>();
   const [selectedSpellSeeds, setSelectedSpellSeeds] = useState<
     Record<string, true>
   >({});
@@ -220,6 +223,9 @@ export function LevelUpModal({
           skillRanks: Object.fromEntries([...skills].map((k) => [k, 1])),
           abilityIncrease,
           favoredClass: favoredClassEligible ? favoredClass : undefined,
+          favoredClassSelection: favoredClassEligible
+            ? favoredClassSelection
+            : undefined,
           feats: selectedFeats.map((feat) => feat.trim()).filter(Boolean),
         },
         RUNTIME_CLASSES,
@@ -229,6 +235,7 @@ export function LevelUpModal({
       abilityIncrease,
       build,
       favoredClass,
+      favoredClassSelection,
       favoredClassEligible,
       hp,
       selectedFeats,
@@ -304,9 +311,14 @@ export function LevelUpModal({
   }, [className, plan.averageHitPoints]);
 
   useEffect(() => {
-    if (!favoredClassEligible && favoredClass !== undefined)
+    if (
+      !favoredClassEligible &&
+      (favoredClass !== undefined || favoredClassSelection !== undefined)
+    ) {
       setFavoredClass(undefined);
-  }, [favoredClass, favoredClassEligible]);
+      setFavoredClassSelection(undefined);
+    }
+  }, [favoredClass, favoredClassEligible, favoredClassSelection]);
 
   useEffect(() => {
     setSelectedFeats((prev) => prev.slice(0, plan.featSlots.length));
@@ -417,8 +429,15 @@ export function LevelUpModal({
   const languageOverBudget =
     (languages.starting?.length ?? 0) > languageRules.startingCapacity ||
     (languages.learned?.length ?? 0) > languageRules.learnedCapacity;
+  const favoredClassSelectionComplete = favoredClassBonusDetailIsComplete(
+    levelFavoredClassBonusOptions,
+    favoredClass,
+    favoredClassSelection,
+  );
   const hasError =
-    languageOverBudget || issues.some((i) => i.severity === "error");
+    languageOverBudget ||
+    issues.some((i) => i.severity === "error") ||
+    !favoredClassSelectionComplete;
 
   function commitHpInput(nextInput = hpInput) {
     const parsed = Number(nextInput);
@@ -503,6 +522,9 @@ export function LevelUpModal({
         feats: selectedFeats.map((entry) => entry.trim()).filter(Boolean),
         abilityIncrease,
         favoredClass: favoredClassEligible ? favoredClass : undefined,
+        favoredClassSelection: favoredClassEligible
+          ? favoredClassSelection
+          : undefined,
       },
       spellSeedPlans,
       languages,
@@ -689,30 +711,19 @@ export function LevelUpModal({
               title="Why these favored bonus picks"
               choices={plannerSuggestions.favoredClassChoices}
               selectedValue={favoredClass ?? "none"}
-              onPick={(value) =>
-                setFavoredClass(value === "none" ? undefined : value)
-              }
+              onPick={(value) => {
+                setFavoredClass(value === "none" ? undefined : value);
+                setFavoredClassSelection(undefined);
+              }}
             />
-            <div className="ability-picker">
-              {levelFavoredClassBonusOptions.map((option) => {
-                const value = option.value || undefined;
-                return (
-                  <label
-                    className={`pick ${favoredClass === value ? "on" : ""}`}
-                    key={option.value || "none"}
-                    title={option.description}
-                  >
-                    <input
-                      type="radio"
-                      name="fcb"
-                      checked={favoredClass === value}
-                      onChange={() => setFavoredClass(value)}
-                    />
-                    {option.label}
-                  </label>
-                );
-              })}
-            </div>
+            <FavoredClassBonusPicker
+              options={levelFavoredClassBonusOptions}
+              value={favoredClass}
+              detailValue={favoredClassSelection}
+              radioName="fcb"
+              onChange={setFavoredClass}
+              onDetailChange={setFavoredClassSelection}
+            />
           </div>
         ) : null}
 
@@ -862,6 +873,9 @@ export function LevelUpModal({
                       preview.selection.favoredClass,
                     )
                   : "not applicable"}
+                {preview.selection.favoredClassSelection
+                  ? ` — ${preview.selection.favoredClassSelection}`
+                  : ""}
               </li>
               <li>
                 Ability increase:{" "}
