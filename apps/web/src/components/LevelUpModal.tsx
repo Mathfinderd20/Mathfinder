@@ -29,11 +29,8 @@ import {
   type LevelPlannerSuggestions,
   type PlannerSuggestionChoice,
   type PlannerSuggestionNote,
-  type SpellSuggestionChoice,
 } from "../buildSuggestions";
 import { continuedSkillKeys } from "../skillRankProgression";
-import { displaySpellName } from "../spellLabels";
-import { spellTitle } from "../rulesText";
 import { featSlotTag } from "../featSlots";
 import {
   buildFavoredClassBonusOptions,
@@ -47,7 +44,13 @@ import {
 } from "../featOptionData";
 import { FeatSelectionPicker } from "./FeatSelectionPicker";
 import { FavoredClassBonusPicker } from "./FavoredClassBonusPicker";
-import { Tooltip } from "./Tooltip";
+import { SpellSeedPicker } from "./SpellSeedPicker";
+import {
+  buildSpellSeedGroups,
+  buildSpellSeedPlans,
+  type SpellSeedPlan,
+  type SpellSeedSelections,
+} from "../spellSeedPlans";
 
 const ABILITIES: AbilityKey[] = ["str", "dex", "con", "int", "wis", "cha"];
 const SKILL_NAME = new Map<string, string>(
@@ -140,19 +143,12 @@ function normalizeClassKey(className: string | undefined) {
   );
 }
 
-export interface LevelUpSpellSeedPlan {
-  classKey: string;
-  mode: "prepared" | "known";
-  level: number;
-  spells: string[];
-}
-
 interface Props {
   build: CharacterBuild;
   plannerSuggestions: LevelPlannerSuggestions;
   onConfirm: (
     selection: LevelUpSelection,
-    spellSeedPlans: LevelUpSpellSeedPlan[],
+    spellSeedPlans: SpellSeedPlan[],
     languages?: CharacterBuild["languages"],
   ) => void;
   onClose: () => void;
@@ -186,9 +182,8 @@ export function LevelUpModal({
   >();
   const [favoredClass, setFavoredClass] = useState<string>();
   const [favoredClassSelection, setFavoredClassSelection] = useState<string>();
-  const [selectedSpellSeeds, setSelectedSpellSeeds] = useState<
-    Record<string, true>
-  >({});
+  const [selectedSpellSeeds, setSelectedSpellSeeds] =
+    useState<SpellSeedSelections>({});
 
   const remaining = plan.skillPoints - skills.size;
   const continuedSkills = useMemo(
@@ -360,60 +355,14 @@ export function LevelUpModal({
     suggestedFeatNames,
   ]);
 
-  const spellSeedGroups: Array<{
-    classKey: string;
-    className: string;
-    mode: "prepared" | "known";
-    level: number;
-    capacity: number;
-    suggestions: SpellSuggestionChoice[];
-  }> = previewSheet.spellcasting.flatMap((caster) => {
-    const classKey = caster.className.toLowerCase();
-    const mode = caster.castingType === "prepared" ? "prepared" : "known";
-    return Object.entries(
-      modalSuggestionBundle.spellChoices[classKey] ?? {},
-    ).flatMap(([levelText, choices]) => {
-      const level = Number(levelText);
-      const suggestions = ((choices ?? []) as SpellSuggestionChoice[]).slice(
-        0,
-        4,
-      );
-      const capacity = caster.selectionDiagnostics[level]?.capacity ?? 0;
-      if (suggestions.length === 0 || capacity <= 0) return [];
-      return [
-        {
-          classKey,
-          className: caster.className,
-          mode,
-          level,
-          capacity,
-          suggestions,
-        },
-      ];
-    });
-  });
-
-  const spellSeedPlans: LevelUpSpellSeedPlan[] = spellSeedGroups
-    .map((group) => {
-      const selected = group.suggestions
-        .filter(
-          (entry) =>
-            selectedSpellSeeds[
-              `${group.classKey}:${group.level}:${entry.spellName}`
-            ],
-        )
-        .map((entry) => entry.spellName)
-        .slice(0, group.capacity);
-      return selected.length > 0
-        ? {
-            classKey: group.classKey,
-            mode: group.mode,
-            level: group.level,
-            spells: selected,
-          }
-        : null;
-    })
-    .filter((entry): entry is LevelUpSpellSeedPlan => !!entry);
+  const spellSeedGroups = buildSpellSeedGroups(
+    previewSheet.spellcasting,
+    modalSuggestionBundle.spellChoices,
+  );
+  const spellSeedPlans = buildSpellSeedPlans(
+    spellSeedGroups,
+    selectedSpellSeeds,
+  );
 
   const issues = validateLevelUpSelection(preview.plan, preview.selection);
   if (!classAlignmentAllowed) {
@@ -459,52 +408,6 @@ export function LevelUpModal({
 
   function continuePreviousSkills() {
     setSkills(new Set(continuedSkills));
-  }
-
-  function toggleSpellSeed(classKey: string, level: number, spellName: string) {
-    const key = `${classKey}:${level}:${spellName}`;
-    setSelectedSpellSeeds((prev) => {
-      if (prev[key]) {
-        const next = { ...prev };
-        delete next[key];
-        return next;
-      }
-      return { ...prev, [key]: true };
-    });
-  }
-
-  function applyTopSpellSuggestions(
-    classKey: string,
-    level: number,
-    spellNames: string[],
-    capacity: number,
-  ) {
-    setSelectedSpellSeeds((prev) => {
-      const next = { ...prev };
-      let selectedForGroup = Object.keys(next).filter((key) =>
-        key.startsWith(`${classKey}:${level}:`),
-      ).length;
-      for (const spellName of spellNames) {
-        if (selectedForGroup >= capacity) break;
-        const key = `${classKey}:${level}:${spellName}`;
-        if (!next[key]) {
-          next[key] = true;
-          selectedForGroup += 1;
-        }
-      }
-      return next;
-    });
-  }
-
-  function clearSpellSuggestions(classKey: string, level: number) {
-    setSelectedSpellSeeds(
-      (prev) =>
-        Object.fromEntries(
-          Object.entries(prev).filter(
-            ([key]) => !key.startsWith(`${classKey}:${level}:`),
-          ),
-        ) as Record<string, true>,
-    );
   }
 
   function confirmLevel() {
@@ -889,100 +792,11 @@ export function LevelUpModal({
           {spellSeedGroups.length > 0 ? (
             <div className="modal-preview-subsection">
               <div className="modal-preview-label">Spell Suggestions</div>
-              <div className="spell-seed-groups">
-                {spellSeedGroups.map((group) => {
-                  const selectedCount = group.suggestions.filter(
-                    (entry) =>
-                      selectedSpellSeeds[
-                        `${group.classKey}:${group.level}:${entry.spellName}`
-                      ],
-                  ).length;
-                  return (
-                    <div
-                      key={`spell-seed-${group.classKey}-${group.level}`}
-                      className="modal-spell-seed-card"
-                    >
-                      <div className="modal-spell-seed-head">
-                        <strong>
-                          {group.className} L{group.level}
-                        </strong>
-                        <span className="muted">
-                          {selectedCount}/{group.capacity} queued for{" "}
-                          {group.mode}
-                        </span>
-                      </div>
-                      <div className="planner-suggestions modal-guidance-chips">
-                        <button
-                          type="button"
-                          className="ghost tiny planner-suggestion-chip"
-                          onClick={() =>
-                            applyTopSpellSuggestions(
-                              group.classKey,
-                              group.level,
-                              group.suggestions.map((entry) => entry.spellName),
-                              group.capacity,
-                            )
-                          }
-                        >
-                          Use Top Picks
-                        </button>
-                        <button
-                          type="button"
-                          className="ghost tiny planner-suggestion-chip"
-                          onClick={() =>
-                            clearSpellSuggestions(group.classKey, group.level)
-                          }
-                        >
-                          Clear
-                        </button>
-                      </div>
-                      <div className="planner-suggestions modal-guidance-chips">
-                        {group.suggestions.map((entry) => {
-                          const selected =
-                            !!selectedSpellSeeds[
-                              `${group.classKey}:${group.level}:${entry.spellName}`
-                            ];
-                          const groupSelectedCount = group.suggestions.filter(
-                            (choice) =>
-                              selectedSpellSeeds[
-                                `${group.classKey}:${group.level}:${choice.spellName}`
-                              ],
-                          ).length;
-                          const disabled =
-                            !selected && groupSelectedCount >= group.capacity;
-                          return (
-                            <Tooltip
-                              key={`spell-seed-chip-${group.classKey}-${group.level}-${entry.spellName}`}
-                              content={spellTitle(entry.spellName)}
-                            >
-                              <button
-                                type="button"
-                                className={`ghost tiny planner-suggestion-chip spell-suggestion-chip ${selected ? "active" : ""}`}
-                                title={entry.reason}
-                                disabled={disabled}
-                                onClick={() =>
-                                  toggleSpellSeed(
-                                    group.classKey,
-                                    group.level,
-                                    entry.spellName,
-                                  )
-                                }
-                              >
-                                <span>{displaySpellName(entry.spellName)}</span>
-                                {entry.badges?.length ? (
-                                  <span className="spell-suggestion-badges">
-                                    {entry.badges.join(" · ")}
-                                  </span>
-                                ) : null}
-                              </button>
-                            </Tooltip>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+              <SpellSeedPicker
+                groups={spellSeedGroups}
+                selections={selectedSpellSeeds}
+                onChange={setSelectedSpellSeeds}
+              />
             </div>
           ) : null}
         </section>
