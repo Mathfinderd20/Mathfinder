@@ -61,7 +61,7 @@ export function SpellSeedPicker({
     <div className="spell-seed-groups">
       {groups.map((group) => {
         const count = selectedCount(group);
-        const target = Math.min(group.capacity, group.suggestions.length);
+        const target = group.capacity;
         return (
           <div
             key={`spell-seed-${group.classKey}-${group.level}`}
@@ -93,36 +93,65 @@ export function SpellSeedPicker({
               </button>
             </div>
             <div className="planner-suggestions modal-guidance-chips">
-              {group.suggestions.map((entry) => {
-                const key = spellSeedKey(
-                  group.classKey,
-                  group.level,
-                  entry.spellName,
-                );
-                const selected = Boolean(selections[key]);
-                return (
-                  <Tooltip key={key} content={spellTitle(entry.spellName)}>
-                    <button
-                      type="button"
-                      className={`ghost tiny planner-suggestion-chip spell-suggestion-chip ${selected ? "active" : ""}`}
-                      title={entry.reason}
-                      disabled={!selected && count >= group.capacity}
-                      onClick={() => toggle(group, entry.spellName)}
-                    >
-                      <span>{displaySpellName(entry.spellName)}</span>
-                      {entry.badges?.length ? (
-                        <span className="spell-suggestion-badges">
-                          {entry.badges.join(" · ")}
-                        </span>
-                      ) : null}
-                    </button>
-                  </Tooltip>
-                );
-              })}
+              {group.suggestions
+                .filter(
+                  (entry) =>
+                    selections[
+                      spellSeedKey(group.classKey, group.level, entry.spellName)
+                    ],
+                )
+                .map((entry) => {
+                  const key = spellSeedKey(
+                    group.classKey,
+                    group.level,
+                    entry.spellName,
+                  );
+                  const selected = Boolean(selections[key]);
+                  return (
+                    <Tooltip key={key} content={spellTitle(entry.spellName)}>
+                      <button
+                        type="button"
+                        className={`ghost tiny planner-suggestion-chip spell-suggestion-chip ${selected ? "active" : ""}`}
+                        title={entry.reason}
+                        disabled={!selected && count >= group.capacity}
+                        onClick={() => toggle(group, entry.spellName)}
+                      >
+                        <span>{displaySpellName(entry.spellName)}</span>
+                        {entry.badges?.length ? (
+                          <span className="spell-suggestion-badges">
+                            {entry.badges.join(" · ")}
+                          </span>
+                        ) : null}
+                      </button>
+                    </Tooltip>
+                  );
+                })}
             </div>
+            <select
+              aria-label={`Add level ${group.level} ${group.className} known spell`}
+              value=""
+              disabled={count >= group.capacity}
+              onChange={(event) => {
+                if (event.target.value) toggle(group, event.target.value);
+              }}
+            >
+              <option value="">Choose a known spell</option>
+              {group.suggestions
+                .filter(
+                  (entry) =>
+                    !selections[
+                      spellSeedKey(group.classKey, group.level, entry.spellName)
+                    ],
+                )
+                .map((entry) => (
+                  <option key={entry.spellName} value={entry.spellName}>
+                    {displaySpellName(entry.spellName)}
+                  </option>
+                ))}
+            </select>
             {required && count < target ? (
               <span className="form-error">
-                Choose {target - count} more initial spell
+                Choose {target - count} more known spell
                 {target - count === 1 ? "" : "s"}.
               </span>
             ) : null}

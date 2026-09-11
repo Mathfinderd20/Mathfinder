@@ -243,6 +243,7 @@ export {
 export { classBonusFeatSlot } from "./build/feat-grants";
 export {
   buildCharacter,
+  resolveRaceChoice,
   levelUp,
   levelDown,
   classLevelCounts,

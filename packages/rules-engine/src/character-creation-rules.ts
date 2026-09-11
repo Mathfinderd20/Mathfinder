@@ -7,6 +7,9 @@ export interface CharacterCreationRules {
   pointBuyBudget: number;
   abilityArray: number[];
   buildGuide: string;
+  campaignTraitLimit?: number;
+  /** When present, campaign traits must be selected from this catalog. */
+  campaignTraitOptions?: string[];
 }
 
 export const DEFAULT_CREATION_RULES: CharacterCreationRules = {
@@ -36,6 +39,16 @@ export function parseCharacterCreationRules(
     pointBuyBudget: rules.pointBuyBudget,
     abilityArray: [...rules.abilityArray],
     buildGuide: rules.buildGuide,
+    ...(rules.campaignTraitLimit !== undefined
+      ? { campaignTraitLimit: rules.campaignTraitLimit }
+      : {}),
+    ...(rules.campaignTraitOptions !== undefined
+      ? {
+          campaignTraitOptions: Array.isArray(rules.campaignTraitOptions)
+            ? [...rules.campaignTraitOptions]
+            : rules.campaignTraitOptions,
+        }
+      : {}),
   };
   return validateCreationRules(candidate).length ? undefined : candidate;
 }
@@ -78,6 +91,58 @@ export function validateCreationRules(rules: CharacterCreationRules): string[] {
     errors.push("An ability array needs six integers from 7 to 18.");
   if (rules.buildGuide.length > 5000)
     errors.push("Build guide must be at most 5000 characters.");
+  if (
+    rules.campaignTraitLimit !== undefined &&
+    (!Number.isInteger(rules.campaignTraitLimit) ||
+      rules.campaignTraitLimit < 0 ||
+      rules.campaignTraitLimit > 3)
+  )
+    errors.push("Campaign trait allowance must be between 0 and 3.");
+  if (
+    rules.campaignTraitOptions !== undefined &&
+    (!Array.isArray(rules.campaignTraitOptions) ||
+      rules.campaignTraitOptions.some(
+        (trait) =>
+          typeof trait !== "string" || !trait.trim() || trait.length > 200,
+      ))
+  )
+    errors.push(
+      "Campaign trait options must be nonempty names of at most 200 characters.",
+    );
+  else if (
+    rules.campaignTraitOptions &&
+    new Set(
+      rules.campaignTraitOptions.map((trait) => trait.trim().toLowerCase()),
+    ).size !== rules.campaignTraitOptions.length
+  )
+    errors.push("Campaign trait options must have distinct names.");
+  return errors;
+}
+
+export function validateCampaignTraits(
+  traits: string[],
+  rules?: CharacterCreationRules,
+): string[] {
+  const selected = traits.map((trait) => trait.trim()).filter(Boolean);
+  const errors: string[] = [];
+  const limit = rules?.campaignTraitLimit ?? 3;
+  if (selected.length > limit)
+    errors.push(`Choose up to ${limit} campaign traits.`);
+  if (
+    new Set(selected.map((trait) => trait.toLowerCase())).size !==
+    selected.length
+  )
+    errors.push("Choose distinct campaign traits.");
+  if (
+    rules?.campaignTraitOptions &&
+    selected.some(
+      (trait) =>
+        !rules.campaignTraitOptions!.some(
+          (option) => option.trim().toLowerCase() === trait.toLowerCase(),
+        ),
+    )
+  )
+    errors.push("Choose traits from the campaign’s available catalog.");
   return errors;
 }
 

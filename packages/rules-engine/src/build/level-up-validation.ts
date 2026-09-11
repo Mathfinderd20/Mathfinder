@@ -6,6 +6,17 @@ export function validateLevelUpSelection(
   selection: LevelUpSelection,
 ): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
+  if (
+    !Number.isInteger(selection.hitPointRoll) ||
+    selection.hitPointRoll < 1 ||
+    selection.hitPointRoll > plan.hitDie
+  ) {
+    issues.push({
+      severity: "error",
+      code: "invalid-hit-point-roll",
+      message: `Hit points must be a whole number from 1 to ${plan.hitDie}.`,
+    });
+  }
   const ranks = Object.values(selection.skillRanks).reduce<number>(
     (sum, value) => sum + (value ?? 0),
     0,
@@ -22,11 +33,11 @@ export function validateLevelUpSelection(
     SkillKey,
     number,
   ][]) {
-    if ((value ?? 0) > 1) {
+    if (!Number.isInteger(value) || value < 0 || value > 1) {
       issues.push({
         severity: "error",
         code: "skill-ranks-per-level",
-        message: `Skill "${key}": at most 1 rank may be added per level.`,
+        message: `Skill "${key}": assign either 0 or 1 rank at this level.`,
       });
     }
   }

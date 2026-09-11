@@ -28,6 +28,7 @@ function caster(spells: string[]): DerivedSpellcasting {
   return {
     className: "Cleric",
     castingType: "prepared",
+    spellAccess: "full-list",
     castingAbility: "wis",
     castingAbilityScore: 16,
     maxCastableSpellLevel: 1,
@@ -44,6 +45,7 @@ function caster(spells: string[]): DerivedSpellcasting {
     preparedCapacity: { 1: 3 },
     grantedSpells: { 1: ["Cure Light Wounds", "Bless"] },
     librarySpells: { 1: ["Shield of Faith", "Command"] },
+    manualLibrarySpells: { 1: ["Shield of Faith", "Command"] },
     selectedPreparedSpells: { 1: spells },
     selectedKnownSpells: {},
     slotsUsed: { 1: 0 },

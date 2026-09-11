@@ -44,10 +44,10 @@ export function NewCharacterPage() {
     try {
       const [{ loadRuntimeContent }, creationModule] = await Promise.all([
         import("../../content"),
-        import("../../components/CharacterCreationModal"),
+        import("../../components/CharacterCreationFlow"),
       ]);
       await loadRuntimeContent();
-      setCreationModal(() => creationModule.CharacterCreationModal);
+      setCreationModal(() => creationModule.CharacterCreationFlow);
       setCreationName(name.trim() || "Unnamed Hero");
     } catch (cause) {
       setError(
@@ -89,7 +89,8 @@ export function NewCharacterPage() {
           <h1>Who is joining the adventure?</h1>
           <p>
             Give your character a name. We’ll open the guided build tools next,
-            where ancestry, class, abilities, feats, and gear await.
+            where ancestry, class, abilities, skills, feats, and starting magic
+            await.
           </p>
           <form onSubmit={submit}>
             {campaign && (

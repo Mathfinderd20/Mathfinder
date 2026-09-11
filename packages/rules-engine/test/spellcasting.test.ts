@@ -640,16 +640,16 @@ describe("cleric, druid, bard, ranger, paladin, inquisitor, and sorcerer spellca
       className: "Ranger",
       castingType: "prepared",
       castingAbility: "wis",
-      baseSpellsPerDay: { 1: 1 },
+      baseSpellsPerDay: { 1: 0 },
       bonusSpellsPerDay: { 1: 1 },
-      spellsPerDay: { 1: 2 },
-      preparedCapacity: { 1: 2 },
+      spellsPerDay: { 1: 1 },
+      preparedCapacity: { 1: 1 },
       selectedPreparedSpells: { 1: ["Gravity Bow", "Lead Blades"] },
     });
     expect(sheet.spellcasting[0]!.selectionDiagnostics[1]).toMatchObject({
-      capacity: 2,
+      capacity: 1,
       selectedCount: 2,
-      overCapacity: false,
+      overCapacity: true,
       availableSpellNames: [
         "Aspect of the Falcon",
         "Entangle",
@@ -689,17 +689,17 @@ describe("cleric, druid, bard, ranger, paladin, inquisitor, and sorcerer spellca
     expect(sheet.spellcasting[0]).toMatchObject({
       className: "Paladin",
       castingType: "prepared",
-      castingAbility: "wis",
-      baseSpellsPerDay: { 1: 1 },
+      castingAbility: "cha",
+      baseSpellsPerDay: { 1: 0 },
       bonusSpellsPerDay: { 1: 1 },
-      spellsPerDay: { 1: 2 },
-      preparedCapacity: { 1: 2 },
+      spellsPerDay: { 1: 1 },
+      preparedCapacity: { 1: 1 },
       selectedPreparedSpells: { 1: ["Bless Weapon", "Divine Favor"] },
     });
     expect(sheet.spellcasting[0]!.selectionDiagnostics[1]).toMatchObject({
-      capacity: 2,
+      capacity: 1,
       selectedCount: 2,
-      overCapacity: false,
+      overCapacity: true,
       availableSpellNames: [
         "Bless Weapon",
         "Detect Evil",
