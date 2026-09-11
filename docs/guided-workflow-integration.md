@@ -24,6 +24,15 @@ Integrated against staging `0f57c95253621c0c24ab4d65bd083846051afec8`, including
 
 `20260911010000_guided_creation_traits.sql` extends the existing creation-rule validator and setter while retaining their authority checks. `supabase/tests/guided_creation_traits.sql` provides transaction-only regression coverage for legacy documents, boundaries, malformed values, duplicate traits, persistence, and access.
 
-The prior and new migrations, followed by these tests, passed in an isolated PGlite PostgreSQL runtime with minimal auth/campaign fixtures. The full Supabase stack could not run because the local Docker daemon was unavailable. Hosted staging migration history and the migration against the complete staging schema still need verification before release. No hosted migration was applied by this integration.
+The prior and new migrations, followed by these tests, passed in an isolated PGlite PostgreSQL runtime with minimal auth/campaign fixtures. The CI `database` job now runs `scripts/verify-guided-migration.sh` against a real, isolated Supabase PostgreSQL database. It replays the complete prior migration history, seeds legacy and unrestricted campaigns, applies the new migration, checks settings and ownership preservation, runs both SQL regression files, and lints database functions. No hosted credentials or database writes are involved.
 
-Before deployment, check staging migration history, run the SQL regression against the complete migrated schema in an isolated environment, and apply the migration through the normal database deployment process. The new trait settings depend on this migration. This PR does not deploy or promote production.
+The full-schema run caught a direct default `anon` execute grant that the original setter migration's `PUBLIC` revocation did not remove. The new migration explicitly revokes that grant while retaining the setter's permanent-account and active-GM checks. After that fix, [CI run 34592466297](https://github.com/Mathfinderd20/Mathfinder/actions/runs/34592466297) passed both database verification and all application checks at commit `b00d576`.
+
+Before deployment:
+
+1. Confirm the CI database and application checks pass.
+2. Sign in with `npx.cmd supabase login`, explicitly link staging project `pkupqzdnefnjwndwzhdr`, and inspect `npx.cmd supabase migration list --linked`.
+3. Run `npx.cmd supabase db push --linked --dry-run` and reconcile any unexpected pending or remote-only migrations before proceeding.
+4. With approval for the hosted database change, apply the reviewed migration through the deployment process in `DEPLOYMENT.md`, verify migration history, and then release the dependent frontend.
+
+Hosted staging history verification remains pending Supabase CLI sign-in. The local preview uses staging data; campaign-trait saves require the hosted migration. This PR does not apply hosted migrations or deploy or promote production.
