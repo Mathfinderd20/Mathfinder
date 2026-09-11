@@ -1,3 +1,8 @@
+import {
+  applyGuidedLevelUp,
+  withLevelUpCastingChoices,
+  type LevelUpCastingChoices,
+} from "./guidedLevelUp";
 import { HeaderProfile } from "./components/ProfileMenu";
 import { SaveSection, SectionSaveProvider } from "./components/SaveSection";
 import { useSectionDraft } from "./features/characters/useSectionDraft";
@@ -6,6 +11,8 @@ import { CharacterLanguages } from "./components/CharacterLanguages";
 import { BuildSection } from "./components/BuildSection";
 import {
   applyLevelUp,
+  computeSheet,
+  buildCharacter,
   levelDown,
   SKILL_DEFINITIONS,
   type AbilityKey,
@@ -15,6 +22,11 @@ import {
 } from "@mathfinder/rules-engine";
 import {
   RUNTIME_ARCHETYPES_BY_CLASS,
+  RUNTIME_ARCHETYPES,
+  RUNTIME_CLASSES,
+  RUNTIME_FEATS,
+  RUNTIME_CLASS_FEATURES,
+  RUNTIME_SPELLS,
   RUNTIME_ARMOR,
   RUNTIME_CLASS_OPTIONS,
   RUNTIME_DOMAINS,
@@ -28,8 +40,10 @@ import { useRuntimeState } from "./useRuntimeState";
 import { applyWeaponLoadoutsToBuild } from "./weaponLoadouts";
 import { Sheet } from "./components/Sheet";
 import { CombatLogPanel } from "./components/CombatLogPanel";
-import { LevelUpModal } from "./components/LevelUpModal";
-import { applySpellSeedPlans, type SpellLibraryPlan } from "./spellSeedPlans";
+import {
+  LevelUpModal,
+  type LevelUpSpellSeedPlan,
+} from "./components/LevelUpModal";
 import { BuildEditorTab } from "./components/BuildEditorTab";
 import { GearTab } from "./components/GearTab";
 import { RuntimeControlsPanel } from "./components/RuntimeControlsPanel";
@@ -319,13 +333,34 @@ export function App({
 
   function confirmLevelUp(
     selection: LevelUpSelection,
-    spellPlans: SpellLibraryPlan[],
+    spellSeedPlans: LevelUpSpellSeedPlan[],
     languages?: CharacterBuild["languages"],
+    castingChoices?: LevelUpCastingChoices,
   ) {
     setBuild((b) => {
-      const next = applyLevelUp(b, selection);
-      const withLanguages = languages ? { ...next, languages } : next;
-      return applySpellSeedPlans(withLanguages, spellPlans);
+      const previewBuild = withLevelUpCastingChoices(
+        applyLevelUp(b, selection),
+        selection.className,
+        castingChoices,
+      );
+      const casters = computeSheet(
+        buildCharacter(
+          previewBuild,
+          RUNTIME_CLASSES,
+          RUNTIME_FEATS,
+          RUNTIME_CLASS_FEATURES,
+          RUNTIME_ARCHETYPES,
+        ),
+        { spellRegistry: RUNTIME_SPELLS },
+      ).spellcasting;
+      return applyGuidedLevelUp(
+        b,
+        selection,
+        spellSeedPlans,
+        casters,
+        languages,
+        castingChoices,
+      );
     });
     setCurrentLevel((prev) =>
       clampCurrentLevel(prev + 1, build.levels.length + 1),

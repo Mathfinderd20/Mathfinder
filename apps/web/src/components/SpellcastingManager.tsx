@@ -131,6 +131,7 @@ export interface SpellcastingManagerProps {
     mode: SpellMode,
     level: number,
     capacity: number,
+    source?: string[],
   ) => void;
   onUpdateDomains: (classKey: string, index: number, value: string) => void;
   onUpdateSpecialization: (classKey: string, value: string) => void;
@@ -298,7 +299,9 @@ export function SpellcastingManager({
                     className="ghost small"
                     onClick={() => onResetLibraryForClass(classKey, levels)}
                   >
-                    Clear Library
+                    {caster.spellAccess === "full-list"
+                      ? "Clear Added Spells"
+                      : "Clear Library"}
                   </button>
                   <button
                     className="ghost small"
@@ -424,6 +427,7 @@ export function SpellcastingManager({
                 if (!diag) return null;
                 const current = selections[level] ?? [];
                 const library = caster.librarySpells[level] ?? [];
+                const manualLibrary = caster.manualLibrarySpells[level] ?? [];
                 const tabKey = `${classKey}:${level}`;
                 const activeTab = spellLevelTabs[tabKey] ?? "active";
                 const activeTagFilter = spellTagFilters[tabKey] ?? null;
@@ -653,6 +657,7 @@ export function SpellcastingManager({
                               mode,
                               level,
                               diag.capacity,
+                              diag.librarySpellNames,
                             )
                           }
                         >
@@ -661,9 +666,9 @@ export function SpellcastingManager({
                         <button
                           className="ghost small"
                           onClick={() => onResetLibraryLevel(classKey, level)}
-                          disabled={library.length === 0}
+                          disabled={manualLibrary.length === 0}
                         >
-                          Clear Library
+                          Clear Added Spells
                         </button>
                         <button
                           className="ghost small"
@@ -794,14 +799,17 @@ export function SpellcastingManager({
                     {activeTab === "library" ? (
                       <div className="spell-level-column spell-level-tab-panel">
                         <div className="subsection-title">
-                          Library / Learnable Pool
+                          {caster.spellAccess === "full-list"
+                            ? "Additional Library Spells"
+                            : "Library / Learnable Pool"}
                         </div>
                         <p className="hint">
-                          Store spells you might use at this level. Think
-                          reference shelf, not today’s loadout.
+                          {caster.spellAccess === "full-list"
+                            ? "Class spells are included automatically at unlocked spell levels. Manage additional spells here; choose daily preparations separately."
+                            : "Record spells acquired through level choices, a spellbook, or special grants. Choose prepared or known spells separately."}
                         </p>
                         <div className="item-list compact-list">
-                          {library.map((spellName, index) => {
+                          {manualLibrary.map((spellName, index) => {
                             const option = findSpellOption(
                               levelSpellOptions,
                               spellName,

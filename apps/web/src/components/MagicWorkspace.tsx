@@ -17,7 +17,11 @@ import { sign } from "../util";
 import { Tooltip } from "./Tooltip";
 
 const normalized = (name: string) => name.trim().toLowerCase();
-const unique = (names: string[]) => [...new Set(names.filter(Boolean))];
+const unique = (names: string[]) => [
+  ...new Map(
+    names.filter(Boolean).map((name) => [normalized(name), name]),
+  ).values(),
+];
 export const primarySpellSchool = (school: string | undefined) =>
   school
     ?.trim()
@@ -336,6 +340,13 @@ export function MagicWorkspace(
                   {caster.domains.length
                     ? ` · ${displayDomainNames(caster.domains).join(" / ")}`
                     : ""}
+                </p>
+                <p className="hint">
+                  {caster.spellAccess === "full-list"
+                    ? "Your library automatically includes your class spells at unlocked spell levels. Choose which spells to prepare each day."
+                    : caster.spellAccess === "spellbook"
+                      ? "Add spells as you learn or copy them, then choose your daily preparations."
+                      : "Choose your limited spells known and record any additional spells granted by special abilities or items."}
                 </p>
               </div>
               <div>

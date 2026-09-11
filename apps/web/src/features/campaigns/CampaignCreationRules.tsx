@@ -31,6 +31,13 @@ export function CreationRulesSummary({
       )}
       <p style={{ whiteSpace: "pre-wrap" }}>{rules.buildGuide}</p>
       <p>
+        Campaign traits: up to {rules.campaignTraitLimit ?? 3}
+        {rules.campaignTraitOptions
+          ? " from the campaign catalog"
+          : " by agreement with the GM"}
+        .
+      </p>
+      <p>
         Build mismatches are guidance, not automatic changes. Discuss exceptions
         with your GM.
       </p>
@@ -87,6 +94,9 @@ export function CampaignCreationRulesPanel({
             try {
               await saveCampaignCreationRules(campaign.id, {
                 ...rules,
+                campaignTraitOptions: rules.campaignTraitOptions
+                  ?.map((trait) => trait.trim())
+                  .filter(Boolean),
                 abilityArray: arrayText.split(",").map((s) => Number(s.trim())),
               });
               setMessage(
@@ -168,6 +178,36 @@ export function CampaignCreationRulesPanel({
                 value={rules.buildGuide}
                 onChange={(e) =>
                   setRules({ ...rules, buildGuide: e.target.value })
+                }
+              />
+            </label>
+            <label>
+              Campaign trait allowance
+              <input
+                type="number"
+                min={0}
+                max={3}
+                value={rules.campaignTraitLimit ?? 3}
+                onChange={(event) =>
+                  setRules({
+                    ...rules,
+                    campaignTraitLimit: Number(event.target.value),
+                  })
+                }
+              />
+            </label>
+            <label>
+              Campaign trait catalog · one name per line
+              <textarea
+                rows={4}
+                value={(rules.campaignTraitOptions ?? []).join("\n")}
+                onChange={(event) =>
+                  setRules({
+                    ...rules,
+                    campaignTraitOptions: event.target.value
+                      ? event.target.value.split("\n")
+                      : undefined,
+                  })
                 }
               />
             </label>

@@ -18,6 +18,12 @@ interface FreshCharacterChoices {
   favoredClassSelection?: string;
   ignoreAlignmentRestrictions?: boolean;
   ignoreEncumbrance?: boolean;
+  alternateTraits?: string[];
+  archetypes?: string[];
+  spellLibrary?: CharacterBuild["spellLibrary"];
+  spellSelections?: CharacterBuild["spellSelections"];
+  spellDomains?: CharacterBuild["spellDomains"];
+  spellSpecializations?: CharacterBuild["spellSpecializations"];
 }
 
 export function createFreshCharacterBuild(
@@ -34,17 +40,24 @@ export function createFreshCharacterBuild(
       choiceSelection: {
         flexibleAbility: choices.flexibleAbility,
         bonusFeat: choices.raceBonusFeat?.trim() || undefined,
-        alternateTraits: [],
+        alternateTraits: choices.alternateTraits ?? [],
       },
     },
     favoredClassName: className,
+    classArchetypes: choices.archetypes?.length
+      ? { [className.toLowerCase()]: choices.archetypes }
+      : undefined,
+    spellLibrary: choices.spellLibrary,
+    spellSelections: choices.spellSelections,
+    spellDomains: choices.spellDomains,
+    spellSpecializations: choices.spellSpecializations,
     baseAbilityScores: choices.baseAbilityScores,
     levels: [
       {
         className,
         hitPointRoll: Math.max(1, choices.hitPointRoll),
         skillRanks: choices.skillRanks ?? {},
-        feats: choices.feats ?? [],
+        feats: (choices.feats ?? []).filter((feat) => feat?.trim()),
         favoredClass: choices.favoredClass,
         favoredClassSelection: choices.favoredClassSelection,
         modifiers: [],

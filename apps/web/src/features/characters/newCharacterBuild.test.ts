@@ -12,6 +12,33 @@ const humanRace = {
 };
 
 describe("createFreshCharacterBuild", () => {
+  it("supports choosing a later feat slot first and carries race, archetype and magic choices into the draft", () => {
+    const feats: string[] = [];
+    feats[1] = "Improved Initiative";
+    const build = createFreshCharacterBuild("Draft", humanRace, {
+      className: "Wizard",
+      alignment: "true-neutral",
+      hitPointRoll: 6,
+      baseAbilityScores: {
+        str: 10,
+        dex: 10,
+        con: 10,
+        int: 16,
+        wis: 10,
+        cha: 10,
+      },
+      feats,
+      alternateTraits: ["focused-study"],
+      archetypes: ["test-archetype"],
+      spellLibrary: { wizard: { 1: ["Shield"] } },
+    });
+    expect(build.levels[0]?.feats).toEqual(["Improved Initiative"]);
+    expect(build.race.choiceSelection?.alternateTraits).toEqual([
+      "focused-study",
+    ]);
+    expect(build.classArchetypes?.wizard).toEqual(["test-archetype"]);
+    expect(build.spellLibrary?.wizard?.[1]).toEqual(["Shield"]);
+  });
   it("creates a clean level-one build from creation decisions", () => {
     const build = createFreshCharacterBuild("  Merisiel  ", humanRace, {
       className: "Rogue",

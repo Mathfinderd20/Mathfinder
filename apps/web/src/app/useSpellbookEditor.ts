@@ -290,8 +290,10 @@ export function useSpellbookEditor(
     mode: SpellSelectionMode,
     level: number,
     capacity: number,
+    availableSpells?: string[],
   ) {
-    const source = build.spellLibrary?.[classKey]?.[level] ?? [];
+    const source =
+      availableSpells ?? build.spellLibrary?.[classKey]?.[level] ?? [];
     const normalized = [
       ...new Set(source.map((spell) => spell.trim()).filter(Boolean)),
     ].slice(0, capacity);
