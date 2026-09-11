@@ -1,5 +1,11 @@
 import { expect, it } from "vitest";
-import { deriveLanguages, uniqueLanguages, type CharacterBuild } from "../src";
+import {
+  CANONICAL_LANGUAGES,
+  SELECTABLE_CANONICAL_LANGUAGES,
+  deriveLanguages,
+  uniqueLanguages,
+  type CharacterBuild,
+} from "../src";
 const build: CharacterBuild = {
   name: "Linguist",
   race: {
@@ -103,4 +109,10 @@ it("supports alternate racial language grants and Cosmopolitan", () => {
     "Common",
     "Elven",
   ]);
+});
+it("publishes the canonical language choices while reserving Druidic", () => {
+  expect(CANONICAL_LANGUAGES).toContain("Common");
+  expect(CANONICAL_LANGUAGES).toContain("Druidic");
+  expect(SELECTABLE_CANONICAL_LANGUAGES).not.toContain("Druidic");
+  expect(new Set(CANONICAL_LANGUAGES).size).toBe(CANONICAL_LANGUAGES.length);
 });
