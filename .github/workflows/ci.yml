@@ -8,6 +8,22 @@ on:
   pull_request:
 
 jobs:
+  database:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.116.0
+      - name: Verify full-schema migration and SQL regressions
+        run: bash scripts/verify-guided-migration.sh
+      - name: Stop isolated database
+        if: always()
+        run: supabase stop --no-backup
+
   verify:
     runs-on: ubuntu-latest
 
