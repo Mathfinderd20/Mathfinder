@@ -119,6 +119,42 @@ describe("planLevelUp", () => {
 describe("validateLevelUpSelection", () => {
   const plan = planLevelUp(grukk(), "Barbarian"); // level 2, 4 skill points, no feat/ASI
 
+  it.each([0, -1, 13, 2.5, NaN])(
+    "rejects an invalid hit-die result %s",
+    (hitPointRoll) => {
+      expect(
+        validateLevelUpSelection(plan, {
+          className: "Barbarian",
+          hitPointRoll,
+          skillRanks: {},
+        }),
+      ).toContainEqual(
+        expect.objectContaining({
+          code: "invalid-hit-point-roll",
+          severity: "error",
+        }),
+      );
+    },
+  );
+
+  it.each([-1, 0.5, NaN])(
+    "rejects invalid ranks %s rather than reducing the spent budget",
+    (rank) => {
+      expect(
+        validateLevelUpSelection(plan, {
+          className: "Barbarian",
+          hitPointRoll: 7,
+          skillRanks: { climb: rank },
+        }),
+      ).toContainEqual(
+        expect.objectContaining({
+          code: "skill-ranks-per-level",
+          severity: "error",
+        }),
+      );
+    },
+  );
+
   it("rejects spending more skill points than available", () => {
     const issues = validateLevelUpSelection(plan, {
       className: "Barbarian",
@@ -168,6 +204,30 @@ describe("validateLevelUpSelection", () => {
 });
 
 describe("createPreLevelBuild", () => {
+  it("includes an Intelligence increase and an eligible favored-class skill in the new budget", () => {
+    const build = humanLearner();
+    build.baseAbilityScores.int = 13;
+    build.favoredClassName = "Barbarian";
+    build.levels = Array.from({ length: 3 }, () => ({
+      className: "Barbarian",
+      hitPointRoll: 7,
+    }));
+    const before = JSON.parse(JSON.stringify(build)) as CharacterBuild;
+    const preview = createPreLevelBuild(build, {
+      className: "Barbarian",
+      abilityIncrease: "int",
+      favoredClass: "skill",
+    });
+    expect(preview.plan.skillPoints).toBe(9); // 4 class + 3 Int + 1 human + 1 favored class
+    expect(build).toEqual(before);
+    expect(
+      createPreLevelBuild(build, {
+        className: "Rogue",
+        abilityIncrease: "int",
+        favoredClass: "skill",
+      }).plan.skillPoints,
+    ).toBe(12);
+  });
   it("stages a preview build with the chosen class and stat increase before commit", () => {
     let build = grukk();
     for (let i = 0; i < 2; i++) {

@@ -1,3 +1,7 @@
+import {
+  FULL_DIVINE_SPELLS_PER_DAY,
+  MARTIAL_DIVINE_SPELLS_PER_DAY,
+} from "./divine-spell-progressions";
 import type { Alignment } from "../alignment";
 import {
   alignmentRestrictionsEnabled,
@@ -8,6 +12,7 @@ import type {
   AbilityKey,
   ArmorCategory,
   SkillKey,
+  SpellAccess,
   SpellcastingType,
   WeaponProficiencyGroup,
 } from "../types";
@@ -25,6 +30,7 @@ export type ClassAlignmentRestriction =
 
 export interface SpellcastingProgression {
   castingType: SpellcastingType;
+  spellAccess?: SpellAccess;
   castingAbility: AbilityKey;
   spellsPerDay: Record<number, Partial<Record<number, number>>>;
   spellsKnown?: Record<number, Partial<Record<number, number>>>;
@@ -314,6 +320,7 @@ export const SAMPLE_CLASSES: ClassRegistry = {
       "spellcraft",
     ],
     spellcasting: {
+      spellAccess: "spellbook",
       castingType: "prepared",
       castingAbility: "int",
       spellsPerDay: {
@@ -350,15 +357,10 @@ export const SAMPLE_CLASSES: ClassRegistry = {
       "spellcraft",
     ],
     spellcasting: {
+      spellAccess: "full-list",
       castingType: "prepared",
       castingAbility: "wis",
-      spellsPerDay: {
-        1: spellsByLevel(3, 1),
-        2: spellsByLevel(4, 2),
-        3: spellsByLevel(4, 2, 1),
-        4: spellsByLevel(5, 3, 2),
-        5: spellsByLevel(5, 3, 2, 1),
-      },
+      spellsPerDay: FULL_DIVINE_SPELLS_PER_DAY,
     },
   },
   sorcerer: {
@@ -380,6 +382,7 @@ export const SAMPLE_CLASSES: ClassRegistry = {
       "use-magic-device",
     ],
     spellcasting: {
+      spellAccess: "limited-known",
       castingType: "spontaneous",
       castingAbility: "cha",
       spellsPerDay: {
@@ -468,15 +471,10 @@ export const SAMPLE_CLASSES: ClassRegistry = {
       "swim",
     ],
     spellcasting: {
+      spellAccess: "full-list",
       castingType: "prepared",
       castingAbility: "wis",
-      spellsPerDay: {
-        1: spellsByLevel(3, 1),
-        2: spellsByLevel(4, 2),
-        3: spellsByLevel(4, 2, 1),
-        4: spellsByLevel(5, 3, 2),
-        5: spellsByLevel(5, 3, 2, 1),
-      },
+      spellsPerDay: FULL_DIVINE_SPELLS_PER_DAY,
     },
   },
   bard: {
@@ -527,6 +525,7 @@ export const SAMPLE_CLASSES: ClassRegistry = {
       "use-magic-device",
     ],
     spellcasting: {
+      spellAccess: "limited-known",
       castingType: "spontaneous",
       castingAbility: "cha",
       spellsPerDay: {
@@ -572,12 +571,10 @@ export const SAMPLE_CLASSES: ClassRegistry = {
       "swim",
     ],
     spellcasting: {
+      spellAccess: "full-list",
       castingType: "prepared",
       castingAbility: "wis",
-      spellsPerDay: {
-        4: spellsByLevel(undefined, 1),
-        5: spellsByLevel(undefined, 2),
-      },
+      spellsPerDay: MARTIAL_DIVINE_SPELLS_PER_DAY,
     },
   },
   paladin: {
@@ -607,12 +604,10 @@ export const SAMPLE_CLASSES: ClassRegistry = {
       "spellcraft",
     ],
     spellcasting: {
+      spellAccess: "full-list",
       castingType: "prepared",
-      castingAbility: "wis",
-      spellsPerDay: {
-        4: spellsByLevel(undefined, 1),
-        5: spellsByLevel(undefined, 2),
-      },
+      castingAbility: "cha",
+      spellsPerDay: MARTIAL_DIVINE_SPELLS_PER_DAY,
     },
   },
   inquisitor: {
@@ -648,6 +643,7 @@ export const SAMPLE_CLASSES: ClassRegistry = {
       "swim",
     ],
     spellcasting: {
+      spellAccess: "limited-known",
       castingType: "spontaneous",
       castingAbility: "wis",
       spellsPerDay: {
@@ -676,24 +672,52 @@ export function getClassDefinition(
   return definition ? completeCoreSpellProgression(definition) : undefined;
 }
 
-/** Older exported catalogs contain only Sorcerer levels 1–5. Preserve explicit
- * catalog rows while filling missing levels from the core progression.
+/** Older exported catalogs contain abbreviated core progressions. Preserve
+ * explicit catalog rows except for the recognized legacy divine placeholders.
  * Source: https://legacy.aonprd.com/coreRuleBook/classes/sorcerer.html
  */
 export function completeCoreSpellProgression(
   definition: ClassDefinition,
 ): ClassDefinition {
-  if (definition.name.toLowerCase() !== "sorcerer" || !definition.spellcasting)
+  const key = definition.name.toLowerCase();
+  if (
+    !definition.spellcasting ||
+    !["sorcerer", "cleric", "druid", "paladin", "ranger"].includes(key)
+  )
     return definition;
-  const core = SAMPLE_CLASSES.sorcerer!.spellcasting!;
+  const core = SAMPLE_CLASSES[key]!.spellcasting!;
+  const source = definition.spellcasting;
+  if (source.castingType !== core.castingType) return definition;
+  const legacyRows: Record<
+    string,
+    Record<number, Partial<Record<number, number>>>
+  > = {
+    cleric: { 4: { 0: 5, 1: 3, 2: 2 }, 5: { 0: 5, 1: 3, 2: 2, 3: 1 } },
+    druid: { 4: { 0: 5, 1: 3, 2: 2 }, 5: { 0: 5, 1: 3, 2: 2, 3: 1 } },
+    ranger: { 4: { 1: 1 }, 5: { 1: 2 } },
+    paladin: { 4: { 3: 1 }, 5: { 3: 1 } },
+  };
+  const spellsPerDay = { ...core.spellsPerDay, ...source.spellsPerDay };
+  if (!source.spellAccess) {
+    for (const [level, oldRow] of Object.entries(legacyRows[key] ?? {})) {
+      const row = source.spellsPerDay[Number(level)];
+      if (
+        row &&
+        Object.keys(row).length === Object.keys(oldRow).length &&
+        Object.entries(oldRow).every(
+          ([spellLevel, slots]) => row[Number(spellLevel)] === slots,
+        )
+      ) {
+        spellsPerDay[Number(level)] = core.spellsPerDay[Number(level)]!;
+      }
+    }
+  }
   return {
     ...definition,
     spellcasting: {
-      ...definition.spellcasting,
-      spellsPerDay: {
-        ...core.spellsPerDay,
-        ...definition.spellcasting.spellsPerDay,
-      },
+      ...source,
+      spellAccess: source.spellAccess ?? core.spellAccess,
+      spellsPerDay,
       spellsKnown: {
         ...core.spellsKnown,
         ...definition.spellcasting.spellsKnown,

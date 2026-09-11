@@ -514,6 +514,9 @@ export interface DerivedInventoryItem {
 
 export type SpellcastingType = "prepared" | "spontaneous";
 
+/** How a caster acquires spells, independently of how they cast them. */
+export type SpellAccess = "full-list" | "spellbook" | "limited-known";
+
 export type SpellSelectionByLevel = Partial<Record<number, string[]>>;
 
 export interface SpellSelectionState {
@@ -544,6 +547,7 @@ export interface HitPointDetails {
 export interface SpellcastingEntry {
   className: string;
   castingType: SpellcastingType;
+  spellAccess?: SpellAccess;
   castingAbility: AbilityKey;
   casterLevel: number;
   domains?: string[];
@@ -582,6 +586,7 @@ export interface SpellSelectionDiagnostic {
 export interface DerivedSpellcasting {
   className: string;
   castingType: SpellcastingType;
+  spellAccess: SpellAccess;
   castingAbility: AbilityKey;
   castingAbilityScore: number;
   maxCastableSpellLevel: number;
@@ -597,6 +602,9 @@ export interface DerivedSpellcasting {
   spellsKnown: Partial<Record<number, number>>;
   preparedCapacity: Partial<Record<number, number>>;
   grantedSpells: SpellLibraryState;
+  /** Persisted additions only; editor indices must refer to this collection. */
+  manualLibrarySpells: SpellLibraryState;
+  /** Effective library, including automatically available class spells. */
   librarySpells: SpellLibraryState;
   selectedPreparedSpells: SpellSelectionByLevel;
   selectedKnownSpells: SpellSelectionByLevel;

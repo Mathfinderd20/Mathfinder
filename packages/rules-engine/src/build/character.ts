@@ -1,5 +1,6 @@
 import { abilityModifier } from "../abilities";
 import { computeSheet } from "../compute";
+import { spellAccessForEntry } from "../spellcasting";
 import {
   effectiveWeaponProficiencyGroup,
   encumbranceRulesEnabled,
@@ -16,6 +17,7 @@ import type {
   RaceMetadata,
   SheetDescriptor,
   SkillKey,
+  SpellAccess,
   SpellExtraSlotsByLevel,
   SpellLibraryState,
   SpellSelectionState,
@@ -767,6 +769,7 @@ function effectiveSpellcastingSelections(
   className: string;
   classLevel: number;
   castingType: "prepared" | "spontaneous";
+  spellAccess: SpellAccess;
   domains: string[];
   specialistSchool?: string;
   spellsPerDay: Partial<Record<number, number>>;
@@ -857,6 +860,10 @@ function effectiveSpellcastingSelections(
           className: def.name,
           classLevel,
           castingType: def.spellcasting.castingType,
+          spellAccess: spellAccessForEntry({
+            className: def.name,
+            ...def.spellcasting,
+          }),
           domains: selectedDomains,
           specialistSchool,
           spellsPerDay,
@@ -1372,6 +1379,7 @@ export function buildCharacter(
       {
         className: def.name,
         castingType: def.spellcasting.castingType,
+        spellAccess: def.spellcasting.spellAccess,
         castingAbility: def.spellcasting.castingAbility,
         casterLevel: count,
         domains: selectedDomains,
@@ -2246,7 +2254,12 @@ export function validateBuild(
       const manualLibraryNames = library[spellLevel] ?? [];
       const grantedLibraryNames = grantedSpells[spellLevel] ?? [];
       const libraryNames = [...manualLibraryNames, ...grantedLibraryNames];
+      const automaticallyAvailable =
+        entry.spellAccess === "full-list" &&
+        (entry.spellsPerDay[spellLevel] ?? -1) >= 0 &&
+        actualLevel === spellLevel;
       if (
+        !automaticallyAvailable &&
         manualLibraryNames.length > 0 &&
         !libraryNames.some(
           (name) => name.toLowerCase() === spellName.toLowerCase(),
@@ -2279,12 +2292,13 @@ export function validateBuild(
         entry.castingAbilityScore,
         spellLevel,
       );
-      const capacity =
-        (baseSlots > 0 || extraSlots > 0) && canCastLevel
-          ? baseSlots +
-            bonusSpellSlotsForLevel(entry.castingAbilityMod, spellLevel) +
-            extraSlots
-          : 0;
+      const capacity = canCastLevel
+        ? baseSlots +
+          ((entry.spellsPerDay[spellLevel] ?? -1) >= 0
+            ? bonusSpellSlotsForLevel(entry.castingAbilityMod, spellLevel)
+            : 0) +
+          extraSlots
+        : 0;
       if (!canCastLevel && selectedCount > 0) {
         issues.push({
           severity: "error",
@@ -2456,10 +2470,31 @@ export function createPreLevelBuild(
     favoredClass: selection.favoredClass,
     favoredClassSelection: selection.favoredClassSelection,
   };
+  const next = applyLevelUp(build, normalizedSelection);
+  const definition = resolvedClassDefinition(
+    registry,
+    next,
+    selection.className,
+    archetypeRegistry,
+  )!;
+  const favoredSkill =
+    selection.favoredClass === "skill" &&
+    build.favoredClassName?.toLowerCase() === definition.name.toLowerCase()
+      ? 1
+      : 0;
   return {
-    plan,
+    plan: {
+      ...plan,
+      skillPoints:
+        Math.max(
+          1,
+          definition.skillRanksPerLevel + effectiveAbilityMod(next, "int"),
+        ) +
+        raceExtraSkillRanksPerLevel(resolveRaceChoice(next.race)) +
+        favoredSkill,
+    },
     selection: normalizedSelection,
-    build: applyLevelUp(build, normalizedSelection),
+    build: next,
   };
 }
 

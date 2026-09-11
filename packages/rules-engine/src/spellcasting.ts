@@ -6,6 +6,7 @@ import type {
   SpellSelectionByLevel,
   SpellSelectionDiagnostic,
   SpellcastingEntry,
+  SpellAccess,
 } from "./types";
 import type { DerivedAbility } from "./types";
 import { modifiersFor, resolveModifiers } from "./modifiers";
@@ -15,6 +16,45 @@ import {
   getSpell,
   type SpellRegistry,
 } from "./content/spells";
+
+/** Legacy catalogs predate spellAccess. Never infer full-list access merely
+ * from prepared casting: wizards, witches, and magi acquire spells individually.
+ * Explicit content metadata also supports archetypes and custom classes.
+ */
+export function spellAccessForEntry(
+  entry: Pick<SpellcastingEntry, "className" | "castingType" | "spellAccess">,
+): SpellAccess {
+  if (entry.spellAccess) return entry.spellAccess;
+  if (entry.castingType === "spontaneous") return "limited-known";
+  return [
+    "cleric",
+    "druid",
+    "paladin",
+    "ranger",
+    "antipaladin",
+    "shaman",
+    "warpriest",
+  ].includes(entry.className.trim().toLowerCase())
+    ? "full-list"
+    : "spellbook";
+}
+
+function uniqueSpellNames(names: string[]): string[] {
+  const seen = new Set<string>();
+  return names.filter((name) => {
+    const key = name.trim().toLowerCase();
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+/** Zero base slots means unlocked, with only ability bonus slots available. */
+function unlockedSpellLevels(entry: SpellcastingEntry): number[] {
+  return Object.entries(entry.spellsPerDay)
+    .filter(([, count]) => count !== undefined && count >= 0)
+    .map(([level]) => Number(level));
+}
 
 function stat(total: number): DerivedStat {
   return {
@@ -49,7 +89,7 @@ function selectedLevels(byLevel: SpellSelectionByLevel | undefined): number[] {
 
 function maxSpellLevel(entry: SpellcastingEntry): number {
   const levels = [
-    ...positiveLevels(entry.spellsPerDay),
+    ...unlockedSpellLevels(entry),
     ...positiveLevels(entry.spellsKnown),
     ...positiveLevels(entry.extraSlots),
     ...selectedLevels(entry.grantedSpells),
@@ -139,6 +179,8 @@ export function deriveSpellcasting(
   const entries = input.spellcasting ?? [];
   const spellSaveDcBonusesBySchool = deriveSchoolSaveDcBonuses(input);
   return entries.map((entry: SpellcastingEntry) => {
+    const spellAccess = spellAccessForEntry(entry);
+    const unlockedLevels = new Set(unlockedSpellLevels(entry));
     const ability = abilities[entry.castingAbility];
     const abilityScore = ability.score;
     const abilityMod = ability.mod;
@@ -166,9 +208,11 @@ export function deriveSpellcasting(
       const canCastLevel = canCastSpellLevel(abilityScore, level);
       const isAtWill = level === 0;
       const bonusSlots =
-        baseSlots > 0 && canCastLevel ? bonusSpellSlots(abilityMod, level) : 0;
+        unlockedLevels.has(level) && canCastLevel
+          ? bonusSpellSlots(abilityMod, level)
+          : 0;
       const totalSlots = canCastLevel ? baseSlots + bonusSlots + extraSlots : 0;
-      if (baseSlots > 0 || extraSlots > 0 || totalSlots > 0) {
+      if (unlockedLevels.has(level) || extraSlots > 0 || totalSlots > 0) {
         bonusSpellsPerDay[level] = bonusSlots;
         extraSlotsPerDay[level] = extraSlots;
         restrictedExtraSlotsPerDay[level] = restrictedExtraSlots;
@@ -185,6 +229,12 @@ export function deriveSpellcasting(
     }
 
     const grantedSpells = cloneSelections(entry.grantedSpells);
+    if (spellAccess === "full-list") {
+      for (const level of Object.keys(grantedSpells).map(Number)) {
+        if (!unlockedLevels.has(level)) delete grantedSpells[level];
+      }
+    }
+    const manualLibrarySpells = cloneSelections(entry.library);
     const librarySpells = cloneSelections(entry.library);
     const selectedPreparedSpells = cloneSelections(entry.selections?.prepared);
     const selectedKnownSpells = cloneSelections(entry.selections?.known);
@@ -203,11 +253,17 @@ export function deriveSpellcasting(
         .filter((spell) => classSpellLevel(spell, entry.className) === level)
         .map((spell) => spell.name)
         .sort((a, b) => a.localeCompare(b));
-      const manualLibrarySpellNames = librarySpells[level] ?? [];
-      const librarySpellNames = [
+      const manualLibrarySpellNames = manualLibrarySpells[level] ?? [];
+      if (spellAccess === "full-list" && unlockedLevels.has(level)) {
+        librarySpells[level] = uniqueSpellNames([
+          ...availableSpellNames,
+          ...manualLibrarySpellNames,
+        ]);
+      }
+      const librarySpellNames = uniqueSpellNames([
         ...(grantedSpells[level] ?? []),
-        ...manualLibrarySpellNames,
-      ];
+        ...(librarySpells[level] ?? []),
+      ]);
       const unknownSpells: string[] = [];
       const offListSpells: string[] = [];
       const wrongLevelSpells: { name: string; actualLevel: number }[] = [];
@@ -223,7 +279,7 @@ export function deriveSpellcasting(
         else if (actualLevel !== level)
           wrongLevelSpells.push({ name, actualLevel });
         if (
-          manualLibrarySpellNames.length > 0 &&
+          (spellAccess === "full-list" || manualLibrarySpellNames.length > 0) &&
           !librarySpellNames.some((n) => n.toLowerCase() === name.toLowerCase())
         ) {
           missingFromLibrary.push(name);
@@ -285,6 +341,7 @@ export function deriveSpellcasting(
     return {
       className: entry.className,
       castingType: entry.castingType,
+      spellAccess,
       castingAbility: entry.castingAbility,
       castingAbilityScore: abilityScore,
       maxCastableSpellLevel: highestCastableLevel,
@@ -301,6 +358,7 @@ export function deriveSpellcasting(
       preparedCapacity:
         entry.castingType === "prepared" ? totalSpellsPerDay : {},
       grantedSpells,
+      manualLibrarySpells,
       librarySpells,
       selectedPreparedSpells,
       selectedKnownSpells,

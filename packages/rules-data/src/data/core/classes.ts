@@ -1,6 +1,5 @@
 import {
   SAMPLE_CLASSES,
-  spellsByLevel,
   type ClassDefinition,
   type ClassRegistry,
 } from "@mathfinder/rules-engine";
@@ -47,11 +46,9 @@ export const CORE_CLASSES: ClassDefinition[] = overridePacklessClasses([
     ],
     spellcasting: {
       castingType: "prepared",
+      spellAccess: "full-list",
       castingAbility: "cha",
-      spellsPerDay: {
-        4: spellsByLevel(0, 0, 0, 1),
-        5: spellsByLevel(0, 0, 0, 1),
-      },
+      spellsPerDay: SAMPLE_CLASSES.paladin!.spellcasting!.spellsPerDay,
     },
   },
 ]);

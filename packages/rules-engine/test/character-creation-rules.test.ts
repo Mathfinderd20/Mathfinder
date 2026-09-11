@@ -6,9 +6,55 @@ import {
   pointBuyTotal,
   parseCharacterCreationRules,
   validateCreationRules,
+  validateCampaignTraits,
 } from "../src/character-creation-rules";
 
 describe("PF1e character generation", () => {
+  it("round-trips optional campaign trait settings while accepting legacy rules", () => {
+    const rules = {
+      ...DEFAULT_CREATION_RULES,
+      campaignTraitLimit: 2,
+      campaignTraitOptions: ["Caravan Guard", "Local Informant"],
+    };
+    expect(parseCharacterCreationRules(rules)).toEqual(rules);
+    expect(
+      parseCharacterCreationRules({ ...rules, campaignTraitLimit: 4 }),
+    ).toBeUndefined();
+    expect(
+      parseCharacterCreationRules({ ...rules, campaignTraitOptions: [null] }),
+    ).toBeUndefined();
+    expect(
+      parseCharacterCreationRules({ ...rules, campaignTraitOptions: "Guard" }),
+    ).toBeUndefined();
+    expect(
+      parseCharacterCreationRules({
+        ...rules,
+        campaignTraitOptions: ["Guard", "guard"],
+      }),
+    ).toBeUndefined();
+  });
+  it("enforces the allowance and catalog without making optional traits mandatory", () => {
+    const rules = {
+      ...DEFAULT_CREATION_RULES,
+      campaignTraitLimit: 1,
+      campaignTraitOptions: ["Caravan Guard", "Local Informant"],
+    };
+    expect(validateCampaignTraits([], rules)).toEqual([]);
+    expect(validateCampaignTraits(["Caravan Guard"], rules)).toEqual([]);
+    expect(
+      validateCampaignTraits(["Caravan Guard", "Local Informant"], rules),
+    ).toHaveLength(1);
+    expect(validateCampaignTraits(["Unknown"], rules)).toHaveLength(1);
+    expect(
+      validateCampaignTraits(["Caravan Guard", "caravan guard"]),
+    ).toHaveLength(1);
+    expect(
+      validateCampaignTraits(["Caravan Guard"], {
+        ...rules,
+        campaignTraitLimit: 0,
+      }),
+    ).toHaveLength(1);
+  });
   it("uses the complete PF1e cost table", () => {
     expect(Array.from({ length: 12 }, (_, i) => pointBuyCost(i + 7))).toEqual([
       -4, -2, -1, 0, 1, 2, 3, 5, 7, 10, 13, 17,
