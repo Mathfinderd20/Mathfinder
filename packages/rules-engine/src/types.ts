@@ -549,8 +549,10 @@ export interface SpellcastingEntry {
   castingType: SpellcastingType;
   spellAccess?: SpellAccess;
   castingAbility: AbilityKey;
+  zeroLevelLabel?: string;
   casterLevel: number;
   domains?: string[];
+  bloodline?: string;
   specialistSchool?: string;
   spellsPerDay: Partial<Record<number, number>>;
   spellsKnown?: Partial<Record<number, number>>;
@@ -574,6 +576,7 @@ export interface SpellSelectionDiagnostic {
   wrongLevelSpells: { name: string; actualLevel: number }[];
   missingFromLibrary: string[];
   requiredAbilityScore: number;
+  meetsCastingAbility: boolean;
   canCastLevel: boolean;
   isAtWill: boolean;
   overCapacity: boolean;
@@ -588,10 +591,12 @@ export interface DerivedSpellcasting {
   castingType: SpellcastingType;
   spellAccess: SpellAccess;
   castingAbility: AbilityKey;
+  zeroLevelLabel: string;
   castingAbilityScore: number;
   maxCastableSpellLevel: number;
   casterLevel: number;
   domains: string[];
+  bloodline?: string;
   specialistSchool?: string;
   concentration: DerivedStat;
   baseSpellsPerDay: Partial<Record<number, number>>;
@@ -602,6 +607,8 @@ export interface DerivedSpellcasting {
   spellsKnown: Partial<Record<number, number>>;
   preparedCapacity: Partial<Record<number, number>>;
   grantedSpells: SpellLibraryState;
+  /** Off-class/alternate-level domain spells can only occupy the reserved domain slot. */
+  restrictedOnlySpells?: SpellLibraryState;
   /** Persisted additions only; editor indices must refer to this collection. */
   manualLibrarySpells: SpellLibraryState;
   /** Effective library, including automatically available class spells. */

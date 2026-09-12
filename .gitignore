@@ -44,6 +44,7 @@ packages/content-db/packages/content-db/data/
 # Misc
 *.tsbuildinfo
 .cache/
+apps/web/dist-*/
 .tmp-pydeps/
 tmp-*
 tmp_*.txt

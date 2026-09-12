@@ -1,0 +1,22 @@
+.spell-rule-prose {
+  overflow-wrap: anywhere;
+}
+.spell-rule-prose p {
+  white-space: pre-wrap;
+}
+.spell-rule-prose table {
+  border-collapse: collapse;
+  display: block;
+  overflow-x: auto;
+  max-width: 100%;
+}
+.spell-rule-prose td,
+.spell-rule-prose th {
+  border: 1px solid var(--line, #555);
+  padding: 0.4rem 0.6rem;
+  text-align: left;
+}
+.spell-rule-prose ul,
+.spell-rule-prose ol {
+  padding-left: 1.5rem;
+}

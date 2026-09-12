@@ -44,8 +44,29 @@ function exportUsableSnapshot(db: ReturnType<typeof openDatabase>) {
 
 async function main() {
   const command = process.argv[2];
+  if (
+    command !== "report-parser-qa" &&
+    (process.env.VITE_APP_ENV === "staging" ||
+      process.env.INGESTION_DB_PATH ||
+      process.env.INGESTION_SUPABASE_URL ||
+      process.env.INGESTION_RUNTIME_RELEASE)
+  )
+    throw new Error(
+      "Legacy ingestion/export is retired for staging. Use the reviewed ingestion API, worker and release workflow.",
+    );
   const db = openDatabase();
   try {
+    if (
+      command !== "report-parser-qa" &&
+      db
+        .prepare(
+          "SELECT 1 FROM sqlite_master WHERE type='table' AND name='catalogue_jobs'",
+        )
+        .get()
+    )
+      throw new Error(
+        "Legacy ingestion/export cannot modify a reviewed holding-area database.",
+      );
     if (command === "init") {
       console.log(`DB ready at ${db.name}`);
       return;

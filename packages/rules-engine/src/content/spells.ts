@@ -25,6 +25,17 @@ export interface SpellDefinition {
   spellResistance?: string;
   source?: string;
   sourceUrl?: string;
+  /** Content-free reference placeholder after a reviewed catalogue removal. */
+  unavailable?: boolean;
+  subschool?: string;
+  descriptors?: string[];
+  target?: string;
+  effect?: string;
+  area?: string;
+  descriptionHtml?: string;
+  exceptionalText?: string;
+  levelText?: string;
+  copyrightNotice?: string;
 }
 
 export type SpellRegistry = Record<string, SpellDefinition>;

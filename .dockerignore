@@ -13,6 +13,7 @@
 supabase
 **/*.sqlite
 **/*.sqlite3
+packages/content-db/data/
 **/.git
 **/.gitignore
 **/.project

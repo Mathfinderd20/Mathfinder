@@ -14,6 +14,8 @@ import { readAuthReturnPath } from "../features/auth/authNavigation";
 import { ProfileMenu } from "../components/ProfileMenu";
 import { reconnect } from "../lib/cloudPersistence";
 import { Link, useLocation } from "react-router-dom";
+import { IngestionPage } from "../features/ingestion/IngestionPage";
+import { CatalogueNotice } from "../features/ingestion/CatalogueNotice";
 
 function ProtectedApplication() {
   const cloud = useCloudConnection();
@@ -48,6 +50,7 @@ function ProtectedApplication() {
   const blocked = offline && /\/campaigns\/(new|join)$/.test(location.pathname);
   return (
     <>
+      <CatalogueNotice />
       {offline && (
         <aside
           className="connection-banner"
@@ -86,6 +89,9 @@ function ProtectedApplication() {
 function ApplicationRoutes() {
   return (
     <Routes>
+      {import.meta.env.VITE_APP_ENV === "staging" && (
+        <Route path="/admin/ingestion" element={<IngestionPage />} />
+      )}
       <Route path="/" element={<HomePage />} />
       <Route path="/characters/new" element={<NewCharacterPage />} />
       <Route

@@ -52,6 +52,10 @@ import {
   grantedDomainSpells,
 } from "../content/domains";
 import {
+  selectedBloodline,
+  grantedBloodlineSpells,
+} from "../content/bloodlines";
+import {
   getSchool,
   grantedSchoolSpells,
   schoolExtraSlots,
@@ -770,7 +774,9 @@ function effectiveSpellcastingSelections(
   classLevel: number;
   castingType: "prepared" | "spontaneous";
   spellAccess: SpellAccess;
+  zeroLevelLabel?: string;
   domains: string[];
+  bloodline?: string;
   specialistSchool?: string;
   spellsPerDay: Partial<Record<number, number>>;
   spellsKnown: Partial<Record<number, number>>;
@@ -864,7 +870,9 @@ function effectiveSpellcastingSelections(
             className: def.name,
             ...def.spellcasting,
           }),
+          zeroLevelLabel: def.spellcasting.zeroLevelLabel,
           domains: selectedDomains,
+          bloodline: selectedBloodline(build, def.name),
           specialistSchool,
           spellsPerDay,
           spellsKnown: def.spellcasting.spellsKnown?.[classLevel] ?? {},
@@ -872,7 +880,13 @@ function effectiveSpellcastingSelections(
           restrictedExtraSlots,
           grantedSpells: mergeSpellLibraries(
             domainsEnabled ? grantedDomainSpells(selectedDomains) : {},
-            grantedSchoolSpells(specialistSchool),
+            mergeSpellLibraries(
+              grantedSchoolSpells(specialistSchool),
+              grantedBloodlineSpells(
+                selectedBloodline(build, def.name),
+                classLevel,
+              ),
+            ),
           ),
           castingAbilityScore: effectiveAbilityScore(
             build,
@@ -1381,8 +1395,10 @@ export function buildCharacter(
         castingType: def.spellcasting.castingType,
         spellAccess: def.spellcasting.spellAccess,
         castingAbility: def.spellcasting.castingAbility,
+        zeroLevelLabel: def.spellcasting.zeroLevelLabel,
         casterLevel: count,
         domains: selectedDomains,
+        bloodline: selectedBloodline(build, def.name),
         specialistSchool,
         spellsPerDay,
         spellsKnown: def.spellcasting.spellsKnown?.[count] ?? {},
@@ -1390,9 +1406,12 @@ export function buildCharacter(
         restrictedExtraSlots,
         grantedSpells: mergeSpellLibraries(
           domainsEnabled ? grantedDomainSpells(selectedDomains) : {},
-          def.name.toLowerCase() === "wizard"
-            ? grantedSchoolSpells(specialistSchool)
-            : {},
+          mergeSpellLibraries(
+            grantedBloodlineSpells(selectedBloodline(build, def.name), count),
+            def.name.toLowerCase() === "wizard"
+              ? grantedSchoolSpells(specialistSchool)
+              : {},
+          ),
         ),
         selections:
           build.spellSelections?.[className.toLowerCase()] ??
@@ -2236,6 +2255,10 @@ export function validateBuild(
         return;
       }
       const actualLevel = classSpellLevel(spell, className);
+      const isGranted = (grantedSpells[spellLevel] ?? []).some(
+        (name) => name.toLowerCase() === spellName.toLowerCase(),
+      );
+      if (isGranted) return;
       if (actualLevel === undefined) {
         issues.push({
           severity: "error",
@@ -2288,18 +2311,37 @@ export function validateBuild(
       const baseSlots = entry.spellsPerDay[spellLevel] ?? 0;
       const extraSlots = entry.extraSlots[spellLevel] ?? 0;
       const restrictedExtraSlots = entry.restrictedExtraSlots[spellLevel] ?? 0;
-      const canCastLevel = canCastSpellLevel(
+      const meetsCastingAbility = canCastSpellLevel(
         entry.castingAbilityScore,
         spellLevel,
       );
-      const capacity = canCastLevel
-        ? baseSlots +
-          ((entry.spellsPerDay[spellLevel] ?? -1) >= 0
-            ? bonusSpellSlotsForLevel(entry.castingAbilityMod, spellLevel)
-            : 0) +
-          extraSlots
+      const grantedNames = grantedSpells[spellLevel] ?? [];
+      const eligibleRestrictedCount = selectedNames.filter((spellName) =>
+        grantedNames.some(
+          (name) => name.toLowerCase() === spellName.toLowerCase(),
+        ),
+      ).length;
+      const abilityIndependentDomainSlots = entry.domains?.length
+        ? restrictedExtraSlots
         : 0;
-      if (!canCastLevel && selectedCount > 0) {
+      const abilityGatedRestrictedSlots = Math.max(
+        0,
+        restrictedExtraSlots - abilityIndependentDomainSlots,
+      );
+      const unrestrictedExtraSlots = Math.max(
+        0,
+        extraSlots - restrictedExtraSlots,
+      );
+      const capacity =
+        (meetsCastingAbility
+          ? baseSlots +
+            ((entry.spellsPerDay[spellLevel] ?? -1) >= 0
+              ? bonusSpellSlotsForLevel(entry.castingAbilityMod, spellLevel)
+              : 0) +
+            unrestrictedExtraSlots +
+            abilityGatedRestrictedSlots
+          : 0) + abilityIndependentDomainSlots;
+      if (!meetsCastingAbility && selectedCount - eligibleRestrictedCount > 0) {
         issues.push({
           severity: "error",
           code: "spell-level-ability-gated",
@@ -2313,16 +2355,24 @@ export function validateBuild(
           message: `${entry.className} prepared ${selectedCount} level ${spellLevel} spells but capacity is ${capacity}.`,
         });
       }
-      const grantedNames = grantedSpells[spellLevel] ?? [];
-      const eligibleRestrictedCount = selectedNames.filter((spellName) =>
-        grantedNames.some(
-          (name) => name.toLowerCase() === spellName.toLowerCase(),
-        ),
-      ).length;
       const unrestrictedCapacity = Math.max(0, capacity - restrictedExtraSlots);
       const restrictedShortfall = Math.max(
         0,
-        selectedCount - unrestrictedCapacity - eligibleRestrictedCount,
+        entry.domains?.length
+          ? eligibleRestrictedCount - restrictedExtraSlots
+          : selectedNames.filter((name) => {
+              const spell = getSpell(spellRegistry, name);
+              return (
+                grantedNames.some(
+                  (grant) => grant.toLowerCase() === name.toLowerCase(),
+                ) &&
+                (!spell ||
+                  classSpellLevel(spell, entry.className) !== spellLevel)
+              );
+            }).length - restrictedExtraSlots,
+        entry.domains?.length
+          ? selectedCount - eligibleRestrictedCount - unrestrictedCapacity
+          : selectedCount - unrestrictedCapacity - eligibleRestrictedCount,
       );
       if (restrictedShortfall > 0) {
         issues.push({
@@ -2340,7 +2390,12 @@ export function validateBuild(
     for (const [spellLevelStr, names] of Object.entries(known)) {
       const spellLevel = Number(spellLevelStr);
       const selectedNames = names ?? [];
-      const selectedCount = selectedNames.length;
+      const selectedCount = selectedNames.filter(
+        (name) =>
+          !(grantedSpells[spellLevel] ?? []).some(
+            (grant) => grant.toLowerCase() === name.toLowerCase(),
+          ),
+      ).length;
       const cap = entry.spellsKnown[spellLevel] ?? 0;
       if (selectedCount > cap) {
         issues.push({

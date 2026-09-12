@@ -1,6 +1,10 @@
 import { useContext, useMemo, useState } from "react";
+import { SpellRulesText } from "./SpellRulesText";
 import {
   spellSaveDcForSchool,
+  spellLevelLabel,
+  BLOODLINES,
+  getDomain,
   type DerivedSpellcasting,
 } from "@mathfinder/rules-engine";
 import {
@@ -22,6 +26,63 @@ const unique = (names: string[]) => [
     names.filter(Boolean).map((name) => [normalized(name), name]),
   ).values(),
 ];
+export function spellGrantLabels(
+  caster: DerivedSpellcasting,
+  level: number,
+  name: string,
+) {
+  if (
+    !(caster.grantedSpells[level] ?? []).some(
+      (grant) => normalized(grant) === normalized(name),
+    )
+  )
+    return [];
+  const labels: { kind: string; source: string; note?: string }[] = [];
+  for (const id of caster.domains) {
+    const domain = getDomain(id);
+    if (normalized(domain?.spells[level] ?? "") === normalized(name))
+      labels.push({
+        kind: "Domain",
+        source: domain!.name,
+        note: domain?.spellNotes?.[level],
+      });
+  }
+  const bloodline = caster.bloodline
+    ? BLOODLINES[caster.bloodline.toLowerCase()]
+    : undefined;
+  if (
+    normalized(bloodline?.bonusSpells?.[level - 1] ?? "") === normalized(name)
+  )
+    labels.push({
+      kind: "Bloodline",
+      source: bloodline!.name,
+      note: bloodline?.spellNotes?.[level],
+    });
+  if (!labels.length)
+    labels.push({
+      kind: caster.specialistSchool ? "Specialist" : "Granted",
+      source: caster.specialistSchool ?? caster.className,
+    });
+  return labels;
+}
+export function preparationCopiesAvailable(
+  caster: DerivedSpellcasting,
+  level: number,
+  name: string,
+) {
+  const room = spellPreparationRoom(caster, level);
+  const eligible =
+    caster.selectionDiagnostics[level]?.restrictedSlotEligibleSpellNames ?? [];
+  const isEligible = eligible.some(
+    (value) => normalized(value) === normalized(name),
+  );
+  if (caster.domains.length > 0 && isEligible) return room.restricted;
+  const restrictedOnly = (caster.restrictedOnlySpells?.[level] ?? []).some(
+    (value) => normalized(value) === normalized(name),
+  );
+  if (restrictedOnly) return Math.min(room.total, room.restricted);
+  return isEligible ? room.total : Math.min(room.total, room.normal);
+}
 export const primarySpellSchool = (school: string | undefined) =>
   school
     ?.trim()
@@ -84,19 +145,61 @@ export function canReplacePreparation(
     caster.selectionDiagnostics[level]?.restrictedSlotEligibleSpellNames.map(
       normalized,
     ) ?? [];
-  const before = current.filter((name) =>
+  const next = current.map((name, i) => (i === index ? replacement : name));
+  const restrictedCapacity =
+    caster.selectionDiagnostics[level]?.restrictedSlotCapacity ?? 0;
+  const restrictedCount = next.filter((name) =>
     eligible.includes(normalized(name)),
   ).length;
-  const after = current
-    .map((name, i) => (i === index ? replacement : name))
-    .filter((name) => eligible.includes(normalized(name))).length;
-  return (
-    after >=
-    Math.min(
-      before,
-      caster.selectionDiagnostics[level]?.restrictedSlotCapacity ?? 0,
-    )
+  const normalCapacity = Math.max(
+    0,
+    (caster.selectionDiagnostics[level]?.capacity ?? 0) - restrictedCapacity,
   );
+  if (caster.domains.length > 0)
+    return (
+      restrictedCount <= restrictedCapacity &&
+      next.length - restrictedCount <= normalCapacity
+    );
+  const restrictedOnly = (caster.restrictedOnlySpells?.[level] ?? []).map(
+    normalized,
+  );
+  return (
+    next.filter((name) => restrictedOnly.includes(normalized(name))).length <=
+      restrictedCapacity && next.length - restrictedCount <= normalCapacity
+  );
+}
+
+function spellSlotPool(
+  caster: DerivedSpellcasting,
+  level: number,
+  spellCastCounts: Record<number, Record<string, number>> | undefined,
+) {
+  const diag = caster.selectionDiagnostics[level];
+  const restrictedMaximum = diag?.restrictedSlotCapacity ?? 0;
+  const eligible = (diag?.restrictedSlotEligibleSpellNames ?? []).map(
+    normalized,
+  );
+  const restrictedUsed = Math.min(
+    restrictedMaximum,
+    Object.entries(spellCastCounts?.[level] ?? {}).reduce(
+      (total, [name, count]) =>
+        total + (eligible.includes(normalized(name)) ? count : 0),
+      0,
+    ),
+  );
+  const totalMaximum = caster.spellsPerDay[level] ?? 0;
+  const totalUsed = caster.slotsUsed[level] ?? 0;
+  const normalMaximum = Math.max(0, totalMaximum - restrictedMaximum);
+  const normalUsed = Math.max(0, totalUsed - restrictedUsed);
+  return {
+    restrictedMaximum,
+    restrictedUsed,
+    restrictedRemaining: Math.max(0, restrictedMaximum - restrictedUsed),
+    normalMaximum,
+    normalUsed,
+    normalRemaining: Math.max(0, normalMaximum - normalUsed),
+    eligible,
+  };
 }
 
 type Preparation = { name: string; level: number; index?: number };
@@ -167,8 +270,19 @@ export function MagicWorkspace(
     () => buildSpellCompendiumOptions(props.spellOptions),
     [props.spellOptions],
   );
+  const optionLevels = (option: (typeof allOptions)[number]) =>
+    unique([
+      ...(option.classLevels[key] ?? []).map(String),
+      ...Object.entries(caster?.grantedSpells ?? {})
+        .filter(([, names]) =>
+          names?.some((name) => normalized(name) === normalized(option.name)),
+        )
+        .map(([level]) => level),
+    ])
+      .map(Number)
+      .sort((a, b) => a - b);
   const options = allOptions.filter(
-    (option) => !caster || option.classLevels[key]?.length,
+    (option) => !caster || optionLevels(option).length,
   );
   const optionMap = new Map(
     allOptions.map((option) => [normalized(option.name), option]),
@@ -190,8 +304,7 @@ export function MagicWorkspace(
       (option) =>
         (!query || option.searchBlob.includes(query.toLowerCase())) &&
         (!school || primarySpellSchool(option.schoolTag) === school) &&
-        (!levelFilter ||
-          option.classLevels[key]?.includes(Number(levelFilter))),
+        (!levelFilter || optionLevels(option).includes(Number(levelFilter))),
     )
     .sort((a, b) => {
       const rank = (name: string) =>
@@ -206,7 +319,10 @@ export function MagicWorkspace(
         library = caster?.librarySpells[level] ?? [];
       const names =
         view === "ready"
-          ? unique(selected)
+          ? unique([
+              ...selected,
+              ...(!prepared ? (caster?.grantedSpells[level] ?? []) : []),
+            ])
           : unique([
               ...library,
               ...selected,
@@ -219,10 +335,12 @@ export function MagicWorkspace(
           (value) => normalized(value) === normalized(name),
         ).length,
         option: optionMap.get(normalized(name)),
-        domain: (
-          caster?.selectionDiagnostics[level]
-            ?.restrictedSlotEligibleSpellNames ?? []
-        ).some((value) => normalized(value) === normalized(name)),
+        grants: caster ? spellGrantLabels(caster, level, name) : [],
+        autoKnown:
+          !prepared &&
+          (caster?.grantedSpells[level] ?? []).some(
+            (value) => normalized(value) === normalized(name),
+          ),
       }));
     })
     .filter(
@@ -268,16 +386,10 @@ export function MagicWorkspace(
     caster && preparation
       ? spellPreparationRoom(caster, preparation.level)
       : { total: 0, restricted: 0, normal: 0 };
-  const isRestricted =
+  const availableCopies =
     caster && preparation
-      ? (
-          caster.selectionDiagnostics[preparation.level]
-            ?.restrictedSlotEligibleSpellNames ?? []
-        ).some((name) => normalized(name) === normalized(preparation.name))
-      : false;
-  const availableCopies = isRestricted
-    ? room.total
-    : Math.min(room.total, room.normal);
+      ? preparationCopiesAvailable(caster, preparation.level, preparation.name)
+      : 0;
   return (
     <div
       className={`workspace-v2 magic-v2 v2-rail-layout ${railOpen ? "" : "is-collapsed"}`}
@@ -340,6 +452,9 @@ export function MagicWorkspace(
                   {caster.domains.length
                     ? ` · ${displayDomainNames(caster.domains).join(" / ")}`
                     : ""}
+                  {caster.bloodline
+                    ? ` · ${BLOODLINES[caster.bloodline]?.name ?? caster.bloodline} bloodline`
+                    : ""}
                 </p>
                 <p className="hint">
                   {caster.spellAccess === "full-list"
@@ -383,6 +498,23 @@ export function MagicWorkspace(
               <div className="casting-level-ledger">
                 {levels.map((level) => {
                   const diag = caster.selectionDiagnostics[level];
+                  const pool = spellSlotPool(
+                    caster,
+                    level,
+                    props.spellCastCounts[key],
+                  );
+                  const selectedAtLevel = selections[level] ?? [];
+                  const restrictedPrepared = selectedAtLevel.filter((name) =>
+                    pool.eligible.includes(normalized(name)),
+                  ).length;
+                  const normalPrepared = Math.max(
+                    0,
+                    selectedAtLevel.length - restrictedPrepared,
+                  );
+                  const knownAtLevel = unique([
+                    ...selectedAtLevel,
+                    ...(caster.grantedSpells[level] ?? []),
+                  ]).length;
                   return (
                     <button
                       key={level}
@@ -393,26 +525,26 @@ export function MagicWorkspace(
                         )
                       }
                     >
-                      <span>Level {level}</span>
+                      <span>{spellLevelLabel(caster, level)}</span>
                       <strong>
                         {diag?.isAtWill
-                          ? "At will"
-                          : `${caster.slotsRemaining[level] ?? 0} / ${caster.spellsPerDay[level] ?? 0}`}
+                          ? prepared
+                            ? `${normalPrepared} / ${pool.normalMaximum}`
+                            : `${knownAtLevel} known`
+                          : `${pool.normalRemaining} / ${pool.normalMaximum}`}
+                        {pool.restrictedMaximum > 0
+                          ? ` +${pool.restrictedRemaining}`
+                          : ""}
                       </strong>
                       <small>
-                        {(selections[level] ?? []).length}{" "}
-                        {prepared ? "prepared" : "known"} ·{" "}
+                        {prepared ? normalPrepared : knownAtLevel}{" "}
+                        {prepared ? "prepared" : "known"}
                         {level === 0
-                          ? Object.values(
-                              props.spellCastCounts[key]?.[0] ?? {},
-                            ).reduce((total, count) => total + count, 0)
-                          : (caster.slotsUsed[level] ?? 0)}{" "}
-                        spent
+                          ? " · unlimited casts"
+                          : ` · ${prepared ? pool.normalUsed : (caster.slotsUsed[level] ?? 0)} spent`}
                       </small>
                       {(diag?.restrictedSlotCapacity ?? 0) > 0 && (
-                        <em>
-                          {diag?.restrictedSlotCapacity} domain / restricted
-                        </em>
+                        <em>{restrictedPrepared} domain prepared</em>
                       )}
                     </button>
                   );
@@ -436,9 +568,17 @@ export function MagicWorkspace(
                   </button>
                 </div>
                 <small>
-                  {rows.length} spells ·{" "}
-                  <span className="spell-domain-badge">{restrictedLabel}</span>{" "}
-                  reserved choices
+                  {rows.length} spells
+                  {(caster.domains.length > 0 || caster.specialistSchool) && (
+                    <>
+                      {" "}
+                      ·{" "}
+                      <span className="spell-domain-badge">
+                        {restrictedLabel}
+                      </span>{" "}
+                      reserved choices
+                    </>
+                  )}
                 </small>
               </header>
               <div className="casting-spell-table">
@@ -447,7 +587,13 @@ export function MagicWorkspace(
                   <span>Spell & description</span>
                   <span>Save DC</span>
                   <span>Components</span>
-                  <span>{view === "ready" ? "Ready" : "Prepared"}</span>
+                  <span>
+                    {view === "ready"
+                      ? "Ready"
+                      : prepared
+                        ? "Prepared"
+                        : "Known"}
+                  </span>
                   <span>Actions</span>
                 </div>
                 {rows.map((row) => {
@@ -456,9 +602,21 @@ export function MagicWorkspace(
                   const cast =
                     props.spellCastCounts[key]?.[row.level]?.[row.name] ?? 0;
                   const remaining = caster.slotsRemaining[row.level] ?? 0;
+                  const pool = spellSlotPool(
+                    caster,
+                    row.level,
+                    props.spellCastCounts[key],
+                  );
+                  const usesRestrictedSlot =
+                    prepared &&
+                    pool.restrictedMaximum > 0 &&
+                    pool.eligible.includes(normalized(row.name));
+                  const poolRemaining = usesRestrictedSlot
+                    ? pool.restrictedRemaining
+                    : pool.normalRemaining;
                   const ready = prepared
                     ? Math.max(0, row.copies - cast)
-                    : remaining;
+                    : poolRemaining;
                   const dc = spellRowSaveDc(
                     caster,
                     row.level,
@@ -481,11 +639,15 @@ export function MagicWorkspace(
                       >
                         <strong>
                           {row.name}{" "}
-                          {row.domain && (
-                            <small className="spell-domain-badge">
-                              {restrictedLabel}
+                          {row.grants.map((grant) => (
+                            <small
+                              key={`${grant.kind}-${grant.source}`}
+                              className="spell-domain-badge"
+                              title={`${grant.source} ${grant.kind.toLowerCase()}${grant.note ? ` · ${grant.note}` : ""}`}
+                            >
+                              {grant.kind}
                             </small>
-                          )}
+                          ))}
                         </strong>
                         <span>
                           {row.option?.spell?.description ||
@@ -518,7 +680,9 @@ export function MagicWorkspace(
                       </span>
                       <span>
                         {view === "library"
-                          ? `${row.copies} copies`
+                          ? row.autoKnown
+                            ? "Known"
+                            : `${row.copies} copies`
                           : atWill
                             ? "At will"
                             : `${ready} / ${prepared ? row.copies : (caster.spellsPerDay[row.level] ?? 0)}`}
@@ -529,7 +693,11 @@ export function MagicWorkspace(
                             className="ghost small"
                             disabled={
                               !diag?.canCastLevel ||
-                              !spellPreparationRoom(caster, row.level).total
+                              !preparationCopiesAvailable(
+                                caster,
+                                row.level,
+                                row.name,
+                              )
                             }
                             onClick={() => openPreparation(row.name, row.level)}
                           >
@@ -540,8 +708,8 @@ export function MagicWorkspace(
                             className="ghost small"
                             disabled={
                               !diag?.canCastLevel ||
-                              row.copies === 0 ||
-                              (!atWill && (remaining <= 0 || ready <= 0))
+                              (row.copies === 0 && !row.autoKnown) ||
+                              (!atWill && (poolRemaining <= 0 || ready <= 0))
                             }
                             onClick={() =>
                               props.onCastSpell(
@@ -567,26 +735,29 @@ export function MagicWorkspace(
                             Reprepare
                           </button>
                         )}
-                        {!prepared && view === "library" && !row.copies && (
-                          <button
-                            className="ghost small"
-                            disabled={
-                              !diag?.canCastLevel ||
-                              (selections[row.level] ?? []).length >=
-                                (diag?.capacity ?? 0)
-                            }
-                            onClick={() =>
-                              props.onAppendSelection(
-                                key,
-                                "known",
-                                row.level,
-                                row.name,
-                              )
-                            }
-                          >
-                            Learn
-                          </button>
-                        )}
+                        {!prepared &&
+                          view === "library" &&
+                          !row.copies &&
+                          !row.autoKnown && (
+                            <button
+                              className="ghost small"
+                              disabled={
+                                !diag?.canCastLevel ||
+                                (diag?.selectedCount ?? 0) >=
+                                  (diag?.capacity ?? 0)
+                              }
+                              onClick={() =>
+                                props.onAppendSelection(
+                                  key,
+                                  "known",
+                                  row.level,
+                                  row.name,
+                                )
+                              }
+                            >
+                              Learn
+                            </button>
+                          )}
                       </div>
                     </div>
                   );
@@ -680,7 +851,7 @@ export function MagicWorkspace(
                 <option value="">All levels</option>
                 {levels.map((level) => (
                   <option key={level} value={level}>
-                    Level {level}
+                    {spellLevelLabel(caster!, level)}
                   </option>
                 ))}
               </select>
@@ -732,7 +903,9 @@ export function MagicWorkspace(
               {catalog
                 .slice(currentPage * 25, (currentPage + 1) * 25)
                 .map((option) => {
-                  const level = option.classLevels[key]?.[0];
+                  const level = levelFilter
+                    ? Number(levelFilter)
+                    : optionLevels(option)[0];
                   const added =
                     level !== undefined &&
                     (caster?.librarySpells[level] ?? []).some(
@@ -749,6 +922,19 @@ export function MagicWorkspace(
                       <small>
                         {level === undefined ? "Reference" : `Level ${level}`} ·{" "}
                         {option.schoolTag}
+                        {caster &&
+                          level !== undefined &&
+                          spellGrantLabels(caster, level, option.name).map(
+                            (grant) => (
+                              <span
+                                key={`${grant.kind}-${grant.source}`}
+                                className="spell-domain-badge"
+                                title={grant.source}
+                              >
+                                {grant.kind}
+                              </span>
+                            ),
+                          )}
                       </small>
                       <p>{option.spell?.description || option.metaTag}</p>
                       {caster && level !== undefined && (
@@ -830,13 +1016,35 @@ export function MagicWorkspace(
                 Close
               </button>
             </header>
+            {caster &&
+              levels.flatMap((level) =>
+                spellGrantLabels(caster, level, detail).map((grant) => (
+                  <p
+                    key={`${level}-${grant.kind}-${grant.source}`}
+                    className="hint"
+                  >
+                    <span className="spell-domain-badge">{grant.kind}</span>{" "}
+                    {grant.source} · level {level}
+                    {grant.note ? ` · ${grant.note}` : ""}
+                  </p>
+                )),
+              )}
             {detailSpell && (
               <dl className="v2-spell-facts">
                 {[
                   ["Casting time", detailSpell.castingTime],
                   ["Components", detailSpell.components],
                   ["Range", detailSpell.range],
-                  ["Target / area", detailSpell.targetEffectArea],
+                  ["Target", detailSpell.target],
+                  ["Effect", detailSpell.effect],
+                  ["Area", detailSpell.area],
+                  [
+                    "Target / area",
+                    detailSpell.target || detailSpell.effect || detailSpell.area
+                      ? undefined
+                      : detailSpell.targetEffectArea,
+                  ],
+                  ["Class levels", detailSpell.levelText],
                   ["Duration", detailSpell.duration],
                   ["Saving throw", detailSpell.savingThrow],
                   ["Spell resistance", detailSpell.spellResistance],
@@ -851,7 +1059,12 @@ export function MagicWorkspace(
                   ))}
               </dl>
             )}
-            <div className="v2-spell-full">{spellTitle(detail)}</div>
+            <div className="v2-spell-full">
+              <SpellRulesText
+                spell={detailSpell}
+                fallback={spellTitle(detail)}
+              />
+            </div>
             {detailSpell && !detailSpell.components && (
               <p className="hint">
                 Components are not supplied by this content pack. Check the
@@ -903,7 +1116,9 @@ export function MagicWorkspace(
               <>
                 <p>
                   {availableCopies} eligible spaces available ·{" "}
-                  {room.restricted} domain / restricted spaces remain.
+                  {room.restricted}{" "}
+                  {caster.domains.length > 0 ? "domain" : "restricted"} spaces
+                  remain.
                 </p>
                 <label>
                   Copies

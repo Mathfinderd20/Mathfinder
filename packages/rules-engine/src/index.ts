@@ -7,6 +7,14 @@
  */
 
 export * from "./types";
+export {
+  BLOODLINES,
+  configureBloodlineCatalog,
+  selectedBloodline,
+  grantedBloodlineSpells,
+  type SpellBloodlineDefinition,
+} from "./content/bloodlines";
+export { configureDomainCatalog } from "./content/domains";
 export * from "./character-creation-rules";
 export {
   ALIGNMENTS,
@@ -85,6 +93,7 @@ export {
   spellSaveDc,
   spellSaveDcForSchool,
   bonusSpellSlots,
+  spellLevelLabel,
 } from "./spellcasting";
 export { renderSheet, explainStat } from "./format";
 export {

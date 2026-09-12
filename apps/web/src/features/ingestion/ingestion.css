@@ -1,0 +1,125 @@
+.ingestion-page {
+  max-width: 1280px;
+  margin: auto;
+  padding: 28px;
+  color: var(--text, #ede8dd);
+}
+.ingestion-page h1 {
+  font:
+    36px Georgia,
+    serif;
+  margin: 8px 0;
+}
+.ingestion-page h2 {
+  font:
+    23px Georgia,
+    serif;
+  margin: 0 0 16px;
+}
+.ingestion-eyebrow {
+  color: #c9a86a;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  margin-top: 24px;
+}
+.ingestion-panel {
+  border: 1px solid #434239;
+  background: #202321;
+  border-radius: 8px;
+  padding: 20px;
+  margin: 18px 0;
+}
+.ingestion-layout {
+  display: grid;
+  grid-template-columns: 250px minmax(0, 1fr);
+  gap: 20px;
+}
+.ingestion-page form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 14px;
+  align-items: end;
+}
+.ingestion-page label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  font-size: 13px;
+}
+.ingestion-page input,
+.ingestion-page select,
+.ingestion-page textarea {
+  width: 100%;
+  background: #151917;
+  color: #ede8dd;
+  border: 1px solid #555a50;
+  border-radius: 4px;
+  padding: 9px;
+  box-sizing: border-box;
+}
+.ingestion-page button {
+  padding: 9px 12px;
+  min-height: 40px;
+}
+.ingestion-page button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.ingestion-page a {
+  color: #d8b77b;
+}
+.ingestion-alert {
+  border-left: 3px solid #c9a86a;
+  padding: 12px;
+  background: #302c22;
+}
+.ingestion-muted {
+  color: #b4b4aa;
+  font-size: 13px;
+}
+.ingestion-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 14px 0;
+}
+.ingestion-job {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  text-align: left;
+  width: 100%;
+  margin: 7px 0;
+  word-break: break-word;
+}
+.ingestion-job[aria-pressed="true"] {
+  outline: 2px solid #c9a86a;
+}
+.ingestion-entry {
+  border-top: 1px solid #434239;
+  padding: 14px 0;
+}
+.ingestion-entry summary {
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 5px 0;
+}
+.ingestion-page pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 380px;
+  overflow: auto;
+  padding: 12px;
+  background: #151917;
+  font-size: 12px;
+}
+@media (max-width: 760px) {
+  .ingestion-layout {
+    grid-template-columns: 1fr;
+  }
+  .ingestion-page {
+    padding: 14px;
+  }
+}

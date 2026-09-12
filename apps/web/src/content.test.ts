@@ -87,5 +87,10 @@ describe("raceOptionsFromDataSet", () => {
       specificWeapons: ["Greataxe"],
       martialWeaponNameIncludes: ["orc"],
     });
+    const reviewed = raceOptionsFromDataSet(data, { identityOnly: true });
+    expect(reviewed.human?.favoredClassBonuses).toBeUndefined();
+    expect(reviewed["scrape-aon-human"]?.favoredClassBonuses?.[0]?.id).toBe(
+      "human-fighter",
+    );
   });
 });

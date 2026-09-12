@@ -1,0 +1,30 @@
+# Separate staging-only service. Does not replace the application's existing compose deployment.
+services:
+  ingestion-api:
+    build:
+      context: ../..
+      dockerfile: packages/content-db/ingestion.Dockerfile
+    env_file: .env.ingestion
+    volumes:
+      - ingestion-staging:/data
+    ports:
+      - "127.0.0.1:8788:8788"
+    restart: unless-stopped
+  ingestion-worker:
+    build:
+      context: ../..
+      dockerfile: packages/content-db/ingestion.Dockerfile
+    env_file: .env.ingestion
+    command:
+      [
+        "node",
+        "--import",
+        "tsx",
+        "packages/content-db/src/ingestion/cli.ts",
+        "work",
+      ]
+    volumes:
+      - ingestion-staging:/data
+    restart: unless-stopped
+volumes:
+  ingestion-staging:

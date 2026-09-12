@@ -1,0 +1,603 @@
+{
+  "generatedAt": "2026-09-11T02:19:23.765Z",
+  "status": "R17 user decision and authoritative table comparison pending",
+  "source": "Committed runtime export and current implementation; no mutation",
+  "runtimeRuleHash": "a1378b81ace201a0bd772102168375763da0cfba3d1aa0fe343ab37c3a52973e",
+  "classes": [
+    {
+      "className": "Barbarian",
+      "changedPaths": [],
+      "beforeHash": "c29a170b9954799c2c6a7e3481b52b7f8409cd582b5ce6e94eae87e2a371962b",
+      "afterHash": "c29a170b9954799c2c6a7e3481b52b7f8409cd582b5ce6e94eae87e2a371962b"
+    },
+    {
+      "className": "Bard",
+      "changedPaths": [],
+      "beforeHash": "132a14022ada4ffb42fa230b51587f2d058d030b4864f6f8a7c08a15be94694d",
+      "afterHash": "132a14022ada4ffb42fa230b51587f2d058d030b4864f6f8a7c08a15be94694d"
+    },
+    {
+      "className": "Cleric",
+      "changedPaths": [
+        "spellcasting.spellsPerDay.4.0",
+        "spellcasting.spellsPerDay.5.0",
+        "spellcasting.spellsPerDay.6",
+        "spellcasting.spellsPerDay.7",
+        "spellcasting.spellsPerDay.8",
+        "spellcasting.spellsPerDay.9",
+        "spellcasting.spellsPerDay.10",
+        "spellcasting.spellsPerDay.11",
+        "spellcasting.spellsPerDay.12",
+        "spellcasting.spellsPerDay.13",
+        "spellcasting.spellsPerDay.14",
+        "spellcasting.spellsPerDay.15",
+        "spellcasting.spellsPerDay.16",
+        "spellcasting.spellsPerDay.17",
+        "spellcasting.spellsPerDay.18",
+        "spellcasting.spellsPerDay.19",
+        "spellcasting.spellsPerDay.20",
+        "spellcasting.spellAccess",
+        "spellcasting.spellsKnown"
+      ],
+      "beforeHash": "3dc6285cc9654bcba716b56adc8d16d9d10481d2078519f3ed007f0b8617fef0",
+      "afterHash": "41d85039082190b8f226ed9a874e079a9ad2999382b591f74407ca40346e1fc6"
+    },
+    {
+      "className": "Druid",
+      "changedPaths": [
+        "spellcasting.spellsPerDay.4.0",
+        "spellcasting.spellsPerDay.5.0",
+        "spellcasting.spellsPerDay.6",
+        "spellcasting.spellsPerDay.7",
+        "spellcasting.spellsPerDay.8",
+        "spellcasting.spellsPerDay.9",
+        "spellcasting.spellsPerDay.10",
+        "spellcasting.spellsPerDay.11",
+        "spellcasting.spellsPerDay.12",
+        "spellcasting.spellsPerDay.13",
+        "spellcasting.spellsPerDay.14",
+        "spellcasting.spellsPerDay.15",
+        "spellcasting.spellsPerDay.16",
+        "spellcasting.spellsPerDay.17",
+        "spellcasting.spellsPerDay.18",
+        "spellcasting.spellsPerDay.19",
+        "spellcasting.spellsPerDay.20",
+        "spellcasting.spellAccess",
+        "spellcasting.spellsKnown"
+      ],
+      "beforeHash": "d882255f552ad948b89f1a1368c4cd1f34cbeff618eabebb02fc5b799a6c697e",
+      "afterHash": "091bc57e8c9d96d7823ad9baba9ea59229399bc6ea3e157176a4a872faf37b26"
+    },
+    {
+      "className": "Fighter",
+      "changedPaths": [],
+      "beforeHash": "6e1fe5caaa5fc9698f964f627e7fb59a57c17bb7432978a103997f0e8ae6d6fa",
+      "afterHash": "6e1fe5caaa5fc9698f964f627e7fb59a57c17bb7432978a103997f0e8ae6d6fa"
+    },
+    {
+      "className": "Infantryman",
+      "changedPaths": [],
+      "beforeHash": "af9361f201d48b5d387cb306a006f7856b517393e5600ca039ec7da7d8b2d75a",
+      "afterHash": "af9361f201d48b5d387cb306a006f7856b517393e5600ca039ec7da7d8b2d75a"
+    },
+    {
+      "className": "Inquisitor",
+      "changedPaths": [],
+      "beforeHash": "a608d2bae3831752e1f7d3fd3b3e92543940e48a832b1cde18ad776e88fe3cbe",
+      "afterHash": "a608d2bae3831752e1f7d3fd3b3e92543940e48a832b1cde18ad776e88fe3cbe"
+    },
+    {
+      "className": "Paladin",
+      "changedPaths": [
+        "spellcasting.spellsPerDay.4.3",
+        "spellcasting.spellsPerDay.4.1",
+        "spellcasting.spellsPerDay.5.3",
+        "spellcasting.spellsPerDay.5.1",
+        "spellcasting.spellsPerDay.6",
+        "spellcasting.spellsPerDay.7",
+        "spellcasting.spellsPerDay.8",
+        "spellcasting.spellsPerDay.9",
+        "spellcasting.spellsPerDay.10",
+        "spellcasting.spellsPerDay.11",
+        "spellcasting.spellsPerDay.12",
+        "spellcasting.spellsPerDay.13",
+        "spellcasting.spellsPerDay.14",
+        "spellcasting.spellsPerDay.15",
+        "spellcasting.spellsPerDay.16",
+        "spellcasting.spellsPerDay.17",
+        "spellcasting.spellsPerDay.18",
+        "spellcasting.spellsPerDay.19",
+        "spellcasting.spellsPerDay.20",
+        "spellcasting.spellAccess",
+        "spellcasting.spellsKnown"
+      ],
+      "beforeHash": "8a80c9b4187a8e90ca8e47f4a24f76b974b189bda0ea69a1b68450d92b801577",
+      "afterHash": "a2a374f23dd18a4dbbe4dbf1c9871be28a74c2f2a166a65faf88ced4ad424b32"
+    },
+    {
+      "className": "Ranger",
+      "changedPaths": [
+        "spellcasting.spellsPerDay.4.1",
+        "spellcasting.spellsPerDay.5.1",
+        "spellcasting.spellsPerDay.6",
+        "spellcasting.spellsPerDay.7",
+        "spellcasting.spellsPerDay.8",
+        "spellcasting.spellsPerDay.9",
+        "spellcasting.spellsPerDay.10",
+        "spellcasting.spellsPerDay.11",
+        "spellcasting.spellsPerDay.12",
+        "spellcasting.spellsPerDay.13",
+        "spellcasting.spellsPerDay.14",
+        "spellcasting.spellsPerDay.15",
+        "spellcasting.spellsPerDay.16",
+        "spellcasting.spellsPerDay.17",
+        "spellcasting.spellsPerDay.18",
+        "spellcasting.spellsPerDay.19",
+        "spellcasting.spellsPerDay.20",
+        "spellcasting.spellAccess",
+        "spellcasting.spellsKnown"
+      ],
+      "beforeHash": "4a44c1294bbc3453130a19df6322fd3242aea776337272a8c94742a8bcc04dc7",
+      "afterHash": "c571c402de38beaaf96f02f981ff2fb75621ab5f649635f8b45b9984b20ea794"
+    },
+    {
+      "className": "Rogue",
+      "changedPaths": [],
+      "beforeHash": "6beb84f70087a342c3feb105a9547d24575bf908f3d32d213ec4dcde7d689ad5",
+      "afterHash": "6beb84f70087a342c3feb105a9547d24575bf908f3d32d213ec4dcde7d689ad5"
+    },
+    {
+      "className": "Sorcerer",
+      "changedPaths": [
+        "spellcasting.spellsPerDay.6",
+        "spellcasting.spellsPerDay.7",
+        "spellcasting.spellsPerDay.8",
+        "spellcasting.spellsPerDay.9",
+        "spellcasting.spellsPerDay.10",
+        "spellcasting.spellsPerDay.11",
+        "spellcasting.spellsPerDay.12",
+        "spellcasting.spellsPerDay.13",
+        "spellcasting.spellsPerDay.14",
+        "spellcasting.spellsPerDay.15",
+        "spellcasting.spellsPerDay.16",
+        "spellcasting.spellsPerDay.17",
+        "spellcasting.spellsPerDay.18",
+        "spellcasting.spellsPerDay.19",
+        "spellcasting.spellsPerDay.20",
+        "spellcasting.spellsKnown.6",
+        "spellcasting.spellsKnown.7",
+        "spellcasting.spellsKnown.8",
+        "spellcasting.spellsKnown.9",
+        "spellcasting.spellsKnown.10",
+        "spellcasting.spellsKnown.11",
+        "spellcasting.spellsKnown.12",
+        "spellcasting.spellsKnown.13",
+        "spellcasting.spellsKnown.14",
+        "spellcasting.spellsKnown.15",
+        "spellcasting.spellsKnown.16",
+        "spellcasting.spellsKnown.17",
+        "spellcasting.spellsKnown.18",
+        "spellcasting.spellsKnown.19",
+        "spellcasting.spellsKnown.20",
+        "spellcasting.spellAccess"
+      ],
+      "beforeHash": "dae98ffb1a9834562b8ae2037a7759b2cbdd48ad6f8568704d48a0ff7fc9fc59",
+      "afterHash": "cbfd50d53c33bb956694b6b6aec0e9b8ded8836d87e439833c2f19d9a7d6ec77"
+    },
+    {
+      "className": "Wizard",
+      "changedPaths": [],
+      "beforeHash": "a7b7be0a151deb1ac59bb293b752a18497a6b2538cfbeaa1a1114451c62a22d6",
+      "afterHash": "a7b7be0a151deb1ac59bb293b752a18497a6b2538cfbeaa1a1114451c62a22d6"
+    }
+  ],
+  "raceNameGroupsWithDifferentIds": [
+    {
+      "name": "dwarf",
+      "records": [
+        {
+          "id": "dwarf",
+          "bonusIds": []
+        },
+        {
+          "id": "scrape-aon-dwarf",
+          "bonusIds": [
+            "aon-dwarf-alchemist-1",
+            "aon-dwarf-arcanist-2",
+            "aon-dwarf-barbarian-3",
+            "aon-dwarf-bard-4",
+            "aon-dwarf-bloodrager-5",
+            "aon-dwarf-brawler-6",
+            "aon-dwarf-cavalier-7",
+            "aon-dwarf-cleric-8",
+            "aon-dwarf-druid-9",
+            "aon-dwarf-fighter-10",
+            "aon-dwarf-gunslinger-11",
+            "aon-dwarf-hunter-12",
+            "aon-dwarf-inquisitor-13",
+            "aon-dwarf-investigator-14",
+            "aon-dwarf-kineticist-15",
+            "aon-dwarf-magus-16",
+            "aon-dwarf-medium-17",
+            "aon-dwarf-mesmerist-18",
+            "aon-dwarf-monk-19",
+            "aon-dwarf-occultist-20",
+            "aon-dwarf-oracle-21",
+            "aon-dwarf-paladin-22",
+            "aon-dwarf-paladin-23",
+            "aon-dwarf-psychic-24",
+            "aon-dwarf-ranger-25",
+            "aon-dwarf-rogue-26",
+            "aon-dwarf-shaman-27",
+            "aon-dwarf-shifter-28",
+            "aon-dwarf-skald-29",
+            "aon-dwarf-slayer-30",
+            "aon-dwarf-sorcerer-31",
+            "aon-dwarf-spiritualist-32",
+            "aon-dwarf-spiritualist-33",
+            "aon-dwarf-summoner-34",
+            "aon-dwarf-swashbuckler-35",
+            "aon-dwarf-vigilante-36",
+            "aon-dwarf-warpriest-37",
+            "aon-dwarf-witch-38",
+            "aon-dwarf-wizard-39",
+            "aon-dwarf-wizard-40"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "elf",
+      "records": [
+        {
+          "id": "elf",
+          "bonusIds": []
+        },
+        {
+          "id": "scrape-aon-elf",
+          "bonusIds": [
+            "aon-elf-alchemist-1",
+            "aon-elf-arcanist-2",
+            "aon-elf-barbarian-3",
+            "aon-elf-bard-4",
+            "aon-elf-bloodrager-5",
+            "aon-elf-brawler-6",
+            "aon-elf-cavalier-7",
+            "aon-elf-cleric-8",
+            "aon-elf-druid-9",
+            "aon-elf-fighter-10",
+            "aon-elf-gunslinger-11",
+            "aon-elf-hunter-12",
+            "aon-elf-inquisitor-13",
+            "aon-elf-investigator-14",
+            "aon-elf-kineticist-15",
+            "aon-elf-magus-16",
+            "aon-elf-medium-17",
+            "aon-elf-mesmerist-18",
+            "aon-elf-mesmerist-19",
+            "aon-elf-monk-20",
+            "aon-elf-occultist-21",
+            "aon-elf-oracle-22",
+            "aon-elf-paladin-23",
+            "aon-elf-psychic-24",
+            "aon-elf-ranger-25",
+            "aon-elf-rogue-26",
+            "aon-elf-shaman-27",
+            "aon-elf-shifter-28",
+            "aon-elf-skald-29",
+            "aon-elf-slayer-30",
+            "aon-elf-sorcerer-31",
+            "aon-elf-sorcerer-32",
+            "aon-elf-spiritualist-33",
+            "aon-elf-summoner-34",
+            "aon-elf-swashbuckler-35",
+            "aon-elf-vigilante-36",
+            "aon-elf-warpriest-37",
+            "aon-elf-witch-38",
+            "aon-elf-witch-39",
+            "aon-elf-wizard-40"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "gnome",
+      "records": [
+        {
+          "id": "gnome",
+          "bonusIds": []
+        },
+        {
+          "id": "scrape-aon-gnome",
+          "bonusIds": [
+            "aon-gnome-alchemist-1",
+            "aon-gnome-arcanist-2",
+            "aon-gnome-barbarian-3",
+            "aon-gnome-bard-4",
+            "aon-gnome-bloodrager-5",
+            "aon-gnome-brawler-6",
+            "aon-gnome-cavalier-7",
+            "aon-gnome-cleric-8",
+            "aon-gnome-druid-9",
+            "aon-gnome-druid-10",
+            "aon-gnome-fighter-11",
+            "aon-gnome-gunslinger-12",
+            "aon-gnome-hunter-13",
+            "aon-gnome-inquisitor-14",
+            "aon-gnome-investigator-15",
+            "aon-gnome-kineticist-16",
+            "aon-gnome-kineticist-17",
+            "aon-gnome-magus-18",
+            "aon-gnome-magus-19",
+            "aon-gnome-medium-20",
+            "aon-gnome-mesmerist-21",
+            "aon-gnome-monk-22",
+            "aon-gnome-occultist-23",
+            "aon-gnome-oracle-24",
+            "aon-gnome-paladin-25",
+            "aon-gnome-psychic-26",
+            "aon-gnome-ranger-27",
+            "aon-gnome-rogue-28",
+            "aon-gnome-rogue-29",
+            "aon-gnome-shaman-30",
+            "aon-gnome-shifter-31",
+            "aon-gnome-skald-32",
+            "aon-gnome-slayer-33",
+            "aon-gnome-sorcerer-34",
+            "aon-gnome-spiritualist-35",
+            "aon-gnome-summoner-36",
+            "aon-gnome-swashbuckler-37",
+            "aon-gnome-vigilante-38",
+            "aon-gnome-warpriest-39",
+            "aon-gnome-witch-40",
+            "aon-gnome-wizard-41"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "half-elf",
+      "records": [
+        {
+          "id": "half-elf",
+          "bonusIds": []
+        },
+        {
+          "id": "scrape-aon-half-elf",
+          "bonusIds": [
+            "aon-half-elf-alchemist-1",
+            "aon-half-elf-arcanist-2",
+            "aon-half-elf-barbarian-3",
+            "aon-half-elf-bard-4",
+            "aon-half-elf-bloodrager-5",
+            "aon-half-elf-brawler-6",
+            "aon-half-elf-cavalier-7",
+            "aon-half-elf-cleric-8",
+            "aon-half-elf-cleric-9",
+            "aon-half-elf-druid-10",
+            "aon-half-elf-fighter-11",
+            "aon-half-elf-gunslinger-12",
+            "aon-half-elf-hunter-13",
+            "aon-half-elf-inquisitor-14",
+            "aon-half-elf-investigator-15",
+            "aon-half-elf-kineticist-16",
+            "aon-half-elf-magus-17",
+            "aon-half-elf-medium-18",
+            "aon-half-elf-mesmerist-19",
+            "aon-half-elf-monk-20",
+            "aon-half-elf-occultist-21",
+            "aon-half-elf-oracle-22",
+            "aon-half-elf-oracle-23",
+            "aon-half-elf-paladin-24",
+            "aon-half-elf-psychic-25",
+            "aon-half-elf-ranger-26",
+            "aon-half-elf-ranger-27",
+            "aon-half-elf-rogue-28",
+            "aon-half-elf-shaman-29",
+            "aon-half-elf-shifter-30",
+            "aon-half-elf-skald-31",
+            "aon-half-elf-slayer-32",
+            "aon-half-elf-sorcerer-33",
+            "aon-half-elf-spiritualist-34",
+            "aon-half-elf-summoner-35",
+            "aon-half-elf-swashbuckler-36",
+            "aon-half-elf-vigilante-37",
+            "aon-half-elf-warpriest-38",
+            "aon-half-elf-witch-39",
+            "aon-half-elf-wizard-40"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "half-orc",
+      "records": [
+        {
+          "id": "half-orc",
+          "bonusIds": ["orc-fighter-death-threshold"]
+        },
+        {
+          "id": "scrape-aon-half-orc",
+          "bonusIds": [
+            "aon-half-orc-alchemist-1",
+            "aon-half-orc-alchemist-2",
+            "aon-half-orc-arcanist-3",
+            "aon-half-orc-barbarian-4",
+            "aon-half-orc-bard-5",
+            "aon-half-orc-bard-6",
+            "aon-half-orc-bloodrager-7",
+            "aon-half-orc-brawler-8",
+            "aon-half-orc-cavalier-9",
+            "aon-half-orc-cleric-10",
+            "aon-half-orc-druid-11",
+            "aon-half-orc-fighter-12",
+            "aon-half-orc-fighter-13",
+            "aon-half-orc-gunslinger-14",
+            "aon-half-orc-hunter-15",
+            "aon-half-orc-inquisitor-16",
+            "aon-half-orc-investigator-17",
+            "aon-half-orc-kineticist-18",
+            "aon-half-orc-magus-19",
+            "aon-half-orc-medium-20",
+            "aon-half-orc-mesmerist-21",
+            "aon-half-orc-monk-22",
+            "aon-half-orc-occultist-23",
+            "aon-half-orc-oracle-24",
+            "aon-half-orc-paladin-25",
+            "aon-half-orc-psychic-26",
+            "aon-half-orc-ranger-27",
+            "aon-half-orc-rogue-28",
+            "aon-half-orc-shaman-29",
+            "aon-half-orc-shifter-30",
+            "aon-half-orc-skald-31",
+            "aon-half-orc-slayer-32",
+            "aon-half-orc-sorcerer-33",
+            "aon-half-orc-spiritualist-34",
+            "aon-half-orc-summoner-35",
+            "aon-half-orc-swashbuckler-36",
+            "aon-half-orc-vigilante-37",
+            "aon-half-orc-warpriest-38",
+            "aon-half-orc-witch-39",
+            "aon-half-orc-wizard-40"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "halfling",
+      "records": [
+        {
+          "id": "halfling",
+          "bonusIds": []
+        },
+        {
+          "id": "scrape-aon-halfling",
+          "bonusIds": [
+            "aon-halfling-alchemist-1",
+            "aon-halfling-arcanist-2",
+            "aon-halfling-barbarian-3",
+            "aon-halfling-barbarian-4",
+            "aon-halfling-bard-5",
+            "aon-halfling-bloodrager-6",
+            "aon-halfling-brawler-7",
+            "aon-halfling-cavalier-8",
+            "aon-halfling-cavalier-9",
+            "aon-halfling-cleric-10",
+            "aon-halfling-druid-11",
+            "aon-halfling-fighter-12",
+            "aon-halfling-gunslinger-13",
+            "aon-halfling-hunter-14",
+            "aon-halfling-inquisitor-15",
+            "aon-halfling-investigator-16",
+            "aon-halfling-kineticist-17",
+            "aon-halfling-magus-18",
+            "aon-halfling-medium-19",
+            "aon-halfling-mesmerist-20",
+            "aon-halfling-monk-21",
+            "aon-halfling-monk-22",
+            "aon-halfling-occultist-23",
+            "aon-halfling-oracle-24",
+            "aon-halfling-paladin-25",
+            "aon-halfling-psychic-26",
+            "aon-halfling-ranger-27",
+            "aon-halfling-rogue-28",
+            "aon-halfling-shaman-29",
+            "aon-halfling-shifter-30",
+            "aon-halfling-skald-31",
+            "aon-halfling-slayer-32",
+            "aon-halfling-sorcerer-33",
+            "aon-halfling-spiritualist-34",
+            "aon-halfling-summoner-35",
+            "aon-halfling-swashbuckler-36",
+            "aon-halfling-vigilante-37",
+            "aon-halfling-warpriest-38",
+            "aon-halfling-witch-39",
+            "aon-halfling-wizard-40"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "human",
+      "records": [
+        {
+          "id": "human",
+          "bonusIds": []
+        },
+        {
+          "id": "scrape-aon-human",
+          "bonusIds": [
+            "aon-human-alchemist-1",
+            "aon-human-arcanist-2",
+            "aon-human-barbarian-3",
+            "aon-human-bard-4",
+            "aon-human-bloodrager-5",
+            "aon-human-brawler-6",
+            "aon-human-cavalier-7",
+            "aon-human-cleric-8",
+            "aon-human-druid-9",
+            "aon-human-fighter-10",
+            "aon-human-gunslinger-11",
+            "aon-human-hunter-12",
+            "aon-human-inquisitor-13",
+            "aon-human-inquisitor-14",
+            "aon-human-investigator-15",
+            "aon-human-kineticist-16",
+            "aon-human-magus-17",
+            "aon-human-medium-18",
+            "aon-human-mesmerist-19",
+            "aon-human-monk-20",
+            "aon-human-occultist-21",
+            "aon-human-occultist-22",
+            "aon-human-oracle-23",
+            "aon-human-paladin-24",
+            "aon-human-psychic-25",
+            "aon-human-psychic-26",
+            "aon-human-ranger-27",
+            "aon-human-rogue-28",
+            "aon-human-shaman-29",
+            "aon-human-shifter-30",
+            "aon-human-skald-31",
+            "aon-human-slayer-32",
+            "aon-human-sorcerer-33",
+            "aon-human-spiritualist-34",
+            "aon-human-summoner-35",
+            "aon-human-swashbuckler-36",
+            "aon-human-vigilante-37",
+            "aon-human-warpriest-38",
+            "aon-human-witch-39",
+            "aon-human-wizard-40"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "orc",
+      "records": [
+        {
+          "id": "orc",
+          "bonusIds": ["orc-fighter-death-threshold"]
+        },
+        {
+          "id": "scrape-aon-orc",
+          "bonusIds": [
+            "aon-orc-alchemist-1",
+            "aon-orc-barbarian-2",
+            "aon-orc-cavalier-3",
+            "aon-orc-druid-4",
+            "aon-orc-fighter-5",
+            "aon-orc-ranger-6",
+            "aon-orc-shifter-7",
+            "aon-orc-witch-8"
+          ]
+        }
+      ]
+    }
+  ],
+  "privateBeforeAfter": "packages/content-db/data/quarantine-fixtures/runtime-review/class-comparisons.json",
+  "codeCitations": [
+    "packages/rules-engine/src/build/classes.ts:getClassDefinition/completeCoreSpellProgression",
+    "apps/web/src/content.ts:raceOptionsFromDataSet"
+  ],
+  "authorityEvidence": "Code cites legacy.aonprd.com/coreRuleBook/classes/sorcerer.html; this does not verify every affected class or level."
+}

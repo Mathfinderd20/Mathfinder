@@ -23,6 +23,7 @@ interface FreshCharacterChoices {
   spellLibrary?: CharacterBuild["spellLibrary"];
   spellSelections?: CharacterBuild["spellSelections"];
   spellDomains?: CharacterBuild["spellDomains"];
+  spellBloodlines?: CharacterBuild["spellBloodlines"];
   spellSpecializations?: CharacterBuild["spellSpecializations"];
 }
 
@@ -50,6 +51,7 @@ export function createFreshCharacterBuild(
     spellLibrary: choices.spellLibrary,
     spellSelections: choices.spellSelections,
     spellDomains: choices.spellDomains,
+    spellBloodlines: choices.spellBloodlines,
     spellSpecializations: choices.spellSpecializations,
     baseAbilityScores: choices.baseAbilityScores,
     levels: [

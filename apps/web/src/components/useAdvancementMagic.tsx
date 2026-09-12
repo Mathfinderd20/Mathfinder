@@ -65,6 +65,10 @@ export function useAdvancementMagic(
         ...preview.spellSpecializations,
         ...initial.spellSpecializations,
       },
+      spellBloodlines: {
+        ...preview.spellBloodlines,
+        ...initial.spellBloodlines,
+      },
     }),
     [preview, initial],
   );

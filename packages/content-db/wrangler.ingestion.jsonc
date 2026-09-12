@@ -1,0 +1,29 @@
+{
+  "name": "mathfinder-stage-ingestion",
+  "account_id": "bbd20759773ffe35ec98139df791b959",
+  "main": "src/ingestion/cloudflare/index.ts",
+  "compatibility_date": "2026-09-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "workers_dev": false,
+  "preview_urls": false,
+  "routes": [
+    {
+      "pattern": "stage.diresheets.com/api/ingestion/*",
+      "zone_name": "diresheets.com",
+    },
+  ],
+  "rules": [{ "type": "Text", "globs": ["**/*.sql"], "fallthrough": true }],
+  "durable_objects": {
+    "bindings": [{ "name": "CATALOGUE", "class_name": "Catalogue" }],
+  },
+  "migrations": [
+    { "tag": "catalogue-v1", "new_sqlite_classes": ["Catalogue"] },
+  ],
+  "vars": {
+    "INGESTION_SUPABASE_URL": "https://pkupqzdnefnjwndwzhdr.supabase.co",
+    "INGESTION_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_NV7mOvL2lBfvHrAXHDta3Q_7xdZUpmS",
+    "INGESTION_TARGET_VERIFICATION_ID": "STAGING-VERIFICATION-20260911-dashboard",
+    "INGESTION_PERMISSION_REVIEW_ID": "R14-user-approval-20260911",
+  },
+  "observability": { "enabled": false },
+}
