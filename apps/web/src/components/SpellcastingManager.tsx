@@ -1,8 +1,11 @@
 import {
   getSpellEffectByName,
+  BLOODLINES,
+  spellLevelLabel,
   type DerivedSpellcasting,
 } from "@mathfinder/rules-engine";
 import { useMemo, useState } from "react";
+import { SpellRulesText } from "./SpellRulesText";
 import type { SpellSuggestionChoice } from "../buildSuggestions";
 import type { SpellCompendiumOption } from "../spellOptionData";
 import { buildSpellCompendiumOptions } from "../spellOptionData";
@@ -134,6 +137,7 @@ export interface SpellcastingManagerProps {
     source?: string[],
   ) => void;
   onUpdateDomains: (classKey: string, index: number, value: string) => void;
+  onUpdateBloodline?: (classKey: string, value: string) => void;
   onUpdateSpecialization: (classKey: string, value: string) => void;
   onAdjustExtraSpellSlots: (
     classKey: string,
@@ -180,6 +184,7 @@ export function SpellcastingManager({
   onResetLibraryForClass,
   onFillSelectionsFromLibrary,
   onUpdateDomains,
+  onUpdateBloodline,
   onUpdateSpecialization,
   onAdjustExtraSpellSlots,
   onAdjustSpellSlot,
@@ -375,6 +380,26 @@ export function SpellcastingManager({
                   </div>
                 </div>
               ) : null}
+              {classKey === "sorcerer" && onUpdateBloodline && (
+                <div className="item-card">
+                  <label className="field compact">
+                    <span>Bloodline</span>
+                    <select
+                      value={caster.bloodline ?? ""}
+                      onChange={(event) =>
+                        onUpdateBloodline(classKey, event.target.value)
+                      }
+                    >
+                      <option value="">Select bloodline</option>
+                      {Object.values(BLOODLINES).map((bloodline) => (
+                        <option key={bloodline.id} value={bloodline.id}>
+                          {bloodline.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+              )}
               {caster.className.toLowerCase() === "wizard" ? (
                 <div className="item-card">
                   <div className="subsection-title">Specialist School</div>
@@ -495,15 +520,106 @@ export function SpellcastingManager({
                       levelSpellMap.get(entry.spellName.toLowerCase()),
                     ),
                 );
-                const canAddSelection = current.length < diag.capacity;
                 const extraSlots = caster.extraSlotsPerDay[level] ?? 0;
+                const restrictedSlots =
+                  caster.restrictedExtraSlotsPerDay[level] ?? 0;
+                const domainSlotModel =
+                  mode === "prepared" && caster.domains.length > 0;
+                const restrictedNames =
+                  diag.restrictedSlotEligibleSpellNames.map((name) =>
+                    name.toLowerCase(),
+                  );
+                const restrictedSelected = current.filter((name) =>
+                  restrictedNames.includes(name.toLowerCase()),
+                ).length;
+                const normalSelected = current.length - restrictedSelected;
+                const normalCapacity = Math.max(
+                  0,
+                  diag.capacity - restrictedSlots,
+                );
+                const canAddSelection = domainSlotModel
+                  ? normalSelected < normalCapacity
+                  : diag.selectedCount < diag.capacity;
+                const canAddNamedSelection = (spellName: string) =>
+                  domainSlotModel &&
+                  restrictedNames.includes(spellName.toLowerCase())
+                    ? restrictedSelected < restrictedSlots
+                    : canAddSelection;
+                const grantedAtLevel = uniqueSpellNames(
+                  caster.grantedSpells[level] ?? [],
+                );
+                const autoFillSelectionNames =
+                  mode === "known"
+                    ? [
+                        ...grantedAtLevel,
+                        ...diag.librarySpellNames
+                          .filter(
+                            (name) =>
+                              !grantedAtLevel.some(
+                                (grant) =>
+                                  grant.toLowerCase() === name.toLowerCase(),
+                              ),
+                          )
+                          .slice(0, diag.capacity),
+                      ]
+                    : domainSlotModel
+                      ? [
+                          ...diag.restrictedSlotEligibleSpellNames.slice(
+                            0,
+                            restrictedSlots,
+                          ),
+                          ...diag.librarySpellNames
+                            .filter(
+                              (name) =>
+                                !restrictedNames.includes(name.toLowerCase()),
+                            )
+                            .slice(0, normalCapacity),
+                        ]
+                      : diag.librarySpellNames;
+                const autoFillCapacity =
+                  mode === "known"
+                    ? diag.capacity + grantedAtLevel.length
+                    : diag.capacity;
+                const knownTotal = uniqueSpellNames([
+                  ...current,
+                  ...grantedAtLevel,
+                ]).length;
                 const runtimeMax = caster.spellsPerDay[level] ?? 0;
                 const runtimeRemaining =
                   caster.slotsRemaining[level] ?? runtimeMax;
+                const restrictedUsed = Math.min(
+                  restrictedSlots,
+                  Object.entries(
+                    spellCastCounts[classKey]?.[level] ?? {},
+                  ).reduce(
+                    (total, [spellName, count]) =>
+                      total +
+                      (restrictedNames.includes(spellName.toLowerCase())
+                        ? count
+                        : 0),
+                    0,
+                  ),
+                );
+                const normalRuntimeMax = Math.max(
+                  0,
+                  runtimeMax - restrictedSlots,
+                );
+                const normalRuntimeUsed = Math.max(
+                  0,
+                  runtimeMax - runtimeRemaining - restrictedUsed,
+                );
+                const normalRuntimeRemaining = Math.max(
+                  0,
+                  normalRuntimeMax - normalRuntimeUsed,
+                );
+                const restrictedRemaining = Math.max(
+                  0,
+                  restrictedSlots - restrictedUsed,
+                );
                 const isAtWill = diag.isAtWill;
                 const castables = uniqueSpellNames(
                   current.length > 0
-                    ? current
+                    ? [...current, ...(caster.grantedSpells[level] ?? [])]
                     : [...(caster.grantedSpells[level] ?? []), ...library],
                 );
                 const issues: SpellIssue[] = [
@@ -522,7 +638,11 @@ export function SpellcastingManager({
                   diag.restrictedSlotShortfall > 0
                     ? {
                         label: "Restricted",
-                        detail: `Need ${diag.restrictedSlotCapacity} granted spell pick(s); only ${diag.restrictedSlotEligibleSelectedCount} qualify.`,
+                        detail:
+                          diag.restrictedSlotEligibleSelectedCount >
+                          diag.restrictedSlotCapacity
+                            ? `Only ${diag.restrictedSlotCapacity} dedicated domain spell may be prepared at this level; ${diag.restrictedSlotEligibleSelectedCount} are selected.`
+                            : `Need ${diag.restrictedSlotCapacity} granted spell pick(s); only ${diag.restrictedSlotEligibleSelectedCount} qualify.`,
                       }
                     : null,
                   diag.unknownSpells.length > 0
@@ -562,18 +682,20 @@ export function SpellcastingManager({
                     <summary className="spell-level-summary-head">
                       <div className="spell-level-title-group">
                         <div className="subsection-title level-title">
-                          Level {level}
+                          {spellLevelLabel(caster, level)}
                         </div>
                         <div className="spell-level-head-meta">
                           <span>
                             {mode === "prepared"
                               ? `${current.length}/${diag.capacity} prepared`
-                              : `${current.length}/${diag.capacity} known`}
+                              : `${knownTotal} known`}
                           </span>
                           <span>
                             {isAtWill
                               ? "At will"
-                              : `${runtimeRemaining}/${runtimeMax} slots`}
+                              : domainSlotModel
+                                ? `${normalRuntimeRemaining}/${normalRuntimeMax} slots + domain ${restrictedRemaining}/${restrictedSlots}`
+                                : `${runtimeRemaining}/${runtimeMax} slots`}
                           </span>
                           <span>{library.length} in library</span>
                         </div>
@@ -591,7 +713,9 @@ export function SpellcastingManager({
                       <div className="spell-summary-card">
                         <span className="spell-summary-label">Ready</span>
                         <strong>
-                          {current.length}/{diag.capacity}
+                          {mode === "prepared"
+                            ? `${current.length}/${diag.capacity}`
+                            : knownTotal}
                         </strong>
                         <span className="muted">
                           {mode === "prepared" ? "prepared" : "known"}
@@ -607,7 +731,9 @@ export function SpellcastingManager({
                         <strong>
                           {isAtWill
                             ? "At will"
-                            : `${runtimeRemaining}/${runtimeMax}`}
+                            : domainSlotModel
+                              ? `${normalRuntimeRemaining}/${normalRuntimeMax} + ${restrictedRemaining}/${restrictedSlots}`
+                              : `${runtimeRemaining}/${runtimeMax}`}
                         </strong>
                         <span className="muted">slots remaining</span>
                       </div>
@@ -626,7 +752,8 @@ export function SpellcastingManager({
 
                     <div className="resource-row runtime-row spell-runtime-toolbar">
                       <span className="resource-label">
-                        Extra slots: +{extraSlots}
+                        Extra slots: +
+                        {Math.max(0, extraSlots - restrictedSlots)}
                       </span>
                       {(caster.restrictedExtraSlotsPerDay[level] ?? 0) > 0 ? (
                         <span className="resource-label">
@@ -656,8 +783,8 @@ export function SpellcastingManager({
                               classKey,
                               mode,
                               level,
-                              diag.capacity,
-                              diag.librarySpellNames,
+                              autoFillCapacity,
+                              autoFillSelectionNames,
                             )
                           }
                         >
@@ -1119,7 +1246,8 @@ export function SpellcastingManager({
                                   className="ghost small planner-suggestion-chip spell-suggestion-chip"
                                   title={entry.reason}
                                   disabled={
-                                    !canAddSelection || diag.capacity <= 0
+                                    !canAddNamedSelection(entry.spellName) ||
+                                    diag.capacity <= 0
                                   }
                                   onClick={() => {
                                     if (!library.includes(entry.spellName))
@@ -1155,7 +1283,8 @@ export function SpellcastingManager({
                                 <button
                                   className="ghost small"
                                   disabled={
-                                    !canAddSelection || diag.capacity <= 0
+                                    !canAddNamedSelection(spellName) ||
+                                    diag.capacity <= 0
                                   }
                                   onClick={() => {
                                     if (!library.includes(spellName))
@@ -1188,7 +1317,9 @@ export function SpellcastingManager({
                           <span className="resource-label">
                             {isAtWill
                               ? "At will"
-                              : `Slots: ${runtimeRemaining}/${runtimeMax} left`}
+                              : domainSlotModel
+                                ? `Slots: ${normalRuntimeRemaining}/${normalRuntimeMax} normal · ${restrictedRemaining}/${restrictedSlots} domain`
+                                : `Slots: ${runtimeRemaining}/${runtimeMax} left`}
                           </span>
                           <div className="resource-buttons">
                             {!isAtWill ? (
@@ -1238,6 +1369,16 @@ export function SpellcastingManager({
                                 spellCastCounts[classKey]?.[level]?.[
                                   spellName
                                 ] ?? 0;
+                              const usesRestrictedSlot =
+                                domainSlotModel &&
+                                restrictedNames.includes(
+                                  spellName.toLowerCase(),
+                                );
+                              const poolRuntimeRemaining = usesRestrictedSlot
+                                ? restrictedRemaining
+                                : domainSlotModel
+                                  ? normalRuntimeRemaining
+                                  : runtimeRemaining;
                               const spellEffect =
                                 getSpellEffectByName(spellName);
                               const option = findSpellOption(
@@ -1305,7 +1446,7 @@ export function SpellcastingManager({
                                             `Casts ${spellName}.`
                                       }
                                       disabled={
-                                        !isAtWill && runtimeRemaining <= 0
+                                        !isAtWill && poolRuntimeRemaining <= 0
                                       }
                                       onClick={() =>
                                         onCastSpell(
@@ -1403,6 +1544,19 @@ export function SpellcastingManager({
                 <dt>Target / Area</dt>
                 <dd>{detailOption?.spell?.targetEffectArea || "—"}</dd>
               </div>
+              {[
+                ["Target", detailOption?.spell?.target],
+                ["Effect", detailOption?.spell?.effect],
+                ["Area", detailOption?.spell?.area],
+                ["Class levels", detailOption?.spell?.levelText],
+              ]
+                .filter(([, value]) => value)
+                .map(([label, value]) => (
+                  <div key={label}>
+                    <dt>{label}</dt>
+                    <dd>{value}</dd>
+                  </div>
+                ))}
               <div>
                 <dt>Duration</dt>
                 <dd>{detailOption?.spell?.duration || "—"}</dd>
@@ -1416,9 +1570,12 @@ export function SpellcastingManager({
                 <dd>{detailOption?.spell?.spellResistance || "—"}</dd>
               </div>
             </dl>
-            <p className="spell-detail-description">
-              {detailOption?.spell?.description || spellTitle(spellDetailName)}
-            </p>
+            <div className="spell-detail-description">
+              <SpellRulesText
+                spell={detailOption?.spell}
+                fallback={spellTitle(spellDetailName)}
+              />
+            </div>
             {detailOption?.supportSummary ? (
               <p className="hint">{detailOption.supportSummary}</p>
             ) : null}

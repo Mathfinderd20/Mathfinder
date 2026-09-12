@@ -186,6 +186,12 @@ export function useSpellbookEditor(
       },
     }));
   }
+  function updateSpellBloodline(classKey: string, value: string) {
+    setBuild((previous) => ({
+      ...previous,
+      spellBloodlines: { ...previous.spellBloodlines, [classKey]: value },
+    }));
+  }
 
   function updateSpellExtraSlots(
     classKey: string,
@@ -314,6 +320,7 @@ export function useSpellbookEditor(
     resetSpellSelectionsForClass,
     resetSpellSelectionsForLevel,
     updateSpellDomains,
+    updateSpellBloodline,
     updateSpellLibraryName,
     updateSpellSelectionName,
     updateSpellSpecialization,

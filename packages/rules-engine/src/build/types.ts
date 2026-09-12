@@ -185,6 +185,7 @@ export interface CharacterBuild {
   spellLibrary?: Record<string, SpellLibraryState>;
   spellSelections?: Record<string, SpellSelectionState>;
   spellDomains?: Record<string, string[]>;
+  spellBloodlines?: Record<string, string | undefined>;
   spellSpecializations?: Record<string, string | undefined>;
   spellExtraSlots?: Record<string, SpellExtraSlotsByLevel>;
   spellSlotUsage?: Record<string, SpellSlotUsageByLevel>;

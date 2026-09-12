@@ -657,11 +657,23 @@ export function createReviewCharacters(): Array<{
       prepared: Object.fromEntries(
         Object.entries(source.preparedCapacity).map(([level, capacity]) => {
           const options = library[Number(level)] ?? [];
+          const reserved =
+            source.restrictedExtraSlotsPerDay[Number(level)] ?? 0;
+          const grants = source.grantedSpells[Number(level)] ?? [];
+          const normalOptions = options.filter(
+            (option) =>
+              !grants.some(
+                (grant) => grant.toLowerCase() === option.toLowerCase(),
+              ),
+          );
           return [
             level,
-            Array.from(
-              { length: capacity ?? 0 },
-              (_, index) => options[index % options.length]!,
+            Array.from({ length: capacity ?? 0 }, (_, index) =>
+              index < reserved && grants.length
+                ? grants[index % grants.length]!
+                : normalOptions[
+                    (index - Math.min(reserved, index)) % normalOptions.length
+                  ]!,
             ).filter(Boolean),
           ];
         }),

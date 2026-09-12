@@ -1,0 +1,2129 @@
+{
+  "generatedAt": "2026-09-11T01:09:37.689Z",
+  "scope": "repository artifact only; not a staging database inventory",
+  "assetSha256": "9bab1b3341ca61b939fae9490ebfb2420ff0f2ffe6ad920eeee4105d88a001d8",
+  "sourceSummary": {
+    "total": 10083,
+    "byKind": {
+      "class": 12,
+      "archetype": 583,
+      "class-feature": 640,
+      "feat": 1874,
+      "race": 82,
+      "skill": 35,
+      "spell": 3069,
+      "weapon": 384,
+      "armor": 65,
+      "gear": 490,
+      "magic-item": 2787,
+      "domain": 6,
+      "school": 4,
+      "spell-effect": 52
+    },
+    "byOrigin": {
+      "seed": 478,
+      "scrape": 9605
+    }
+  },
+  "byKind": {
+    "classes": {
+      "exportedRows": 12,
+      "missingSourceUrl": 12,
+      "eligibility": "unknown-until-work-or-record-evidence-review"
+    },
+    "archetypes": {
+      "exportedRows": 583,
+      "missingSourceUrl": 583,
+      "eligibility": "unknown-until-work-or-record-evidence-review"
+    },
+    "classFeatures": {
+      "exportedRows": 1050,
+      "missingSourceUrl": 1050,
+      "eligibility": "unknown-until-work-or-record-evidence-review"
+    },
+    "feats": {
+      "exportedRows": 1874,
+      "missingSourceUrl": 1874,
+      "eligibility": "unknown-until-work-or-record-evidence-review"
+    },
+    "races": {
+      "exportedRows": 73,
+      "missingSourceUrl": 73,
+      "eligibility": "unknown-until-work-or-record-evidence-review"
+    },
+    "skills": {
+      "exportedRows": 35,
+      "missingSourceUrl": 35,
+      "eligibility": "unknown-until-work-or-record-evidence-review"
+    },
+    "spells": {
+      "exportedRows": 3068,
+      "missingSourceUrl": 43,
+      "eligibility": "unknown-until-work-or-record-evidence-review"
+    },
+    "weapons": {
+      "exportedRows": 384,
+      "missingSourceUrl": 384,
+      "eligibility": "unknown-until-work-or-record-evidence-review"
+    },
+    "armor": {
+      "exportedRows": 65,
+      "missingSourceUrl": 0,
+      "eligibility": "unknown-until-work-or-record-evidence-review"
+    },
+    "mundaneEquipment": {
+      "exportedRows": 490,
+      "missingSourceUrl": 0,
+      "eligibility": "unknown-until-work-or-record-evidence-review"
+    },
+    "magicItems": {
+      "exportedRows": 2620,
+      "missingSourceUrl": 0,
+      "eligibility": "unknown-until-work-or-record-evidence-review"
+    },
+    "domains": {
+      "exportedRows": 6,
+      "missingSourceUrl": 6,
+      "eligibility": "unknown-until-work-or-record-evidence-review"
+    },
+    "schools": {
+      "exportedRows": 4,
+      "missingSourceUrl": 4,
+      "eligibility": "unknown-until-work-or-record-evidence-review"
+    },
+    "spellEffects": {
+      "exportedRows": 52,
+      "missingSourceUrl": 52,
+      "eligibility": "unknown-until-work-or-record-evidence-review"
+    }
+  },
+  "duplicateCandidates": [
+    {
+      "kind": "archetypes",
+      "ids": ["driver", "rogue-driver"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "archetypes",
+      "ids": ["bard-fey-prankster", "rogue-fey-prankster"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "archetypes",
+      "ids": ["inquisitor-infiltrator", "ranger-infiltrator"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "archetypes",
+      "ids": ["cleric-scroll-scholar", "wizard-scroll-scholar"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "archetypes",
+      "ids": ["fighter-skirmisher", "ranger-skirmisher"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "fighter-bonus-feat-l1",
+        "infantryman-bonus-feat-l12",
+        "infantryman-bonus-feat-l16",
+        "infantryman-bonus-feat-l20",
+        "infantryman-bonus-feat-l4",
+        "infantryman-bonus-feat-l8",
+        "scrape-aon-cavalier-bonus-feat-l6",
+        "scrape-aon-cavalier-bonus-feat-l12",
+        "scrape-aon-cavalier-bonus-feat-l18",
+        "scrape-aon-monk-unchained-bonus-feat-l1",
+        "scrape-aon-monk-unchained-bonus-feat-l2",
+        "scrape-aon-monk-unchained-bonus-feat-l6",
+        "scrape-aon-monk-unchained-bonus-feat-l10",
+        "scrape-aon-monk-unchained-bonus-feat-l14",
+        "scrape-aon-monk-unchained-bonus-feat-l18",
+        "scrape-aon-monk-bonus-feat-l1",
+        "scrape-aon-monk-bonus-feat-l2",
+        "scrape-aon-monk-bonus-feat-l6",
+        "scrape-aon-monk-bonus-feat-l10",
+        "scrape-aon-monk-bonus-feat-l14",
+        "scrape-aon-monk-bonus-feat-l18",
+        "scrape-aon-samurai-bonus-feat-l6",
+        "scrape-aon-samurai-bonus-feat-l12",
+        "scrape-aon-samurai-bonus-feat-l18"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "infantryman-deeds-l1",
+        "infantryman-deeds-l11",
+        "infantryman-deeds-l15",
+        "infantryman-deeds-l19",
+        "infantryman-deeds-l3",
+        "infantryman-deeds-l7",
+        "scrape-aon-gunslinger-deeds-l1",
+        "scrape-aon-gunslinger-deeds-l3",
+        "scrape-aon-gunslinger-deeds-l7",
+        "scrape-aon-gunslinger-deeds-l11",
+        "scrape-aon-gunslinger-deeds-l15",
+        "scrape-aon-gunslinger-deeds-l19",
+        "scrape-aon-swashbuckler-deeds-l1",
+        "scrape-aon-swashbuckler-deeds-l3",
+        "scrape-aon-swashbuckler-deeds-l7",
+        "scrape-aon-swashbuckler-deeds-l11",
+        "scrape-aon-swashbuckler-deeds-l15",
+        "scrape-aon-swashbuckler-deeds-l19"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "barbarian-fast-movement-l1",
+        "scrape-aon-barbarian-unchained-fast-movement-l1",
+        "scrape-aon-barbarian-fast-movement-l1",
+        "scrape-aon-bloodrager-fast-movement-l1",
+        "scrape-aon-monk-unchained-fast-movement-l3",
+        "scrape-aon-monk-fast-movement-l3"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": ["infantryman-grit-l1", "scrape-aon-gunslinger-grit-l1"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "infantryman-gun-training-l5",
+        "scrape-aon-gunslinger-gun-training-l5",
+        "scrape-aon-gunslinger-gun-training-l9",
+        "scrape-aon-gunslinger-gun-training-l13",
+        "scrape-aon-gunslinger-gun-training-l17"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": ["infantryman-gunsmith-l1", "scrape-aon-gunslinger-gunsmith-l1"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "barbarian-rage-l1",
+        "scrape-aon-barbarian-unchained-rage-l1",
+        "scrape-aon-barbarian-rage-l1"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "rogue-trapfinding-l1",
+        "scrape-aon-investigator-trapfinding-l1",
+        "scrape-aon-rogue-unchained-trapfinding-l1",
+        "scrape-aon-rogue-trapfinding-l1"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-alchemist-alchemy-l1",
+        "scrape-aon-investigator-alchemy-l1"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-alchemist-bomb-l1",
+        "scrape-aon-alchemist-bomb-l3",
+        "scrape-aon-alchemist-bomb-l5",
+        "scrape-aon-alchemist-bomb-l7",
+        "scrape-aon-alchemist-bomb-l9",
+        "scrape-aon-alchemist-bomb-l11",
+        "scrape-aon-alchemist-bomb-l13",
+        "scrape-aon-alchemist-bomb-l15",
+        "scrape-aon-alchemist-bomb-l17",
+        "scrape-aon-alchemist-bomb-l19"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-alchemist-discovery-l2",
+        "scrape-aon-alchemist-discovery-l4",
+        "scrape-aon-alchemist-discovery-l6",
+        "scrape-aon-alchemist-discovery-l8",
+        "scrape-aon-alchemist-discovery-l10",
+        "scrape-aon-alchemist-discovery-l12",
+        "scrape-aon-alchemist-discovery-l14",
+        "scrape-aon-alchemist-discovery-l16",
+        "scrape-aon-alchemist-discovery-l18"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-alchemist-poison-resistance-l2",
+        "scrape-aon-alchemist-poison-resistance-l5",
+        "scrape-aon-alchemist-poison-resistance-l8",
+        "scrape-aon-investigator-poison-resistance-l2",
+        "scrape-aon-investigator-poison-resistance-l5",
+        "scrape-aon-investigator-poison-resistance-l8"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-alchemist-poison-use-l2",
+        "scrape-aon-ninja-poison-use-l1"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-alchemist-swift-alchemy-l3",
+        "scrape-aon-investigator-swift-alchemy-l4"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-alchemist-weapon-and-armor-proficiency-l0",
+        "scrape-aon-antipaladin-weapon-and-armor-proficiency-l0",
+        "scrape-aon-barbarian-unchained-weapon-and-armor-proficiency-l0",
+        "scrape-aon-barbarian-weapon-and-armor-proficiency-l0",
+        "scrape-aon-bard-weapon-and-armor-proficiency-l0",
+        "scrape-aon-bloodrager-weapon-and-armor-proficiency-l0",
+        "scrape-aon-brawler-weapon-and-armor-proficiency-l0",
+        "scrape-aon-cavalier-weapon-and-armor-proficiency-l0",
+        "scrape-aon-cleric-weapon-and-armor-proficiency-l0",
+        "scrape-aon-druid-weapon-and-armor-proficiency-l0",
+        "scrape-aon-fighter-weapon-and-armor-proficiency-l0",
+        "scrape-aon-gunslinger-weapon-and-armor-proficiency-l0",
+        "scrape-aon-hunter-weapon-and-armor-proficiency-l0",
+        "scrape-aon-inquisitor-weapon-and-armor-proficiency-l0",
+        "scrape-aon-investigator-weapon-and-armor-proficiency-l0",
+        "scrape-aon-kineticist-weapon-and-armor-proficiency-l0",
+        "scrape-aon-magus-weapon-and-armor-proficiency-l0",
+        "scrape-aon-medium-weapon-and-armor-proficiency-l0",
+        "scrape-aon-mesmerist-weapon-and-armor-proficiency-l0",
+        "scrape-aon-monk-unchained-weapon-and-armor-proficiency-l0",
+        "scrape-aon-monk-weapon-and-armor-proficiency-l0",
+        "scrape-aon-ninja-weapon-and-armor-proficiency-l0",
+        "scrape-aon-occultist-weapon-and-armor-proficiency-l0",
+        "scrape-aon-oracle-weapon-and-armor-proficiency-l0",
+        "scrape-aon-paladin-weapon-and-armor-proficiency-l0",
+        "scrape-aon-psychic-weapon-and-armor-proficiency-l0",
+        "scrape-aon-ranger-weapon-and-armor-proficiency-l0",
+        "scrape-aon-rogue-weapon-and-armor-proficiency-l0",
+        "scrape-aon-samurai-weapon-and-armor-proficiency-l0",
+        "scrape-aon-shifter-weapon-and-armor-proficiency-l0",
+        "scrape-aon-skald-weapon-and-armor-proficiency-l0",
+        "scrape-aon-slayer-weapon-and-armor-proficiency-l0",
+        "scrape-aon-sorcerer-weapon-and-armor-proficiency-l0",
+        "scrape-aon-spiritualist-weapon-and-armor-proficiency-l0",
+        "scrape-aon-summoner-unchained-weapon-and-armor-proficiency-l0",
+        "scrape-aon-summoner-weapon-and-armor-proficiency-l0",
+        "scrape-aon-swashbuckler-weapon-and-armor-proficiency-l0",
+        "scrape-aon-vigilante-weapon-and-armor-proficiency-l0",
+        "scrape-aon-witch-weapon-and-armor-proficiency-l0",
+        "scrape-aon-wizard-weapon-and-armor-proficiency-l0"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-antipaladin-associates-l0",
+        "scrape-aon-paladin-associates-l0"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-antipaladin-code-of-conduct-l0",
+        "scrape-aon-paladin-code-of-conduct-l0"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-antipaladin-cruelty-l3",
+        "scrape-aon-antipaladin-cruelty-l6",
+        "scrape-aon-antipaladin-cruelty-l9",
+        "scrape-aon-antipaladin-cruelty-l12",
+        "scrape-aon-antipaladin-cruelty-l15",
+        "scrape-aon-antipaladin-cruelty-l18"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-antipaladin-spells-l0",
+        "scrape-aon-arcanist-spells-l0",
+        "scrape-aon-bard-spells-l0",
+        "scrape-aon-bloodrager-spells-l0",
+        "scrape-aon-cleric-spells-l0",
+        "scrape-aon-druid-spells-l0",
+        "scrape-aon-hunter-spells-l0",
+        "scrape-aon-inquisitor-spells-l0",
+        "scrape-aon-magus-spells-l0",
+        "scrape-aon-medium-spells-l0",
+        "scrape-aon-mesmerist-spells-l0",
+        "scrape-aon-occultist-spells-l0",
+        "scrape-aon-oracle-spells-l0",
+        "scrape-aon-paladin-spells-l0",
+        "scrape-aon-psychic-spells-l0",
+        "scrape-aon-ranger-spells-l0",
+        "scrape-aon-shaman-spells-l0",
+        "scrape-aon-skald-spells-l0",
+        "scrape-aon-sorcerer-spells-l0",
+        "scrape-aon-spiritualist-spells-l0",
+        "scrape-aon-summoner-unchained-spells-l0",
+        "scrape-aon-summoner-spells-l0",
+        "scrape-aon-warpriest-spells-l0",
+        "scrape-aon-witch-spells-l0",
+        "scrape-aon-wizard-spells-l0"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-arcanist-cantrips-l1",
+        "scrape-aon-bard-cantrips-l1",
+        "scrape-aon-magus-cantrips-l1",
+        "scrape-aon-skald-cantrips-l1",
+        "scrape-aon-sorcerer-cantrips-l1",
+        "scrape-aon-summoner-unchained-cantrips-l1",
+        "scrape-aon-summoner-cantrips-l1",
+        "scrape-aon-witch-cantrips-l1",
+        "scrape-aon-wizard-cantrips-l1"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-arcanist-spellbooks-l0",
+        "scrape-aon-magus-spellbooks-l0",
+        "scrape-aon-wizard-spellbooks-l0"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-arcanist-weapon-and-armor-proficiencies-l0",
+        "scrape-aon-rogue-unchained-weapon-and-armor-proficiencies-l0",
+        "scrape-aon-shaman-weapon-and-armor-proficiencies-l0",
+        "scrape-aon-warpriest-weapon-and-armor-proficiencies-l0"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-barbarian-unchained-damage-reduction-l7",
+        "scrape-aon-barbarian-unchained-damage-reduction-l10",
+        "scrape-aon-barbarian-unchained-damage-reduction-l13",
+        "scrape-aon-barbarian-unchained-damage-reduction-l16",
+        "scrape-aon-barbarian-unchained-damage-reduction-l19",
+        "scrape-aon-barbarian-damage-reduction-l7",
+        "scrape-aon-barbarian-damage-reduction-l10",
+        "scrape-aon-barbarian-damage-reduction-l13",
+        "scrape-aon-barbarian-damage-reduction-l16",
+        "scrape-aon-barbarian-damage-reduction-l19",
+        "scrape-aon-bloodrager-damage-reduction-l7",
+        "scrape-aon-bloodrager-damage-reduction-l10",
+        "scrape-aon-bloodrager-damage-reduction-l13",
+        "scrape-aon-bloodrager-damage-reduction-l16",
+        "scrape-aon-bloodrager-damage-reduction-l19",
+        "scrape-aon-skald-damage-reduction-l9"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-barbarian-unchained-danger-sense-l3",
+        "scrape-aon-barbarian-unchained-danger-sense-l6",
+        "scrape-aon-barbarian-unchained-danger-sense-l9",
+        "scrape-aon-barbarian-unchained-danger-sense-l12",
+        "scrape-aon-barbarian-unchained-danger-sense-l15",
+        "scrape-aon-barbarian-unchained-danger-sense-l18",
+        "scrape-aon-rogue-unchained-danger-sense-l3",
+        "scrape-aon-rogue-unchained-danger-sense-l6",
+        "scrape-aon-rogue-unchained-danger-sense-l9",
+        "scrape-aon-rogue-unchained-danger-sense-l12",
+        "scrape-aon-rogue-unchained-danger-sense-l15",
+        "scrape-aon-rogue-unchained-danger-sense-l18"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-barbarian-unchained-greater-rage-l11",
+        "scrape-aon-barbarian-greater-rage-l11"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-barbarian-unchained-improved-uncanny-dodge-l5",
+        "scrape-aon-barbarian-improved-uncanny-dodge-l5",
+        "scrape-aon-bloodrager-improved-uncanny-dodge-l5",
+        "scrape-aon-ninja-improved-uncanny-dodge-l8",
+        "scrape-aon-rogue-unchained-improved-uncanny-dodge-l8",
+        "scrape-aon-rogue-improved-uncanny-dodge-l8",
+        "scrape-aon-skald-improved-uncanny-dodge-l8"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-barbarian-unchained-indomitable-will-l14",
+        "scrape-aon-barbarian-indomitable-will-l14",
+        "scrape-aon-bloodrager-indomitable-will-l14"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-barbarian-unchained-mighty-rage-l20",
+        "scrape-aon-barbarian-mighty-rage-l20"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-barbarian-unchained-rage-powers-l2",
+        "scrape-aon-barbarian-unchained-rage-powers-l4",
+        "scrape-aon-barbarian-unchained-rage-powers-l6",
+        "scrape-aon-barbarian-unchained-rage-powers-l8",
+        "scrape-aon-barbarian-unchained-rage-powers-l10",
+        "scrape-aon-barbarian-unchained-rage-powers-l12",
+        "scrape-aon-barbarian-unchained-rage-powers-l14",
+        "scrape-aon-barbarian-unchained-rage-powers-l16",
+        "scrape-aon-barbarian-unchained-rage-powers-l18",
+        "scrape-aon-barbarian-unchained-rage-powers-l20",
+        "scrape-aon-barbarian-rage-powers-l2",
+        "scrape-aon-barbarian-rage-powers-l4",
+        "scrape-aon-barbarian-rage-powers-l6",
+        "scrape-aon-barbarian-rage-powers-l8",
+        "scrape-aon-barbarian-rage-powers-l10",
+        "scrape-aon-barbarian-rage-powers-l12",
+        "scrape-aon-barbarian-rage-powers-l14",
+        "scrape-aon-barbarian-rage-powers-l16",
+        "scrape-aon-barbarian-rage-powers-l18",
+        "scrape-aon-barbarian-rage-powers-l20",
+        "scrape-aon-skald-rage-powers-l3",
+        "scrape-aon-skald-rage-powers-l6",
+        "scrape-aon-skald-rage-powers-l9",
+        "scrape-aon-skald-rage-powers-l12",
+        "scrape-aon-skald-rage-powers-l15",
+        "scrape-aon-skald-rage-powers-l18"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-barbarian-unchained-tireless-rage-l17",
+        "scrape-aon-barbarian-tireless-rage-l17"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-barbarian-unchained-uncanny-dodge-l2",
+        "scrape-aon-barbarian-uncanny-dodge-l2",
+        "scrape-aon-bloodrager-uncanny-dodge-l2",
+        "scrape-aon-ninja-uncanny-dodge-l4",
+        "scrape-aon-rogue-unchained-uncanny-dodge-l4",
+        "scrape-aon-rogue-uncanny-dodge-l4",
+        "scrape-aon-skald-uncanny-dodge-l4"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-barbarian-trap-sense-l3",
+        "scrape-aon-barbarian-trap-sense-l6",
+        "scrape-aon-barbarian-trap-sense-l9",
+        "scrape-aon-barbarian-trap-sense-l12",
+        "scrape-aon-barbarian-trap-sense-l15",
+        "scrape-aon-barbarian-trap-sense-l18",
+        "scrape-aon-investigator-trap-sense-l3",
+        "scrape-aon-investigator-trap-sense-l6",
+        "scrape-aon-investigator-trap-sense-l9",
+        "scrape-aon-investigator-trap-sense-l12",
+        "scrape-aon-investigator-trap-sense-l15",
+        "scrape-aon-investigator-trap-sense-l18",
+        "scrape-aon-rogue-trap-sense-l3",
+        "scrape-aon-rogue-trap-sense-l6",
+        "scrape-aon-rogue-trap-sense-l9",
+        "scrape-aon-rogue-trap-sense-l12",
+        "scrape-aon-rogue-trap-sense-l15",
+        "scrape-aon-rogue-trap-sense-l18"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-bard-bardic-knowledge-l1",
+        "scrape-aon-skald-bardic-knowledge-l1"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-bard-lore-master-l5",
+        "scrape-aon-skald-lore-master-l5"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-bard-versatile-performance-l2",
+        "scrape-aon-bard-versatile-performance-l6",
+        "scrape-aon-bard-versatile-performance-l10",
+        "scrape-aon-bard-versatile-performance-l14",
+        "scrape-aon-bard-versatile-performance-l18",
+        "scrape-aon-skald-versatile-performance-l2",
+        "scrape-aon-skald-versatile-performance-l7",
+        "scrape-aon-skald-versatile-performance-l12",
+        "scrape-aon-skald-versatile-performance-l17"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-bard-well-versed-l2",
+        "scrape-aon-skald-well-versed-l2"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-bloodrager-bloodline-l1",
+        "scrape-aon-sorcerer-bloodline-l1"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-bloodrager-eschew-materials-l4",
+        "scrape-aon-sorcerer-eschew-materials-l1"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-brawler-martial-flexibility-l1",
+        "scrape-aon-brawler-martial-flexibility-l6",
+        "scrape-aon-brawler-martial-flexibility-l10",
+        "scrape-aon-brawler-martial-flexibility-l12",
+        "scrape-aon-brawler-martial-flexibility-l20"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": ["scrape-aon-cavalier-banner-l5", "scrape-aon-samurai-banner-l5"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-cavalier-challenge-l1",
+        "scrape-aon-samurai-challenge-l1"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-cavalier-demanding-challenge-l12",
+        "scrape-aon-samurai-demanding-challenge-l12"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-cavalier-greater-banner-l14",
+        "scrape-aon-samurai-greater-banner-l14"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": ["scrape-aon-cavalier-mount-l1", "scrape-aon-samurai-mount-l1"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": ["scrape-aon-cavalier-order-l1", "scrape-aon-samurai-order-l1"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": ["scrape-aon-cleric-aura-l1", "scrape-aon-warpriest-aura-l1"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-cleric-bonus-languages-l0",
+        "scrape-aon-druid-bonus-languages-l0",
+        "scrape-aon-shifter-bonus-languages-l0",
+        "scrape-aon-warpriest-bonus-languages-l0",
+        "scrape-aon-wizard-bonus-languages-l0"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-cleric-channel-energy-l1",
+        "scrape-aon-cleric-channel-energy-l3",
+        "scrape-aon-cleric-channel-energy-l5",
+        "scrape-aon-cleric-channel-energy-l7",
+        "scrape-aon-cleric-channel-energy-l9",
+        "scrape-aon-cleric-channel-energy-l11",
+        "scrape-aon-cleric-channel-energy-l13",
+        "scrape-aon-cleric-channel-energy-l15",
+        "scrape-aon-cleric-channel-energy-l17",
+        "scrape-aon-cleric-channel-energy-l19",
+        "scrape-aon-warpriest-channel-energy-l4"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-cleric-chaotic-evil-good-and-lawful-spells-l0",
+        "scrape-aon-druid-chaotic-evil-good-and-lawful-spells-l0",
+        "scrape-aon-hunter-chaotic-evil-good-and-lawful-spells-l0",
+        "scrape-aon-inquisitor-chaotic-evil-good-and-lawful-spells-l0",
+        "scrape-aon-warpriest-chaotic-evil-good-and-lawful-spells-l0"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-cleric-orisons-l1",
+        "scrape-aon-druid-orisons-l1",
+        "scrape-aon-hunter-orisons-l1",
+        "scrape-aon-inquisitor-orisons-l1",
+        "scrape-aon-oracle-orisons-l1",
+        "scrape-aon-shaman-orisons-l1",
+        "scrape-aon-warpriest-orisons-l1"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-cleric-spontaneous-casting-l0",
+        "scrape-aon-druid-spontaneous-casting-l0",
+        "scrape-aon-warpriest-spontaneous-casting-l0"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-druid-a-thousand-faces-l13",
+        "scrape-aon-shifter-a-thousand-faces-l18"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-druid-timeless-body-l15",
+        "scrape-aon-monk-unchained-timeless-body-l17",
+        "scrape-aon-monk-timeless-body-l17",
+        "scrape-aon-shifter-timeless-body-l18"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-druid-trackless-step-l3",
+        "scrape-aon-shifter-trackless-step-l5"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-druid-wild-empathy-l1",
+        "scrape-aon-hunter-wild-empathy-l1",
+        "scrape-aon-ranger-wild-empathy-l1",
+        "scrape-aon-shifter-wild-empathy-l1"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-druid-wild-shape-l4",
+        "scrape-aon-druid-wild-shape-l6",
+        "scrape-aon-druid-wild-shape-l8",
+        "scrape-aon-druid-wild-shape-l10",
+        "scrape-aon-druid-wild-shape-l12",
+        "scrape-aon-druid-wild-shape-l14",
+        "scrape-aon-druid-wild-shape-l16",
+        "scrape-aon-druid-wild-shape-l18",
+        "scrape-aon-druid-wild-shape-l20",
+        "scrape-aon-shifter-wild-shape-l4"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-druid-woodland-stride-l2",
+        "scrape-aon-hunter-woodland-stride-l5",
+        "scrape-aon-ranger-woodland-stride-l7",
+        "scrape-aon-shifter-woodland-stride-l3"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-fighter-armor-training-l3",
+        "scrape-aon-fighter-armor-training-l7",
+        "scrape-aon-fighter-armor-training-l11",
+        "scrape-aon-fighter-armor-training-l15"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-fighter-bonus-feats-l1",
+        "scrape-aon-fighter-bonus-feats-l2",
+        "scrape-aon-fighter-bonus-feats-l4",
+        "scrape-aon-fighter-bonus-feats-l6",
+        "scrape-aon-fighter-bonus-feats-l8",
+        "scrape-aon-fighter-bonus-feats-l10",
+        "scrape-aon-fighter-bonus-feats-l12",
+        "scrape-aon-fighter-bonus-feats-l14",
+        "scrape-aon-fighter-bonus-feats-l16",
+        "scrape-aon-fighter-bonus-feats-l18",
+        "scrape-aon-fighter-bonus-feats-l20",
+        "scrape-aon-gunslinger-bonus-feats-l4",
+        "scrape-aon-gunslinger-bonus-feats-l8",
+        "scrape-aon-gunslinger-bonus-feats-l12",
+        "scrape-aon-gunslinger-bonus-feats-l16",
+        "scrape-aon-gunslinger-bonus-feats-l20",
+        "scrape-aon-magus-bonus-feats-l5",
+        "scrape-aon-magus-bonus-feats-l11",
+        "scrape-aon-magus-bonus-feats-l17",
+        "scrape-aon-swashbuckler-bonus-feats-l4",
+        "scrape-aon-swashbuckler-bonus-feats-l8",
+        "scrape-aon-swashbuckler-bonus-feats-l12",
+        "scrape-aon-swashbuckler-bonus-feats-l16",
+        "scrape-aon-swashbuckler-bonus-feats-l20",
+        "scrape-aon-warpriest-bonus-feats-l3",
+        "scrape-aon-warpriest-bonus-feats-l6",
+        "scrape-aon-warpriest-bonus-feats-l9",
+        "scrape-aon-warpriest-bonus-feats-l12",
+        "scrape-aon-warpriest-bonus-feats-l15",
+        "scrape-aon-warpriest-bonus-feats-l18",
+        "scrape-aon-wizard-bonus-feats-l5",
+        "scrape-aon-wizard-bonus-feats-l10",
+        "scrape-aon-wizard-bonus-feats-l15",
+        "scrape-aon-wizard-bonus-feats-l20"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-fighter-bravery-l2",
+        "scrape-aon-fighter-bravery-l6",
+        "scrape-aon-fighter-bravery-l10",
+        "scrape-aon-fighter-bravery-l14",
+        "scrape-aon-fighter-bravery-l18"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-fighter-weapon-training-l5",
+        "scrape-aon-fighter-weapon-training-l9",
+        "scrape-aon-fighter-weapon-training-l13",
+        "scrape-aon-fighter-weapon-training-l17"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-gunslinger-nimble-l2",
+        "scrape-aon-gunslinger-nimble-l6",
+        "scrape-aon-gunslinger-nimble-l10",
+        "scrape-aon-gunslinger-nimble-l14",
+        "scrape-aon-gunslinger-nimble-l18",
+        "scrape-aon-swashbuckler-nimble-l3",
+        "scrape-aon-swashbuckler-nimble-l7",
+        "scrape-aon-swashbuckler-nimble-l11",
+        "scrape-aon-swashbuckler-nimble-l15",
+        "scrape-aon-swashbuckler-nimble-l19"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-hunter-master-hunter-l20",
+        "scrape-aon-ranger-master-hunter-l20"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-hunter-swift-tracker-l8",
+        "scrape-aon-ranger-swift-tracker-l8",
+        "scrape-aon-slayer-swift-tracker-l11"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-hunter-teamwork-feat-l3",
+        "scrape-aon-hunter-teamwork-feat-l6",
+        "scrape-aon-hunter-teamwork-feat-l9",
+        "scrape-aon-hunter-teamwork-feat-l12",
+        "scrape-aon-hunter-teamwork-feat-l15",
+        "scrape-aon-hunter-teamwork-feat-l18",
+        "scrape-aon-inquisitor-teamwork-feat-l3",
+        "scrape-aon-inquisitor-teamwork-feat-l6",
+        "scrape-aon-inquisitor-teamwork-feat-l9",
+        "scrape-aon-inquisitor-teamwork-feat-l12",
+        "scrape-aon-inquisitor-teamwork-feat-l15",
+        "scrape-aon-inquisitor-teamwork-feat-l18"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-hunter-track-l2",
+        "scrape-aon-inquisitor-track-l2",
+        "scrape-aon-ranger-track-l1",
+        "scrape-aon-shifter-track-l2",
+        "scrape-aon-slayer-track-l1"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-investigator-investigator-talent-l3",
+        "scrape-aon-investigator-investigator-talent-l5",
+        "scrape-aon-investigator-investigator-talent-l7",
+        "scrape-aon-investigator-investigator-talent-l9",
+        "scrape-aon-investigator-investigator-talent-l11",
+        "scrape-aon-investigator-investigator-talent-l13",
+        "scrape-aon-investigator-investigator-talent-l15",
+        "scrape-aon-investigator-investigator-talent-l17",
+        "scrape-aon-investigator-investigator-talent-l19"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-investigator-studied-strike-l4",
+        "scrape-aon-investigator-studied-strike-l6",
+        "scrape-aon-investigator-studied-strike-l8",
+        "scrape-aon-investigator-studied-strike-l10",
+        "scrape-aon-investigator-studied-strike-l12",
+        "scrape-aon-investigator-studied-strike-l14",
+        "scrape-aon-investigator-studied-strike-l16",
+        "scrape-aon-investigator-studied-strike-l18",
+        "scrape-aon-investigator-studied-strike-l20"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-kineticist-elemental-overflow-l3",
+        "scrape-aon-kineticist-elemental-overflow-l6",
+        "scrape-aon-kineticist-elemental-overflow-l9",
+        "scrape-aon-kineticist-elemental-overflow-l12",
+        "scrape-aon-kineticist-elemental-overflow-l15",
+        "scrape-aon-kineticist-elemental-overflow-l18"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-kineticist-expanded-element-l7",
+        "scrape-aon-kineticist-expanded-element-l15"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-kineticist-infusion-l1",
+        "scrape-aon-kineticist-infusion-l3",
+        "scrape-aon-kineticist-infusion-l5",
+        "scrape-aon-kineticist-infusion-l9",
+        "scrape-aon-kineticist-infusion-l11",
+        "scrape-aon-kineticist-infusion-l13",
+        "scrape-aon-kineticist-infusion-l17",
+        "scrape-aon-kineticist-infusion-l19"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-kineticist-infusion-specialization-l5",
+        "scrape-aon-kineticist-infusion-specialization-l8",
+        "scrape-aon-kineticist-infusion-specialization-l11",
+        "scrape-aon-kineticist-infusion-specialization-l14",
+        "scrape-aon-kineticist-infusion-specialization-l17",
+        "scrape-aon-kineticist-infusion-specialization-l20"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-kineticist-internal-buffer-l6",
+        "scrape-aon-kineticist-internal-buffer-l11",
+        "scrape-aon-kineticist-internal-buffer-l16"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-kineticist-metakinesis-l5",
+        "scrape-aon-kineticist-metakinesis-l9",
+        "scrape-aon-kineticist-metakinesis-l13",
+        "scrape-aon-kineticist-metakinesis-l17"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-magus-magus-arcana-l3",
+        "scrape-aon-magus-magus-arcana-l6",
+        "scrape-aon-magus-magus-arcana-l9",
+        "scrape-aon-magus-magus-arcana-l12",
+        "scrape-aon-magus-magus-arcana-l15",
+        "scrape-aon-magus-magus-arcana-l18"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-medium-knacks-l1",
+        "scrape-aon-mesmerist-knacks-l1",
+        "scrape-aon-occultist-knacks-l1",
+        "scrape-aon-psychic-knacks-l1",
+        "scrape-aon-spiritualist-knacks-l1"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-medium-spirit-l1",
+        "scrape-aon-shaman-spirit-l1",
+        "scrape-aon-shaman-spirit-l8",
+        "scrape-aon-shaman-spirit-l16"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-medium-spirit-bonus-l1",
+        "scrape-aon-medium-spirit-bonus-l4",
+        "scrape-aon-medium-spirit-bonus-l8",
+        "scrape-aon-medium-spirit-bonus-l12",
+        "scrape-aon-medium-spirit-bonus-l16",
+        "scrape-aon-medium-spirit-bonus-l20"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-medium-spirit-surge-l1",
+        "scrape-aon-medium-spirit-surge-l10",
+        "scrape-aon-medium-spirit-surge-l20"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-mesmerist-bold-stare-l3",
+        "scrape-aon-mesmerist-bold-stare-l7",
+        "scrape-aon-mesmerist-bold-stare-l11",
+        "scrape-aon-mesmerist-bold-stare-l15",
+        "scrape-aon-mesmerist-bold-stare-l19"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-mesmerist-hypnotic-stare-l1",
+        "scrape-aon-mesmerist-hypnotic-stare-l8"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-mesmerist-manifold-tricks-l5",
+        "scrape-aon-mesmerist-manifold-tricks-l9",
+        "scrape-aon-mesmerist-manifold-tricks-l13",
+        "scrape-aon-mesmerist-manifold-tricks-l17"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-mesmerist-touch-treatment-l3",
+        "scrape-aon-mesmerist-touch-treatment-l6",
+        "scrape-aon-mesmerist-touch-treatment-l10",
+        "scrape-aon-mesmerist-touch-treatment-l14"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-monk-unchained-ac-bonus-l1",
+        "scrape-aon-monk-ac-bonus-l1"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-monk-unchained-evasion-l2",
+        "scrape-aon-monk-evasion-l2",
+        "scrape-aon-ranger-evasion-l9",
+        "scrape-aon-rogue-unchained-evasion-l2",
+        "scrape-aon-rogue-evasion-l2"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-monk-unchained-flurry-of-blows-l1",
+        "scrape-aon-monk-unchained-flurry-of-blows-l11",
+        "scrape-aon-monk-flurry-of-blows-l1"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-monk-unchained-improved-evasion-l9",
+        "scrape-aon-monk-improved-evasion-l9",
+        "scrape-aon-ranger-improved-evasion-l16"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-monk-unchained-ki-pool-l3",
+        "scrape-aon-monk-ki-pool-l4",
+        "scrape-aon-monk-ki-pool-l7",
+        "scrape-aon-monk-ki-pool-l10",
+        "scrape-aon-monk-ki-pool-l16",
+        "scrape-aon-ninja-ki-pool-l2"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-monk-unchained-ki-powers-l4",
+        "scrape-aon-monk-unchained-ki-powers-l6",
+        "scrape-aon-monk-unchained-ki-powers-l8",
+        "scrape-aon-monk-unchained-ki-powers-l10",
+        "scrape-aon-monk-unchained-ki-powers-l12",
+        "scrape-aon-monk-unchained-ki-powers-l14",
+        "scrape-aon-monk-unchained-ki-powers-l16",
+        "scrape-aon-monk-unchained-ki-powers-l18",
+        "scrape-aon-monk-unchained-ki-powers-l20"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-monk-unchained-perfect-self-l20",
+        "scrape-aon-monk-perfect-self-l20"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-monk-unchained-purity-of-body-l5",
+        "scrape-aon-monk-purity-of-body-l5"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-monk-unchained-still-mind-l4",
+        "scrape-aon-monk-still-mind-l3"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-monk-unchained-stunning-fist-l1",
+        "scrape-aon-monk-stunning-fist-l1"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-monk-unchained-style-strike-l5",
+        "scrape-aon-monk-unchained-style-strike-l9",
+        "scrape-aon-monk-unchained-style-strike-l13",
+        "scrape-aon-monk-unchained-style-strike-l15",
+        "scrape-aon-monk-unchained-style-strike-l17"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-monk-unchained-tongue-of-the-sun-and-moon-l13",
+        "scrape-aon-monk-tongue-of-the-sun-and-moon-l17"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-monk-unchained-unarmed-strike-l1",
+        "scrape-aon-monk-unarmed-strike-l1"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-ninja-no-trace-l3",
+        "scrape-aon-ninja-no-trace-l6",
+        "scrape-aon-ninja-no-trace-l9",
+        "scrape-aon-ninja-no-trace-l12",
+        "scrape-aon-ninja-no-trace-l15",
+        "scrape-aon-ninja-no-trace-l18"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-ninja-sneak-attack-l1",
+        "scrape-aon-ninja-sneak-attack-l3",
+        "scrape-aon-ninja-sneak-attack-l5",
+        "scrape-aon-ninja-sneak-attack-l7",
+        "scrape-aon-ninja-sneak-attack-l9",
+        "scrape-aon-ninja-sneak-attack-l11",
+        "scrape-aon-ninja-sneak-attack-l13",
+        "scrape-aon-ninja-sneak-attack-l15",
+        "scrape-aon-ninja-sneak-attack-l17",
+        "scrape-aon-ninja-sneak-attack-l19",
+        "scrape-aon-rogue-unchained-sneak-attack-l1",
+        "scrape-aon-rogue-unchained-sneak-attack-l3",
+        "scrape-aon-rogue-unchained-sneak-attack-l5",
+        "scrape-aon-rogue-unchained-sneak-attack-l7",
+        "scrape-aon-rogue-unchained-sneak-attack-l9",
+        "scrape-aon-rogue-unchained-sneak-attack-l11",
+        "scrape-aon-rogue-unchained-sneak-attack-l13",
+        "scrape-aon-rogue-unchained-sneak-attack-l15",
+        "scrape-aon-rogue-unchained-sneak-attack-l17",
+        "scrape-aon-rogue-unchained-sneak-attack-l19",
+        "scrape-aon-rogue-sneak-attack-l1",
+        "scrape-aon-rogue-sneak-attack-l3",
+        "scrape-aon-rogue-sneak-attack-l5",
+        "scrape-aon-rogue-sneak-attack-l7",
+        "scrape-aon-rogue-sneak-attack-l9",
+        "scrape-aon-rogue-sneak-attack-l11",
+        "scrape-aon-rogue-sneak-attack-l13",
+        "scrape-aon-rogue-sneak-attack-l15",
+        "scrape-aon-rogue-sneak-attack-l17",
+        "scrape-aon-rogue-sneak-attack-l19",
+        "scrape-aon-slayer-sneak-attack-l3",
+        "scrape-aon-slayer-sneak-attack-l6",
+        "scrape-aon-slayer-sneak-attack-l9",
+        "scrape-aon-slayer-sneak-attack-l12",
+        "scrape-aon-slayer-sneak-attack-l15",
+        "scrape-aon-slayer-sneak-attack-l18"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-occultist-focus-powers-l1",
+        "scrape-aon-occultist-focus-powers-l3",
+        "scrape-aon-occultist-focus-powers-l5",
+        "scrape-aon-occultist-focus-powers-l7",
+        "scrape-aon-occultist-focus-powers-l9",
+        "scrape-aon-occultist-focus-powers-l11",
+        "scrape-aon-occultist-focus-powers-l13",
+        "scrape-aon-occultist-focus-powers-l15",
+        "scrape-aon-occultist-focus-powers-l17",
+        "scrape-aon-occultist-focus-powers-l19"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-occultist-implements-l1",
+        "scrape-aon-occultist-implements-l2",
+        "scrape-aon-occultist-implements-l6",
+        "scrape-aon-occultist-implements-l10",
+        "scrape-aon-occultist-implements-l14",
+        "scrape-aon-occultist-implements-l18"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-occultist-outside-contact-l8",
+        "scrape-aon-occultist-outside-contact-l12",
+        "scrape-aon-occultist-outside-contact-l16",
+        "scrape-aon-occultist-outside-contact-l20"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-oracle-revelation-l1",
+        "scrape-aon-oracle-revelation-l3",
+        "scrape-aon-oracle-revelation-l7",
+        "scrape-aon-oracle-revelation-l11",
+        "scrape-aon-oracle-revelation-l15",
+        "scrape-aon-oracle-revelation-l19"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-paladin-mercy-l3",
+        "scrape-aon-paladin-mercy-l6",
+        "scrape-aon-paladin-mercy-l9",
+        "scrape-aon-paladin-mercy-l12",
+        "scrape-aon-paladin-mercy-l15",
+        "scrape-aon-paladin-mercy-l18"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-ranger-combat-style-feat-l2",
+        "scrape-aon-ranger-combat-style-feat-l6",
+        "scrape-aon-ranger-combat-style-feat-l10",
+        "scrape-aon-ranger-combat-style-feat-l14",
+        "scrape-aon-ranger-combat-style-feat-l18"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-ranger-improved-quarry-l19",
+        "scrape-aon-slayer-improved-quarry-l19"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": ["scrape-aon-ranger-quarry-l11", "scrape-aon-slayer-quarry-l14"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-rogue-unchained-advanced-talents-l10",
+        "scrape-aon-rogue-advanced-talents-l10",
+        "scrape-aon-slayer-advanced-talents-l10"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-rogue-unchained-finesse-training-l1",
+        "scrape-aon-rogue-unchained-finesse-training-l3",
+        "scrape-aon-rogue-unchained-finesse-training-l11",
+        "scrape-aon-rogue-unchained-finesse-training-l19"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-rogue-unchained-master-strike-l20",
+        "scrape-aon-rogue-master-strike-l20"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-rogue-unchained-rogue-talents-l2",
+        "scrape-aon-rogue-rogue-talents-l2"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-shaman-hex-l2",
+        "scrape-aon-shaman-hex-l4",
+        "scrape-aon-shaman-hex-l8",
+        "scrape-aon-shaman-hex-l10",
+        "scrape-aon-shaman-hex-l12",
+        "scrape-aon-shaman-hex-l16",
+        "scrape-aon-shaman-hex-l18",
+        "scrape-aon-shaman-hex-l20",
+        "scrape-aon-witch-hex-l1",
+        "scrape-aon-witch-hex-l2",
+        "scrape-aon-witch-hex-l4",
+        "scrape-aon-witch-hex-l6",
+        "scrape-aon-witch-hex-l8",
+        "scrape-aon-witch-hex-l10",
+        "scrape-aon-witch-hex-l12",
+        "scrape-aon-witch-hex-l14",
+        "scrape-aon-witch-hex-l16",
+        "scrape-aon-witch-hex-l18",
+        "scrape-aon-witch-hex-l20"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-shaman-wandering-hex-l6",
+        "scrape-aon-shaman-wandering-hex-l14"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-shaman-wandering-spirit-l4",
+        "scrape-aon-shaman-wandering-spirit-l12",
+        "scrape-aon-shaman-wandering-spirit-l20"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-shifter-defensive-instinct-l2",
+        "scrape-aon-shifter-defensive-instinct-l4",
+        "scrape-aon-shifter-defensive-instinct-l8",
+        "scrape-aon-shifter-defensive-instinct-l12",
+        "scrape-aon-shifter-defensive-instinct-l16",
+        "scrape-aon-shifter-defensive-instinct-l20"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-skald-scribe-scroll-l1",
+        "scrape-aon-wizard-scribe-scroll-l1"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-summoner-unchained-aspect-l10",
+        "scrape-aon-summoner-aspect-l10"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-summoner-unchained-bond-senses-l2",
+        "scrape-aon-summoner-bond-senses-l2"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-summoner-unchained-eidolon-l1",
+        "scrape-aon-summoner-eidolon-l1"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-summoner-unchained-greater-aspect-l18",
+        "scrape-aon-summoner-greater-aspect-l18"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-summoner-unchained-greater-shield-ally-l12",
+        "scrape-aon-summoner-greater-shield-ally-l12"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-summoner-unchained-life-bond-l14",
+        "scrape-aon-summoner-life-bond-l14"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-summoner-unchained-life-link-l1",
+        "scrape-aon-summoner-life-link-l1"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-summoner-unchained-maker-s-call-l1",
+        "scrape-aon-summoner-maker-s-call-l6"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-summoner-unchained-merge-forms-l16",
+        "scrape-aon-summoner-merge-forms-l16"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-summoner-unchained-shield-ally-l4",
+        "scrape-aon-summoner-shield-ally-l4"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-summoner-unchained-summon-monster-i-l1",
+        "scrape-aon-summoner-summon-monster-i-l1"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-summoner-unchained-transposition-l8",
+        "scrape-aon-summoner-transposition-l8"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-summoner-unchained-twin-eidolon-l20",
+        "scrape-aon-summoner-twin-eidolon-l20"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-swashbuckler-swashbuckler-weapon-training-l5",
+        "scrape-aon-swashbuckler-swashbuckler-weapon-training-l9",
+        "scrape-aon-swashbuckler-swashbuckler-weapon-training-l13",
+        "scrape-aon-swashbuckler-swashbuckler-weapon-training-l17"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-vigilante-social-talent-l1",
+        "scrape-aon-vigilante-social-talent-l3",
+        "scrape-aon-vigilante-social-talent-l5",
+        "scrape-aon-vigilante-social-talent-l7",
+        "scrape-aon-vigilante-social-talent-l9",
+        "scrape-aon-vigilante-social-talent-l11",
+        "scrape-aon-vigilante-social-talent-l13",
+        "scrape-aon-vigilante-social-talent-l15",
+        "scrape-aon-vigilante-social-talent-l17",
+        "scrape-aon-vigilante-social-talent-l19"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-vigilante-vigilante-talent-l2",
+        "scrape-aon-vigilante-vigilante-talent-l4",
+        "scrape-aon-vigilante-vigilante-talent-l6",
+        "scrape-aon-vigilante-vigilante-talent-l8",
+        "scrape-aon-vigilante-vigilante-talent-l10",
+        "scrape-aon-vigilante-vigilante-talent-l12",
+        "scrape-aon-vigilante-vigilante-talent-l14",
+        "scrape-aon-vigilante-vigilante-talent-l16",
+        "scrape-aon-vigilante-vigilante-talent-l18",
+        "scrape-aon-vigilante-vigilante-talent-l20"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-warpriest-blessings-l1",
+        "scrape-aon-warpriest-blessings-l10"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-warpriest-fervor-l2",
+        "scrape-aon-warpriest-fervor-l5",
+        "scrape-aon-warpriest-fervor-l8",
+        "scrape-aon-warpriest-fervor-l11",
+        "scrape-aon-warpriest-fervor-l14",
+        "scrape-aon-warpriest-fervor-l17",
+        "scrape-aon-warpriest-fervor-l20"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-warpriest-sacred-armor-l7",
+        "scrape-aon-warpriest-sacred-armor-l10",
+        "scrape-aon-warpriest-sacred-armor-l13",
+        "scrape-aon-warpriest-sacred-armor-l16",
+        "scrape-aon-warpriest-sacred-armor-l19"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "classFeatures",
+      "ids": [
+        "scrape-aon-warpriest-sacred-weapon-l1",
+        "scrape-aon-warpriest-sacred-weapon-l4",
+        "scrape-aon-warpriest-sacred-weapon-l8",
+        "scrape-aon-warpriest-sacred-weapon-l12",
+        "scrape-aon-warpriest-sacred-weapon-l16",
+        "scrape-aon-warpriest-sacred-weapon-l20"
+      ],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "feats",
+      "ids": ["combat-expertise", "scrape-aon-combat-expertise"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "feats",
+      "ids": ["craft-construct", "scrape-aon-craft-construct"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "feats",
+      "ids": ["deadly-aim", "scrape-aon-deadly-aim"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "feats",
+      "ids": ["dodge", "scrape-aon-dodge"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "feats",
+      "ids": ["endurance", "scrape-aon-endurance"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "feats",
+      "ids": ["extra-grit", "scrape-aon-extra-grit"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "feats",
+      "ids": ["improved-initiative", "scrape-aon-improved-initiative"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "feats",
+      "ids": ["improved-unarmed-strike", "scrape-aon-improved-unarmed-strike"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "feats",
+      "ids": ["iron-will", "scrape-aon-iron-will"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "feats",
+      "ids": ["master-siege-engineer", "scrape-aon-master-siege-engineer"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "feats",
+      "ids": ["power-attack", "scrape-aon-power-attack"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "feats",
+      "ids": ["siege-engineer", "scrape-aon-siege-engineer"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "feats",
+      "ids": ["skill-focus", "scrape-aon-skill-focus"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "feats",
+      "ids": ["spell-focus", "scrape-aon-spell-focus"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "feats",
+      "ids": ["toughness", "scrape-aon-toughness"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "feats",
+      "ids": ["weapon-finesse", "scrape-aon-weapon-finesse"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "feats",
+      "ids": ["weapon-focus", "scrape-aon-weapon-focus"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "spells",
+      "ids": ["acid-splash", "scrape-aon-acid-splash"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "spells",
+      "ids": ["aid", "scrape-aon-aid"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "spells",
+      "ids": ["aspect-of-the-falcon", "scrape-aon-aspect-of-the-falcon"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "spells",
+      "ids": ["barkskin", "scrape-aon-barkskin"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "spells",
+      "ids": ["bless", "scrape-aon-bless"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "spells",
+      "ids": ["bless-weapon", "scrape-aon-bless-weapon"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "spells",
+      "ids": ["blur", "scrape-aon-blur"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "spells",
+      "ids": ["bulls-strength", "scrape-aon-bull-s-strength"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "spells",
+      "ids": ["burning-hands", "scrape-aon-burning-hands"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "spells",
+      "ids": ["charm-person", "scrape-aon-"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "spells",
+      "ids": ["color-spray", "scrape-aon-color-spray"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "spells",
+      "ids": ["cure-light-wounds", "scrape-aon-cure-light-wounds"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "spells",
+      "ids": ["cure-moderate-wounds", "scrape-aon-cure-moderate-wounds"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "spells",
+      "ids": ["daze", "scrape-aon-daze"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "spells",
+      "ids": ["delay-poison", "scrape-aon-delay-poison"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "spells",
+      "ids": ["detect-evil", "scrape-aon-detect-evil"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "spells",
+      "ids": ["detect-magic", "scrape-aon-detect-magic"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "spells",
+      "ids": ["divine-favor", "scrape-aon-divine-favor"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "spells",
+      "ids": ["doom", "scrape-aon-doom"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "spells",
+      "ids": ["entangle", "scrape-aon-entangle"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "spells",
+      "ids": ["flaming-sphere", "scrape-aon-flaming-sphere"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "spells",
+      "ids": ["gravity-bow", "scrape-aon-gravity-bow"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "spells",
+      "ids": ["grease", "scrape-aon-grease"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "spells",
+      "ids": ["guidance", "scrape-aon-guidance"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "spells",
+      "ids": ["hideous-laughter", "scrape-aon-hideous-laughter"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "spells",
+      "ids": ["hold-person", "scrape-aon-hold-person"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "spells",
+      "ids": ["invisibility", "scrape-aon-invisibility"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "spells",
+      "ids": ["lead-blades", "scrape-aon-lead-blades"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "spells",
+      "ids": ["light", "scrape-aon-light"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "spells",
+      "ids": ["longstrider", "scrape-aon-longstrider"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "spells",
+      "ids": ["mage-armor", "scrape-aon-mage-armor"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "spells",
+      "ids": ["mage-hand", "scrape-aon-mage-hand"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "spells",
+      "ids": ["magic-fang", "scrape-aon-magic-fang"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "spells",
+      "ids": ["magic-missile", "scrape-aon-magic-missile"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "spells",
+      "ids": ["magic-weapon", "scrape-aon-magic-weapon"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "spells",
+      "ids": ["protection-from-evil", "scrape-aon-protection-from-evil"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "spells",
+      "ids": ["read-magic", "scrape-aon-read-magic"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "spells",
+      "ids": ["resist-energy", "scrape-aon-resist-energy"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "spells",
+      "ids": ["resistance", "scrape-aon-resistance"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "spells",
+      "ids": ["scorching-ray", "scrape-aon-scorching-ray"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "spells",
+      "ids": ["shield", "scrape-aon-shield"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "spells",
+      "ids": ["shield-of-faith", "scrape-aon-shield-of-faith"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "spells",
+      "ids": ["silent-image", "scrape-aon-silent-image"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "weapons",
+      "ids": ["club", "scrape-aon-club"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "weapons",
+      "ids": ["dagger", "scrape-aon-dagger"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "weapons",
+      "ids": ["greataxe", "scrape-aon-greataxe"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "weapons",
+      "ids": ["heavy-crossbow", "scrape-aon-heavy-crossbow"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "weapons",
+      "ids": ["javelin", "scrape-aon-javelin"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "weapons",
+      "ids": ["longbow", "scrape-aon-longbow"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "weapons",
+      "ids": ["longsword", "scrape-aon-longsword"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "weapons",
+      "ids": ["quarterstaff", "scrape-aon-quarterstaff"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "weapons",
+      "ids": ["rapier", "scrape-aon-rapier"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    },
+    {
+      "kind": "weapons",
+      "ids": ["shortbow", "scrape-aon-shortbow"],
+      "status": "ambiguous-name-collision-not-approved-duplicate"
+    }
+  ],
+  "classification": {
+    "confirmedExcluded": 0,
+    "confirmedExcludedMeaning": "No record-level exclusion determination available; NOT a finding that all content is eligible",
+    "mixedContributions": "unknown: field lineage absent",
+    "legacyScrapedRecordsWithUnresolvedEligibility": 9605,
+    "savageCompany": "exact source metadata exists; record membership and work scope still require review"
+  },
+  "retainedCopies": [
+    {
+      "path": "apps/web/public/usable-content.json",
+      "present": true,
+      "bytes": 35021092,
+      "action": "inventory-only; no deletion"
+    },
+    {
+      "path": "apps/web/dist/usable-content.json",
+      "present": true,
+      "bytes": 75,
+      "action": "inventory-only; no deletion"
+    },
+    {
+      "path": "apps/web/dist/usable-content-normalized.json",
+      "present": true,
+      "bytes": 15227435,
+      "action": "inventory-only; no deletion"
+    },
+    {
+      "path": "apps/web/dist/usable-content-rules.json",
+      "present": true,
+      "bytes": 11701717,
+      "action": "inventory-only; no deletion"
+    },
+    {
+      "path": "packages/content-db/data/mathfinder.sqlite",
+      "present": false,
+      "bytes": null,
+      "action": "inventory-only; no deletion"
+    },
+    {
+      "path": "sc-campaign.txt",
+      "present": true,
+      "bytes": 534301,
+      "action": "inventory-only; no deletion"
+    },
+    {
+      "path": "sc-perfect.txt",
+      "present": true,
+      "bytes": 71,
+      "action": "inventory-only; no deletion"
+    },
+    {
+      "path": ".cache/db-backups/mathfinder-before-migrations-20260906-173740.dump",
+      "present": true,
+      "bytes": 378385,
+      "action": "inventory-only; no deletion"
+    }
+  ],
+  "downstream": {
+    "stagingReferences": "not inspected: authenticated hosted access unavailable",
+    "areas": [
+      "characters.build JSON",
+      "character_runtime_states.state JSON",
+      "campaign_effects.payload JSON",
+      "campaign_events.payload JSON",
+      "campaign session/notes/document payloads",
+      "spellbooks/prepared spells/library spell IDs",
+      "in-memory compendium indexes",
+      "browser account caches and service worker caches"
+    ],
+    "userData": "No user-created data inspected or changed"
+  },
+  "inaccessibleCopies": [
+    "other hosts' SQLite caches",
+    "Supabase backups",
+    "offline browsers",
+    "Cloudflare immutable deployments",
+    "Docker images",
+    "external exports and Git clones"
+  ],
+  "stagePurgeExecuted": false,
+  "productionTouched": false
+}

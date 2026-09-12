@@ -3,6 +3,7 @@ import {
   ALIGNMENT_LABELS,
   deriveHealthStatus,
   SKILL_DEFINITIONS,
+  spellLevelLabel,
   type AbilityKey,
   type BreakdownEntry,
   type DerivedSheet,
@@ -343,7 +344,7 @@ function spellLevelMathTooltip(
   const extra = casting.extraSlotsPerDay[level] ?? 0;
   const used = casting.slotsUsed[level] ?? 0;
   const parts = [
-    `Level ${level} slots`,
+    `${spellLevelLabel(casting, level)} slots`,
     `Base ${casting.baseSpellsPerDay[level] ?? 0}`,
     `Bonus ${sign(bonus)}`,
     `Extra ${sign(extra)}`,
@@ -2235,7 +2236,7 @@ export function Sheet({
                             <summary className="spell-level-summary-head spell-level-sheet-head">
                               <div>
                                 <div className="subsection-title spell-level-sheet-title">
-                                  Level {level}
+                                  {spellLevelLabel(c, level)}
                                 </div>
                                 <div className="spell-level-sheet-stats">
                                   <Tooltip

@@ -12,7 +12,7 @@ import {
 export type LevelUpSpellSeedPlan = SpellLibraryPlan;
 export type LevelUpCastingChoices = Pick<
   CharacterBuild,
-  "spellDomains" | "spellSpecializations"
+  "spellDomains" | "spellSpecializations" | "spellBloodlines"
 >;
 
 export function withLevelUpCastingChoices(
@@ -22,7 +22,11 @@ export function withLevelUpCastingChoices(
 ): CharacterBuild {
   const classKey = className.trim().toLowerCase();
   let next = build;
-  for (const field of ["spellDomains", "spellSpecializations"] as const) {
+  for (const field of [
+    "spellDomains",
+    "spellSpecializations",
+    "spellBloodlines",
+  ] as const) {
     if (choices?.[field]?.[classKey] !== undefined)
       next = {
         ...next,

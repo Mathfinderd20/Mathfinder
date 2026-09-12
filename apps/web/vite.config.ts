@@ -2,19 +2,30 @@ import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 import { fileURLToPath, URL } from "node:url";
 import { validateWebBuildEnvironment } from "./src/lib/buildEnvironment.ts";
+import { reviewedCatalogue } from "./build/reviewedCatalogue.ts";
 
 // Alias the engine to its TypeScript source so Vite transpiles it as app code
 // (the rules engine ships source, not a build).
 export default defineConfig(({ command, mode }) => {
+  const environment = loadEnv(
+    mode,
+    fileURLToPath(new URL(".", import.meta.url)),
+    "",
+  );
+  const reviewed = reviewedCatalogue(
+    environment,
+    fileURLToPath(new URL(".", import.meta.url)),
+  );
   if (command === "build") {
-    const environment = loadEnv(
-      mode,
-      fileURLToPath(new URL(".", import.meta.url)),
-      "",
-    );
     validateWebBuildEnvironment(environment);
   }
   return {
+    publicDir: reviewed ? false : "public",
+    define: {
+      "import.meta.env.VITE_REVIEWED_CATALOGUE_HASH": JSON.stringify(
+        reviewed?.contentHash ?? "",
+      ),
+    },
     build: {
       rollupOptions: {
         input: {
@@ -30,13 +41,14 @@ export default defineConfig(({ command, mode }) => {
     },
     plugins: [
       react(),
+      ...(reviewed ? [reviewed.plugin] : []),
       {
         name: "mathfinder-offline-shell",
         generateBundle(_options, bundle) {
           const assets = Object.keys(bundle)
             .filter((name) => /\.(js|css)$/.test(name))
             .map((name) => `/${name}`);
-          const version = assets.join("|");
+          const version = assets.join("|") + (reviewed?.contentHash ?? "");
           this.emitFile({
             type: "asset",
             fileName: "sw.js",

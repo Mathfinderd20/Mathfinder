@@ -32,6 +32,8 @@ export interface SpellcastingProgression {
   castingType: SpellcastingType;
   spellAccess?: SpellAccess;
   castingAbility: AbilityKey;
+  /** Class terminology for 0-level spells, such as Cantrips or Orisons. */
+  zeroLevelLabel?: string;
   spellsPerDay: Record<number, Partial<Record<number, number>>>;
   spellsKnown?: Record<number, Partial<Record<number, number>>>;
 }
@@ -323,6 +325,7 @@ export const SAMPLE_CLASSES: ClassRegistry = {
       spellAccess: "spellbook",
       castingType: "prepared",
       castingAbility: "int",
+      zeroLevelLabel: "Cantrips",
       spellsPerDay: {
         1: spellsByLevel(3, 1),
         2: spellsByLevel(4, 2),
@@ -360,6 +363,7 @@ export const SAMPLE_CLASSES: ClassRegistry = {
       spellAccess: "full-list",
       castingType: "prepared",
       castingAbility: "wis",
+      zeroLevelLabel: "Orisons",
       spellsPerDay: FULL_DIVINE_SPELLS_PER_DAY,
     },
   },
@@ -385,6 +389,7 @@ export const SAMPLE_CLASSES: ClassRegistry = {
       spellAccess: "limited-known",
       castingType: "spontaneous",
       castingAbility: "cha",
+      zeroLevelLabel: "Cantrips",
       spellsPerDay: {
         1: spellsByLevel(5, 3),
         2: spellsByLevel(6, 4),
@@ -474,6 +479,7 @@ export const SAMPLE_CLASSES: ClassRegistry = {
       spellAccess: "full-list",
       castingType: "prepared",
       castingAbility: "wis",
+      zeroLevelLabel: "Orisons",
       spellsPerDay: FULL_DIVINE_SPELLS_PER_DAY,
     },
   },
@@ -528,6 +534,7 @@ export const SAMPLE_CLASSES: ClassRegistry = {
       spellAccess: "limited-known",
       castingType: "spontaneous",
       castingAbility: "cha",
+      zeroLevelLabel: "Cantrips",
       spellsPerDay: {
         1: spellsByLevel(4, 2),
         2: spellsByLevel(5, 3),
@@ -717,6 +724,7 @@ export function completeCoreSpellProgression(
     spellcasting: {
       ...source,
       spellAccess: source.spellAccess ?? core.spellAccess,
+      zeroLevelLabel: source.zeroLevelLabel ?? core.zeroLevelLabel,
       spellsPerDay,
       spellsKnown: {
         ...core.spellsKnown,

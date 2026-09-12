@@ -1,8 +1,10 @@
 import { useMemo } from "react";
 import { PreparedSpellChoices } from "./PreparedSpellChoices";
 import {
+  BLOODLINES,
   buildCharacter,
   computeSheet,
+  spellLevelLabel,
   type CharacterBuild,
   type DerivedSpellcasting,
 } from "@mathfinder/rules-engine";
@@ -17,7 +19,11 @@ import {
 
 export type CreationMagicState = Pick<
   CharacterBuild,
-  "spellLibrary" | "spellSelections" | "spellDomains" | "spellSpecializations"
+  | "spellLibrary"
+  | "spellSelections"
+  | "spellDomains"
+  | "spellSpecializations"
+  | "spellBloodlines"
 >;
 
 export function startingSpellCapacity(
@@ -118,6 +124,30 @@ export function CreationMagicChoices({
             !(build?.classArchetypes?.cleric ?? []).includes("battle-chaplain");
           return (
             <div key={key}>
+              {key === "sorcerer" && (
+                <label className="field">
+                  <span>Bloodline</span>
+                  <select
+                    value={value.spellBloodlines?.[key] ?? ""}
+                    onChange={(event) =>
+                      onChange({
+                        ...value,
+                        spellBloodlines: {
+                          ...value.spellBloodlines,
+                          [key]: event.target.value,
+                        },
+                      })
+                    }
+                  >
+                    <option value="">Choose a bloodline</option>
+                    {Object.values(BLOODLINES).map((entry) => (
+                      <option key={entry.id} value={entry.id}>
+                        {entry.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
               <p className="guide-policy">
                 {fullList
                   ? "Your class spell library is available automatically. You can choose daily preparations below or later on the Magic tab."
@@ -200,8 +230,8 @@ export function CreationMagicChoices({
                   return (
                     <div className="field" key={level}>
                       <span>
-                        Level {level} · {picks.length}/{capacity}{" "}
-                        {spontaneous ? "known" : "in spellbook"}
+                        {spellLevelLabel(caster, level)} · {picks.length}/
+                        {capacity} {spontaneous ? "known" : "in spellbook"}
                       </span>
                       {!spontaneous && level === 0 && (
                         <button
@@ -209,7 +239,8 @@ export function CreationMagicChoices({
                           className="ghost small"
                           onClick={() => update(names)}
                         >
-                          Add starting cantrips
+                          Add starting{" "}
+                          {spellLevelLabel(caster, level).toLowerCase()}
                         </button>
                       )}
                       <div className="guide-choice-list">

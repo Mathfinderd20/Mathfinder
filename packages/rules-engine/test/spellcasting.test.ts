@@ -341,9 +341,45 @@ describe("cleric, druid, bard, ranger, paladin, inquisitor, and sorcerer spellca
       spellsKnown: {},
     });
     expect(sheet.spellcasting[0]!.grantedSpells[1]).toEqual([
-      "Bless",
+      "Protection from Evil",
       "Cure Light Wounds",
     ]);
+  });
+
+  it("grants a cleric domain slot even when Wisdom gates ordinary spells", () => {
+    const build: CharacterBuild = {
+      name: "Unwise Priest",
+      race: { name: "Human", size: "medium", speed: 30 },
+      baseAbilityScores: {
+        str: 10,
+        dex: 10,
+        con: 12,
+        int: 10,
+        wis: 10,
+        cha: 10,
+      },
+      levels: [{ className: "Cleric", hitPointRoll: 8, feats: [] }],
+      spellDomains: { cleric: ["good", "healing"] },
+      spellSelections: {
+        cleric: { prepared: { 1: ["Protection from Evil"] } },
+      },
+    };
+    const caster = computeSheet(buildCharacter(build)).spellcasting[0]!;
+    expect(caster).toMatchObject({
+      zeroLevelLabel: "Orisons",
+      spellsPerDay: { 0: 3, 1: 1 },
+      restrictedExtraSlotsPerDay: { 0: 0, 1: 1 },
+      preparedCapacity: { 0: 3, 1: 1 },
+    });
+    expect(caster.selectionDiagnostics[1]).toMatchObject({
+      meetsCastingAbility: false,
+      canCastLevel: true,
+      capacity: 1,
+      restrictedSlotCapacity: 1,
+      restrictedSlotEligibleSelectedCount: 1,
+      restrictedSlotShortfall: 0,
+    });
+    expect(validateBuild(build)).toEqual([]);
   });
 
   it("flags cleric preparations that do not satisfy domain slot restrictions", () => {
@@ -376,8 +412,46 @@ describe("cleric, druid, bard, ranger, paladin, inquisitor, and sorcerer spellca
       restrictedSlotCapacity: 1,
       restrictedSlotEligibleSelectedCount: 0,
       restrictedSlotShortfall: 1,
-      restrictedSlotEligibleSpellNames: ["Bless", "Cure Light Wounds"],
+      restrictedSlotEligibleSpellNames: [
+        "Protection from Evil",
+        "Cure Light Wounds",
+      ],
     });
+    expect(validateBuild(build).map((issue) => issue.code)).toContain(
+      "prepared-spells-miss-restricted-slots",
+    );
+  });
+
+  it("allows either domain's spell but never two domain preparations at one level", () => {
+    const build: CharacterBuild = {
+      name: "Double Domain Priest",
+      race: { name: "Human", size: "medium", speed: 30 },
+      baseAbilityScores: {
+        str: 10,
+        dex: 10,
+        con: 12,
+        int: 10,
+        wis: 16,
+        cha: 10,
+      },
+      levels: [{ className: "Cleric", hitPointRoll: 8, feats: [] }],
+      spellDomains: { cleric: ["good", "healing"] },
+      spellSelections: {
+        cleric: {
+          prepared: {
+            1: ["Protection from Evil", "Cure Light Wounds", "Bless"],
+          },
+        },
+      },
+    };
+    const diagnostic = computeSheet(buildCharacter(build)).spellcasting[0]!
+      .selectionDiagnostics[1]!;
+    expect(diagnostic.restrictedSlotEligibleSpellNames).toEqual([
+      "Protection from Evil",
+      "Cure Light Wounds",
+    ]);
+    expect(diagnostic.restrictedSlotEligibleSelectedCount).toBe(2);
+    expect(diagnostic.restrictedSlotShortfall).toBe(1);
     expect(validateBuild(build).map((issue) => issue.code)).toContain(
       "prepared-spells-miss-restricted-slots",
     );

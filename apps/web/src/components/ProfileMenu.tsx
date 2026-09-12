@@ -81,6 +81,9 @@ export function ProfileMenu({
           aria-label="Your profile"
         >
           <strong>Your account</strong>
+          {import.meta.env.VITE_APP_ENV === "staging" && (
+            <a href="/admin/ingestion">Catalogue imports</a>
+          )}
           <div className="profile-email">
             {cloud.name} <span aria-hidden="true">|</span>{" "}
             <span className="profile-sync" role="status">

@@ -1,6 +1,6 @@
-import type Database from "better-sqlite3";
+import type { IngestionDatabase } from "./ingestion/database";
 
-export function createSchema(db: Database.Database) {
+export function createSchema(db: Pick<IngestionDatabase, "pragma" | "exec">) {
   db.pragma("journal_mode = WAL");
   db.exec(`
     CREATE TABLE IF NOT EXISTS content_sources (

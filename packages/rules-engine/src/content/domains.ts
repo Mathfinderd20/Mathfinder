@@ -1,75 +1,32 @@
 import type { SpellExtraSlotsByLevel, SpellLibraryState } from "../types";
+import { CORE_DOMAIN_SPELLS } from "./core-spell-grants";
 
 export interface DomainDefinition {
   id: string;
   name: string;
   className: "cleric";
   spells: Partial<Record<number, string>>;
+  spellNotes?: Partial<Record<number, string>>;
 }
 
-export const CLERIC_DOMAINS: DomainDefinition[] = [
-  {
-    id: "good",
-    name: "Good",
-    className: "cleric",
-    spells: {
-      1: "Bless",
-      2: "Aid",
-    },
-  },
-  {
-    id: "healing",
-    name: "Healing",
-    className: "cleric",
-    spells: {
-      1: "Cure Light Wounds",
-      2: "Aid",
-    },
-  },
-  {
-    id: "protection",
-    name: "Protection",
-    className: "cleric",
-    spells: {
-      1: "Shield of Faith",
-      2: "Resist Energy",
-    },
-  },
-  {
-    id: "sun",
-    name: "Sun",
-    className: "cleric",
-    spells: {
-      1: "Bless",
-      2: "Aid",
-    },
-  },
-  {
-    id: "travel",
-    name: "Travel",
-    className: "cleric",
-    spells: {
-      1: "Longstrider",
-      2: "Aid",
-    },
-  },
-  {
-    id: "war",
-    name: "War",
-    className: "cleric",
-    spells: {
-      1: "Magic Weapon",
-      2: "Bull's Strength",
-    },
-  },
-];
+export const CLERIC_DOMAINS: DomainDefinition[] = CORE_DOMAIN_SPELLS;
 
 export const DOMAINS: Record<string, DomainDefinition> = Object.fromEntries(
   CLERIC_DOMAINS.map((domain) => [domain.id, domain]),
 );
 
 export function getDomain(id: string): DomainDefinition | undefined {
-  return DOMAINS[id.toLowerCase()];
+  return DOMAINS[id.trim().toLowerCase()];
+}
+
+/** Reviewed catalogs are authoritative; legacy catalogs use the corrected core tables. */
+export function configureDomainCatalog(
+  domains: DomainDefinition[],
+  legacy = false,
+) {
+  for (const key of Object.keys(DOMAINS)) delete DOMAINS[key];
+  for (const domain of [...domains, ...(legacy ? CLERIC_DOMAINS : [])])
+    DOMAINS[domain.id.toLowerCase()] = domain;
 }
 
 export function grantedDomainSpells(domainIds: string[]): SpellLibraryState {

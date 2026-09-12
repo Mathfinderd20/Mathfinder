@@ -1,5 +1,8 @@
 import {
   buildClassFeatureRegistry,
+  DOMAINS,
+  configureDomainCatalog,
+  configureBloodlineCatalog,
   completeCoreSpellProgression,
   buildFeatRegistry,
   buildSpellRegistry,
@@ -25,6 +28,7 @@ import {
   type BuildGuideDefinition,
   type RulesDataSet,
 } from "@mathfinder/rules-data";
+import { setCatalogueStatus } from "./features/ingestion/catalogueStatus";
 
 export interface RuntimeMundaneEquipmentDefinition {
   id: string;
@@ -369,6 +373,11 @@ function mergeArmorDefinitions(
 }
 
 interface UsableContentAsset {
+  catalogueManifest?: {
+    schema: string;
+    contentHash: string;
+    unavailable: Array<{ scope: string; id: string; reason: string }>;
+  };
   rulesDataSet: RulesDataSet;
   normalized?: {
     spells?: SpellDefinition[];
@@ -391,6 +400,7 @@ function replaceArray<T>(target: T[], source: T[]) {
 
 export function raceOptionsFromDataSet(
   data: RulesDataSet,
+  options: { identityOnly?: boolean } = {},
 ): Record<string, CharacterBuild["race"]> {
   const sourceRaces = data.packs.flatMap((pack) => pack.races);
   const favoredBonusesByName = new Map<
@@ -430,9 +440,9 @@ export function raceOptionsFromDataSet(
       senses: race.senses,
       resistances: race.resistances,
       ferocity: race.ferocity,
-      favoredClassBonuses: favoredBonusesByName.get(
-        race.name.trim().toLowerCase(),
-      ),
+      favoredClassBonuses: options.identityOnly
+        ? race.favoredClassBonuses
+        : favoredBonusesByName.get(race.name.trim().toLowerCase()),
       notes: race.notes,
     };
     if (!existing) {
@@ -533,8 +543,23 @@ export async function loadRuntimeContent() {
   if (loadPromise) return loadPromise;
   loadPromise = (async () => {
     const usableContent = await fetchUsableContentAsset();
+    const reviewedHash = import.meta.env.VITE_REVIEWED_CATALOGUE_HASH;
+    if (
+      reviewedHash &&
+      (usableContent.catalogueManifest?.schema !== "reviewed-runtime/1" ||
+        usableContent.catalogueManifest.contentHash !== reviewedHash)
+    )
+      throw new Error(
+        "Catalogue release does not match this staging application; refresh after deployment",
+      );
+    const reviewed = Boolean(reviewedHash);
+    setCatalogueStatus(
+      reviewed ? usableContent.catalogueManifest!.unavailable.length : 0,
+    );
     const rulesData = usableContent.rulesDataSet;
     const rulesIndex = buildRulesDataIndex(rulesData);
+    configureDomainCatalog(Object.values(rulesIndex.domains), !reviewed);
+    configureBloodlineCatalog(Object.values(rulesIndex.bloodlines), !reviewed);
     const sourceById = Object.fromEntries(
       rulesData.sources.map((source) => [source.id, source] as const),
     );
@@ -564,7 +589,7 @@ export async function loadRuntimeContent() {
           completeCoreSpellProgression(cls),
         ]),
     ) as Record<string, ClassDefinition>;
-    const races = raceOptionsFromDataSet(rulesData);
+    const races = raceOptionsFromDataSet(rulesData, { identityOnly: reviewed });
     const archetypes = rulesIndex.archetypes as Record<
       string,
       ArchetypeDefinitionLike
@@ -586,7 +611,9 @@ export async function loadRuntimeContent() {
           const sourceMeta = sourceById[packMeta?.sourceId ?? pack.sourceId];
           const normalizedSpell =
             normalizedSpellById.get(spell.id) ??
-            normalizedSpellByName.get(spell.name.trim().toLowerCase());
+            (reviewed
+              ? undefined
+              : normalizedSpellByName.get(spell.name.trim().toLowerCase()));
           return {
             ...normalizedSpell,
             ...spell,
@@ -640,7 +667,7 @@ export async function loadRuntimeContent() {
         [...(usableContent.normalized?.armor ?? [])].filter(
           (entry) => !!safeName(entry),
         ),
-        SUPPLEMENTAL_ARMOR,
+        reviewed ? [] : SUPPLEMENTAL_ARMOR,
       ).sort(bySafeName),
     );
     replaceArray(
@@ -651,7 +678,7 @@ export async function loadRuntimeContent() {
     );
     replaceArray(
       RUNTIME_DOMAINS,
-      Object.values(rulesIndex.domains)
+      Object.values(DOMAINS)
         .filter((entry) => !!safeName(entry))
         .sort(bySafeName),
     );
@@ -670,7 +697,7 @@ export async function loadRuntimeContent() {
     replaceArray(
       RUNTIME_SPELL_OPTIONS,
       Object.values(spells)
-        .filter((entry) => !!safeName(entry))
+        .filter((entry) => !!safeName(entry) && !entry.unavailable)
         .sort(bySafeName),
     );
     replaceArray(
@@ -698,7 +725,8 @@ export function getRuntimeMagicItem(id: string) {
 }
 
 export function getRuntimeDomain(id: string) {
-  return requireRulesIndex().domains[id.toLowerCase()];
+  requireRulesIndex();
+  return DOMAINS[id.toLowerCase()];
 }
 
 export function getRuntimeSchool(id: string | undefined) {

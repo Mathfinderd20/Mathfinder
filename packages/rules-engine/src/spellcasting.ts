@@ -1,4 +1,5 @@
 import type {
+  SpellLibraryState,
   AbilityKey,
   CharacterInput,
   DerivedSpellcasting,
@@ -37,6 +38,15 @@ export function spellAccessForEntry(
   ].includes(entry.className.trim().toLowerCase())
     ? "full-list"
     : "spellbook";
+}
+
+export function spellLevelLabel(
+  casting: Pick<SpellcastingEntry, "zeroLevelLabel">,
+  level: number,
+): string {
+  return level === 0
+    ? casting.zeroLevelLabel?.trim() || "Level 0"
+    : `Level ${level}`;
 }
 
 function uniqueSpellNames(names: string[]): string[] {
@@ -186,7 +196,7 @@ export function deriveSpellcasting(
     const abilityMod = ability.mod;
     const concentration = stat(entry.casterLevel + abilityMod);
     const highestTrackedLevel = maxSpellLevel(entry);
-    const highestCastableLevel = maxCastableSpellLevel(abilityScore);
+    let highestCastableLevel = maxCastableSpellLevel(abilityScore);
     const bonusSpellsPerDay: Partial<Record<number, number>> = {};
     const extraSlotsPerDay: Partial<Record<number, number>> = {};
     const restrictedExtraSlotsPerDay: Partial<Record<number, number>> = {};
@@ -205,13 +215,32 @@ export function deriveSpellcasting(
         0,
         entry.restrictedExtraSlots?.[level] ?? 0,
       );
-      const canCastLevel = canCastSpellLevel(abilityScore, level);
+      const meetsCastingAbility = canCastSpellLevel(abilityScore, level);
       const isAtWill = level === 0;
       const bonusSlots =
-        unlockedLevels.has(level) && canCastLevel
+        unlockedLevels.has(level) && meetsCastingAbility
           ? bonusSpellSlots(abilityMod, level)
           : 0;
-      const totalSlots = canCastLevel ? baseSlots + bonusSlots + extraSlots : 0;
+      const abilityIndependentDomainSlots = entry.domains?.length
+        ? restrictedExtraSlots
+        : 0;
+      const abilityGatedRestrictedSlots = Math.max(
+        0,
+        restrictedExtraSlots - abilityIndependentDomainSlots,
+      );
+      const unrestrictedExtraSlots = Math.max(
+        0,
+        extraSlots - restrictedExtraSlots,
+      );
+      const totalSlots =
+        (meetsCastingAbility
+          ? baseSlots +
+            bonusSlots +
+            unrestrictedExtraSlots +
+            abilityGatedRestrictedSlots
+          : 0) + abilityIndependentDomainSlots;
+      if (totalSlots > 0)
+        highestCastableLevel = Math.max(highestCastableLevel, level);
       if (unlockedLevels.has(level) || extraSlots > 0 || totalSlots > 0) {
         bonusSpellsPerDay[level] = bonusSlots;
         extraSlotsPerDay[level] = extraSlots;
@@ -229,11 +258,16 @@ export function deriveSpellcasting(
     }
 
     const grantedSpells = cloneSelections(entry.grantedSpells);
-    if (spellAccess === "full-list") {
-      for (const level of Object.keys(grantedSpells).map(Number)) {
-        if (!unlockedLevels.has(level)) delete grantedSpells[level];
-      }
+    for (const level of Object.keys(grantedSpells).map(Number)) {
+      if (!unlockedLevels.has(level)) delete grantedSpells[level];
+      else
+        grantedSpells[level] = uniqueSpellNames(
+          (grantedSpells[level] ?? []).map(
+            (name) => getSpell(spellRegistry, name)?.name ?? name,
+          ),
+        );
     }
+    const restrictedOnlySpells: SpellLibraryState = {};
     const manualLibrarySpells = cloneSelections(entry.library);
     const librarySpells = cloneSelections(entry.library);
     const selectedPreparedSpells = cloneSelections(entry.selections?.prepared);
@@ -264,6 +298,14 @@ export function deriveSpellcasting(
         ...(grantedSpells[level] ?? []),
         ...(librarySpells[level] ?? []),
       ]);
+      if (librarySpellNames.length || librarySpells[level])
+        librarySpells[level] = librarySpellNames;
+      const levelGrants = grantedSpells[level] ?? [];
+      if (entry.domains?.length)
+        restrictedOnlySpells[level] = levelGrants.filter((name) => {
+          const spell = getSpell(spellRegistry, name);
+          return !spell || classSpellLevel(spell, entry.className) !== level;
+        });
       const unknownSpells: string[] = [];
       const offListSpells: string[] = [];
       const wrongLevelSpells: { name: string; actualLevel: number }[] = [];
@@ -275,8 +317,15 @@ export function deriveSpellcasting(
           continue;
         }
         const actualLevel = classSpellLevel(spell, entry.className);
-        if (actualLevel === undefined) offListSpells.push(name);
-        else if (actualLevel !== level)
+        const isGranted = levelGrants.some(
+          (grant) => grant.toLowerCase() === name.toLowerCase(),
+        );
+        if (actualLevel === undefined && !isGranted) offListSpells.push(name);
+        else if (
+          actualLevel !== undefined &&
+          actualLevel !== level &&
+          !isGranted
+        )
           wrongLevelSpells.push({ name, actualLevel });
         if (
           (spellAccess === "full-list" || manualLibrarySpellNames.length > 0) &&
@@ -286,13 +335,25 @@ export function deriveSpellcasting(
         }
       }
       const capacity = capacitySource[level] ?? 0;
+      const selectedCount =
+        entry.castingType === "spontaneous"
+          ? selected.filter(
+              (name) =>
+                !levelGrants.some(
+                  (grant) => grant.toLowerCase() === name.toLowerCase(),
+                ),
+            ).length
+          : selected.length;
       const requiredAbilityScore = level === 0 ? 0 : 10 + level;
-      const canCastLevel = canCastSpellLevel(abilityScore, level);
+      const meetsCastingAbility = canCastSpellLevel(abilityScore, level);
       const isAtWill = level === 0;
       const restrictedSlotCapacity = Math.max(
         0,
         entry.restrictedExtraSlots?.[level] ?? 0,
       );
+      const canCastLevel =
+        meetsCastingAbility ||
+        ((entry.domains?.length ?? 0) > 0 && restrictedSlotCapacity > 0);
       const restrictedSlotEligibleSpellNames = grantedSpells[level] ?? [];
       const restrictedSlotEligibleSelectedCount = selected.filter((name) =>
         restrictedSlotEligibleSpellNames.some(
@@ -303,11 +364,28 @@ export function deriveSpellcasting(
         0,
         capacity - restrictedSlotCapacity,
       );
+      const unrestrictedSelectedCount =
+        selected.length - restrictedSlotEligibleSelectedCount;
+      const usesDedicatedDomainSlot =
+        entry.castingType === "prepared" && (entry.domains?.length ?? 0) > 0;
       const restrictedSlotShortfall = Math.max(
         0,
-        selected.length -
-          unrestrictedCapacity -
-          restrictedSlotEligibleSelectedCount,
+        usesDedicatedDomainSlot
+          ? restrictedSlotEligibleSelectedCount - restrictedSlotCapacity
+          : entry.castingType === "prepared"
+            ? selected.filter((name) =>
+                (restrictedOnlySpells[level] ?? []).some(
+                  (grant) => grant.toLowerCase() === name.toLowerCase(),
+                ),
+              ).length - restrictedSlotCapacity
+            : 0,
+        usesDedicatedDomainSlot
+          ? unrestrictedSelectedCount - unrestrictedCapacity
+          : entry.castingType === "prepared"
+            ? selected.length -
+              unrestrictedCapacity -
+              restrictedSlotEligibleSelectedCount
+            : 0,
       );
       if (
         selected.length > 0 ||
@@ -319,7 +397,7 @@ export function deriveSpellcasting(
           mode: entry.castingType,
           level,
           capacity,
-          selectedCount: selected.length,
+          selectedCount,
           availableSpellNames,
           librarySpellNames,
           unknownSpells,
@@ -327,9 +405,10 @@ export function deriveSpellcasting(
           wrongLevelSpells,
           missingFromLibrary,
           requiredAbilityScore,
+          meetsCastingAbility,
           canCastLevel,
           isAtWill,
-          overCapacity: selected.length > capacity,
+          overCapacity: selectedCount > capacity,
           restrictedSlotCapacity,
           restrictedSlotEligibleSpellNames,
           restrictedSlotEligibleSelectedCount,
@@ -343,10 +422,12 @@ export function deriveSpellcasting(
       castingType: entry.castingType,
       spellAccess,
       castingAbility: entry.castingAbility,
+      zeroLevelLabel: entry.zeroLevelLabel?.trim() || "Level 0",
       castingAbilityScore: abilityScore,
       maxCastableSpellLevel: highestCastableLevel,
       casterLevel: entry.casterLevel,
       domains: [...(entry.domains ?? [])],
+      bloodline: entry.bloodline,
       specialistSchool: entry.specialistSchool,
       concentration,
       baseSpellsPerDay: entry.spellsPerDay,
@@ -358,6 +439,7 @@ export function deriveSpellcasting(
       preparedCapacity:
         entry.castingType === "prepared" ? totalSpellsPerDay : {},
       grantedSpells,
+      restrictedOnlySpells,
       manualLibrarySpells,
       librarySpells,
       selectedPreparedSpells,

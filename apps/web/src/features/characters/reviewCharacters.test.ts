@@ -4,6 +4,9 @@ import {
   buildCharacter,
   computeSheet,
   validateBuild,
+  BLOODLINES,
+  DOMAINS,
+  getSpell,
 } from "@mathfinder/rules-engine";
 import {
   createReviewCharacters,
@@ -30,6 +33,17 @@ beforeAll(async () => {
   await loadRuntimeContent();
 });
 afterAll(() => vi.unstubAllGlobals());
+it("resolves every core domain and bloodline grant to a full runtime spell entry", () => {
+  const names = [
+    ...Object.values(DOMAINS).flatMap((domain) => Object.values(domain.spells)),
+    ...Object.values(BLOODLINES).flatMap(
+      (bloodline) => bloodline.bonusSpells ?? [],
+    ),
+  ];
+  expect(names.length).toBeGreaterThan(300);
+  for (const name of names)
+    expect(getSpell(RUNTIME_SPELLS, name!), name).toBeDefined();
+});
 it("builds a level-twenty Sorcerer with all base known spells and ninth-level slots", () => {
   const { build } = createReviewSorcerer();
   expect(build.levels).toHaveLength(20);
@@ -56,6 +70,8 @@ it("builds a level-twenty Sorcerer with all base known spells and ninth-level sl
   expect(sheet.spellcasting[0]?.casterLevel).toBe(20);
   expect(sheet.spellcasting[0]?.spellsPerDay[9]).toBe(7);
   expect(sheet.spellcasting[0]?.spellsKnown[9]).toBe(3);
+  expect(sheet.spellcasting[0]?.bloodline).toBe("arcane");
+  expect(sheet.spellcasting[0]?.grantedSpells[9]).toEqual(["Wish"]);
   expect(
     Object.values(build.spellSelections!.sorcerer!.known!).map(
       (names) => names?.length,

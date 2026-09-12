@@ -3,7 +3,15 @@ import { fileURLToPath } from "node:url";
 import path from "node:path";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const outputDirectory = path.join(root, "apps", "web", "dist");
+const webRoot = path.join(root, "apps", "web");
+const outputDirectory = path.resolve(root, process.argv[2] ?? "apps/web/dist");
+if (
+  path.dirname(outputDirectory) !== webRoot ||
+  !/^dist(?:-[a-z0-9-]+)?$/.test(path.basename(outputDirectory))
+)
+  throw new Error(
+    "Output must be an explicit apps/web/dist or dist-* build directory",
+  );
 const sourcePath = path.join(outputDirectory, "usable-content.json");
 const content = JSON.parse(await readFile(sourcePath, "utf8"));
 

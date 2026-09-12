@@ -1,0 +1,407 @@
+{
+  "generatedAt": "2026-09-11T02:25:28.440Z",
+  "scope": "Private fixture acquisition and local reprocessing; no staging import",
+  "requested": 14,
+  "retrieved": 13,
+  "failures": [
+    {
+      "url": "https://www.d20pfsrd.com/magic/all-spells/s/summon-monster-i/",
+      "success": false,
+      "error": "HTTP 404"
+    }
+  ],
+  "counts": {
+    "additions": 0,
+    "enrichments": 0,
+    "corrections": 0,
+    "unchanged": 0,
+    "conflicts": 0,
+    "quarantine": 13,
+    "exclusions": 0,
+    "failures": 1
+  },
+  "fieldExtraction": {
+    "school": {
+      "present": 13,
+      "total": 13,
+      "flagged": 0
+    },
+    "levelText": {
+      "present": 13,
+      "total": 13,
+      "flagged": 0
+    },
+    "classes": {
+      "present": 13,
+      "total": 13,
+      "flagged": 0
+    },
+    "castingTime": {
+      "present": 12,
+      "total": 13,
+      "flagged": 1
+    },
+    "components": {
+      "present": 13,
+      "total": 13,
+      "flagged": 0
+    },
+    "range": {
+      "present": 12,
+      "total": 13,
+      "flagged": 1
+    },
+    "target": {
+      "present": 6,
+      "total": 13,
+      "flagged": 0
+    },
+    "effect": {
+      "present": 0,
+      "total": 13,
+      "flagged": 0
+    },
+    "area": {
+      "present": 3,
+      "total": 13,
+      "flagged": 0
+    },
+    "duration": {
+      "present": 12,
+      "total": 13,
+      "flagged": 1
+    },
+    "savingThrow": {
+      "present": 11,
+      "total": 13,
+      "flagged": 0
+    },
+    "spellResistance": {
+      "present": 10,
+      "total": 13,
+      "flagged": 0
+    },
+    "description": {
+      "present": 13,
+      "total": 13,
+      "flagged": 4
+    },
+    "copyrightNotice": {
+      "present": 7,
+      "total": 13,
+      "flagged": 0
+    }
+  },
+  "meaning": "Presence is not correctness, completeness is not authority. Missing optional fields can be legitimate. Additional variants block promotion. No licence classifications are inferred from parser success.",
+  "results": [
+    {
+      "url": "https://www.d20pfsrd.com/magic/all-spells/d/detect-magic/",
+      "parserVersion": "1.2.0",
+      "validationErrors": [
+        {
+          "field": "description",
+          "code": "additional-variant-or-correction-section",
+          "severity": "error"
+        }
+      ],
+      "warnings": [],
+      "presentFields": [
+        "school",
+        "levelText",
+        "classes",
+        "castingTime",
+        "components",
+        "range",
+        "area",
+        "duration",
+        "savingThrow",
+        "spellResistance",
+        "description"
+      ],
+      "eligibility": "unknown",
+      "outcome": "quarantine"
+    },
+    {
+      "url": "https://www.d20pfsrd.com/magic/all-spells/r/resurrection/",
+      "parserVersion": "1.2.0",
+      "validationErrors": [],
+      "warnings": [
+        {
+          "field": "castingTime",
+          "code": "missing",
+          "severity": "warning"
+        },
+        {
+          "field": "range",
+          "code": "missing",
+          "severity": "warning"
+        },
+        {
+          "field": "duration",
+          "code": "missing",
+          "severity": "warning"
+        }
+      ],
+      "presentFields": [
+        "school",
+        "levelText",
+        "classes",
+        "components",
+        "description"
+      ],
+      "eligibility": "unknown",
+      "outcome": "quarantine"
+    },
+    {
+      "url": "https://www.d20pfsrd.com/magic/all-spells/a/antimagic-field/",
+      "parserVersion": "1.2.0",
+      "validationErrors": [
+        {
+          "field": "description",
+          "code": "additional-variant-or-correction-section",
+          "severity": "error"
+        }
+      ],
+      "warnings": [],
+      "presentFields": [
+        "school",
+        "levelText",
+        "classes",
+        "castingTime",
+        "components",
+        "range",
+        "area",
+        "duration",
+        "savingThrow",
+        "spellResistance",
+        "description"
+      ],
+      "eligibility": "unknown",
+      "outcome": "quarantine"
+    },
+    {
+      "url": "https://www.d20pfsrd.com/magic/all-spells/p/prestidigitation/",
+      "parserVersion": "1.2.0",
+      "validationErrors": [],
+      "warnings": [],
+      "presentFields": [
+        "school",
+        "levelText",
+        "classes",
+        "castingTime",
+        "components",
+        "range",
+        "duration",
+        "savingThrow",
+        "spellResistance",
+        "description",
+        "copyrightNotice"
+      ],
+      "eligibility": "unknown",
+      "outcome": "quarantine"
+    },
+    {
+      "url": "https://www.d20pfsrd.com/magic/all-spells/m/magic-missile/",
+      "parserVersion": "1.2.0",
+      "validationErrors": [],
+      "warnings": [],
+      "presentFields": [
+        "school",
+        "levelText",
+        "classes",
+        "castingTime",
+        "components",
+        "range",
+        "target",
+        "duration",
+        "savingThrow",
+        "spellResistance",
+        "description",
+        "copyrightNotice"
+      ],
+      "eligibility": "unknown",
+      "outcome": "quarantine"
+    },
+    {
+      "url": "https://www.d20pfsrd.com/magic/all-spells/w/wish/",
+      "parserVersion": "1.2.0",
+      "validationErrors": [],
+      "warnings": [],
+      "presentFields": [
+        "school",
+        "levelText",
+        "classes",
+        "castingTime",
+        "components",
+        "range",
+        "duration",
+        "savingThrow",
+        "spellResistance",
+        "description"
+      ],
+      "eligibility": "unknown",
+      "outcome": "quarantine"
+    },
+    {
+      "url": "https://www.d20pfsrd.com/magic/all-spells/p/polymorph/",
+      "parserVersion": "1.2.0",
+      "validationErrors": [
+        {
+          "field": "description",
+          "code": "additional-variant-or-correction-section",
+          "severity": "error"
+        }
+      ],
+      "warnings": [],
+      "presentFields": [
+        "school",
+        "levelText",
+        "classes",
+        "castingTime",
+        "components",
+        "range",
+        "target",
+        "duration",
+        "savingThrow",
+        "spellResistance",
+        "description"
+      ],
+      "eligibility": "unknown",
+      "outcome": "quarantine"
+    },
+    {
+      "url": "https://www.d20pfsrd.com/magic/all-spells/m/mage-armor/",
+      "parserVersion": "1.2.0",
+      "validationErrors": [],
+      "warnings": [],
+      "presentFields": [
+        "school",
+        "levelText",
+        "classes",
+        "castingTime",
+        "components",
+        "range",
+        "target",
+        "duration",
+        "savingThrow",
+        "spellResistance",
+        "description",
+        "copyrightNotice"
+      ],
+      "eligibility": "unknown",
+      "outcome": "quarantine"
+    },
+    {
+      "url": "https://www.d20pfsrd.com/magic/all-spells/p/permanency/",
+      "parserVersion": "1.2.0",
+      "validationErrors": [],
+      "warnings": [],
+      "presentFields": [
+        "school",
+        "levelText",
+        "classes",
+        "castingTime",
+        "components",
+        "range",
+        "target",
+        "duration",
+        "savingThrow",
+        "spellResistance",
+        "description",
+        "copyrightNotice"
+      ],
+      "eligibility": "unknown",
+      "outcome": "quarantine"
+    },
+    {
+      "url": "https://www.d20pfsrd.com/magic/all-spells/f/fireball/",
+      "parserVersion": "1.2.0",
+      "validationErrors": [
+        {
+          "field": "description",
+          "code": "additional-variant-or-correction-section",
+          "severity": "error"
+        }
+      ],
+      "warnings": [],
+      "presentFields": [
+        "school",
+        "levelText",
+        "classes",
+        "castingTime",
+        "components",
+        "range",
+        "area",
+        "duration",
+        "savingThrow",
+        "spellResistance",
+        "description"
+      ],
+      "eligibility": "unknown",
+      "outcome": "quarantine"
+    },
+    {
+      "url": "https://www.d20pfsrd.com/magic/3rd-party-spells/rite-publishing-3rd-party-spells/s/scapegoat-greater/",
+      "parserVersion": "1.2.0",
+      "validationErrors": [],
+      "warnings": [],
+      "presentFields": [
+        "school",
+        "levelText",
+        "classes",
+        "castingTime",
+        "components",
+        "range",
+        "target",
+        "duration",
+        "savingThrow",
+        "spellResistance",
+        "description",
+        "copyrightNotice"
+      ],
+      "eligibility": "unknown",
+      "outcome": "quarantine"
+    },
+    {
+      "url": "https://www.d20pfsrd.com/magic/3rd-party-spells/dreamscarred-press/house-of-hospitality/",
+      "parserVersion": "1.2.0",
+      "validationErrors": [],
+      "warnings": [],
+      "presentFields": [
+        "school",
+        "levelText",
+        "classes",
+        "castingTime",
+        "components",
+        "range",
+        "duration",
+        "savingThrow",
+        "description",
+        "copyrightNotice"
+      ],
+      "eligibility": "unknown",
+      "outcome": "quarantine"
+    },
+    {
+      "url": "https://www.d20pfsrd.com/magic/all-spells/s/shield/",
+      "parserVersion": "1.2.0",
+      "validationErrors": [],
+      "warnings": [],
+      "presentFields": [
+        "school",
+        "levelText",
+        "classes",
+        "castingTime",
+        "components",
+        "range",
+        "target",
+        "duration",
+        "description",
+        "copyrightNotice"
+      ],
+      "eligibility": "unknown",
+      "outcome": "quarantine"
+    }
+  ],
+  "hundredSpellRun": "Not started: sample includes unresolved variant/correction layouts, eligibility and staging access remain unresolved"
+}
